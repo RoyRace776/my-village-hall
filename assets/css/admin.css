@@ -1,0 +1,92 @@
+/* My Village Hall Admin Styles */
+
+.myvh-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.myvh-status-pending {
+    background: #f0f0f1;
+    color: #646970;
+}
+
+.myvh-status-confirmed {
+    background: #d5e8d4;
+    color: #0f5132;
+}
+
+.myvh-status-cancelled {
+    background: #f8d7da;
+    color: #842029;
+}
+
+.myvh-status-completed {
+    background: #cfe2ff;
+    color: #084298;
+}
+
+.myvh-form-message {
+    display: inline-block;
+    font-weight: 600;
+}
+
+.myvh-form-message.success {
+    color: #00a32a;
+}
+
+.myvh-form-message.error {
+    color: #d63638;
+}
+
+/* Loading spinner */
+.myvh-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2271b1;
+    border-radius: 50%;
+    animation: myvh-spin 1s linear infinite;
+    vertical-align: middle;
+    margin-left: 10px;
+}
+
+@keyframes myvh-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Table improvements */
+.wp-list-table th,
+.wp-list-table td {
+    vertical-align: middle;
+}
+
+.wp-list-table td a.delete {
+    color: #b32d2e;
+}
+
+.wp-list-table td a.delete:hover {
+    color: #d63638;
+}
+
+/* Form table improvements */
+.form-table th {
+    width: 200px;
+}
+
+.form-table .description {
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    .form-table th {
+        width: auto;
+    }
+}
