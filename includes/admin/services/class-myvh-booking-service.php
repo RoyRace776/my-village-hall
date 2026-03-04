@@ -87,4 +87,89 @@ class MYVH_Booking_Service {
 
         return empty($conflicts);
     }
+
+    public function save($data) {
+        global $myvh_recurring_pattern_service;
+
+        // Validation
+        if (empty($data['customer_id'])) {
+            return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
+        }
+
+        if (empty($data['room_id'])) {
+            return new WP_Error('validation', __('Room is required', 'my-village-hall'));
+        }
+
+        if (empty($data['start_date'])) {
+            return new WP_Error('validation', __('Start date is required', 'my-village-hall'));
+        }
+
+        if (empty($data['start_time']) || empty($data['end_time'])) {
+            return new WP_Error('validation', __('Start and end times are required', 'my-village-hall'));
+        }
+
+        // Validate time
+        $start = strtotime($data['start_time']);
+        $end = strtotime($data['end_time']);
+        if ($end <= $start) {
+            return new WP_Error('validation', __('End time must be after start time', 'my-village-hall'));
+        }
+
+        $record = [
+            'CustomerId'  => intval($data['customer_id']),
+            'RoomId'      => intval($data['room_id']),
+            'Status'      => sanitize_text_field($data['status'] ?? 'confirmed'),
+            'StartDate'   => sanitize_text_field($data['start_date']),
+            'EndDate'     => !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : sanitize_text_field($data['start_date']),
+            'StartTime'   => sanitize_text_field($data['start_time']),
+            'EndTime'     => sanitize_text_field($data['end_time']),
+            'Description' => sanitize_textarea_field($data['description'] ?? ''),
+            'Public'      => isset($data['public']) ? 1 : 0,
+        ];
+
+        // Update existing booking
+        if (!empty($data['booking_id'])) {
+            $result = $this->booking_repo->update($record, ['Id' => intval($data['booking_id'])]);
+            if ($result === false) {
+                return new WP_Error('database', __('Failed to update booking', 'my-village-hall'));
+            }
+            return intval($data['booking_id']);
+        }
+
+        // Create new booking
+        $booking_id = $this->booking_repo->create($record);
+        if ($booking_id === false) {
+            return new WP_Error('database', __('Failed to create booking', 'my-village-hall'));
+        }
+
+        // Handle recurring pattern if requested
+        if (!empty($data['is_recurring']) && $myvh_recurring_pattern_service) {
+            $pattern_data = [
+                'parent_booking_id'   => $booking_id,
+                'recurrence_type'     => sanitize_text_field($data['recurrence_type']),
+                'recurrence_interval' => intval($data['recurrence_interval']),
+                'start_date'          => sanitize_text_field($data['start_date']),
+                'is_active'           => 1,
+            ];
+
+            // Set end condition
+            if ($data['recurrence_end_type'] === 'date') {
+                $pattern_data['end_date'] = sanitize_text_field($data['recurrence_end_date']);
+            } else {
+                $pattern_data['max_occurrences'] = intval($data['max_occurrences']);
+            }
+
+            $myvh_recurring_pattern_service->save($pattern_data);
+        }
+
+        return $booking_id;
+    }
+
+    public function cancel($id) {
+        return $this->booking_repo->update(
+            ['Status' => 'cancelled'],
+            ['Id' => $id]
+        );
+    }
+
 }

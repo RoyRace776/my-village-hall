@@ -44,8 +44,10 @@ $myvh_room_rate_controller = new MYVH_Room_Rate_Controller($myvh_room_rate_servi
 
 global $myvh_booking_repo;
 global $myvh_booking_service;
+global $myvh_booking_controller;
 
 $myvh_booking_service = new MYVH_Booking_Service($myvh_room_service, $myvh_room_rate_service, $myvh_booking_repo);
+$myvh_booking_controller = new MYVH_Booking_Controller($myvh_booking_service);
 
 // ==========================================
 // ADDON MANAGEMENT

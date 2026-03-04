@@ -96,6 +96,16 @@ class My_Village_Hall {
         // Enqueue admin styles and scripts
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
+        add_action('admin_post_myvh_save_booking', function () {
+            global $myvh_booking_controller;
+            $myvh_booking_controller->save();
+        });
+
+        add_action('admin_post_myvh_cancel_booking', function () {
+            global $myvh_booking_controller;
+            $myvh_booking_controller->cancel();
+        });
+
         add_action('admin_post_myvh_save_venue', function () {
             global $myvh_venue_controller;
             $myvh_venue_controller->save();
@@ -1153,7 +1163,12 @@ class My_Village_Hall {
                 array('response' => 403)
             );
         }
-        include MYVH_PLUGIN_DIR . 'includes/admin/views/bookings-page.php';
+        // Check if we're adding, editing, or viewing a booking
+        if (isset($_GET['add']) || isset($_GET['edit']) || isset($_GET['view'])) {
+            include MYVH_PLUGIN_DIR . 'includes/admin/views/booking-form-page.php';
+        } else {
+            include MYVH_PLUGIN_DIR . 'includes/admin/views/bookings-page.php';
+        }
     }
     
     public function render_customers_page() {
