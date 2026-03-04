@@ -4,17 +4,26 @@ if (!defined('ABSPATH')) exit;
 class MYVH_Booking_Service {
 
     private $room_service;
-    private $rate_service;
     private $booking_repo;
+    private $validator;
+    private $availability;
+    private $room_rules;
+    private $pricing;
 
     public function __construct(
         $room_service,
-        $rate_service,
-        $booking_repo
+        $booking_repo,
+        $validator,
+        $availability,
+        $room_rules,
+        $pricing
     ) {
         $this->room_service = $room_service;
-        $this->rate_service = $rate_service;
         $this->booking_repo = $booking_repo;
+        $this->validator = $validator;
+        $this->availability = $availability;
+        $this->room_rules = $room_rules;
+        $this->pricing = $pricing;
     }
 
     public function create_booking($data) {
@@ -24,33 +33,34 @@ class MYVH_Booking_Service {
         $start     = $data['start_time'];
         $end       = $data['end_time'];
 
-        // 1️⃣ Validate room exists
-        $room = $this->room_service->get($room_id);
+        // Validate input
+        $result = $this->validator->validate($data);
+        if (is_wp_error($result)) return $result;
+
+        $room = $this->room_service->get($data['room_id']);
         if (!$room) {
-            return new WP_Error('invalid_room', 'Room not found');
+            return new WP_Error('invalid_room');
         }
 
-        // 2️⃣ Validate within opening hours
-        if (!$this->within_opening_hours($room, $start, $end)) {
-            return new WP_Error('invalid_time', 'Outside room opening hours');
+        if (!$this->room_rules->within_opening_hours(
+            $room,
+            $data['start_time'],
+            $data['end_time']
+        )) {
+            return new WP_Error('invalid_time');
         }
 
-        // 3️⃣ Validate availability
-        if (!$this->is_available($room_id, $start, $end)) {
-            return new WP_Error('not_available', 'Room already booked');
+        if (!$this->availability->room_is_available(
+            $data['room_id'],
+            $data['start_time'],
+            $data['end_time']
+        )) {
+            return new WP_Error('not_available');
         }
 
-        // 4️⃣ Calculate price
-        $price = $this->rate_service->calculate_price(
-            $room_id,
-            $group_id,
-            $start,
-            $end
-        );
-
-        if (is_wp_error($price)) {
-            return $price;
-        }
+        // TODO: Fix pricing calcualtion
+        //$price = $this->pricing->calculate_booking_price(...);
+        $price = 0;
 
         // 5️⃣ Save booking
         $booking = [
@@ -63,7 +73,21 @@ class MYVH_Booking_Service {
             'CreatedAt'       => current_time('mysql')
         ];
 
-        return $this->booking_repo->create($booking);
+        $booking_id = $this->booking_repo->create($booking);
+
+        If ($booking_id > 0) {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::CREATED,
+                [
+                    'booking_id' => $booking_id,
+                    'room_id' => $data['room_id'],
+                    'start' => $data['start_time'],
+                    'end' => $data['end_time']
+                ]
+            );
+        }
+        
+        return $booking_id;
     }
 
     private function within_opening_hours($room, $start, $end) {

@@ -1327,28 +1327,14 @@ add_action('wp_initialize_site', function($new_site) {
  */
 ob_start();
 //  Add in any utlility classes
-require_once MYVH_PLUGIN_DIR . 'includes/time-helpers.php';
+require_once MYVH_PLUGIN_DIR . 'includes/domain/helpers/time-helpers.php';
 require_once MYVH_PLUGIN_DIR .'includes/admin/class-myvh-admin-notices.php';
 
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-roles.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-auth.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-security.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-database.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-ajax.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-calendar-ajax.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-recurring.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-recurring-ajax.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-customer-bookings.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-client-portal.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-portal-shortcode.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-portal-ajax.php';
-// require_once MYVH_PLUGIN_DIR . 'includes/class-myvh-customer-portal.php';
-
 // Include the repository access classes
-require_once MYVH_PLUGIN_DIR . 'includes/myvh-repositories.php';
+require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-repositories.php';
 
 // Bootstrap
-require_once MYVH_PLUGIN_DIR . 'includes/myvh-bootstrap.php';
+require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-bootstrap.php';
 
 // Include the network specific classes
 require_once MYVH_PLUGIN_DIR . 'includes/network/class-myvh-network-dashboard.php';
