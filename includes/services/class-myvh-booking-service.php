@@ -266,4 +266,128 @@ class MYVH_Booking_Service {
         );
     }
 
+    public function get_all_with_details($args = []) {
+        return $this->booking_repo->get_all_with_details($args);
+    }
+
+    public function get_booking_list($filters = []) {
+        $defaults = [
+            'status'      => '',
+            'room_id'     => 0,
+            'customer_id' => 0,
+        ];
+
+        $filters = wp_parse_args($filters, $defaults);
+
+        $query_args = [
+            'orderby'     => 'b.StartDate',
+            'order'       => 'DESC',
+            'status'      => $filters['status'],
+            'room_id'     => $filters['room_id'],
+            'customer_id' => $filters['customer_id'],
+        ];
+
+        $bookings = $this->booking_repo->get_all_with_details($query_args);
+
+        $groups = $this->group_bookings($bookings);
+
+        return [
+            'groups'           => $groups,
+            'total'            => count($bookings),
+            'recurring_groups' => count(array_filter($groups, fn($g) => $g['type'] === 'recurring')),
+        ];
+    }
+
+    private function group_bookings($bookings) {
+        $groups = [];
+        $today = date('Y-m-d');
+
+        foreach ($bookings as $b) {
+
+            if ($b['RecurringPatternId']) {
+
+                $key = 'r_' . $b['RecurringPatternId'];
+
+                if (!isset($groups[$key])) {
+
+                    $groups[$key] = [
+                        'type'     => 'recurring',
+                        'pattern'  => [
+                            'Id'                 => $b['RecurringPatternId'],
+                            'RecurrenceType'     => $b['RecurrenceType'],
+                            'RecurrenceInterval' => $b['RecurrenceInterval'],
+                            'RecurrenceDay'      => $b['RecurrenceDay'],
+                            'RecurrenceWeek'     => $b['RecurrenceWeek'],
+                            'StartDate'          => $b['PatternStartDate'],
+                            'EndDate'            => $b['PatternEndDate'],
+                            'IsActive'           => $b['PatternIsActive'],
+                        ],
+                        'bookings' => [],
+                    ];
+                }
+
+                $groups[$key]['bookings'][] = $b;
+
+            } else {
+
+                $groups['b_' . $b['Id']] = [
+                    'type'     => 'standalone',
+                    'bookings' => [$b],
+                ];
+            }
+        }
+
+        // Add computed fields
+        foreach ($groups as &$group) {
+
+            if ($group['type'] === 'recurring') {
+
+                $group['next_booking'] = $this->find_next_booking($group['bookings'], $today);
+                $group['status']       = $this->determine_group_status($group['bookings']);
+                $group['count']        = count($group['bookings']);
+
+            } else {
+
+                $b = $group['bookings'][0];
+
+                $group['next_booking'] = $b;
+                $group['status']       = $b['Status'];
+                $group['count']        = 1;
+            }
+        }
+
+        return $groups;
+    }
+
+    private function find_next_booking($bookings, $today) {
+        foreach (array_reverse($bookings) as $b) {
+
+            if ($b['StartDate'] >= $today && $b['Status'] !== 'cancelled') {
+                return $b;
+            }
+
+        }
+
+        return null;
+    }
+
+    private function determine_group_status($members) {
+        $statuses = array_column($members, 'Status');
+
+        foreach ($statuses as $status) {
+            if ($status === 'confirmed') {
+                return 'confirmed';
+            }
+        }
+
+        foreach ($statuses as $status) {
+            if ($status === 'pending') {
+                return 'pending';
+            }
+        }
+
+        return $statuses[0] ?? 'completed';
+    }
+
+    
 }

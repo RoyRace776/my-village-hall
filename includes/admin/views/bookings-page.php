@@ -5,16 +5,20 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
-
-// ── Filters ───────────────────────────────────────────────────────────────────
 $status_filter   = isset($_GET['status'])      ? sanitize_text_field($_GET['status'])  : 'all';
 $room_filter     = isset($_GET['room_id'])     ? intval($_GET['room_id'])               : 0;
 $customer_filter = isset($_GET['customer_id']) ? intval($_GET['customer_id'])           : 0;
 
-$rooms     = MYVH_Registry::get('room_repo')->get_all_with_venues();
-$customers = MYVH_Registry::get('customer_repo')->get_all();
+$booking_service = MYVH_Registry::get('booking_service');
+$rooms     = MYVH_Registry::get('room_service')->get_all_with_venues();
+$customers = MYVH_Registry::get('customer_service')->get_all();
 
-// Single efficient query with all joins
+$result = $booking_service->get_booking_list([
+    'status'      => $status_filter !== 'all' ? $status_filter : '',
+    'room_id'     => $room_filter,
+    'customer_id' => $customer_filter,
+]);
+
 $query_args = [
     'orderby'     => 'b.StartDate',
     'order'       => 'DESC',
@@ -22,43 +26,11 @@ $query_args = [
     'room_id'     => $room_filter,
     'customer_id' => $customer_filter,
 ];
-$bookings = MYVH_Registry::get('booking_repo')->get_all_with_details($query_args);
 
-// ── Group bookings ────────────────────────────────────────────────────────────
-// Recurring bookings are grouped under their pattern ID.
-// Standalone bookings get their own single-item "group" keyed by 'b_<id>'.
-$groups = [];   // [ key => ['type'=>'recurring'|'standalone', 'pattern'=>[], 'bookings'=>[]] ]
-
-foreach ($bookings as $b) {
-    if ($b['RecurringPatternId']) {
-        $key = 'r_' . $b['RecurringPatternId'];
-        if (!isset($groups[$key])) {
-            $groups[$key] = [
-                'type'     => 'recurring',
-                'pattern'  => [
-                    'Id'                => $b['RecurringPatternId'],
-                    'RecurrenceType'    => $b['RecurrenceType'],
-                    'RecurrenceInterval'=> $b['RecurrenceInterval'],
-                    'RecurrenceDay'     => $b['RecurrenceDay'],
-                    'RecurrenceWeek'    => $b['RecurrenceWeek'],
-                    'StartDate'         => $b['PatternStartDate'],
-                    'EndDate'           => $b['PatternEndDate'],
-                    'IsActive'          => $b['PatternIsActive'],
-                ],
-                'bookings' => [],
-            ];
-        }
-        $groups[$key]['bookings'][] = $b;
-    } else {
-        $groups['b_' . $b['Id']] = [
-            'type'     => 'standalone',
-            'bookings' => [$b],
-        ];
-    }
-}
-
-// Sort recurring groups by their first (most-recent) booking date – DESC already from query.
-// Groups are already in order because we iterate bookings DESC.
+$groups = $result['groups'];
+$total_shown = $result['total'];
+$recurring_group_count = $result['recurring_groups'];
+$bookings = $booking_service->get_all_with_details($query_args);
 
 $today = date('Y-m-d');
 
@@ -71,6 +43,7 @@ $status_colors = [
 
 $total_shown = count($bookings);
 $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'recurring'));
+
 ?>
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php _e('All Bookings', 'my-village-hall'); ?></h1>

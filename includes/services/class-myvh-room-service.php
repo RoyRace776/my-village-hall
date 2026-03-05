@@ -17,7 +17,7 @@ class MYVH_Room_Service {
         return $this->repo->get_by_id($id);
     }
 
-    public function get_with_venues() {
+    public function get_all_with_venues() {
         return $this->repo->get_all_with_venues();
     }
 
