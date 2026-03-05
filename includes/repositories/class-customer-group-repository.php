@@ -24,8 +24,7 @@ class MYVH_Customer_Group_Repository {
     /**
      * Constructor
      */
-    public function __construct() {
-        global $wpdb;
+    public function __construct( \wpdb $wpdb ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_customer_groups';
     }
@@ -199,13 +198,11 @@ class MYVH_Customer_Group_Repository {
     }
 
     private function default_group($cg_id) {
-        global $wpdb;
-
-        $sql = $wpdb->prepare("UPDATE {$wpdb->prefix}myvh_customer_groups 
+        $sql = $this->wpdb->prepare("UPDATE {$this->wpdb->prefix}myvh_customer_groups 
                  SET IsDefault = 0 
                  WHERE Id != %d",
                 $cg_id);
 
-        return $wpdb->query( $sql );
+        return $this->wpdb->query( $sql );
     }    
 }

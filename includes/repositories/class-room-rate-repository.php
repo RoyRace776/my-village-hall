@@ -6,8 +6,7 @@ class MYVH_Room_Rate_Repository {
     private $wpdb;
     private $table;
 
-    public function __construct() {
-        global $wpdb;
+    public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;
         $this->table = $wpdb->prefix . 'myvh_room_rates';
     }

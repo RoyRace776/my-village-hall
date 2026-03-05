@@ -347,42 +347,11 @@ class MYVH_Recurring_Pattern_Service {
     }
 
     /**
-     * Check if a booking conflicts with existing bookings
-     * 
-     * @param int $room_id Room ID
-     * @param string $date Date
-     * @param string $start_time Start time
-     * @param string $end_time End time
-     * @param int $exclude_booking_id Booking ID to exclude from check
-     * @return bool True if conflict exists
+     * Check if a booking conflicts with existing bookings.
+     * Delegated to the booking repository.
      */
-    private function check_booking_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null) {
-        global $wpdb;
-
-        $sql = $wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}myvh_bookings 
-             WHERE RoomId = %d 
-             AND StartDate = %s 
-             AND Status != 'cancelled'
-             AND (
-                 (StartTime < %s AND EndTime > %s) OR
-                 (StartTime < %s AND EndTime > %s) OR
-                 (StartTime >= %s AND EndTime <= %s)
-             )",
-            $room_id,
-            $date,
-            $end_time, $start_time,  // Ends after our start
-            $end_time, $start_time,  // Starts before our end
-            $start_time, $end_time   // Fully contained
-        );
-
-        if ($exclude_booking_id) {
-            $sql .= $wpdb->prepare(" AND Id != %d", $exclude_booking_id);
-        }
-
-        $conflicts = $wpdb->get_var($sql);
-
-        return $conflicts > 0;
+    private function check_booking_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null): bool {
+        return $this->get_booking_repo()->has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id);
     }
 
     public function delete($id) {

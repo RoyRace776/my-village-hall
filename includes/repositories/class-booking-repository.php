@@ -24,8 +24,7 @@ class MYVH_Booking_Repository {
     /**
      * Constructor
      */
-    public function __construct() {
-        global $wpdb;
+    public function __construct( \wpdb $wpdb ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_bookings';
     }
@@ -256,6 +255,56 @@ class MYVH_Booking_Repository {
             $pattern_id,
             date('Y-m-d')
         ));
+    }
+
+    /**
+     * Check whether a booking would conflict with any existing confirmed/pending booking.
+     *
+     * @param int      $room_id             Room to check.
+     * @param string   $date                Date (Y-m-d).
+     * @param string   $start_time          Start time (H:i:s).
+     * @param string   $end_time            End time (H:i:s).
+     * @param int|null $exclude_booking_id  Booking ID to ignore (e.g. the parent booking).
+     * @return bool True if a conflict exists.
+     */
+    public function has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null): bool {
+        $sql = $this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_name}
+             WHERE RoomId = %d
+             AND StartDate = %s
+             AND Status != 'cancelled'
+             AND (
+                 (StartTime < %s AND EndTime > %s) OR
+                 (StartTime < %s AND EndTime > %s) OR
+                 (StartTime >= %s AND EndTime <= %s)
+             )",
+            $room_id,
+            $date,
+            $end_time, $start_time,
+            $end_time, $start_time,
+            $start_time, $end_time
+        );
+
+        if ($exclude_booking_id) {
+            $sql .= $this->wpdb->prepare(' AND Id != %d', $exclude_booking_id);
+        }
+
+        return (int) $this->wpdb->get_var($sql) > 0;
+    }
+
+    /**
+     * Count how many bookings exist for a given customer.
+     *
+     * @param int $customer_id
+     * @return int
+     */
+    public function count_by_customer(int $customer_id): int {
+        return (int) $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_name} WHERE CustomerId = %d",
+                $customer_id
+            )
+        );
     }
 
     public function get_conflicts($room_id, $start, $end) {

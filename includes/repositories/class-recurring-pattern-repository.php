@@ -24,8 +24,7 @@ class MYVH_Recurring_Pattern_Repository {
     /**
      * Constructor
      */
-    public function __construct() {
-        global $wpdb;
+    public function __construct( \wpdb $wpdb ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_recurring_patterns';
     }

@@ -4,9 +4,11 @@ if (!defined('ABSPATH')) exit;
 class MYVH_Customer_Service {
 
     private $repo;
+    private $booking_repo;
 
-    public function __construct($repo) {
-        $this->repo = $repo;
+    public function __construct($repo, $booking_repo) {
+        $this->repo         = $repo;
+        $this->booking_repo = $booking_repo;
     }
 
     public function get_all($args = []) {
@@ -85,14 +87,7 @@ class MYVH_Customer_Service {
     }
 
     public function delete($id) {
-        // Check if customer has bookings
-        global $wpdb;
-        $bookings_count = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}myvh_bookings WHERE CustomerId = %d",
-            $id
-        ));
-
-        if ($bookings_count > 0) {
+        if ($this->booking_repo->count_by_customer($id) > 0) {
             return new WP_Error('validation', __('Cannot delete customer with existing bookings', 'my-village-hall'));
         }
 

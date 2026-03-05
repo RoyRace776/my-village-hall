@@ -83,12 +83,18 @@ MYVH_Registry::set('addon_service',    $addon_service);
 MYVH_Registry::set('addon_controller', new MYVH_Addon_Controller($addon_service));
 
 // ── Customer ──────────────────────────────────────────────────────────────────
-$customer_service = new MYVH_Customer_Service(MYVH_Registry::get('customer_repo'));
+$customer_service = new MYVH_Customer_Service(
+    MYVH_Registry::get('customer_repo'),
+    MYVH_Registry::get('booking_repo')
+);
 MYVH_Registry::set('customer_service',    $customer_service);
 MYVH_Registry::set('customer_controller', new MYVH_Customer_Controller($customer_service));
 
 // ── Invoice ───────────────────────────────────────────────────────────────────
-$invoice_service = new MYVH_Invoice_Service(MYVH_Registry::get('invoice_repo'));
+$invoice_service = new MYVH_Invoice_Service(
+    MYVH_Registry::get('invoice_repo'),
+    MYVH_Registry::get('payment_repo')
+);
 MYVH_Registry::set('invoice_service',    $invoice_service);
 MYVH_Registry::set('invoice_controller', new MYVH_Invoice_Controller($invoice_service));
 

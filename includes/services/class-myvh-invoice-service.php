@@ -4,9 +4,11 @@ if (!defined('ABSPATH')) exit;
 class MYVH_Invoice_Service {
 
     private $repo;
+    private $payment_repo;
 
-    public function __construct($repo) {
-        $this->repo = $repo;
+    public function __construct($repo, $payment_repo) {
+        $this->repo         = $repo;
+        $this->payment_repo = $payment_repo;
     }
 
     public function get_all($args = []) {
@@ -83,14 +85,7 @@ class MYVH_Invoice_Service {
     }
 
     public function delete($id) {
-        // Check if invoice has payments
-        global $wpdb;
-        $payments_count = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}myvh_payments WHERE InvoiceId = %d",
-            $id
-        ));
-
-        if ($payments_count > 0) {
+        if ($this->payment_repo->count_by_invoice($id) > 0) {
             return new WP_Error('validation', __('Cannot delete invoice with existing payments', 'my-village-hall'));
         }
 
