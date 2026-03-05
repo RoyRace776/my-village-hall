@@ -295,7 +295,3 @@ class MYVH_Booking_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_booking_repo;
-$myvh_booking_repo = new MYVH_Booking_Repository();

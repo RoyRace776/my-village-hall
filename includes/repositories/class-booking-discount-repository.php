@@ -175,7 +175,3 @@ class MYVH_Booking_Discount_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_booking_discount_repo;
-$myvh_booking_discount_repo = new MYVH_Booking_Discount_Repository();

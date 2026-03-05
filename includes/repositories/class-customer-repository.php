@@ -266,7 +266,3 @@ class MYVH_Customer_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_customer_repo;
-$myvh_customer_repo = new MYVH_Customer_Repository();

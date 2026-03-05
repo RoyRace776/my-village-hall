@@ -175,7 +175,3 @@ class MYVH_Booking_Charge_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_booking_charge_repo;
-$myvh_booking_charge_repo = new MYVH_Booking_Charge_Repository();

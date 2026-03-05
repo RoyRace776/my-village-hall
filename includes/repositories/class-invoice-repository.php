@@ -279,7 +279,3 @@ class MYVH_Invoice_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_invoice_repo;
-$myvh_invoice_repo = new MYVH_Invoice_Repository();

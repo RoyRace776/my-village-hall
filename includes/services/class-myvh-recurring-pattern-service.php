@@ -35,11 +35,7 @@ class MYVH_Recurring_Pattern_Service {
     }
 
     public function get_bookings_for_pattern($pattern_id) {
-        if (!$this->booking_repo) {
-            global $myvh_booking_repo;
-            $this->booking_repo = $myvh_booking_repo;
-        }
-        return $this->booking_repo->get_by_pattern_id($pattern_id);
+        return $this->get_booking_repo()->get_by_pattern_id($pattern_id);
     }
 
     /**
@@ -415,10 +411,6 @@ class MYVH_Recurring_Pattern_Service {
      * Get or resolve the booking repository
      */
     private function get_booking_repo() {
-        if (!$this->booking_repo) {
-            global $myvh_booking_repo;
-            $this->booking_repo = $myvh_booking_repo;
-        }
         return $this->booking_repo;
     }
 }

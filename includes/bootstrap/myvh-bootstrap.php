@@ -1,131 +1,110 @@
 <?php
-// Include controller classes
+/**
+ * Bootstrap — wire all services and controllers, register in MYVH_Registry.
+ *
+ * No global variables are used. Everything is retrieved via MYVH_Registry::get()
+ * and stored back with MYVH_Registry::set().
+ */
+
+// ── Controllers ───────────────────────────────────────────────────────────────
+require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-booking-controller.php';
 require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-customer-group-controller.php';
 require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-venue-controller.php';
 require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-room-controller.php';
 require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-room-rate-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-booking-controller.php';
+require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-addon-controller.php';
+require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-customer-controller.php';
+require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-invoice-controller.php';
+require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-recurring-pattern-controller.php';
 
-// Include service classes
+// ── Services ──────────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-venue-service.php';
 require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-room-service.php';
 require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-customer-group-service.php';
 require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-room-rate-service.php';
 require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-booking-service.php';
+require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-addon-service.php';
+require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-customer-service.php';
+require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-invoice-service.php';
+require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-recurring-pattern-service.php';
 
+// ── Domain services ───────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'includes/domain/booking/class-myvh-booking-validator.php';
 require_once MYVH_PLUGIN_DIR . 'includes/domain/booking/class-myvh-availability-service.php';
 require_once MYVH_PLUGIN_DIR . 'includes/domain/booking/class-myvh-pricing-service.php';
 require_once MYVH_PLUGIN_DIR . 'includes/domain/room/class-myvh-room-rules-service.php';
 
-// Get the repos ready. These get initialised when they're included
-global $myvh_venue_repo;
-global $myvh_room_repo;
-global $myvh_customer_group_repo;
-global $myvh_room_rate_repo;
-global $myvh_booking_repo;
-global $myvh_addon_repo;
-global $myvh_customer_repo;
-global $myvh_invoice_repo;
-global $myvh_recurring_pattern_repo;
+// ── Venue ─────────────────────────────────────────────────────────────────────
+$venue_service = new MYVH_Venue_Service(MYVH_Registry::get('venue_repo'));
+MYVH_Registry::set('venue_service',     $venue_service);
+MYVH_Registry::set('venue_controller',  new MYVH_Venue_Controller($venue_service));
 
-// Now create the domain services
-global $myvh_booking_validator;
-global $myvh_booking_availability;
-global $myvh_room_rules;
-global $myvh_pricing_service;
+// ── Room ──────────────────────────────────────────────────────────────────────
+$room_service = new MYVH_Room_Service(MYVH_Registry::get('room_repo'));
+MYVH_Registry::set('room_service',     $room_service);
+MYVH_Registry::set('room_controller',  new MYVH_Room_Controller($room_service));
 
-$myvh_booking_validator = new MYVH_Booking_Validator();
-$myvh_availability_service = new MYVH_Availability_Service($myvh_booking_repo);
-$myvh_room_rules_service = new MYVH_Room_Rules_Service();
-$myvh_pricing_service = new MYVH_Pricing_service($myvh_room_rate_repo);
+// ── Customer Group ────────────────────────────────────────────────────────────
+$customer_group_service = new MYVH_Customer_Group_Service(MYVH_Registry::get('customer_group_repo'));
+MYVH_Registry::set('customer_group_service',    $customer_group_service);
+MYVH_Registry::set('customer_group_controller', new MYVH_Customer_Group_Controller($customer_group_service));
 
+// ── Room Rate ─────────────────────────────────────────────────────────────────
+$room_rate_service = new MYVH_Room_Rate_Service(MYVH_Registry::get('room_rate_repo'));
+MYVH_Registry::set('room_rate_service',    $room_rate_service);
+MYVH_Registry::set('room_rate_controller', new MYVH_Room_Rate_Controller($room_rate_service));
 
-// Now create the services and controllers
-global $myvh_venue_service;
-global $myvh_venue_controller;
+// ── Booking (depends on several domain services) ──────────────────────────────
+$booking_validator    = new MYVH_Booking_Validator();
+$availability_service = new MYVH_Availability_Service(MYVH_Registry::get('booking_repo'));
+$room_rules_service   = new MYVH_Room_Rules_Service();
+$pricing_service      = new MYVH_Pricing_service(MYVH_Registry::get('room_rate_repo'));
 
+MYVH_Registry::set('booking_validator',    $booking_validator);
+MYVH_Registry::set('availability_service', $availability_service);
+MYVH_Registry::set('room_rules_service',   $room_rules_service);
+MYVH_Registry::set('pricing_service',      $pricing_service);
 
-$myvh_venue_service    = new MYVH_Venue_Service($myvh_venue_repo);
-$myvh_venue_controller = new MYVH_Venue_Controller($myvh_venue_service);
+$booking_service = new MYVH_Booking_Service(
+    $room_service,
+    MYVH_Registry::get('booking_repo'),
+    MYVH_Registry::get('booking_addon_repo'),
+    $booking_validator,
+    $availability_service,
+    $room_rules_service,
+    $pricing_service
+);
+MYVH_Registry::set('booking_service',    $booking_service);
+MYVH_Registry::set('booking_controller', new MYVH_Booking_Controller($booking_service));
 
-global $myvh_room_service;
-global $myvh_room_controller;
+// ── Add-on ────────────────────────────────────────────────────────────────────
+$addon_service = new MYVH_Addon_Service(MYVH_Registry::get('addon_repo'));
+MYVH_Registry::set('addon_service',    $addon_service);
+MYVH_Registry::set('addon_controller', new MYVH_Addon_Controller($addon_service));
 
-$myvh_room_service    = new MYVH_Room_Service($myvh_room_repo);
-$myvh_room_controller = new MYVH_Room_Controller($myvh_room_service);
+// ── Customer ──────────────────────────────────────────────────────────────────
+$customer_service = new MYVH_Customer_Service(MYVH_Registry::get('customer_repo'));
+MYVH_Registry::set('customer_service',    $customer_service);
+MYVH_Registry::set('customer_controller', new MYVH_Customer_Controller($customer_service));
 
-global $myvh_customer_group_service;
-global $myvh_customer_group_controller;
+// ── Invoice ───────────────────────────────────────────────────────────────────
+$invoice_service = new MYVH_Invoice_Service(MYVH_Registry::get('invoice_repo'));
+MYVH_Registry::set('invoice_service',    $invoice_service);
+MYVH_Registry::set('invoice_controller', new MYVH_Invoice_Controller($invoice_service));
 
-$myvh_customer_group_service    = new MYVH_Customer_Group_Service($myvh_customer_group_repo);
-$myvh_customer_group_controller = new MYVH_Customer_Group_Controller($myvh_customer_group_service);
+// ── Recurring Pattern ─────────────────────────────────────────────────────────
+$recurring_pattern_service = new MYVH_Recurring_Pattern_Service(
+    MYVH_Registry::get('recurring_pattern_repo'),
+    MYVH_Registry::get('booking_repo')
+);
 
-global $myvh_room_rate_service;
-global $myvh_room_rate_controller;
+// Inject the recurring pattern service into booking service
+// (needed when a new booking creates a pattern)
+$booking_service->set_recurring_pattern_service($recurring_pattern_service);
 
-$myvh_room_rate_service    = new MYVH_Room_Rate_Service($myvh_room_rate_repo);
-$myvh_room_rate_controller = new MYVH_Room_Rate_Controller($myvh_room_rate_service);
+MYVH_Registry::set('recurring_pattern_service',    $recurring_pattern_service);
+MYVH_Registry::set('recurring_pattern_controller', new MYVH_Recurring_Pattern_Controller($recurring_pattern_service));
 
-global $myvh_booking_service;
-global $myvh_booking_controller;
-
-global $myvh_booking_addon_repo;
-
-$myvh_booking_service = new MYVH_Booking_Service($myvh_room_service, $myvh_booking_repo, $myvh_booking_addon_repo,
-                                                 $myvh_booking_validator,
-                                                 $myvh_availability_service, $myvh_room_rules_service, $myvh_pricing_service);
-$myvh_booking_controller = new MYVH_Booking_Controller($myvh_booking_service);
-
-// ==========================================
-// ADDON MANAGEMENT
-// ==========================================
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-addon-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-addon-controller.php';
-
-global $myvh_addon_service;
-global $myvh_addon_controller;
-
-$myvh_addon_service    = new MYVH_Addon_Service($myvh_addon_repo);
-$myvh_addon_controller = new MYVH_Addon_Controller($myvh_addon_service);
-
-// ==========================================
-// CUSTOMER MANAGEMENT
-// ==========================================
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-customer-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-customer-controller.php';
-
-global $myvh_customer_service;
-global $myvh_customer_controller;
-
-$myvh_customer_service    = new MYVH_Customer_Service($myvh_customer_repo);
-$myvh_customer_controller = new MYVH_Customer_Controller($myvh_customer_service);
-
-// ==========================================
-// INVOICE MANAGEMENT
-// ==========================================
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-invoice-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-invoice-controller.php';
-
-global $myvh_invoice_service;
-global $myvh_invoice_controller;
-
-$myvh_invoice_service    = new MYVH_Invoice_Service($myvh_invoice_repo);
-$myvh_invoice_controller = new MYVH_Invoice_Controller($myvh_invoice_service);
-
-// ==========================================
-// RECURRING PATTERN MANAGEMENT
-// ==========================================
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-recurring-pattern-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-recurring-pattern-controller.php';
-
-global $myvh_recurring_pattern_service;
-global $myvh_recurring_pattern_controller;
-
-$myvh_recurring_pattern_service    = new MYVH_Recurring_Pattern_Service($myvh_recurring_pattern_repo, $myvh_booking_repo);
-$myvh_recurring_pattern_controller = new MYVH_Recurring_Pattern_Controller($myvh_recurring_pattern_service);
-
-// Set up listeners
+// ── Listeners ─────────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'includes/listeners/create-invoice-listener.php';
-$invoice_listener = new MYVH_Create_Invoice_Listener();
-$invoice_listener->register();
+(new MYVH_Create_Invoice_Listener())->register();

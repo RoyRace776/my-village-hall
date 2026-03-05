@@ -285,7 +285,3 @@ class MYVH_Recurring_Pattern_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_recurring_pattern_repo;
-$myvh_recurring_pattern_repo = new MYVH_Recurring_Pattern_Repository();

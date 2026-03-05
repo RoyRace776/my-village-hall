@@ -190,7 +190,3 @@ class MYVH_Room_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_room_repo;
-$myvh_room_repo = new MYVH_Room_Repository();

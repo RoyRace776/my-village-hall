@@ -7,11 +7,10 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
-global $myvh_customer_group_repo;
 
 $edit_id    = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$edit_group = $edit_id ? $myvh_customer_group_repo->get_by_id($edit_id) : null;
-$groups     = $myvh_customer_group_repo->get_all(false);
+$edit_group = $edit_id ? MYVH_Registry::get('customer_group_repo')->get_by_id($edit_id) : null;
+$groups     = MYVH_Registry::get('customer_group_repo')->get_all(false);
 ?>
 
 <div class="wrap">

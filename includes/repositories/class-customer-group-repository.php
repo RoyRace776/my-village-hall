@@ -209,7 +209,3 @@ class MYVH_Customer_Group_Repository {
         return $wpdb->query( $sql );
     }    
 }
-
-// Initialize global repository instance
-global $myvh_customer_group_repo;
-$myvh_customer_group_repo = new MYVH_Customer_Group_Repository();

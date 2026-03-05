@@ -5,7 +5,6 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
-global $myvh_recurring_pattern_service, $myvh_booking_repo, $myvh_customer_repo, $myvh_room_repo;
 
 $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
@@ -14,16 +13,16 @@ $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 if ($edit_id || $view_id) {
     $pattern_id   = $edit_id ?: $view_id;
     $is_view_mode = !$edit_id;
-    $pattern      = $myvh_recurring_pattern_service->get($pattern_id);
+    $pattern      = MYVH_Registry::get('recurring_pattern_service')->get($pattern_id);
 
     if (!$pattern) {
         wp_die(__('Pattern not found.', 'my-village-hall'));
     }
 
-    $parent_booking  = $myvh_booking_repo->get_by_id($pattern['ParentBookingId']);
-    $bookings        = $myvh_recurring_pattern_service->get_bookings_for_pattern($pattern_id);
-    $customers       = $myvh_customer_repo->get_all();
-    $rooms           = $myvh_room_repo->get_all_with_venues();
+    $parent_booking  = MYVH_Registry::get('booking_repo')->get_by_id($pattern['ParentBookingId']);
+    $bookings        = MYVH_Registry::get('recurring_pattern_service')->get_bookings_for_pattern($pattern_id);
+    $customers       = MYVH_Registry::get('customer_repo')->get_all();
+    $rooms           = MYVH_Registry::get('room_repo')->get_all_with_venues();
     $customer_map    = array_column($customers ?? [], null, 'Id');
     $room_map        = array_column($rooms ?? [], null, 'Id');
 
@@ -406,7 +405,7 @@ if ($edit_id || $view_id) {
 }
 
 // ── LIST VIEW ─────────────────────────────────────────────────────────────────
-$patterns = $myvh_recurring_pattern_service->get_active_with_bookings() ?? [];
+$patterns = MYVH_Registry::get('recurring_pattern_service')->get_active_with_bookings() ?? [];
 ?>
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php _e('Recurring Patterns', 'my-village-hall'); ?></h1>

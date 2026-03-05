@@ -7,12 +7,11 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
-global $myvh_room_repo, $myvh_venue_repo;
 
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$edit_room = $edit_id ? $myvh_room_repo->get_by_id($edit_id) : null;
-$rooms     = $myvh_room_repo->get_all_with_venues();
-$venues    = $myvh_venue_repo->get_all();
+$edit_room = $edit_id ? MYVH_Registry::get('room_repo')->get_by_id($edit_id) : null;
+$rooms     = MYVH_Registry::get('room_repo')->get_all_with_venues();
+$venues    = MYVH_Registry::get('venue_repo')->get_all();
 ?>
 
 <div class="wrap">

@@ -243,7 +243,3 @@ class MYVH_Addon_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_addon_repo;
-$myvh_addon_repo = new MYVH_Addon_Repository();

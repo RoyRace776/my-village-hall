@@ -5,15 +5,14 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
-global $myvh_booking_repo, $myvh_customer_repo, $myvh_room_repo, $myvh_recurring_pattern_service;
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 $status_filter   = isset($_GET['status'])      ? sanitize_text_field($_GET['status'])  : 'all';
 $room_filter     = isset($_GET['room_id'])     ? intval($_GET['room_id'])               : 0;
 $customer_filter = isset($_GET['customer_id']) ? intval($_GET['customer_id'])           : 0;
 
-$rooms     = $myvh_room_repo->get_all_with_venues();
-$customers = $myvh_customer_repo->get_all();
+$rooms     = MYVH_Registry::get('room_repo')->get_all_with_venues();
+$customers = MYVH_Registry::get('customer_repo')->get_all();
 
 // Single efficient query with all joins
 $query_args = [
@@ -23,7 +22,7 @@ $query_args = [
     'room_id'     => $room_filter,
     'customer_id' => $customer_filter,
 ];
-$bookings = $myvh_booking_repo->get_all_with_details($query_args);
+$bookings = MYVH_Registry::get('booking_repo')->get_all_with_details($query_args);
 
 // ── Group bookings ────────────────────────────────────────────────────────────
 // Recurring bookings are grouped under their pattern ID.
@@ -203,7 +202,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                         }
                     }
 
-                    $schedule = $myvh_recurring_pattern_service->describe($pattern);
+                    $schedule = MYVH_Recurring_Pattern_Service::describe($pattern);
                     $group_id = 'rg_' . $pattern['Id'];
 
                     // Aggregate status: if any confirmed/pending, show that; otherwise cancelled/completed

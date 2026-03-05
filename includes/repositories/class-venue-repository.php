@@ -175,7 +175,3 @@ class MYVH_Venue_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_venue_repo;
-$myvh_venue_repo = new MYVH_Venue_Repository();

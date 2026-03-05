@@ -88,7 +88,3 @@ class MYVH_Room_Rate_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_room_rate_repo;
-$myvh_room_rate_repo = new MYVH_Room_Rate_Repository();

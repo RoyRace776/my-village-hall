@@ -175,7 +175,3 @@ class MYVH_Payment_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_payment_repo;
-$myvh_payment_repo = new MYVH_Payment_Repository();

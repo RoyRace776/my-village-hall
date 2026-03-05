@@ -7,26 +7,24 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
-global $myvh_booking_repo, $myvh_customer_repo, $myvh_room_repo, $myvh_recurring_pattern_repo,
-       $myvh_addon_repo, $myvh_booking_service;
 
 $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 $booking_id = $edit_id ?: $view_id;
 
-$edit_booking = $booking_id ? $myvh_booking_repo->get_by_id($booking_id) : null;
+$edit_booking = $booking_id ? MYVH_Registry::get('booking_repo')->get_by_id($booking_id) : null;
 $is_view_mode = $view_id > 0;
 
-$customers  = $myvh_customer_repo->get_all();
-$rooms      = $myvh_room_repo->get_all_with_venues();
-$all_addons = $myvh_addon_repo ? $myvh_addon_repo->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']) : [];
+$customers  = MYVH_Registry::get('customer_repo')->get_all();
+$rooms      = MYVH_Registry::get('room_repo')->get_all_with_venues();
+$all_addons = MYVH_Registry::get('addon_repo')->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
 
 // Active addons only for the form
 $available_addons = array_filter($all_addons ?? [], fn($a) => !empty($a['IsActive']));
 
 // Existing booking addons (for edit/view mode)
-$booking_addons = ($booking_id && $myvh_booking_service)
-    ? $myvh_booking_service->get_addons_for_booking($booking_id)
+$booking_addons = $booking_id
+    ? MYVH_Registry::get('booking_service')->get_addons_for_booking($booking_id)
     : [];
 
 // Index existing addons by AddonId for easy lookup in the form
@@ -38,7 +36,7 @@ foreach ($booking_addons as $ba) {
 // Get recurring pattern if exists
 $recurring_pattern = null;
 if ($edit_booking && $edit_booking['RecurringPatternId']) {
-    $recurring_pattern = $myvh_recurring_pattern_repo->get_by_id($edit_booking['RecurringPatternId']);
+    $recurring_pattern = MYVH_Registry::get('recurring_pattern_repo')->get_by_id($edit_booking['RecurringPatternId']);
 }
 ?>
 
@@ -67,8 +65,8 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
                     <h2><?php _e('Booking Details', 'my-village-hall'); ?></h2>
                     
                     <?php
-                    $customer = $myvh_customer_repo->get_by_id($edit_booking['CustomerId']);
-                    $room = $myvh_room_repo->get_by_id($edit_booking['RoomId']);
+                    $customer = MYVH_Registry::get('customer_repo')->get_by_id($edit_booking['CustomerId']);
+                    $room = MYVH_Registry::get('room_repo')->get_by_id($edit_booking['RoomId']);
                     
                     $status_colors = [
                         'pending' => '#2271b1',

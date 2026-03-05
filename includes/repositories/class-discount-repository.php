@@ -175,7 +175,3 @@ class MYVH_Discount_Repository {
         return $formats;
     }
 }
-
-// Initialize global repository instance
-global $myvh_discount_repo;
-$myvh_discount_repo = new MYVH_Discount_Repository();

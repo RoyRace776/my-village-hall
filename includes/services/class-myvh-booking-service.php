@@ -13,6 +13,11 @@ class MYVH_Booking_Service {
     private $availability;
     private $room_rules;
     private $pricing;
+    private $recurring_pattern_service = null;
+
+    public function set_recurring_pattern_service($service): void {
+        $this->recurring_pattern_service = $service;
+    }
 
     public function __construct(
         $room_service,
@@ -119,10 +124,7 @@ class MYVH_Booking_Service {
     }
 
     public function save($data) {
-        global $myvh_recurring_pattern_service;
-
-        // Validation
-        if (empty($data['customer_id'])) {
+        if (!empty($data['is_recurring']) && $this->recurring_pattern_service) {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
         }
 
@@ -188,7 +190,7 @@ class MYVH_Booking_Service {
         $this->save_addons($booking_id, $data['addons'] ?? []);
 
         // Handle recurring pattern if requested
-        if (!empty($data['is_recurring']) && $myvh_recurring_pattern_service) {
+        if (!empty($data['is_recurring']) && $this->recurring_pattern_service) {
             $pattern_data = [
                 'parent_booking_id'   => $booking_id,
                 'recurrence_type'     => sanitize_text_field($data['recurrence_type']),
@@ -206,7 +208,7 @@ class MYVH_Booking_Service {
                 $pattern_data['max_occurrences'] = intval($data['max_occurrences']);
             }
 
-            $myvh_recurring_pattern_service->save($pattern_data);
+            $this->recurring_pattern_service->save($pattern_data);
         }
 
         return $booking_id;
