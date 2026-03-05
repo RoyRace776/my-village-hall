@@ -424,20 +424,48 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
                                     <tr>
                                         <th><?php _e('Repeat', 'my-village-hall'); ?></th>
                                         <td>
-                                            <select name="recurrence_type" class="regular-text">
+                                            <select name="recurrence_type" class="regular-text" id="bf-rec-type">
                                                 <option value="daily"><?php _e('Daily', 'my-village-hall'); ?></option>
                                                 <option value="weekly" selected><?php _e('Weekly', 'my-village-hall'); ?></option>
-                                                <option value="monthly"><?php _e('Monthly', 'my-village-hall'); ?></option>
+                                                <option value="monthly"><?php _e('Monthly (same date)', 'my-village-hall'); ?></option>
+                                                <option value="monthly_day"><?php _e('Monthly (specific weekday)', 'my-village-hall'); ?></option>
                                                 <option value="yearly"><?php _e('Yearly', 'my-village-hall'); ?></option>
                                             </select>
                                         </td>
                                     </tr>
 
-                                    <tr>
+                                    <tr id="bf-interval-row">
                                         <th><?php _e('Every', 'my-village-hall'); ?></th>
                                         <td>
                                             <input type="number" name="recurrence_interval" value="1" min="1" max="52" class="small-text">
                                             <span id="interval-label"><?php _e('week(s)', 'my-village-hall'); ?></span>
+                                        </td>
+                                    </tr>
+
+                                    <tr id="bf-monthly-day-row" style="display:none;">
+                                        <th><?php _e('On the…', 'my-village-hall'); ?></th>
+                                        <td>
+                                            <select name="recurrence_week">
+                                                <option value="1"><?php _e('1st', 'my-village-hall'); ?></option>
+                                                <option value="2"><?php _e('2nd', 'my-village-hall'); ?></option>
+                                                <option value="3"><?php _e('3rd', 'my-village-hall'); ?></option>
+                                                <option value="4"><?php _e('4th', 'my-village-hall'); ?></option>
+                                                <option value="last"><?php _e('Last', 'my-village-hall'); ?></option>
+                                            </select>
+                                            <select name="recurrence_day">
+                                                <?php
+                                                $days = ['monday'=>'Monday','tuesday'=>'Tuesday','wednesday'=>'Wednesday',
+                                                         'thursday'=>'Thursday','friday'=>'Friday','saturday'=>'Saturday','sunday'=>'Sunday'];
+                                                // Pre-select the weekday matching the booking's start date
+                                                $booking_dow = strtolower(date('l', strtotime($edit_booking ? $edit_booking['StartDate'] : 'today')));
+                                                foreach ($days as $v => $l): ?>
+                                                    <option value="<?php echo $v; ?>" <?php selected($booking_dow, $v); ?>><?php echo esc_html($l); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <span><?php _e('of every', 'my-village-hall'); ?></span>
+                                            <input type="number" name="recurrence_interval_md" value="1" min="1" max="24" class="small-text">
+                                            <span><?php _e('month(s)', 'my-village-hall'); ?></span>
+                                            <p class="description" id="bf-rec-preview" style="color:#2271b1;font-style:italic;"></p>
                                         </td>
                                     </tr>
 
@@ -448,13 +476,13 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
                                                 <input type="radio" name="recurrence_end_type" value="date" checked>
                                                 <?php _e('On', 'my-village-hall'); ?>
                                                 <input type="date" name="recurrence_end_date" class="regular-text" 
-                                                    value="<?php echo date('Y-m-d', strtotime('+3 months')); ?>">
+                                                    value="<?php echo date('Y-m-d', strtotime('+1 year')); ?>">
                                             </label>
                                             <br>
                                             <label>
                                                 <input type="radio" name="recurrence_end_type" value="count">
                                                 <?php _e('After', 'my-village-hall'); ?>
-                                                <input type="number" name="max_occurrences" value="10" min="1" max="365" class="small-text">
+                                                <input type="number" name="max_occurrences" value="12" min="1" max="365" class="small-text">
                                                 <?php _e('occurrences', 'my-village-hall'); ?>
                                             </label>
                                         </td>
@@ -619,16 +647,41 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
                 $('#recurring-options').toggle(this.checked);
             });
 
-            // Update interval label based on recurrence type
-            $('select[name="recurrence_type"]').on('change', function() {
-                const labels = {
-                    'daily': '<?php _e('day(s)', 'my-village-hall'); ?>',
-                    'weekly': '<?php _e('week(s)', 'my-village-hall'); ?>',
-                    'monthly': '<?php _e('month(s)', 'my-village-hall'); ?>',
-                    'yearly': '<?php _e('year(s)', 'my-village-hall'); ?>'
-                };
-                $('#interval-label').text(labels[$(this).val()]);
+            // Update interval label / show monthly_day row
+            var intervalLabels = {
+                'daily':       '<?php _e('day(s)', 'my-village-hall'); ?>',
+                'weekly':      '<?php _e('week(s)', 'my-village-hall'); ?>',
+                'monthly':     '<?php _e('month(s)', 'my-village-hall'); ?>',
+                'monthly_day': '',
+                'yearly':      '<?php _e('year(s)', 'my-village-hall'); ?>'
+            };
+            var ordinalLabels = {'1':'1st','2':'2nd','3':'3rd','4':'4th','last':'last'};
+
+            function syncBfRecType() {
+                var t = $('#bf-rec-type').val();
+                var isMD = (t === 'monthly_day');
+                $('#bf-interval-row').toggle(!isMD);
+                $('#bf-monthly-day-row').toggle(isMD);
+                $('#interval-label').text(intervalLabels[t] || '');
+                if (isMD) $('input[name="recurrence_interval"]').val($('input[name="recurrence_interval_md"]').val());
+                updateBfPreview();
+            }
+
+            function updateBfPreview() {
+                if ($('#bf-rec-type').val() !== 'monthly_day') { $('#bf-rec-preview').text(''); return; }
+                var week = ordinalLabels[$('select[name="recurrence_week"]').val()] || '';
+                var day  = $('select[name="recurrence_day"] option:selected').text();
+                var n    = parseInt($('input[name="recurrence_interval_md"]').val()) || 1;
+                var suffix = n > 1 ? ', every ' + n + ' months' : '';
+                $('#bf-rec-preview').text('e.g. ' + week + ' ' + day + ' of the month' + suffix);
+            }
+
+            $('input[name="recurrence_interval_md"]').on('input', function() {
+                $('input[name="recurrence_interval"]').val($(this).val());
+                updateBfPreview();
             });
+            $('select[name="recurrence_week"], select[name="recurrence_day"]').on('change', updateBfPreview);
+            $('#bf-rec-type').on('change', syncBfRecType);
 
             // Calculate and display duration
             function updateDuration() {

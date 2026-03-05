@@ -192,7 +192,9 @@ class MYVH_Booking_Service {
             $pattern_data = [
                 'parent_booking_id'   => $booking_id,
                 'recurrence_type'     => sanitize_text_field($data['recurrence_type']),
-                'recurrence_interval' => intval($data['recurrence_interval']),
+                'recurrence_interval' => intval($data['recurrence_interval'] ?? 1),
+                'recurrence_day'      => sanitize_text_field($data['recurrence_day'] ?? ''),
+                'recurrence_week'     => sanitize_text_field($data['recurrence_week'] ?? ''),
                 'start_date'          => sanitize_text_field($data['start_date']),
                 'is_active'           => 1,
             ];

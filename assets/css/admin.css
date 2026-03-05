@@ -90,3 +90,93 @@
         width: auto;
     }
 }
+
+/* ── Add-ons table ─────────────────────────────────── */
+#myvh-addons-table tbody tr {
+    opacity: 0.5;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+#myvh-addons-table tbody tr.addon-selected {
+    opacity: 1;
+    background: #f0f8ff;
+}
+
+#myvh-addons-table tbody tr:hover {
+    opacity: 1;
+}
+
+#myvh-addons-table .myvh-addon-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+#myvh-addons-table tfoot th {
+    background: #f9f9f9;
+    font-size: 1em;
+}
+
+/* ── Bookings list – recurring groups ──────────────────── */
+.myvh-booking-group-header td {
+    background: #f6f7f7;
+    cursor: pointer;
+    user-select: none;
+}
+.myvh-booking-group-header:hover td {
+    background: #edf2fa;
+}
+.myvh-group-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: #2271b1;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: inherit;
+}
+.myvh-group-toggle .toggle-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 3px;
+    background: #2271b1;
+    color: #fff;
+    font-size: 11px;
+    font-style: normal;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+.myvh-group-toggle.is-open .toggle-icon {
+    transform: rotate(90deg);
+}
+.myvh-recurring-child {
+    display: none;
+}
+.myvh-recurring-child.is-visible {
+    display: table-row;
+}
+.myvh-recurring-child td:first-child {
+    padding-left: 36px;
+}
+.myvh-recurring-child td {
+    border-top: 1px solid #f0f0f1;
+    background: #fafafa;
+}
+.myvh-child-past td {
+    opacity: 0.55;
+}
+.myvh-expand-all-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.myvh-expand-all-bar button {
+    font-size: 12px;
+}

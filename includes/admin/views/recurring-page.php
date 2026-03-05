@@ -79,10 +79,8 @@ if ($edit_id || $view_id) {
                     <?php if ($is_view_mode): ?>
                         <!-- View-only table -->
                         <table class="form-table">
-                            <tr><th><?php _e('Type', 'my-village-hall'); ?></th>
-                                <td><?php echo esc_html(ucfirst($pattern['RecurrenceType'])); ?></td></tr>
-                            <tr><th><?php _e('Every', 'my-village-hall'); ?></th>
-                                <td><?php echo intval($pattern['RecurrenceInterval']); ?> <?php echo esc_html($pattern['RecurrenceType']); ?>(s)</td></tr>
+                            <tr><th><?php _e('Schedule', 'my-village-hall'); ?></th>
+                                <td><strong><?php echo esc_html(MYVH_Recurring_Pattern_Service::describe($pattern)); ?></strong></td></tr>
                             <tr><th><?php _e('Start Date', 'my-village-hall'); ?></th>
                                 <td><?php echo date('D j M Y', strtotime($pattern['StartDate'])); ?></td></tr>
                             <tr><th><?php _e('Ends', 'my-village-hall'); ?></th>
@@ -127,20 +125,57 @@ if ($edit_id || $view_id) {
                                     <th><?php _e('Repeat', 'my-village-hall'); ?> *</th>
                                     <td>
                                         <select name="recurrence_type" class="regular-text" id="rp-type">
-                                            <?php foreach (['daily','weekly','monthly','yearly'] as $t): ?>
-                                                <option value="<?php echo $t; ?>" <?php selected($pattern['RecurrenceType'], $t); ?>>
-                                                    <?php echo esc_html(ucfirst($t)); ?>
-                                                </option>
-                                            <?php endforeach; ?>
+                                            <option value="daily"       <?php selected($pattern['RecurrenceType'], 'daily'); ?>><?php _e('Daily', 'my-village-hall'); ?></option>
+                                            <option value="weekly"      <?php selected($pattern['RecurrenceType'], 'weekly'); ?>><?php _e('Weekly', 'my-village-hall'); ?></option>
+                                            <option value="monthly"     <?php selected($pattern['RecurrenceType'], 'monthly'); ?>><?php _e('Monthly (same date)', 'my-village-hall'); ?></option>
+                                            <option value="monthly_day" <?php selected($pattern['RecurrenceType'], 'monthly_day'); ?>><?php _e('Monthly (specific weekday)', 'my-village-hall'); ?></option>
+                                            <option value="yearly"      <?php selected($pattern['RecurrenceType'], 'yearly'); ?>><?php _e('Yearly', 'my-village-hall'); ?></option>
                                         </select>
                                     </td>
                                 </tr>
-                                <tr>
+
+                                <!-- Shown for all except monthly_day -->
+                                <tr id="rp-interval-row">
                                     <th><?php _e('Every', 'my-village-hall'); ?></th>
                                     <td>
                                         <input type="number" name="recurrence_interval" min="1" max="52" class="small-text"
                                             value="<?php echo intval($pattern['RecurrenceInterval']); ?>">
-                                        <span id="rp-interval-label"><?php echo esc_html($pattern['RecurrenceType']); ?>(s)</span>
+                                        <span id="rp-interval-label"></span>
+                                    </td>
+                                </tr>
+
+                                <!-- Shown only for monthly_day -->
+                                <tr id="rp-monthly-day-row" style="display:none;">
+                                    <th><?php _e('On the…', 'my-village-hall'); ?> *</th>
+                                    <td>
+                                        <select name="recurrence_week" id="rp-week">
+                                            <?php
+                                            $weeks = ['1'=>__('1st','my-village-hall'),'2'=>__('2nd','my-village-hall'),
+                                                      '3'=>__('3rd','my-village-hall'),'4'=>__('4th','my-village-hall'),
+                                                      'last'=>__('Last','my-village-hall')];
+                                            foreach ($weeks as $v => $l): ?>
+                                                <option value="<?php echo $v; ?>" <?php selected($pattern['RecurrenceWeek'], $v); ?>>
+                                                    <?php echo esc_html($l); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <select name="recurrence_day" id="rp-day">
+                                            <?php
+                                            $days = ['monday'=>__('Monday','my-village-hall'),'tuesday'=>__('Tuesday','my-village-hall'),
+                                                     'wednesday'=>__('Wednesday','my-village-hall'),'thursday'=>__('Thursday','my-village-hall'),
+                                                     'friday'=>__('Friday','my-village-hall'),'saturday'=>__('Saturday','my-village-hall'),
+                                                     'sunday'=>__('Sunday','my-village-hall')];
+                                            foreach ($days as $v => $l): ?>
+                                                <option value="<?php echo $v; ?>" <?php selected(strtolower($pattern['RecurrenceDay'] ?? ''), $v); ?>>
+                                                    <?php echo esc_html($l); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <span><?php _e('of every', 'my-village-hall'); ?></span>
+                                        <input type="number" name="recurrence_interval_md" min="1" max="24" class="small-text"
+                                            value="<?php echo intval($pattern['RecurrenceInterval']); ?>">
+                                        <span><?php _e('month(s)', 'my-village-hall'); ?></span>
+                                        <p class="description" id="rp-preview" style="margin-top:6px;color:#2271b1;font-style:italic;"></p>
                                     </td>
                                 </tr>
                                 <tr>
@@ -309,9 +344,56 @@ if ($edit_id || $view_id) {
 
     <script>
     jQuery(document).ready(function($) {
-        $('#rp-type').on('change', function() {
-            $('#rp-interval-label').text($(this).val() + '(s)');
+
+        var intervalLabels = {
+            daily:       '<?php _e('day(s)', 'my-village-hall'); ?>',
+            weekly:      '<?php _e('week(s)', 'my-village-hall'); ?>',
+            monthly:     '<?php _e('month(s)', 'my-village-hall'); ?>',
+            monthly_day: '',
+            yearly:      '<?php _e('year(s)', 'my-village-hall'); ?>'
+        };
+
+        var ordinalLabels = {
+            '1':'1st', '2':'2nd', '3':'3rd', '4':'4th', 'last':'last'
+        };
+
+        function syncType() {
+            var t = $('#rp-type').val();
+            var isMonthlyDay = (t === 'monthly_day');
+
+            $('#rp-interval-row').toggle(!isMonthlyDay);
+            $('#rp-monthly-day-row').toggle(isMonthlyDay);
+            $('#rp-interval-label').text(intervalLabels[t] || '');
+
+            // Keep hidden recurrence_interval in sync with the monthly_day variant
+            if (isMonthlyDay) {
+                $('input[name="recurrence_interval"]').val($('input[name="recurrence_interval_md"]').val());
+            }
+            updatePreview();
+        }
+
+        function updatePreview() {
+            if ($('#rp-type').val() !== 'monthly_day') { $('#rp-preview').text(''); return; }
+            var week = ordinalLabels[$('#rp-week').val()] || $('#rp-week').val();
+            var day  = $('#rp-day option:selected').text();
+            var n    = parseInt($('input[name="recurrence_interval_md"]').val()) || 1;
+            var suffix = n > 1 ? ', every ' + n + ' months' : '';
+            $('#rp-preview').text('e.g. ' + week + ' ' + day + ' of the month' + suffix);
+        }
+
+        // When monthly_day interval changes, keep the hidden field in sync
+        $('input[name="recurrence_interval_md"]').on('input', function() {
+            $('input[name="recurrence_interval"]').val($(this).val());
+            updatePreview();
         });
+
+        $('#rp-type').on('change', syncType);
+        $('#rp-week, #rp-day').on('change', updatePreview);
+
+        // Initialise
+        syncType();
+
+        // End condition toggles
         $('input[name="recurrence_end_type"]').on('change', function() {
             var isDate = $(this).val() === 'date';
             $('#rp-end-date').prop('disabled', !isDate);
@@ -390,7 +472,7 @@ $patterns = $myvh_recurring_pattern_service->get_active_with_bookings() ?? [];
                     <?php echo esc_html($p['RoomName']); ?>
                     <br><small style="color:#666;"><?php echo esc_html($p['VenueName']); ?></small>
                 </td>
-                <td><?php echo esc_html($interval_label); ?></td>
+                <td><?php echo esc_html(MYVH_Recurring_Pattern_Service::describe($p)); ?></td>
                 <td><small><?php echo esc_html($range); ?></small></td>
                 <td><?php echo intval($p['OccurrenceCount']); ?></td>
                 <td>

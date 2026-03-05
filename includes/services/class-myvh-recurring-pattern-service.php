@@ -59,9 +59,21 @@ class MYVH_Recurring_Pattern_Service {
             return new WP_Error('validation', __('Start date is required', 'my-village-hall'));
         }
 
-        $valid_types = ['daily', 'weekly', 'monthly', 'yearly'];
+        $valid_types = ['daily', 'weekly', 'monthly', 'monthly_day', 'yearly'];
         if (!in_array($data['recurrence_type'], $valid_types)) {
             return new WP_Error('validation', __('Invalid recurrence type', 'my-village-hall'));
+        }
+
+        // monthly_day requires a week-of-month and day-of-week
+        if ($data['recurrence_type'] === 'monthly_day') {
+            if (empty($data['recurrence_week']) || empty($data['recurrence_day'])) {
+                return new WP_Error('validation', __('Week of month and day of week are required for this recurrence type', 'my-village-hall'));
+            }
+            $valid_weeks = ['1','2','3','4','last'];
+            $valid_days  = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+            if (!in_array($data['recurrence_week'], $valid_weeks) || !in_array(strtolower($data['recurrence_day']), $valid_days)) {
+                return new WP_Error('validation', __('Invalid week or day value', 'my-village-hall'));
+            }
         }
 
         // Validate that we have either an end date or max occurrences
@@ -83,7 +95,7 @@ class MYVH_Recurring_Pattern_Service {
             'StartDate'             => sanitize_text_field($data['start_date']),
             'EndDate'               => !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : null,
             'MaxOccurrences'        => !empty($data['max_occurrences']) ? intval($data['max_occurrences']) : null,
-            'IsActive'              => isset($data['is_active']) ? 1 : 0,
+            'IsActive'              => !empty($data['is_active']) ? 1 : 0,
         ];
 
         // Create or update the pattern
@@ -204,52 +216,138 @@ class MYVH_Recurring_Pattern_Service {
     }
 
     /**
-     * Calculate all occurrence dates for a pattern
-     * 
-     * @param array $pattern The pattern data
-     * @return array Array of date strings
+     * Calculate all occurrence dates for a pattern.
+     *
+     * Supports:
+     *   daily        – every N days
+     *   weekly       – every N weeks (same weekday)
+     *   monthly      – every N months (same calendar date)
+     *   monthly_day  – Nth weekday of the month (e.g. "first Thursday")
+     *   yearly       – every N years (same date)
+     *
+     * @param array $pattern The pattern data row
+     * @return array Array of Y-m-d strings
      */
     private function calculate_all_occurrence_dates($pattern) {
-        $dates = [];
-        $current_date = new DateTime($pattern['StartDate']);
-        $interval = intval($pattern['RecurrenceInterval']);
-        $count = 0;
+        $dates    = [];
+        $interval = max(1, intval($pattern['RecurrenceInterval']));
+        $type     = $pattern['RecurrenceType'];
 
-        // Set limits
-        $max_occurrences = $pattern['MaxOccurrences'] ? intval($pattern['MaxOccurrences']) : 365;
-        $end_date = $pattern['EndDate'] ? new DateTime($pattern['EndDate']) : null;
+        $max_occurrences = !empty($pattern['MaxOccurrences']) ? intval($pattern['MaxOccurrences']) : 365;
+        $end_date        = !empty($pattern['EndDate']) ? new DateTime($pattern['EndDate']) : null;
+        $end_date?->setTime(23, 59, 59);
 
-        while ($count < $max_occurrences) {
-            // Check if we've passed the end date
-            if ($end_date && $current_date > $end_date) {
-                break;
-            }
+        if ($type === 'monthly_day') {
+            return $this->calculate_monthly_day_dates($pattern, $max_occurrences, $end_date, $interval);
+        }
 
-            // Add this date
-            $dates[] = $current_date->format('Y-m-d');
-            $count++;
+        $current = new DateTime($pattern['StartDate']);
 
-            // Calculate next date based on recurrence type
-            switch ($pattern['RecurrenceType']) {
-                case 'daily':
-                    $current_date->modify("+{$interval} days");
-                    break;
-                
-                case 'weekly':
-                    $current_date->modify("+{$interval} weeks");
-                    break;
-                
-                case 'monthly':
-                    $current_date->modify("+{$interval} months");
-                    break;
-                
-                case 'yearly':
-                    $current_date->modify("+{$interval} years");
-                    break;
+        while (count($dates) < $max_occurrences) {
+            if ($end_date && $current > $end_date) break;
+
+            $dates[] = $current->format('Y-m-d');
+
+            switch ($type) {
+                case 'daily':   $current->modify("+{$interval} days");   break;
+                case 'weekly':  $current->modify("+{$interval} weeks");  break;
+                case 'monthly': $current->modify("+{$interval} months"); break;
+                case 'yearly':  $current->modify("+{$interval} years");  break;
+                default: break 2; // unknown type – stop
             }
         }
 
         return $dates;
+    }
+
+    /**
+     * Calculate dates for "Nth weekday of the month" patterns.
+     *
+     * RecurrenceWeek: '1','2','3','4','last'
+     * RecurrenceDay:  'monday'…'sunday'
+     * RecurrenceInterval: every N months
+     *
+     * @param array         $pattern
+     * @param int           $max_occurrences
+     * @param DateTime|null $end_date
+     * @param int           $interval        months between occurrences
+     * @return array
+     */
+    private function calculate_monthly_day_dates($pattern, $max_occurrences, $end_date, $interval) {
+        $dates    = [];
+        $week_num = $pattern['RecurrenceWeek'];   // '1','2','3','4','last'
+        $day_name = strtolower($pattern['RecurrenceDay']); // 'thursday' etc.
+
+        // Start from the first month that contains the start date
+        $start        = new DateTime($pattern['StartDate']);
+        $current_year = (int) $start->format('Y');
+        $current_mon  = (int) $start->format('n');
+
+        $ordinals = ['1' => 'first', '2' => 'second', '3' => 'third', '4' => 'fourth', 'last' => 'last'];
+        $ordinal  = $ordinals[$week_num] ?? 'first';
+
+        while (count($dates) < $max_occurrences) {
+            // Build a DateTime for the first day of this month and find the occurrence
+            $month_str = sprintf('%04d-%02d-01', $current_year, $current_mon);
+
+            if ($week_num === 'last') {
+                $date = new DateTime("last {$day_name} of {$month_str}");
+            } else {
+                $date = new DateTime("{$ordinal} {$day_name} of {$month_str}");
+            }
+
+            // PHP's relative date strings can land in the wrong month for 'last' — verify
+            if ((int)$date->format('n') !== $current_mon || (int)$date->format('Y') !== $current_year) {
+                // This month doesn't have that occurrence (e.g. 5th Thursday) – skip
+            } elseif ($date >= $start) {
+                if ($end_date && $date > $end_date) break;
+                $dates[] = $date->format('Y-m-d');
+            }
+            // advance by interval months
+            $current_mon += $interval;
+            while ($current_mon > 12) {
+                $current_mon -= 12;
+                $current_year++;
+            }
+            // Safety: don't go more than 50 years out
+            if ($current_year > (int)(new DateTime())->format('Y') + 50) break;
+        }
+
+        return $dates;
+    }
+
+    /**
+     * Return a human-readable description of a pattern's schedule.
+     * Used in views to avoid repeating logic.
+     *
+     * @param array $pattern
+     * @return string
+     */
+    public static function describe($pattern) {
+        $interval = intval($pattern['RecurrenceInterval'] ?? 1);
+        $type     = $pattern['RecurrenceType'] ?? '';
+
+        $ordinals  = ['1'=>'1st','2'=>'2nd','3'=>'3rd','4'=>'4th','last'=>'last'];
+        $day_names = ['monday'=>'Monday','tuesday'=>'Tuesday','wednesday'=>'Wednesday',
+                      'thursday'=>'Thursday','friday'=>'Friday','saturday'=>'Saturday','sunday'=>'Sunday'];
+
+        switch ($type) {
+            case 'daily':
+                return $interval === 1 ? 'Daily' : "Every {$interval} days";
+            case 'weekly':
+                return $interval === 1 ? 'Weekly' : "Every {$interval} weeks";
+            case 'monthly':
+                return $interval === 1 ? 'Monthly' : "Every {$interval} months";
+            case 'monthly_day':
+                $ord = $ordinals[$pattern['RecurrenceWeek'] ?? '1'] ?? '?';
+                $day = $day_names[strtolower($pattern['RecurrenceDay'] ?? '')] ?? '?';
+                $base = "{$ord} {$day} of the month";
+                return $interval > 1 ? "{$base} (every {$interval} months)" : $base;
+            case 'yearly':
+                return $interval === 1 ? 'Yearly' : "Every {$interval} years";
+            default:
+                return ucfirst($type);
+        }
     }
 
     /**

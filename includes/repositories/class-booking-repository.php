@@ -156,6 +156,70 @@ class MYVH_Booking_Repository {
     /**
      * Get all bookings belonging to a recurring pattern
      */
+    /**
+     * Get all bookings with customer, room, venue, and pattern details in one query.
+     * Supports optional status / room / customer filters.
+     *
+     * @param array $args orderby, order, status, room_id, customer_id
+     * @return array
+     */
+    public function get_all_with_details($args = []) {
+        $defaults = ['orderby' => 'b.StartDate', 'order' => 'DESC', 'status' => '', 'room_id' => 0, 'customer_id' => 0];
+        $args = wp_parse_args($args, $defaults);
+
+        $where  = ['1=1'];
+        $params = [];
+
+        if (!empty($args['status'])) {
+            $where[]  = 'b.Status = %s';
+            $params[] = $args['status'];
+        }
+        if (!empty($args['room_id'])) {
+            $where[]  = 'b.RoomId = %d';
+            $params[] = intval($args['room_id']);
+        }
+        if (!empty($args['customer_id'])) {
+            $where[]  = 'b.CustomerId = %d';
+            $params[] = intval($args['customer_id']);
+        }
+
+        $where_sql = implode(' AND ', $where);
+        $order_sql = esc_sql($args['orderby']) . ' ' . ('ASC' === strtoupper($args['order']) ? 'ASC' : 'DESC');
+
+        $sql = "SELECT
+                    b.*,
+                    c.Name  AS CustomerName,
+                    c.Email AS CustomerEmail,
+                    r.Name  AS RoomName,
+                    v.Name  AS VenueName,
+                    rp.RecurrenceType,
+                    rp.RecurrenceInterval,
+                    rp.RecurrenceDay,
+                    rp.RecurrenceWeek,
+                    rp.StartDate  AS PatternStartDate,
+                    rp.EndDate    AS PatternEndDate,
+                    rp.IsActive   AS PatternIsActive
+                FROM {$this->table_name} b
+                LEFT JOIN {$this->wpdb->prefix}myvh_customers c        ON b.CustomerId         = c.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_rooms r            ON b.RoomId             = r.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_venues v           ON r.VenueId            = v.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_recurring_patterns rp ON b.RecurringPatternId = rp.Id
+                WHERE {$where_sql}
+                ORDER BY {$order_sql}";
+
+        if (!empty($params)) {
+            $sql = $this->wpdb->prepare($sql, ...$params);
+        }
+
+        $results = $this->wpdb->get_results($sql, ARRAY_A);
+
+        if ($results === null) {
+            error_log('MYVH Booking Repository Error (get_all_with_details): ' . $this->wpdb->last_error);
+        }
+
+        return $results ?? [];
+    }
+
     public function get_by_pattern_id($pattern_id) {
         $sql = $this->wpdb->prepare(
             "SELECT b.*, c.Name as CustomerName, r.Name as RoomName
