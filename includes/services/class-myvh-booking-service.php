@@ -1,6 +1,9 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+require_once MYVH_PLUGIN_DIR . 'includes/events/booking-events.php';
+require_once MYVH_PLUGIN_DIR . 'includes/events/class-myvh-event-dispatcher.php';
+
 class MYVH_Booking_Service {
 
     private $room_service;
@@ -165,6 +168,16 @@ class MYVH_Booking_Service {
         if ($booking_id === false) {
             return new WP_Error('database', __('Failed to create booking', 'my-village-hall'));
         }
+
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::CREATED,
+            [
+                'booking_id' => $booking_id,
+                'room_id' => $data['room_id'],
+                'start' => $data['start_time'],
+                'end' => $data['end_time']
+            ]
+        );
 
         // Handle recurring pattern if requested
         if (!empty($data['is_recurring']) && $myvh_recurring_pattern_service) {
