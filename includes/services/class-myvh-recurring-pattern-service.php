@@ -11,9 +11,11 @@ if (!defined('ABSPATH')) exit;
 class MYVH_Recurring_Pattern_Service {
 
     private $repo;
+    private $booking_repo;
 
-    public function __construct($repo) {
+    public function __construct($repo, $booking_repo = null) {
         $this->repo = $repo;
+        $this->booking_repo = $booking_repo;
     }
 
     public function get_all($args = []) {
@@ -30,6 +32,14 @@ class MYVH_Recurring_Pattern_Service {
 
     public function get_by_parent_booking($booking_id) {
         return $this->repo->get_by_parent_booking($booking_id);
+    }
+
+    public function get_bookings_for_pattern($pattern_id) {
+        if (!$this->booking_repo) {
+            global $myvh_booking_repo;
+            $this->booking_repo = $myvh_booking_repo;
+        }
+        return $this->booking_repo->get_by_pattern_id($pattern_id);
     }
 
     /**
@@ -83,6 +93,8 @@ class MYVH_Recurring_Pattern_Service {
                 return new WP_Error('database', __('Failed to update pattern', 'my-village-hall'));
             }
             $pattern_id = intval($data['pattern_id']);
+            // Delete future bookings so they can be regenerated with the new schedule
+            $this->get_booking_repo()->delete_future_by_pattern($pattern_id);
         } else {
             $pattern_id = $this->repo->create($record);
             if ($pattern_id === false) {
@@ -108,7 +120,7 @@ class MYVH_Recurring_Pattern_Service {
      * @return array|WP_Error Results or error
      */
     public function create_recurring_bookings($pattern_id, $pattern = null) {
-        global $myvh_booking_repo;
+        $booking_repo = $this->get_booking_repo();
 
         if (!$pattern) {
             $pattern = $this->repo->get_by_id($pattern_id);
@@ -119,7 +131,7 @@ class MYVH_Recurring_Pattern_Service {
         }
 
         // Get parent booking details
-        $parent_booking = $myvh_booking_repo->get_by_id($pattern['ParentBookingId']);
+        $parent_booking = $booking_repo->get_by_id($pattern['ParentBookingId']);
         
         if (!$parent_booking) {
             return new WP_Error('not_found', __('Parent booking not found', 'my-village-hall'));
@@ -170,7 +182,7 @@ class MYVH_Recurring_Pattern_Service {
                 'RecurringPatternId' => $pattern_id
             ];
 
-            $new_booking_id = $myvh_booking_repo->create($booking_data);
+            $new_booking_id = $booking_repo->create($booking_data);
 
             if ($new_booking_id) {
                 $results['created']++;
@@ -280,8 +292,6 @@ class MYVH_Recurring_Pattern_Service {
     }
 
     public function delete($id) {
-        // When deleting a pattern, optionally delete all associated future bookings
-        // For now, we just delete the pattern
         return $this->repo->delete($id);
     }
 
@@ -290,28 +300,27 @@ class MYVH_Recurring_Pattern_Service {
     }
 
     /**
+     * Cancel all future bookings for a pattern (keeps history, marks cancelled)
+     */
+    public function cancel_future_bookings($pattern_id) {
+        return $this->get_booking_repo()->cancel_future_by_pattern($pattern_id);
+    }
+
+    /**
      * Delete all future bookings for a pattern
-     * 
-     * @param int $pattern_id Pattern ID
-     * @return bool|WP_Error
      */
     public function delete_future_bookings($pattern_id) {
-        global $wpdb;
+        return $this->get_booking_repo()->delete_future_by_pattern($pattern_id);
+    }
 
-        $today = date('Y-m-d');
-
-        $result = $wpdb->query($wpdb->prepare(
-            "DELETE FROM {$wpdb->prefix}myvh_bookings 
-             WHERE RecurringPatternId = %d 
-             AND StartDate > %s",
-            $pattern_id,
-            $today
-        ));
-
-        if ($result === false) {
-            return new WP_Error('database', __('Failed to delete future bookings', 'my-village-hall'));
+    /**
+     * Get or resolve the booking repository
+     */
+    private function get_booking_repo() {
+        if (!$this->booking_repo) {
+            global $myvh_booking_repo;
+            $this->booking_repo = $myvh_booking_repo;
         }
-
-        return true;
+        return $this->booking_repo;
     }
 }

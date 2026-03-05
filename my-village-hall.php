@@ -205,6 +205,11 @@ class My_Village_Hall {
             $myvh_recurring_pattern_controller->deactivate();
         });
 
+        add_action('admin_post_myvh_delete_future_bookings', function () {
+            global $myvh_recurring_pattern_controller;
+            $myvh_recurring_pattern_controller->delete_future_bookings();
+        });
+
         add_action('admin_post_myvh_process_patterns', function () {
             global $myvh_recurring_pattern_controller;
             $myvh_recurring_pattern_controller->process_patterns();

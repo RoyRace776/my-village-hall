@@ -70,8 +70,11 @@ $myvh_room_rate_controller = new MYVH_Room_Rate_Controller($myvh_room_rate_servi
 global $myvh_booking_service;
 global $myvh_booking_controller;
 
-$myvh_booking_service = new MYVH_Booking_Service($myvh_room_service, $myvh_booking_repo, $myvh_booking_validator,
-                                                 $myvh_booking_availability, $myvh_room_rules, $myvh_pricing_service);
+global $myvh_booking_addon_repo;
+
+$myvh_booking_service = new MYVH_Booking_Service($myvh_room_service, $myvh_booking_repo, $myvh_booking_addon_repo,
+                                                 $myvh_booking_validator,
+                                                 $myvh_availability_service, $myvh_room_rules_service, $myvh_pricing_service);
 $myvh_booking_controller = new MYVH_Booking_Controller($myvh_booking_service);
 
 // ==========================================
@@ -119,7 +122,7 @@ require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-recurring-
 global $myvh_recurring_pattern_service;
 global $myvh_recurring_pattern_controller;
 
-$myvh_recurring_pattern_service    = new MYVH_Recurring_Pattern_Service($myvh_recurring_pattern_repo);
+$myvh_recurring_pattern_service    = new MYVH_Recurring_Pattern_Service($myvh_recurring_pattern_repo, $myvh_booking_repo);
 $myvh_recurring_pattern_controller = new MYVH_Recurring_Pattern_Controller($myvh_recurring_pattern_service);
 
 // Set up listeners

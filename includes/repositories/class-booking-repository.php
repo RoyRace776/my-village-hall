@@ -153,6 +153,47 @@ class MYVH_Booking_Repository {
         return true;
     }
 
+    /**
+     * Get all bookings belonging to a recurring pattern
+     */
+    public function get_by_pattern_id($pattern_id) {
+        $sql = $this->wpdb->prepare(
+            "SELECT b.*, c.Name as CustomerName, r.Name as RoomName
+             FROM {$this->table_name} b
+             LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
+             LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
+             WHERE b.RecurringPatternId = %d
+             ORDER BY b.StartDate ASC",
+            $pattern_id
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A) ?? [];
+    }
+
+    /**
+     * Cancel all future bookings in a pattern (today and beyond)
+     */
+    public function cancel_future_by_pattern($pattern_id) {
+        return $this->wpdb->query($this->wpdb->prepare(
+            "UPDATE {$this->table_name}
+             SET Status = 'cancelled'
+             WHERE RecurringPatternId = %d AND StartDate >= %s AND Status != 'cancelled'",
+            $pattern_id,
+            date('Y-m-d')
+        ));
+    }
+
+    /**
+     * Delete all future bookings in a pattern (strictly after today)
+     */
+    public function delete_future_by_pattern($pattern_id) {
+        return $this->wpdb->query($this->wpdb->prepare(
+            "DELETE FROM {$this->table_name}
+             WHERE RecurringPatternId = %d AND StartDate > %s",
+            $pattern_id,
+            date('Y-m-d')
+        ));
+    }
+
     public function get_conflicts($room_id, $start, $end) {
         $sql = $this->wpdb->prepare(
             "SELECT Id FROM {$this->table_name}

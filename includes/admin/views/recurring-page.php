@@ -1,0 +1,424 @@
+<?php
+if (!defined('ABSPATH')) exit;
+
+if (!current_user_can('manage_myvh')) {
+    wp_die(__('Permission denied', 'my-village-hall'));
+}
+
+global $myvh_recurring_pattern_service, $myvh_booking_repo, $myvh_customer_repo, $myvh_room_repo;
+
+$edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
+
+// ── EDIT / VIEW a single pattern ─────────────────────────────────────────────
+if ($edit_id || $view_id) {
+    $pattern_id   = $edit_id ?: $view_id;
+    $is_view_mode = !$edit_id;
+    $pattern      = $myvh_recurring_pattern_service->get($pattern_id);
+
+    if (!$pattern) {
+        wp_die(__('Pattern not found.', 'my-village-hall'));
+    }
+
+    $parent_booking  = $myvh_booking_repo->get_by_id($pattern['ParentBookingId']);
+    $bookings        = $myvh_recurring_pattern_service->get_bookings_for_pattern($pattern_id);
+    $customers       = $myvh_customer_repo->get_all();
+    $rooms           = $myvh_room_repo->get_all_with_venues();
+    $customer_map    = array_column($customers ?? [], null, 'Id');
+    $room_map        = array_column($rooms ?? [], null, 'Id');
+
+    $today     = date('Y-m-d');
+    $future    = array_filter($bookings, fn($b) => $b['StartDate'] >= $today && $b['Status'] !== 'cancelled');
+    $past      = array_filter($bookings, fn($b) => $b['StartDate'] < $today  || $b['Status'] === 'cancelled');
+    ?>
+    <div class="wrap">
+        <h1>
+            <?php echo $is_view_mode ? __('View Recurring Pattern', 'my-village-hall') : __('Edit Recurring Pattern', 'my-village-hall'); ?>
+            <a href="<?php echo admin_url('admin.php?page=myvh-recurring'); ?>" class="page-title-action">
+                <?php _e('← Back to All Patterns', 'my-village-hall'); ?>
+            </a>
+        </h1>
+        <hr class="wp-header-end">
+
+        <?php if (isset($_GET['error'])): ?>
+            <div class="notice notice-error is-dismissible"><p><?php echo esc_html($_GET['error']); ?></p></div>
+        <?php endif; ?>
+        <?php if (isset($_GET['updated'])): ?>
+            <div class="notice notice-success is-dismissible"><p><?php echo esc_html($_GET['message'] ?? __('Saved.', 'my-village-hall')); ?></p></div>
+        <?php endif; ?>
+
+        <div class="myvh-row">
+            <!-- Left: pattern details / edit form -->
+            <div class="myvh-col-60">
+                <div class="myvh-card">
+                    <h2><?php _e('Pattern Settings', 'my-village-hall'); ?></h2>
+
+                    <?php if ($parent_booking): ?>
+                    <table class="form-table" style="margin-bottom:10px;">
+                        <tr>
+                            <th><?php _e('Booking', 'my-village-hall'); ?></th>
+                            <td>
+                                <a href="<?php echo admin_url('admin.php?page=my-village-hall&view=' . $pattern['ParentBookingId']); ?>">
+                                    #<?php echo $pattern['ParentBookingId']; ?>
+                                </a>
+                                &nbsp;–&nbsp;
+                                <?php
+                                $c = $customer_map[$parent_booking['CustomerId']] ?? null;
+                                $r = $room_map[$parent_booking['RoomId']] ?? null;
+                                echo esc_html(($c['Name'] ?? '?') . ' @ ' . ($r['Name'] ?? '?'));
+                                ?>
+                                <br><small style="color:#666;">
+                                    <?php echo date('g:i A', strtotime($parent_booking['StartTime'])); ?> –
+                                    <?php echo date('g:i A', strtotime($parent_booking['EndTime'])); ?>
+                                </small>
+                            </td>
+                        </tr>
+                    </table>
+                    <?php endif; ?>
+
+                    <?php if ($is_view_mode): ?>
+                        <!-- View-only table -->
+                        <table class="form-table">
+                            <tr><th><?php _e('Type', 'my-village-hall'); ?></th>
+                                <td><?php echo esc_html(ucfirst($pattern['RecurrenceType'])); ?></td></tr>
+                            <tr><th><?php _e('Every', 'my-village-hall'); ?></th>
+                                <td><?php echo intval($pattern['RecurrenceInterval']); ?> <?php echo esc_html($pattern['RecurrenceType']); ?>(s)</td></tr>
+                            <tr><th><?php _e('Start Date', 'my-village-hall'); ?></th>
+                                <td><?php echo date('D j M Y', strtotime($pattern['StartDate'])); ?></td></tr>
+                            <tr><th><?php _e('Ends', 'my-village-hall'); ?></th>
+                                <td>
+                                    <?php if ($pattern['EndDate']): ?>
+                                        <?php echo date('D j M Y', strtotime($pattern['EndDate'])); ?>
+                                    <?php elseif ($pattern['MaxOccurrences']): ?>
+                                        <?php echo sprintf(__('After %d occurrences', 'my-village-hall'), $pattern['MaxOccurrences']); ?>
+                                    <?php else: ?>
+                                        <?php _e('No end', 'my-village-hall'); ?>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr><th><?php _e('Status', 'my-village-hall'); ?></th>
+                                <td>
+                                    <?php if ($pattern['IsActive']): ?>
+                                        <span style="color:#46b450;">● <?php _e('Active', 'my-village-hall'); ?></span>
+                                    <?php else: ?>
+                                        <span style="color:#999;">● <?php _e('Inactive', 'my-village-hall'); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr><th><?php _e('Bookings created', 'my-village-hall'); ?></th>
+                                <td><?php echo count($bookings); ?></td></tr>
+                        </table>
+                        <p>
+                            <a href="<?php echo admin_url('admin.php?page=myvh-recurring&edit=' . $pattern_id); ?>" class="button button-primary">
+                                <?php _e('Edit Pattern', 'my-village-hall'); ?>
+                            </a>
+                        </p>
+
+                    <?php else: ?>
+                        <!-- Edit form -->
+                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+                            <input type="hidden" name="action" value="myvh_save_recurring_pattern">
+                            <input type="hidden" name="pattern_id" value="<?php echo $pattern_id; ?>">
+                            <input type="hidden" name="parent_booking_id" value="<?php echo $pattern['ParentBookingId']; ?>">
+                            <?php wp_nonce_field('myvh_save_recurring_pattern'); ?>
+
+                            <table class="form-table">
+                                <tr>
+                                    <th><?php _e('Repeat', 'my-village-hall'); ?> *</th>
+                                    <td>
+                                        <select name="recurrence_type" class="regular-text" id="rp-type">
+                                            <?php foreach (['daily','weekly','monthly','yearly'] as $t): ?>
+                                                <option value="<?php echo $t; ?>" <?php selected($pattern['RecurrenceType'], $t); ?>>
+                                                    <?php echo esc_html(ucfirst($t)); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><?php _e('Every', 'my-village-hall'); ?></th>
+                                    <td>
+                                        <input type="number" name="recurrence_interval" min="1" max="52" class="small-text"
+                                            value="<?php echo intval($pattern['RecurrenceInterval']); ?>">
+                                        <span id="rp-interval-label"><?php echo esc_html($pattern['RecurrenceType']); ?>(s)</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><?php _e('Start Date', 'my-village-hall'); ?> *</th>
+                                    <td>
+                                        <input type="date" name="start_date" required class="regular-text"
+                                            value="<?php echo esc_attr($pattern['StartDate']); ?>">
+                                        <p class="description"><?php _e('Future bookings are generated from this date.', 'my-village-hall'); ?></p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><?php _e('Ends', 'my-village-hall'); ?></th>
+                                    <td>
+                                        <label>
+                                            <input type="radio" name="recurrence_end_type" value="date"
+                                                <?php checked(empty($pattern['MaxOccurrences'])); ?> id="rp-end-date-radio">
+                                            <?php _e('On date', 'my-village-hall'); ?>
+                                            <input type="date" name="end_date" id="rp-end-date"
+                                                value="<?php echo esc_attr($pattern['EndDate'] ?? ''); ?>">
+                                        </label>
+                                        <br><br>
+                                        <label>
+                                            <input type="radio" name="recurrence_end_type" value="count"
+                                                <?php checked(!empty($pattern['MaxOccurrences'])); ?> id="rp-end-count-radio">
+                                            <?php _e('After', 'my-village-hall'); ?>
+                                            <input type="number" name="max_occurrences" min="1" max="365" class="small-text"
+                                                id="rp-max-occ"
+                                                value="<?php echo esc_attr($pattern['MaxOccurrences'] ?? 10); ?>">
+                                            <?php _e('occurrences', 'my-village-hall'); ?>
+                                        </label>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><?php _e('Active', 'my-village-hall'); ?></th>
+                                    <td>
+                                        <label>
+                                            <input type="checkbox" name="is_active" value="1"
+                                                <?php checked($pattern['IsActive']); ?>>
+                                            <?php _e('Pattern is active', 'my-village-hall'); ?>
+                                        </label>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div class="notice notice-warning inline" style="margin:15px 0;">
+                                <p>⚠️ <?php _e('Saving will delete all <strong>future</strong> bookings for this pattern and regenerate them with the new schedule. Past bookings are preserved.', 'my-village-hall'); ?></p>
+                            </div>
+
+                            <p class="submit">
+                                <button type="submit" class="button button-primary button-large">
+                                    <?php _e('Save Pattern & Regenerate Bookings', 'my-village-hall'); ?>
+                                </button>
+                                <a href="<?php echo admin_url('admin.php?page=myvh-recurring&view=' . $pattern_id); ?>" class="button button-large">
+                                    <?php _e('Cancel', 'my-village-hall'); ?>
+                                </a>
+                            </p>
+                        </form>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Right: actions panel -->
+            <div class="myvh-col-40">
+                <div class="myvh-card">
+                    <h2><?php _e('Actions', 'my-village-hall'); ?></h2>
+                    <p>
+                        <?php if ($pattern['IsActive']): ?>
+                            <a href="<?php echo wp_nonce_url(
+                                admin_url('admin-post.php?action=myvh_deactivate_recurring_pattern&id=' . $pattern_id),
+                                'myvh_deactivate_recurring_pattern'
+                            ); ?>" class="button" onclick="return confirm('<?php _e('Deactivate this pattern? No new bookings will be created.', 'my-village-hall'); ?>');">
+                                ⏸ <?php _e('Deactivate Pattern', 'my-village-hall'); ?>
+                            </a>
+                        <?php endif; ?>
+                    </p>
+                    <p>
+                        <a href="<?php echo wp_nonce_url(
+                            admin_url('admin-post.php?action=myvh_delete_future_bookings&id=' . $pattern_id),
+                            'myvh_delete_future_bookings'
+                        ); ?>" class="button" onclick="return confirm('<?php _e('Delete all future bookings in this pattern? This cannot be undone.', 'my-village-hall'); ?>');">
+                            🗑 <?php _e('Delete Future Bookings', 'my-village-hall'); ?>
+                        </a>
+                    </p>
+                    <p>
+                        <a href="<?php echo wp_nonce_url(
+                            admin_url('admin-post.php?action=myvh_delete_recurring_pattern&id=' . $pattern_id),
+                            'myvh_delete_recurring_pattern'
+                        ); ?>" class="button" style="color:#dc3232;" onclick="return confirm('<?php _e('Delete this pattern AND all its future bookings? This cannot be undone.', 'my-village-hall'); ?>');">
+                            ✕ <?php _e('Delete Pattern & Future Bookings', 'my-village-hall'); ?>
+                        </a>
+                    </p>
+                </div>
+
+                <div class="myvh-card" style="margin-top:20px;">
+                    <h2><?php _e('Summary', 'my-village-hall'); ?></h2>
+                    <table class="form-table">
+                        <tr><th><?php _e('Total bookings', 'my-village-hall'); ?></th><td><?php echo count($bookings); ?></td></tr>
+                        <tr><th><?php _e('Upcoming', 'my-village-hall'); ?></th><td><?php echo count($future); ?></td></tr>
+                        <tr><th><?php _e('Past / cancelled', 'my-village-hall'); ?></th><td><?php echo count($past); ?></td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookings table -->
+        <div class="myvh-card" style="margin-top:20px;">
+            <h2><?php _e('Bookings in this Pattern', 'my-village-hall'); ?></h2>
+            <?php if (empty($bookings)): ?>
+                <p><?php _e('No bookings yet.', 'my-village-hall'); ?></p>
+            <?php else: ?>
+            <table class="wp-list-table widefat striped">
+                <thead>
+                    <tr>
+                        <th><?php _e('Date', 'my-village-hall'); ?></th>
+                        <th><?php _e('Time', 'my-village-hall'); ?></th>
+                        <th><?php _e('Status', 'my-village-hall'); ?></th>
+                        <th><?php _e('Actions', 'my-village-hall'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                $status_colors = ['confirmed'=>'#46b450','pending'=>'#2271b1','cancelled'=>'#dc3232','completed'=>'#999'];
+                foreach ($bookings as $b):
+                    $is_past  = $b['StartDate'] < $today;
+                    $sc = $status_colors[$b['Status']] ?? '#999';
+                ?>
+                <tr <?php if ($is_past) echo 'style="opacity:0.55;"'; ?>>
+                    <td>
+                        <strong><?php echo date('D j M Y', strtotime($b['StartDate'])); ?></strong>
+                        <?php if ($b['StartDate'] === $today): ?>
+                            <span style="background:#46b450;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:5px;">TODAY</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php echo date('g:i A', strtotime($b['StartTime'])); ?> –
+                        <?php echo date('g:i A', strtotime($b['EndTime'])); ?>
+                    </td>
+                    <td>
+                        <span style="color:<?php echo $sc; ?>;">●</span>
+                        <?php echo esc_html(ucfirst($b['Status'])); ?>
+                    </td>
+                    <td>
+                        <a href="<?php echo admin_url('admin.php?page=my-village-hall&view=' . $b['Id']); ?>">
+                            <?php _e('View', 'my-village-hall'); ?>
+                        </a> |
+                        <a href="<?php echo admin_url('admin.php?page=my-village-hall&edit=' . $b['Id']); ?>">
+                            <?php _e('Edit', 'my-village-hall'); ?>
+                        </a>
+                        <?php if ($b['Status'] !== 'cancelled'): ?>
+                            |
+                            <a href="<?php echo wp_nonce_url(
+                                admin_url('admin-post.php?action=myvh_cancel_booking&id=' . $b['Id']),
+                                'myvh_cancel_booking'
+                            ); ?>" style="color:#dc3232;" onclick="return confirm('<?php _e('Cancel this booking?', 'my-village-hall'); ?>');">
+                                <?php _e('Cancel', 'my-village-hall'); ?>
+                            </a>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <script>
+    jQuery(document).ready(function($) {
+        $('#rp-type').on('change', function() {
+            $('#rp-interval-label').text($(this).val() + '(s)');
+        });
+        $('input[name="recurrence_end_type"]').on('change', function() {
+            var isDate = $(this).val() === 'date';
+            $('#rp-end-date').prop('disabled', !isDate);
+            $('#rp-max-occ').prop('disabled', isDate);
+        }).trigger('change');
+    });
+    </script>
+    <?php
+    return; // Don't fall through to list view
+}
+
+// ── LIST VIEW ─────────────────────────────────────────────────────────────────
+$patterns = $myvh_recurring_pattern_service->get_active_with_bookings() ?? [];
+?>
+<div class="wrap">
+    <h1 class="wp-heading-inline"><?php _e('Recurring Patterns', 'my-village-hall'); ?></h1>
+    <hr class="wp-header-end">
+
+    <?php if (isset($_GET['updated'])): ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php echo esc_html($_GET['message'] ?? __('Saved.', 'my-village-hall')); ?></p>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_GET['deleted'])): ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php _e('Pattern deleted.', 'my-village-hall'); ?></p>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_GET['error'])): ?>
+        <div class="notice notice-error is-dismissible">
+            <p><?php echo esc_html($_GET['error']); ?></p>
+        </div>
+    <?php endif; ?>
+
+    <div class="myvh-card">
+        <?php if (empty($patterns)): ?>
+            <p><?php _e('No recurring patterns found.', 'my-village-hall'); ?>
+               <?php _e('Create a recurring booking via', 'my-village-hall'); ?>
+               <a href="<?php echo admin_url('admin.php?page=my-village-hall&add=1'); ?>">
+                   <?php _e('Add New Booking', 'my-village-hall'); ?>
+               </a>.
+            </p>
+        <?php else: ?>
+        <table class="wp-list-table widefat striped">
+            <thead>
+                <tr>
+                    <th><?php _e('Customer', 'my-village-hall'); ?></th>
+                    <th><?php _e('Room / Venue', 'my-village-hall'); ?></th>
+                    <th><?php _e('Schedule', 'my-village-hall'); ?></th>
+                    <th><?php _e('Range', 'my-village-hall'); ?></th>
+                    <th><?php _e('Bookings', 'my-village-hall'); ?></th>
+                    <th><?php _e('Status', 'my-village-hall'); ?></th>
+                    <th><?php _e('Actions', 'my-village-hall'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($patterns as $p):
+                $interval_label = $p['RecurrenceInterval'] > 1
+                    ? 'Every ' . $p['RecurrenceInterval'] . ' ' . $p['RecurrenceType'] . 's'
+                    : ucfirst($p['RecurrenceType']);
+
+                $range = date('j M Y', strtotime($p['StartDate']));
+                if ($p['EndDate']) {
+                    $range .= ' – ' . date('j M Y', strtotime($p['EndDate']));
+                } elseif ($p['MaxOccurrences']) {
+                    $range .= ' (' . $p['MaxOccurrences'] . ' times)';
+                } else {
+                    $range .= ' (ongoing)';
+                }
+            ?>
+            <tr>
+                <td>
+                    <strong><?php echo esc_html($p['CustomerName']); ?></strong>
+                </td>
+                <td>
+                    <?php echo esc_html($p['RoomName']); ?>
+                    <br><small style="color:#666;"><?php echo esc_html($p['VenueName']); ?></small>
+                </td>
+                <td><?php echo esc_html($interval_label); ?></td>
+                <td><small><?php echo esc_html($range); ?></small></td>
+                <td><?php echo intval($p['OccurrenceCount']); ?></td>
+                <td>
+                    <?php if ($p['IsActive']): ?>
+                        <span style="color:#46b450;">● <?php _e('Active', 'my-village-hall'); ?></span>
+                    <?php else: ?>
+                        <span style="color:#999;">● <?php _e('Inactive', 'my-village-hall'); ?></span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <a href="<?php echo admin_url('admin.php?page=myvh-recurring&edit=' . $p['Id']); ?>">
+                        <?php _e('Edit', 'my-village-hall'); ?>
+                    </a> |
+                    <a href="<?php echo admin_url('admin.php?page=myvh-recurring&view=' . $p['Id']); ?>">
+                        <?php _e('View', 'my-village-hall'); ?>
+                    </a> |
+                    <a href="<?php echo wp_nonce_url(
+                        admin_url('admin-post.php?action=myvh_delete_recurring_pattern&id=' . $p['Id']),
+                        'myvh_delete_recurring_pattern'
+                    ); ?>" style="color:#dc3232;"
+                       onclick="return confirm('<?php _e('Delete this pattern and all its future bookings?', 'my-village-hall'); ?>');">
+                        <?php _e('Delete', 'my-village-hall'); ?>
+                    </a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
+</div>

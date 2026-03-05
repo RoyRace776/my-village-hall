@@ -7,7 +7,8 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
-global $myvh_booking_repo, $myvh_customer_repo, $myvh_room_repo, $myvh_recurring_pattern_repo;
+global $myvh_booking_repo, $myvh_customer_repo, $myvh_room_repo, $myvh_recurring_pattern_repo,
+       $myvh_addon_repo, $myvh_booking_service;
 
 $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
@@ -16,8 +17,23 @@ $booking_id = $edit_id ?: $view_id;
 $edit_booking = $booking_id ? $myvh_booking_repo->get_by_id($booking_id) : null;
 $is_view_mode = $view_id > 0;
 
-$customers = $myvh_customer_repo->get_all();
-$rooms = $myvh_room_repo->get_all_with_venues();
+$customers  = $myvh_customer_repo->get_all();
+$rooms      = $myvh_room_repo->get_all_with_venues();
+$all_addons = $myvh_addon_repo ? $myvh_addon_repo->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']) : [];
+
+// Active addons only for the form
+$available_addons = array_filter($all_addons ?? [], fn($a) => !empty($a['IsActive']));
+
+// Existing booking addons (for edit/view mode)
+$booking_addons = ($booking_id && $myvh_booking_service)
+    ? $myvh_booking_service->get_addons_for_booking($booking_id)
+    : [];
+
+// Index existing addons by AddonId for easy lookup in the form
+$selected_addon_map = [];
+foreach ($booking_addons as $ba) {
+    $selected_addon_map[$ba['AddonId']] = $ba;
+}
 
 // Get recurring pattern if exists
 $recurring_pattern = null;
@@ -176,6 +192,47 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
                     </p>
                 </div>
             </div>
+
+            <?php if (!empty($booking_addons)): ?>
+            <div class="myvh-col-40">
+                <div class="myvh-card">
+                    <h2><?php _e('Add-ons', 'my-village-hall'); ?></h2>
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th><?php _e('Add-on', 'my-village-hall'); ?></th>
+                                <th><?php _e('Qty', 'my-village-hall'); ?></th>
+                                <th><?php _e('Unit Price', 'my-village-hall'); ?></th>
+                                <th><?php _e('Total', 'my-village-hall'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php $addons_total = 0; ?>
+                            <?php foreach ($booking_addons as $ba): ?>
+                                <?php $addons_total += floatval($ba['TotalAmount']); ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo esc_html($ba['AddonName']); ?></strong>
+                                        <?php if ($ba['Description']): ?>
+                                            <br><small style="color:#666;"><?php echo esc_html($ba['Description']); ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo esc_html($ba['Quantity']); ?></td>
+                                    <td>£<?php echo number_format($ba['UnitPrice'], 2); ?></td>
+                                    <td><strong>£<?php echo number_format($ba['TotalAmount'], 2); ?></strong></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3"><?php _e('Add-ons Total', 'my-village-hall'); ?></th>
+                                <th>£<?php echo number_format($addons_total, 2); ?></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
 
     <?php else: ?>
@@ -422,6 +479,87 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
                     </div>
                 </div>
 
+                <!-- ADD-ONS PANEL -->
+                <?php if (!empty($available_addons)): ?>
+                <div class="myvh-card" style="margin-top: 20px;">
+                    <h2><?php _e('Add-ons', 'my-village-hall'); ?></h2>
+                    <p class="description" style="margin-bottom:15px;">
+                        <?php _e('Select any add-ons required for this booking.', 'my-village-hall'); ?>
+                    </p>
+                    <table class="widefat" id="myvh-addons-table">
+                        <thead>
+                            <tr>
+                                <th style="width:30px;"></th>
+                                <th><?php _e('Add-on', 'my-village-hall'); ?></th>
+                                <th style="width:110px;"><?php _e('Unit Price (£)', 'my-village-hall'); ?></th>
+                                <th style="width:90px;"><?php _e('Quantity', 'my-village-hall'); ?></th>
+                                <th style="width:100px;"><?php _e('Total', 'my-village-hall'); ?></th>
+                                <th><?php _e('Note', 'my-village-hall'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($available_addons as $i => $addon):
+                            $existing   = $selected_addon_map[$addon['Id']] ?? null;
+                            $is_checked = !empty($existing);
+                            $quantity   = $existing ? floatval($existing['Quantity'])  : 1;
+                            $unit_price = $existing ? floatval($existing['UnitPrice']) : floatval($addon['Price']);
+                            $note       = $existing ? esc_attr($existing['Description']) : '';
+                        ?>
+                        <tr class="myvh-addon-row<?php echo $is_checked ? ' addon-selected' : ''; ?>">
+                            <td>
+                                <input type="checkbox"
+                                    class="myvh-addon-checkbox"
+                                    value="1"
+                                    <?php checked($is_checked); ?>>
+                                <input type="hidden" name="addons[<?php echo $i; ?>][addon_id]"   value="<?php echo intval($addon['Id']); ?>">
+                                <input type="hidden" name="addons[<?php echo $i; ?>][enabled]"    class="myvh-addon-enabled" value="<?php echo $is_checked ? '1' : '0'; ?>">
+                            </td>
+                            <td>
+                                <strong><?php echo esc_html($addon['Name']); ?></strong>
+                                <?php if ($addon['Description']): ?>
+                                    <br><small style="color:#777;"><?php echo esc_html($addon['Description']); ?></small>
+                                <?php endif; ?>
+                                <br><small style="color:#999;"><?php echo esc_html(ucfirst(str_replace('_', ' ', $addon['ChargeType']))); ?></small>
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" min="0"
+                                    name="addons[<?php echo $i; ?>][unit_price]"
+                                    class="small-text myvh-addon-price"
+                                    value="<?php echo number_format($unit_price, 2, '.', ''); ?>"
+                                    <?php echo !$is_checked ? 'disabled' : ''; ?>>
+                            </td>
+                            <td>
+                                <input type="number" step="0.5" min="0.5"
+                                    name="addons[<?php echo $i; ?>][quantity]"
+                                    class="small-text myvh-addon-qty"
+                                    value="<?php echo esc_attr($quantity); ?>"
+                                    <?php echo !$is_checked ? 'disabled' : ''; ?>>
+                            </td>
+                            <td class="myvh-addon-total" style="font-weight:bold; white-space:nowrap;">
+                                <?php echo $is_checked ? '£' . number_format($unit_price * $quantity, 2) : '—'; ?>
+                            </td>
+                            <td>
+                                <input type="text"
+                                    name="addons[<?php echo $i; ?>][description]"
+                                    class="regular-text"
+                                    placeholder="<?php _e('Optional note…', 'my-village-hall'); ?>"
+                                    value="<?php echo $note; ?>"
+                                    <?php echo !$is_checked ? 'disabled' : ''; ?>>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="4" style="text-align:right; padding-right:10px;"><?php _e('Add-ons Total:', 'my-village-hall'); ?></th>
+                                <th id="myvh-addons-grand-total" style="font-weight:bold; white-space:nowrap;">£0.00</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <?php endif; ?>
+
                 <p class="submit">
                     <button type="submit" class="button button-primary button-large">
                         <?php echo $edit_booking ? __('Update Booking', 'my-village-hall') : __('Create Booking', 'my-village-hall'); ?>
@@ -430,13 +568,52 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
                         <?php _e('Cancel', 'my-village-hall'); ?>
                     </a>
                 </p>
-            </form>
 
             <?php endif; ?>
         </div>
 
         <script>
         jQuery(document).ready(function($) {
+            // ── Add-ons panel ────────────────────────────────────────────
+            function recalcAddonRow($row) {
+                var price = parseFloat($row.find('.myvh-addon-price').val()) || 0;
+                var qty   = parseFloat($row.find('.myvh-addon-qty').val())   || 0;
+                var total = price * qty;
+                $row.find('.myvh-addon-total').text(total > 0 ? '£' + total.toFixed(2) : '—');
+            }
+
+            function recalcGrandTotal() {
+                var grand = 0;
+                $('.myvh-addon-row.addon-selected').each(function() {
+                    var price = parseFloat($(this).find('.myvh-addon-price').val()) || 0;
+                    var qty   = parseFloat($(this).find('.myvh-addon-qty').val())   || 0;
+                    grand += price * qty;
+                });
+                $('#myvh-addons-grand-total').text('£' + grand.toFixed(2));
+            }
+
+            // Toggle addon row on/off
+            $(document).on('change', '.myvh-addon-checkbox', function() {
+                var $row     = $(this).closest('.myvh-addon-row');
+                var enabled  = this.checked;
+                $row.toggleClass('addon-selected', enabled);
+                $row.find('.myvh-addon-price, .myvh-addon-qty, input[type="text"]').prop('disabled', !enabled);
+                $row.find('.myvh-addon-enabled').val(enabled ? '1' : '0');
+                recalcAddonRow($row);
+                recalcGrandTotal();
+            });
+
+            // Recalc on price / qty changes
+            $(document).on('input change', '.myvh-addon-price, .myvh-addon-qty', function() {
+                var $row = $(this).closest('.myvh-addon-row');
+                recalcAddonRow($row);
+                recalcGrandTotal();
+            });
+
+            // Initial totals
+            $('.myvh-addon-row.addon-selected').each(function() { recalcAddonRow($(this)); });
+            recalcGrandTotal();
+            // ────────────────────────────────────────────────────────────
             // Show/hide recurring options
             $('#is-recurring').on('change', function() {
                 $('#recurring-options').toggle(this.checked);

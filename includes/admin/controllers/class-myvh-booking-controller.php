@@ -33,7 +33,23 @@ class MYVH_Booking_Controller {
 
         check_admin_referer('myvh_save_booking');
 
-        $this->service->save($_POST);
+        $data = $_POST;
+
+        // Filter addons: only keep rows where the user ticked the checkbox
+        if (!empty($data['addons']) && is_array($data['addons'])) {
+            $data['addons'] = array_values(array_filter($data['addons'], function($a) {
+                return !empty($a['enabled']) && $a['enabled'] === '1' && !empty($a['addon_id']);
+            }));
+        } else {
+            $data['addons'] = [];
+        }
+
+        $result = $this->service->save($data);
+
+        if (is_wp_error($result)) {
+            wp_redirect(admin_url('admin.php?page=my-village-hall&error=' . urlencode($result->get_error_message())));
+            exit;
+        }
 
         wp_redirect(admin_url('admin.php?page=my-village-hall&updated=1'));
         exit;

@@ -8,6 +8,7 @@ class MYVH_Booking_Service {
 
     private $room_service;
     private $booking_repo;
+    private $booking_addon_repo;
     private $validator;
     private $availability;
     private $room_rules;
@@ -16,6 +17,7 @@ class MYVH_Booking_Service {
     public function __construct(
         $room_service,
         $booking_repo,
+        $booking_addon_repo,
         $validator,
         $availability,
         $room_rules,
@@ -23,6 +25,7 @@ class MYVH_Booking_Service {
     ) {
         $this->room_service = $room_service;
         $this->booking_repo = $booking_repo;
+        $this->booking_addon_repo = $booking_addon_repo;
         $this->validator = $validator;
         $this->availability = $availability;
         $this->room_rules = $room_rules;
@@ -160,6 +163,8 @@ class MYVH_Booking_Service {
             if ($result === false) {
                 return new WP_Error('database', __('Failed to update booking', 'my-village-hall'));
             }
+            // Replace addons: delete existing then re-save
+            $this->save_addons(intval($data['booking_id']), $data['addons'] ?? [], true);
             return intval($data['booking_id']);
         }
 
@@ -178,6 +183,9 @@ class MYVH_Booking_Service {
                 'end' => $data['end_time']
             ]
         );
+
+        // Save addons
+        $this->save_addons($booking_id, $data['addons'] ?? []);
 
         // Handle recurring pattern if requested
         if (!empty($data['is_recurring']) && $myvh_recurring_pattern_service) {
@@ -200,6 +208,51 @@ class MYVH_Booking_Service {
         }
 
         return $booking_id;
+    }
+
+    /**
+     * Save addons for a booking. Optionally delete existing ones first (for updates).
+     *
+     * @param int   $booking_id
+     * @param array $addons     Array of ['addon_id' => int, 'quantity' => float, 'unit_price' => float, 'description' => string]
+     * @param bool  $replace    If true, delete all existing addons before saving
+     */
+    public function save_addons($booking_id, $addons, $replace = false) {
+        if (!$this->booking_addon_repo) return;
+
+        if ($replace) {
+            $this->booking_addon_repo->delete_by_booking_id($booking_id);
+        }
+
+        if (empty($addons) || !is_array($addons)) return;
+
+        foreach ($addons as $addon) {
+            $addon_id   = intval($addon['addon_id'] ?? 0);
+            $quantity   = floatval($addon['quantity'] ?? 1);
+            $unit_price = floatval($addon['unit_price'] ?? 0);
+
+            if ($addon_id <= 0 || $quantity <= 0) continue;
+
+            $this->booking_addon_repo->create([
+                'BookingId'   => $booking_id,
+                'AddonId'     => $addon_id,
+                'Quantity'    => $quantity,
+                'UnitPrice'   => $unit_price,
+                'TotalAmount' => round($quantity * $unit_price, 2),
+                'Description' => sanitize_text_field($addon['description'] ?? ''),
+            ]);
+        }
+    }
+
+    /**
+     * Get all addons for a booking (with addon name and type).
+     *
+     * @param int $booking_id
+     * @return array
+     */
+    public function get_addons_for_booking($booking_id) {
+        if (!$this->booking_addon_repo) return [];
+        return $this->booking_addon_repo->get_by_booking_id($booking_id) ?? [];
     }
 
     public function cancel($id) {

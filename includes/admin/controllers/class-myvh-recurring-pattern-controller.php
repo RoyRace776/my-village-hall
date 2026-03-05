@@ -10,21 +10,28 @@ class MYVH_Recurring_Pattern_Controller {
     }
 
     public function save() {
-
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
         check_admin_referer('myvh_save_recurring_pattern');
 
-        $this->service->save($_POST);
+        $result = $this->service->save($_POST);
 
-        wp_redirect(admin_url('admin.php?page=myvh-recurring&updated=1'));
+        if (is_wp_error($result)) {
+            wp_redirect(admin_url('admin.php?page=myvh-recurring&error=' . urlencode($result->get_error_message())));
+            exit;
+        }
+
+        $message = !empty($_POST['pattern_id'])
+            ? __('Recurring pattern updated and bookings regenerated.', 'my-village-hall')
+            : __('Recurring pattern created and bookings scheduled.', 'my-village-hall');
+
+        wp_redirect(admin_url('admin.php?page=myvh-recurring&updated=1&message=' . urlencode($message)));
         exit;
     }
 
     public function delete() {
-
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
@@ -32,6 +39,7 @@ class MYVH_Recurring_Pattern_Controller {
         check_admin_referer('myvh_delete_recurring_pattern');
 
         $id = intval($_GET['id']);
+        $this->service->delete_future_bookings($id);
         $this->service->delete($id);
 
         wp_redirect(admin_url('admin.php?page=myvh-recurring&deleted=1'));
@@ -39,7 +47,6 @@ class MYVH_Recurring_Pattern_Controller {
     }
 
     public function deactivate() {
-
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
@@ -49,31 +56,38 @@ class MYVH_Recurring_Pattern_Controller {
         $id = intval($_GET['id']);
         $this->service->deactivate($id);
 
-        wp_redirect(admin_url('admin.php?page=myvh-recurring&updated=1'));
+        if (!empty($_GET['cancel_future'])) {
+            $this->service->cancel_future_bookings($id);
+        }
+
+        wp_redirect(admin_url('admin.php?page=myvh-recurring&updated=1&message=' . urlencode(
+            __('Pattern deactivated.', 'my-village-hall')
+        )));
         exit;
     }
 
-    public function process_patterns() {
-
+    public function delete_future_bookings() {
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
-        check_admin_referer('myvh_process_patterns');
+        check_admin_referer('myvh_delete_future_bookings');
 
-        $results = $this->service->process_patterns();
+        $id = intval($_GET['id']);
+        $this->service->delete_future_bookings($id);
 
-        $message = sprintf(
-            __('Processed %d patterns, created %d bookings', 'my-village-hall'),
-            $results['processed'],
-            $results['created']
-        );
+        wp_redirect(admin_url('admin.php?page=myvh-recurring&updated=1&message=' . urlencode(
+            __('Future bookings deleted.', 'my-village-hall')
+        )));
+        exit;
+    }
 
-        if (!empty($results['errors'])) {
-            $message .= '. ' . __('Errors: ', 'my-village-hall') . implode(', ', $results['errors']);
+    public function process_patterns() {
+        if (!current_user_can('manage_myvh')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
         }
-
-        wp_redirect(admin_url('admin.php?page=myvh-recurring&message=' . urlencode($message)));
+        check_admin_referer('myvh_process_patterns');
+        wp_redirect(admin_url('admin.php?page=myvh-recurring'));
         exit;
     }
 }
