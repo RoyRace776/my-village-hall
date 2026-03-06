@@ -38,6 +38,16 @@ $recurring_pattern = null;
 if ($edit_booking && $edit_booking['RecurringPatternId']) {
     $recurring_pattern = MYVH_Registry::get('recurring_pattern_repo')->get_by_id($edit_booking['RecurringPatternId']);
 }
+
+$customer = MYVH_Registry::get('customer_repo')->get_by_id($edit_booking['CustomerId']);
+$room = MYVH_Registry::get('room_repo')->get_by_id($edit_booking['RoomId']);
+
+$status_colors = [
+    'pending' => '#2271b1',
+    'confirmed' => '#46b450',
+    'cancelled' => '#dc3232',
+    'completed' => '#999'
+];
 ?>
 
 <div class="wrap">
@@ -65,15 +75,7 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
                     <h2><?php _e('Booking Details', 'my-village-hall'); ?></h2>
                     
                     <?php
-                    $customer = MYVH_Registry::get('customer_repo')->get_by_id($edit_booking['CustomerId']);
-                    $room = MYVH_Registry::get('room_repo')->get_by_id($edit_booking['RoomId']);
-                    
-                    $status_colors = [
-                        'pending' => '#2271b1',
-                        'confirmed' => '#46b450',
-                        'cancelled' => '#dc3232',
-                        'completed' => '#999'
-                    ];
+
                     $status_color = $status_colors[$edit_booking['Status']] ?? '#999';
                     ?>
                     

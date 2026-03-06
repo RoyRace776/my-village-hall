@@ -259,6 +259,10 @@ class MYVH_Booking_Service {
         return $this->booking_addon_repo->get_by_booking_id($booking_id) ?? [];
     }
 
+    public function get_by_id($booking_id) {
+        return $this->booking_addon_repo->get_by_booking_id($booking_id);
+    }
+
     public function cancel($id) {
         return $this->booking_repo->update(
             ['Status' => 'cancelled'],

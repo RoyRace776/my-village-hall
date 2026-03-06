@@ -22,7 +22,7 @@ class MYVH_Recurring_Pattern_Service {
         return $this->repo->get_all($args);
     }
 
-    public function get($id) {
+    public function get_by_id($id) {
         return $this->repo->get_by_id($id);
     }
 
