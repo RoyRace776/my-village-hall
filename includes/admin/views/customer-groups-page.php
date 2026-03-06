@@ -9,8 +9,9 @@ if (!current_user_can('manage_myvh')) {
 
 
 $edit_id    = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$edit_group = $edit_id ? MYVH_Registry::get('customer_group_repo')->get_by_id($edit_id) : null;
-$groups     = MYVH_Registry::get('customer_group_repo')->get_all(false);
+$customer_group_service = MYVH_Registry::get('customer_group_service');
+$edit_group = $edit_id ? $customer_group_service->get($edit_id) : null;
+$groups     = $customer_group_service->get_all(false);
 ?>
 
 <div class="wrap">

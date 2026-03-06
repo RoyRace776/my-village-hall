@@ -9,10 +9,13 @@ if (!current_user_can('manage_myvh')) {
 
 
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$edit_rate = $edit_id ? MYVH_Registry::get('room_rate_repo')->get_by_id($edit_id) : null;
-$rates     = MYVH_Registry::get('room_rate_repo')->get_all();
-$rooms     = MYVH_Registry::get('room_repo')->get_all_with_venues();
-$groups    = MYVH_Registry::get('customer_group_repo')->get_all();
+$room_rate_service      = MYVH_Registry::get('room_rate_service');
+$room_service           = MYVH_Registry::get('room_service');
+$customer_group_service = MYVH_Registry::get('customer_group_service');
+$edit_rate = $edit_id ? $room_rate_service->get($edit_id) : null;
+$rates     = $room_rate_service->get_all();
+$rooms     = $room_service->get_all_with_venues();
+$groups    = $customer_group_service->get_all();
 ?>
 
 <div class="wrap">

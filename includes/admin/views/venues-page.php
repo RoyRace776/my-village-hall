@@ -11,8 +11,9 @@ if (!current_user_can('manage_myvh')) {
 $action   = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $venue_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-$venue  = $venue_id ? MYVH_Registry::get('venue_repo')->get_by_id($venue_id) : null;
-$venues = MYVH_Registry::get('venue_repo')->get_all();
+$venue_service = MYVH_Registry::get('venue_service');
+$venue  = $venue_id ? $venue_service->get($venue_id) : null;
+$venues = $venue_service->get_all();
 ?>
 
 <div class="wrap">

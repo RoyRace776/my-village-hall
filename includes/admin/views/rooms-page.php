@@ -9,9 +9,11 @@ if (!current_user_can('manage_myvh')) {
 
 
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$edit_room = $edit_id ? MYVH_Registry::get('room_repo')->get_by_id($edit_id) : null;
-$rooms     = MYVH_Registry::get('room_repo')->get_all_with_venues();
-$venues    = MYVH_Registry::get('venue_repo')->get_all();
+$room_service  = MYVH_Registry::get('room_service');
+$venue_service = MYVH_Registry::get('venue_service');
+$edit_room = $edit_id ? $room_service->get($edit_id) : null;
+$rooms     = $room_service->get_all_with_venues();
+$venues    = $venue_service->get_all();
 ?>
 
 <div class="wrap">

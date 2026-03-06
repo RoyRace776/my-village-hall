@@ -19,10 +19,10 @@ if ($edit_id || $view_id) {
         wp_die(__('Pattern not found.', 'my-village-hall'));
     }
 
-    $parent_booking  = MYVH_Registry::get('booking_repo')->get_by_id($pattern['ParentBookingId']);
+    $parent_booking  = MYVH_Registry::get('booking_service')->get_by_id($pattern['ParentBookingId']);
     $bookings        = MYVH_Registry::get('recurring_pattern_service')->get_bookings_for_pattern($pattern_id);
-    $customers       = MYVH_Registry::get('customer_repo')->get_all();
-    $rooms           = MYVH_Registry::get('room_repo')->get_all_with_venues();
+    $customers       = MYVH_Registry::get('customer_service')->get_all();
+    $rooms           = MYVH_Registry::get('room_service')->get_all_with_venues();
     $customer_map    = array_column($customers ?? [], null, 'Id');
     $room_map        = array_column($rooms ?? [], null, 'Id');
 

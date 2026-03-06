@@ -12,19 +12,25 @@ $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 $booking_id = $edit_id ?: $view_id;
 
-$edit_booking = $booking_id ? MYVH_Registry::get('booking_repo')->get_by_id($booking_id) : null;
+$booking_service           = MYVH_Registry::get('booking_service');
+$customer_service          = MYVH_Registry::get('customer_service');
+$room_service              = MYVH_Registry::get('room_service');
+$addon_service             = MYVH_Registry::get('addon_service');
+$recurring_pattern_service = MYVH_Registry::get('recurring_pattern_service');
+
+$edit_booking = $booking_id ? $booking_service->get_by_id($booking_id) : null;
 $is_view_mode = $view_id > 0;
 
-$customers  = MYVH_Registry::get('customer_repo')->get_all();
-$rooms      = MYVH_Registry::get('room_repo')->get_all_with_venues();
-$all_addons = MYVH_Registry::get('addon_repo')->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
+$customers  = $customer_service->get_all();
+$rooms      = $room_service->get_all_with_venues();
+$all_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
 
 // Active addons only for the form
 $available_addons = array_filter($all_addons ?? [], fn($a) => !empty($a['IsActive']));
 
 // Existing booking addons (for edit/view mode)
 $booking_addons = $booking_id
-    ? MYVH_Registry::get('booking_service')->get_addons_for_booking($booking_id)
+    ? $booking_service->get_addons_for_booking($booking_id)
     : [];
 
 // Index existing addons by AddonId for easy lookup in the form
@@ -36,11 +42,11 @@ foreach ($booking_addons as $ba) {
 // Get recurring pattern if exists
 $recurring_pattern = null;
 if ($edit_booking && $edit_booking['RecurringPatternId']) {
-    $recurring_pattern = MYVH_Registry::get('recurring_pattern_repo')->get_by_id($edit_booking['RecurringPatternId']);
+    $recurring_pattern = $recurring_pattern_service->get($edit_booking['RecurringPatternId']);
 }
 
-$customer = MYVH_Registry::get('customer_repo')->get_by_id($edit_booking['CustomerId']);
-$room = MYVH_Registry::get('room_repo')->get_by_id($edit_booking['RoomId']);
+$customer = $customer_service->get($edit_booking['CustomerId']);
+$room = $room_service->get($edit_booking['RoomId']);
 
 $status_colors = [
     'pending' => '#2271b1',

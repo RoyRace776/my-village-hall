@@ -26,6 +26,10 @@ class MYVH_Recurring_Pattern_Service {
         return $this->repo->get_by_id($id);
     }
 
+    public function get($id) {
+        return $this->repo->get_by_id($id);
+    }
+
     public function get_active_with_bookings() {
         return $this->repo->get_all_active_with_bookings();
     }

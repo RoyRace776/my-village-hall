@@ -9,11 +9,15 @@ if (!current_user_can('manage_myvh')) {
 
 
 $edit_id    = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$edit_addon = $edit_id ? MYVH_Registry::get('addon_repo')->get_by_id($edit_id) : null;
-$addons     = MYVH_Registry::get('addon_repo')->get_all_with_relations();
-$groups     = MYVH_Registry::get('customer_group_repo')->get_all();
-$rooms      = MYVH_Registry::get('room_repo')->get_all();
-$venues     = MYVH_Registry::get('venue_repo')->get_all();
+$addon_service          = MYVH_Registry::get('addon_service');
+$customer_group_service = MYVH_Registry::get('customer_group_service');
+$room_service           = MYVH_Registry::get('room_service');
+$venue_service          = MYVH_Registry::get('venue_service');
+$edit_addon = $edit_id ? $addon_service->get($edit_id) : null;
+$addons     = $addon_service->get_with_relations();
+$groups     = $customer_group_service->get_all();
+$rooms      = $room_service->get_all();
+$venues     = $venue_service->get_all();
 ?>
 
 <div class="wrap">

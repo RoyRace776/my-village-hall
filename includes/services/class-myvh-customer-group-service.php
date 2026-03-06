@@ -9,8 +9,8 @@ class MYVH_Customer_Group_Service {
         $this->repo = $repo;
     }
 
-    public function get_all() {
-        return $this->repo->get_all();
+    public function get_all($active_only = true) {
+        return $this->repo->get_all($active_only);
     }
 
     public function get($id) {
