@@ -36,7 +36,7 @@ define('MYVH_PLUGIN_BASENAME', plugin_basename(__FILE__)); // Plugin basename fo
  * 
  * This is the core plugin class that initializes and manages the plugin.
  * It uses the Singleton pattern to ensure only one instance exists.
- * 
+ *
  * Key responsibilities:
  * - Plugin activation/deactivation
  * - Admin menu creation
@@ -1045,6 +1045,26 @@ class My_Village_Hall {
             'manage_options',
             'myvh-recurring',
             array($this, 'render_recurring_page')
+        );
+
+        require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-settings-base.php';
+        require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-booking-settings.php';
+        require_once MYVH_PLUGIN_DIR . 'includes/admin/views/settings-page-renderer.php';
+        $booking_settings = new MYVH_Booking_Settings();
+
+        $booking_page = new MYVH_Settings_Page_Renderer(
+            $booking_settings,
+            'Booking Settings',
+            'myvh_booking_settings'
+        );
+
+        add_submenu_page(
+            'my-village-hall',
+            'Booking Settings',
+            'Booking Settings',
+            'manage_options',
+            'myvh-booking-settings',
+            [$booking_page, 'render']
         );
     }
     

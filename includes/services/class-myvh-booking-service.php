@@ -80,7 +80,7 @@ class MYVH_Booking_Service {
             'StartTime'       => $start,
             'EndTime'         => $end,
             'TotalAmount'     => $price,
-            'Status'          => 'confirmed',
+            'Status'          => 'Confirmed', //TODO: Change this to set the status from the data
             'CreatedAt'       => current_time('mysql')
         ];
 
@@ -96,6 +96,18 @@ class MYVH_Booking_Service {
                     'end' => $data['end_time']
                 ]
             );
+
+            if ($data['status'] == 'Confirmed') {
+                MYVH_Event_Dispatcher::dispatch(
+                    MYVH_Booking_Events::CONFIRMED,
+                    [
+                        'booking_id' => $data['booking_id'],
+                        'room_id' => $data['room_id'],
+                        'start' => $data['start_time'],
+                        'end' => $data['end_time']
+                    ]
+                );
+            }
         }
         
         return $booking_id;
@@ -150,7 +162,7 @@ class MYVH_Booking_Service {
         $record = [
             'CustomerId'  => intval($data['customer_id']),
             'RoomId'      => intval($data['room_id']),
-            'Status'      => sanitize_text_field($data['status'] ?? 'confirmed'),
+            'Status'      => sanitize_text_field($data['status'] ?? 'pending'),
             'StartDate'   => sanitize_text_field($data['start_date']),
             'EndDate'     => !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : sanitize_text_field($data['start_date']),
             'StartTime'   => sanitize_text_field($data['start_time']),
@@ -167,6 +179,9 @@ class MYVH_Booking_Service {
             }
             // Replace addons: delete existing then re-save
             $this->save_addons(intval($data['booking_id']), $data['addons'] ?? [], true);
+
+            $this->dispatch_update_event($data);
+
             return intval($data['booking_id']);
         }
 
@@ -185,6 +200,18 @@ class MYVH_Booking_Service {
                 'end' => $data['end_time']
             ]
         );
+
+        if ($data['status'] == 'Confirmed') {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::CONFIRMED,
+                [
+                    'booking_id' => $data['booking_id'],
+                    'room_id' => $data['room_id'],
+                    'start' => $data['start_time'],
+                    'end' => $data['end_time']
+                ]
+            );
+        }
 
         // Save addons
         $this->save_addons($booking_id, $data['addons'] ?? []);
@@ -260,7 +287,7 @@ class MYVH_Booking_Service {
     }
 
     public function get_by_id($booking_id) {
-        return $this->booking_addon_repo->get_by_booking_id($booking_id);
+        return $this->booking_repo->get_by_id($booking_id);
     }
 
     public function cancel($id) {
@@ -393,5 +420,46 @@ class MYVH_Booking_Service {
         return $statuses[0] ?? 'completed';
     }
 
+    private function dispatch_update_event($data) {
+        // TODO: Update this to handle status changes
+        $new_status = $data['status'];
+        $current_record = $this->booking_repo->get_by_id($data['booking_id']);
+        $current_status = $current_record['Status'];
+
+        if ($new_status=='Confirmed' && $current_status<>'Confirmed') {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::CONFIRMED,
+                [
+                    'booking_id' => $data['booking_id'],
+                    'room_id' => $data['room_id'],
+                    'start' => $data['start_time'],
+                    'end' => $data['end_time']
+                ]
+            );
+        }
+
+        if ($new_status=='Cancelled' && $current_status<>'Cancelled') {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::CANCELLED,
+                [
+                    'booking_id' => $data['booking_id'],
+                    'room_id' => $data['room_id'],
+                    'start' => $data['start_time'],
+                    'end' => $data['end_time']
+                ]
+            );
+        }        
+
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::UPDATED,
+            [
+                'booking_id' => $data['booking_id'],
+                'room_id' => $data['room_id'],
+                'start' => $data['start_time'],
+                'end' => $data['end_time']
+            ]
+        );
+
+    }
     
 }

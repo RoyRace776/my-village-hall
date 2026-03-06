@@ -112,5 +112,5 @@ MYVH_Registry::set('recurring_pattern_service',    $recurring_pattern_service);
 MYVH_Registry::set('recurring_pattern_controller', new MYVH_Recurring_Pattern_Controller($recurring_pattern_service));
 
 // ── Listeners ─────────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'includes/listeners/create-invoice-listener.php';
-(new MYVH_Create_Invoice_Listener())->register();
+require_once MYVH_PLUGIN_DIR . 'includes/listeners/class-myvh-booking-listener.php';
+(new MYVH_Booking_Listener())->register();

@@ -1,0 +1,54 @@
+<?php
+
+class MYVH_Booking_Listener {
+
+    public function register() {
+        add_action(
+            'myvh_event_booking.created',
+            [$this, 'handle-booking_created']
+        );
+
+        add_action(
+            'myvh_event_booking.confirmed',
+            [$this, 'handle-booking_confirmed']
+        );
+
+        add_action(
+            'myvh_event_booking.cancelled',
+            [$this, 'handle-booking_cancelled']
+        );
+
+        add_action(
+            'myvh_event_booking.updated',
+            [$this, 'handle-booking_updated']
+        );
+    }
+
+    public function handle_booking_created($payload) {
+
+        $booking_id = $payload['booking_id'];
+
+        // Processing here
+    }
+
+    public function handle_booking_confirmed($payload) {
+
+        $booking_id = $payload['booking_id'];
+
+        // Processing here
+    }
+
+    public function handle_booking_cancelled($payload) {
+
+        $booking_id = $payload['booking_id'];
+
+        // Processing here
+    }
+
+    public function handle_booking_updated($payload) {
+
+        $booking_id = $payload['booking_id'];
+
+        // Processing here
+    }
+}
