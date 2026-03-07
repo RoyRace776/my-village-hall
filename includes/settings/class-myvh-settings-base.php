@@ -6,6 +6,11 @@ abstract class MYVH_Settings_Base {
     protected $schema = [];
     protected $settings = null;
 
+        /**
+     * 'site'    → stored per-site (default, works in single-site too)
+     * 'network' → stored once for the whole network
+     */
+    protected $multisite_scope = 'network';
 
     /**
      * Return schema
@@ -24,13 +29,13 @@ abstract class MYVH_Settings_Base {
             return;
         }
 
-        $saved = get_option($this->option_name, []);
+        $saved = $this->get_option([]);
 
         $with_defaults = $this->apply_defaults($saved);
 
         // Auto-heal missing fields
         if ($saved !== $with_defaults) {
-            update_option($this->option_name, $with_defaults);
+            $this->update_option($with_defaults);
         }
 
         $this->settings = $with_defaults;
@@ -129,9 +134,24 @@ abstract class MYVH_Settings_Base {
 
         $clean = $this->apply_defaults($clean);
 
-        update_option($this->option_name, $clean);
+        $this->update_option($clean);
 
         $this->settings = $clean;
+    }
+
+    protected function get_option( $default = [] ) {
+        if ( $this->multisite_scope === 'network' && is_multisite() ) {
+            return get_site_option( $this->option_name, $default );
+        }
+        return get_option( $this->option_name, $default );
+    }
+
+
+    protected function update_option( $value ) {
+        if ( $this->multisite_scope === 'network' && is_multisite() ) {
+            return update_site_option( $this->option_name, $value );
+        }
+        return update_option( $this->option_name, $value );
     }
 
 }
