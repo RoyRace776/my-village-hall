@@ -93,6 +93,14 @@ class My_Village_Hall {
         // Add admin menu pages
         add_action('admin_menu', array($this, 'add_admin_menu'));
         
+        // Add the functionality for settings
+        MYVH_Settings_Registry::auto_register(
+            plugin_dir_path(__FILE__) . 'includes/settings'
+        );
+
+        $settings_page = new MYVH_Settings_Page();
+        $settings_page->init();
+        
         // Enqueue admin styles and scripts
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
@@ -1047,25 +1055,6 @@ class My_Village_Hall {
             array($this, 'render_recurring_page')
         );
 
-        require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-settings-base.php';
-        require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-booking-settings.php';
-        require_once MYVH_PLUGIN_DIR . 'includes/admin/views/settings-page-renderer.php';
-        $booking_settings = new MYVH_Booking_Settings();
-
-        $booking_page = new MYVH_Settings_Page_Renderer(
-            $booking_settings,
-            'Booking Settings',
-            'myvh_booking_settings'
-        );
-
-        add_submenu_page(
-            'my-village-hall',
-            'Booking Settings',
-            'Booking Settings',
-            'manage_options',
-            'myvh-booking-settings',
-            [$booking_page, 'render']
-        );
     }
     
     /**
@@ -1330,7 +1319,18 @@ add_action('wp_initialize_site', function($new_site) {
 ob_start();
 //  Add in any utlility classes
 require_once MYVH_PLUGIN_DIR . 'includes/domain/helpers/time-helpers.php';
+require_once MYVH_PLUGIN_DIR . 'includes/domain/helpers/settings-helper.php';
 require_once MYVH_PLUGIN_DIR .'includes/admin/class-myvh-admin-notices.php';
+
+//  Add in settings management
+require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-settings-base.php';
+
+require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-general-settings.php';
+require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-booking-settings.php';
+
+require_once MYVH_PLUGIN_DIR . 'includes/admin/settings-registry.php';
+require_once MYVH_PLUGIN_DIR . 'includes/admin/settings-page.php';
+
 
 // Include the repository access classes
 require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-repositories.php';

@@ -1,30 +1,69 @@
 <?php
 
+require_once MYVH_PLUGIN_DIR .'includes/settings/class-myvh-settings-base.php';
+
 class MYVH_Booking_Settings extends MYVH_Settings_Base {
 
     protected $option_name = 'myvh_booking_settings';
 
+    public function tab() {
+        return 
+            ['key' => 'booking',
+            'label' => 'Booking'];
+    }
+
     protected $schema = [
 
-        'max_booking_days' => [
-            'type' => 'integer',
-            'default' => 365,
-            'label' => 'Maximum booking days ahead',
-            'sanitize' => 'intval'
+        'general' => [
+            'title' => 'General Booking Rules',
+
+            'fields' => [
+
+                'max_booking_days' => [
+                    'label' => 'Maximum booking days ahead',
+                    'type' => 'number',
+                    'default' => 365,
+                    'sanitize' => 'intval',
+                    'description' => 'How far ahead users can book.'
+                ],
+
+                'min_notice_hours' => [
+                    'label' => 'Minimum notice',
+                    'type' => 'number',
+                    'default' => 24,
+                    'sanitize' => 'intval'
+                ],
+
+                'require_approval' => [
+                    'label' => 'Require approval',
+                    'type' => 'checkbox',
+                    'default' => true,
+                    'sanitize' => 'boolval'
+                ],
+
+            ]
         ],
 
-        'min_notice_hours' => [
-            'type' => 'integer',
-            'default' => 24,
-            'label' => 'Minimum notice hours',
-            'sanitize' => 'intval'
-        ],
+        'advanced' => [
+            'title' => 'Advanced',
 
-        'require_approval' => [
-            'type' => 'boolean',
-            'default' => true,
-            'label' => 'Require approval',
-            'sanitize' => 'boolval'
+            'fields' => [
+
+                'allow_weekend_bookings' => [
+                    'label' => 'Allow weekend bookings',
+                    'type' => 'checkbox',
+                    'default' => true,
+                    'sanitize' => 'boolval'
+                ],
+
+                'booking_notes' => [
+                    'label' => 'Booking notes',
+                    'type' => 'textarea',
+                    'default' => '',
+                    'sanitize' => 'sanitize_textarea_field'
+                ]
+
+            ]
         ]
 
     ];

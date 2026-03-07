@@ -1,0 +1,321 @@
+<?php
+
+class MYVH_Settings_Page {
+
+    public function init() {
+
+        add_action('admin_menu', [$this, 'menu']);
+        add_action('admin_post_myvh_save_settings', [$this, 'save']);
+
+    }
+
+
+    /**
+     * Add admin menu
+     */
+    public function menu() {
+
+        add_menu_page(
+            'My Plugin Settings',
+            'My Plugin',
+            'manage_options',
+            'myvh-settings',
+            [$this, 'render_page'],
+            'dashicons-admin-generic',
+            60
+        );
+
+    }
+
+
+    /**
+     * Render full settings page
+     */
+    public function render_page() {
+
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $groups = MYVH_Settings_Registry::groups();
+
+        $active_tab = $_GET['tab'] ?? array_key_first($groups);
+
+        ?>
+
+        <div class="wrap">
+
+            <h1>My Plugin Settings</h1>
+
+            <h2 class="nav-tab-wrapper">
+
+                <?php foreach ($groups as $key => $group): ?>
+
+                    <a href="?page=myvh-settings&tab=<?php echo esc_attr($key); ?>"
+                       class="nav-tab <?php echo ($active_tab === $key) ? 'nav-tab-active' : ''; ?>">
+
+                        <?php echo esc_html($group['label']); ?>
+
+                    </a>
+
+                <?php endforeach; ?>
+
+            </h2>
+
+            <?php $this->render_tab($active_tab); ?>
+
+        </div>
+
+        <?php
+
+    }
+
+
+    /**
+     * Render a single tab
+     */
+    private function render_tab($key) {
+
+        $settings = MYVH_Settings_Registry::get($key);
+
+        if (!$settings) {
+            echo '<p>Invalid settings group.</p>';
+            return;
+        }
+
+        $schema = $settings->schema();
+        $values = $settings->all();
+
+        ?>
+
+        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+
+            <input type="hidden" name="action" value="myvh_save_settings">
+            <input type="hidden" name="group" value="<?php echo esc_attr($key); ?>">
+
+            <?php wp_nonce_field('myvh_settings_nonce'); ?>
+
+            <?php
+
+            foreach ($schema as $section_key => $section) {
+
+                if (!empty($section['title'])) {
+                    echo '<h2>' . esc_html($section['title']) . '</h2>';
+                }
+
+                echo '<table class="form-table">';
+
+                if (!empty($section['fields'])) {
+
+                    foreach ($section['fields'] as $field_key => $field) {
+
+                        $value = $values[$field_key] ?? '';
+
+                        echo '<tr>';
+
+                        echo '<th scope="row">';
+                        echo esc_html($field['label'] ?? $field_key);
+                        echo '</th>';
+
+                        echo '<td>';
+
+                        $this->render_field($field_key, $field, $value);
+
+                        if (!empty($field['description'])) {
+                            echo '<p class="description">' . esc_html($field['description']) . '</p>';
+                        }
+
+                        echo '</td>';
+
+                        echo '</tr>';
+
+                    }
+
+                }
+
+                echo '</table>';
+
+            }
+
+            submit_button();
+
+            ?>
+
+        </form>
+
+        <?php
+
+    }
+
+
+    /**
+     * Render individual field
+     */
+    private function render_field($name, $rule, $value) {
+
+        $type = $rule['type'] ?? 'text';
+
+        switch ($type) {
+
+            case 'boolean':
+                ?>
+                <label>
+                    <input type="checkbox"
+                        name="<?php echo esc_attr($name); ?>"
+                        value="1"
+                        <?php checked($value, true); ?>>
+                </label>
+                <?php
+                break;
+
+
+            case 'integer':
+                ?>
+                <input type="number"
+                    name="<?php echo esc_attr($name); ?>"
+                    value="<?php echo esc_attr($value); ?>"
+                    class="small-text">
+                <?php
+                break;
+
+
+            case 'textarea':
+                ?>
+                <textarea
+                    name="<?php echo esc_attr($name); ?>"
+                    rows="5"
+                    class="large-text"><?php echo esc_textarea($value); ?></textarea>
+                <?php
+                break;
+
+
+            case 'select':
+
+                $options = $rule['options'] ?? [];
+
+                ?>
+                <select name="<?php echo esc_attr($name); ?>">
+
+                    <?php foreach ($options as $key => $label): ?>
+
+                        <option value="<?php echo esc_attr($key); ?>"
+                            <?php selected($value, $key); ?>>
+
+                            <?php echo esc_html($label); ?>
+
+                        </option>
+
+                    <?php endforeach; ?>
+
+                </select>
+                <?php
+                break;
+
+
+            case 'radio':
+
+                $options = $rule['options'] ?? [];
+
+                foreach ($options as $key => $label) {
+                    ?>
+                    <label style="display:block;margin-bottom:4px;">
+                        <input type="radio"
+                            name="<?php echo esc_attr($name); ?>"
+                            value="<?php echo esc_attr($key); ?>"
+                            <?php checked($value, $key); ?>>
+
+                        <?php echo esc_html($label); ?>
+                    </label>
+                    <?php
+                }
+
+                break;
+
+
+            case 'color':
+                ?>
+                <input type="color"
+                    name="<?php echo esc_attr($name); ?>"
+                    value="<?php echo esc_attr($value); ?>">
+                <?php
+                break;
+
+
+            case 'email':
+                ?>
+                <input type="email"
+                    name="<?php echo esc_attr($name); ?>"
+                    value="<?php echo esc_attr($value); ?>"
+                    class="regular-text">
+                <?php
+                break;
+
+
+            case 'url':
+                ?>
+                <input type="url"
+                    name="<?php echo esc_attr($name); ?>"
+                    value="<?php echo esc_attr($value); ?>"
+                    class="regular-text">
+                <?php
+                break;
+
+
+            case 'date':
+                ?>
+                <input type="date"
+                    name="<?php echo esc_attr($name); ?>"
+                    value="<?php echo esc_attr($value); ?>">
+                <?php
+                break;
+
+
+            default:
+                ?>
+                <input type="text"
+                    name="<?php echo esc_attr($name); ?>"
+                    value="<?php echo esc_attr($value); ?>"
+                    class="regular-text">
+                <?php
+
+        }
+
+    }
+
+    /**
+     * Save settings
+     */
+    public function save() {
+
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+
+        check_admin_referer('myvh_settings_nonce');
+
+        $group = sanitize_text_field($_POST['group'] ?? '');
+
+        $settings = MYVH_Settings_Registry::get($group);
+
+        if (!$settings) {
+            wp_die('Invalid settings group');
+        }
+
+        $settings->save($_POST);
+
+        wp_redirect(
+            add_query_arg(
+                [
+                    'page' => 'myvh-settings',
+                    'tab' => $group,
+                    'updated' => 'true'
+                ],
+                admin_url('admin.php')
+            )
+        );
+
+        exit;
+
+    }
+
+}
