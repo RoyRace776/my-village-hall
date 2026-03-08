@@ -1,8 +1,10 @@
-/* Venue Booking Calendar Styles */
+/* ==========================================================================
+   My Village Hall – Admin Calendar
+   DayPilot Lite theme: myvh_admin_cal  +  page chrome
+   ========================================================================== */
 
-.vbc-calendar-wrap {
-    margin: 20px 0;
-}
+/* ── Page chrome ─────────────────────────────────────────────────────────── */
+.vbc-calendar-wrap { margin: 20px 0; }
 
 .vbc-calendar-container {
     background: #fff;
@@ -11,314 +13,267 @@
     box-shadow: 0 1px 1px rgba(0,0,0,.04);
 }
 
-/* Filters */
+/* ── Filters bar ─────────────────────────────────────────────────────────── */
 .vbc-filters {
     display: flex;
     gap: 20px;
-    margin-bottom: 20px;
-    padding: 15px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-bottom: 14px;
+    padding: 12px 15px;
     background: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 4px;
-    flex-wrap: wrap;
 }
 
 .vbc-filter-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
 .vbc-filter-group label {
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
+    color: #50575e;
 }
 
 .vbc-filter-actions {
-    display: flex;
-    gap: 10px;
-    align-items: flex-end;
     margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
-/* Calendar */
-#vbc-calendar {
-    margin: 20px 0;
-    min-height: 600px;
+/* ── Toolbar (nav + view switcher) ───────────────────────────────────────── */
+.vbc-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
 }
 
-/* Legend */
+.vbc-toolbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vbc-cal-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+.vbc-toolbar-views {
+    display: flex;
+    gap: 4px;
+}
+
+.vbc-view-btn.active,
+.vbc-view-btn:focus {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────────── */
 .vbc-legend {
-    margin-top: 20px;
-    padding: 15px;
+    margin-top: 16px;
+    padding: 12px 15px;
     background: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 4px;
 }
 
-.vbc-legend h3 {
-    margin: 0 0 10px 0;
-    font-size: 14px;
-    font-weight: 600;
-}
+.vbc-legend h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 
-.vbc-legend-items {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
+.vbc-legend-items { display: flex; gap: 20px; flex-wrap: wrap; }
 
 .vbc-legend-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
+    gap: 6px;
+    font-size: 12px;
 }
 
 .vbc-legend-color {
-    width: 20px;
-    height: 20px;
-    border-radius: 3px;
     display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
 }
 
-/* Modal */
+/* ── Calendar container – must have height for DayPilot to render ───────── */
+#vbc-calendar {
+    min-height: 600px;
+    width: 100%;
+}
+
+/* ── DayPilot theme: myvh_admin_cal ──────────────────────────────────────── */
+
+/* Month cell */
+.myvh_admin_cal_cell,
+.myvh_admin_cal_cell_business { background: #fff; }
+.myvh_admin_cal_cell_nonbusiness { background: #f9f9f9; }
+
+.myvh_admin_cal_cell_today,
+.myvh_admin_cal_cell_today .myvh_admin_cal_cell_inner { background: #f0f6fc; }
+
+/* Day-of-week header */
+.myvh_admin_cal_header {
+    background: #f6f7f7;
+    color: #2c3338;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    text-align: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #dcdcde;
+}
+
+/* Day number */
+.myvh_admin_cal_cell_inner {
+    color: #50575e;
+    font-size: 11px;
+    padding: 3px 5px;
+}
+
+.myvh_admin_cal_cell_today .myvh_admin_cal_cell_inner {
+    font-weight: 700;
+    color: #2271b1;
+}
+
+/* Event bar */
+.myvh_admin_cal_event {
+    border-radius: 3px;
+    font-size: 11px;
+    padding: 2px 5px;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    opacity: .93;
+    transition: opacity .1s, filter .1s;
+}
+.myvh_admin_cal_event:hover { opacity: 1; filter: brightness(1.08); }
+
+.myvh_admin_cal_event_inner { color: inherit; font-weight: 500; }
+
+/* Week/Day: time axis */
+.myvh_admin_cal_rowheader {
+    background: #f6f7f7;
+    color: #666;
+    font-size: 11px;
+    text-align: right;
+    padding-right: 6px;
+    border-right: 1px solid #dcdcde;
+}
+
+/* Grid lines */
+.myvh_admin_cal_divider  { background: #dcdcde; }
+.myvh_admin_cal_separator{ background: #c3c4c7; }
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
 .vbc-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    inset: 0;
+    background: rgba(0,0,0,.55);
     z-index: 100000;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: vbcFadeIn 0.2s ease-in;
-}
-
-@keyframes vbcFadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
 }
 
 .vbc-modal-content {
     background: #fff;
     border-radius: 4px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 24px rgba(0,0,0,.25);
     max-width: 600px;
     width: 90%;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    animation: vbcSlideIn 0.3s ease-out;
+    animation: vbcSlideIn .2s ease-out;
 }
 
 @keyframes vbcSlideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    from { transform: translateY(-30px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
 }
 
 .vbc-modal-header {
-    padding: 20px;
+    padding: 16px 20px;
     border-bottom: 1px solid #ddd;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
 }
 
-.vbc-modal-header h2 {
-    margin: 0;
-    font-size: 20px;
-}
+.vbc-modal-header h2 { margin: 0; font-size: 18px; }
 
 .vbc-modal-close {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 26px;
     line-height: 1;
-    color: #666;
     cursor: pointer;
+    color: #666;
     padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
-
-.vbc-modal-close:hover {
-    color: #000;
-}
+.vbc-modal-close:hover { color: #000; }
 
 .vbc-modal-body {
-    padding: 20px;
+    padding: 16px 20px;
     overflow-y: auto;
     flex: 1;
 }
 
 .vbc-modal-footer {
-    padding: 15px 20px;
+    padding: 12px 20px;
     border-top: 1px solid #ddd;
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    align-items: center;
 }
 
-/* Form */
-.vbc-form-row {
-    margin-bottom: 15px;
-}
+/* ── Form helpers ────────────────────────────────────────────────────────── */
+.vbc-form-row        { margin-bottom: 12px; }
+.vbc-form-row-2col   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.vbc-form-group      { display: flex; flex-direction: column; gap: 4px; }
+.vbc-form-group label{ font-weight: 600; font-size: 12px; color: #50575e; }
 
-.vbc-form-row-2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
+.vbc-form-group input,
+.vbc-form-group select,
+.vbc-form-group textarea { width: 100%; }
 
-.vbc-form-group {
+.vbc-room-option {
     display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.vbc-form-group label {
-    font-weight: 600;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 4px;
+    border-radius: 3px;
+    cursor: pointer;
     font-size: 13px;
 }
+.vbc-room-option:hover { background: #f0f6fc; }
 
-.vbc-form-group input[type="datetime-local"],
-.vbc-form-group input[type="text"],
-.vbc-form-group select,
-.vbc-form-group textarea {
-    width: 100%;
+.vbc-room-venue {
+    color: #888;
+    font-size: 11px;
+    margin-left: 4px;
 }
 
-/* Booking Details View */
-.vbc-booking-details {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.vbc-detail-row {
-    display: flex;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.vbc-detail-row:last-child {
-    border-bottom: none;
-}
-
-.vbc-detail-row strong {
-    min-width: 120px;
-    color: #666;
-}
-
-/* FullCalendar Customizations */
-.fc-event {
-    cursor: pointer;
-}
-
-.fc-event:hover {
-    opacity: 0.9;
-}
-
-.fc-daygrid-event {
-    white-space: normal !important;
-    padding: 2px 4px;
-}
-
-.fc-event-title {
-    font-weight: 500;
-}
-
-/* Loading State */
-.vbc-loading {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #2271b1;
-    border-radius: 50%;
-    animation: vbcSpin 1s linear infinite;
-}
-
-@keyframes vbcSpin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Shortcode Styles */
-.vbc-shortcode-calendar {
-    margin: 20px 0;
-}
-
-.vbc-shortcode-filters {
-    margin-bottom: 15px;
-}
-
-.vbc-shortcode-calendar-container {
-    background: #fff;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.vbc-shortcode-legend {
-    display: flex;
-    gap: 15px;
-    margin-top: 15px;
-    padding: 10px;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    flex-wrap: wrap;
-}
-
-/* Responsive */
-@media screen and (max-width: 782px) {
-    .vbc-filters {
-        flex-direction: column;
-    }
-    
-    .vbc-filter-actions {
-        margin-left: 0;
-        width: 100%;
-    }
-    
-    .vbc-form-row-2col {
-        grid-template-columns: 1fr;
-    }
-    
-    .vbc-modal-content {
-        width: 95%;
-        max-height: 95vh;
-    }
-    
-    .vbc-legend-items {
-        flex-direction: column;
-        gap: 10px;
-    }
-}
-
-@media screen and (max-width: 600px) {
-    .vbc-modal-footer {
-        flex-direction: column;
-    }
-    
-    .vbc-modal-footer button {
-        width: 100%;
-    }
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 782px) {
+    .vbc-filters        { flex-direction: column; }
+    .vbc-filter-actions { margin-left: 0; width: 100%; }
+    .vbc-form-row-2col  { grid-template-columns: 1fr; }
+    .vbc-modal-content  { width: 95%; max-height: 95vh; }
+    .vbc-toolbar        { flex-direction: column; align-items: flex-start; }
+    .vbc-cal-title      { margin-left: 0; }
 }

@@ -1093,53 +1093,46 @@ class My_Village_Hall {
     }
     
     /**
-     * Enqueue calendar-specific assets
+     * Enqueue calendar-specific assets (DayPilot Lite)
      */
     private function enqueue_calendar_assets() {
-        wp_enqueue_style(
-            'fullcalendar',
-            'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css',
+        // DayPilot Lite – free, no licence key required
+        wp_enqueue_script(
+            'daypilot-lite',
+            MYVH_PLUGIN_URL . 'assets/js/daypilot-all.min.js',
             array(),
-            '6.1.10'
+            '2026.1',
+            true
         );
-        
+
         wp_enqueue_style(
             'myvh-calendar-css',
             MYVH_PLUGIN_URL . 'assets/css/calendar.css',
-            array('fullcalendar'),
+            array(),
             MYVH_VERSION
         );
-        
-        wp_enqueue_script(
-            'fullcalendar',
-            'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js',
-            array(),
-            '6.1.10',
-            true
-        );
-        
+
         wp_enqueue_script(
             'myvh-calendar-js',
             MYVH_PLUGIN_URL . 'assets/js/calendar.js',
-            array('jquery', 'fullcalendar'),
+            array('jquery', 'daypilot-lite'),
             MYVH_VERSION,
             true
         );
-        
-        wp_localize_script('myvh-calendar-js', 'vbcAjax', array(
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('myvh-ajax-nonce'),
-            'strings' => array(
-                'loading' => __('Loading...', 'my-village-hall'),
-                'error' => __('An error occurred. Please try again.', 'my-village-hall'),
-                'confirmDelete' => __('Are you sure you want to delete this booking?', 'my-village-hall'),
-                'selectVenue' => __('Please select a venue first', 'my-village-hall'),
-                'selectRoom' => __('Please select a room', 'my-village-hall'),
+
+        wp_localize_script('myvh-calendar-js', 'myvhAdminCal', array(
+            'ajax_url'  => admin_url('admin-ajax.php'),
+            'admin_url' => admin_url(),
+            'nonce'     => wp_create_nonce('myvh-ajax-nonce'),
+            'strings'   => array(
+                'error'          => __('An error occurred. Please try again.', 'my-village-hall'),
+                'confirmCancel'  => __('Cancel this booking?', 'my-village-hall'),
+                'selectRoom'     => __('Please select a room', 'my-village-hall'),
                 'selectCustomer' => __('Please select a customer', 'my-village-hall'),
-                'bookingCreated' => __('Booking created successfully', 'my-village-hall'),
-                'bookingUpdated' => __('Booking updated successfully', 'my-village-hall'),
-                'bookingDeleted' => __('Booking deleted successfully', 'my-village-hall'),
-            )
+                'newBooking'     => __('New Booking', 'my-village-hall'),
+                'editBooking'    => __('Edit Booking', 'my-village-hall'),
+                'save'           => __('Save Booking', 'my-village-hall'),
+            ),
         ));
     }
     
@@ -1338,6 +1331,12 @@ require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-repositories.php';
 // Bootstrap
 require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-bootstrap.php';
 
+// Include frontend shortcodes
+require_once MYVH_PLUGIN_DIR . 'includes/frontend/class-myvh-calendar-shortcode.php';
+
+// Admin calendar AJAX handlers
+require_once MYVH_PLUGIN_DIR . 'includes/admin/class-myvh-calendar-ajax.php';
+
 // Include the network specific classes
 require_once MYVH_PLUGIN_DIR . 'includes/network/class-myvh-network-dashboard.php';
 require_once MYVH_PLUGIN_DIR . 'includes/network/class-myvh-network-sites-table.php';
@@ -1350,6 +1349,12 @@ ob_end_clean();
 function myvh_init() {
     $plugin = My_Village_Hall::get_instance();    
     
+    // Frontend calendar shortcode + REST endpoint
+    ( new MYVH_Calendar_Shortcode() )->init();
+
+    // Admin calendar AJAX handlers
+    ( new MYVH_Calendar_Ajax() )->register();
+
     // Network dashboard (multisite only)
     if (is_multisite() && is_network_admin()) {
         (new MYVH_Network_Dashboard())->init();

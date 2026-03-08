@@ -1,0 +1,209 @@
+/* ==========================================================================
+   My Village Hall – Public Calendar (DayPilot Lite theme: myvh_cal)
+   ========================================================================== */
+
+/* Wrapper */
+.myvh-public-calendar-wrap {
+    font-family: inherit;
+    color: #1d2327;
+    margin: 1.5em 0;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.myvh-cal-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.myvh-cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.myvh-cal-title {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+.myvh-cal-views {
+    display: flex;
+    gap: 4px;
+}
+
+.myvh-cal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 12px;
+    border: 1px solid #c3c4c7;
+    border-radius: 3px;
+    background: #f6f7f7;
+    color: #2c3338;
+    font-size: 0.875em;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    min-width: 32px;
+}
+
+.myvh-cal-btn:hover {
+    background: #e9e9e9;
+    border-color: #8c8f94;
+}
+
+.myvh-cal-btn.active,
+.myvh-cal-btn:focus-visible {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+    outline: none;
+}
+
+/* Prev / Next arrows – slightly narrower */
+.myvh-cal-prev,
+.myvh-cal-next {
+    font-size: 1.2em;
+    line-height: 1;
+    padding: 4px 10px;
+}
+
+/* ── DayPilot container ──────────────────────────────────────────────────── */
+.myvh-daypilot-container {
+    border: 1px solid #c3c4c7;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+/* ── DayPilot theme: myvh_cal ────────────────────────────────────────────── */
+
+/* Month grid */
+.myvh_cal_cell {
+    background: #fff;
+}
+
+.myvh_cal_cell_business {
+    background: #fff;
+}
+
+.myvh_cal_cell_nonbusiness {
+    background: #f9f9f9;
+}
+
+.myvh_cal_header {
+    background: #f6f7f7;
+    color: #2c3338;
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #dcdcde;
+    text-align: center;
+    padding: 6px 0;
+}
+
+/* Day number in month view */
+.myvh_cal_cell_inner {
+    color: #50575e;
+    font-size: 0.8em;
+    padding: 3px 5px;
+}
+
+.myvh_cal_cell_today .myvh_cal_cell_inner {
+    font-weight: 700;
+    color: #2271b1;
+}
+
+/* Event bar */
+.myvh_cal_event {
+    border-radius: 3px;
+    font-size: 0.8em;
+    padding: 2px 5px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: default;
+    opacity: 0.92;
+    transition: opacity 0.1s;
+}
+
+.myvh_cal_event:hover {
+    opacity: 1;
+}
+
+.myvh_cal_event_inner {
+    color: inherit;
+    font-weight: 500;
+}
+
+/* Week / Day view time axis */
+.myvh_cal_rowheader {
+    background: #f6f7f7;
+    color: #50575e;
+    font-size: 0.75em;
+    text-align: right;
+    padding-right: 6px;
+    border-right: 1px solid #dcdcde;
+}
+
+/* Separator lines */
+.myvh_cal_divider {
+    background: #dcdcde;
+}
+
+.myvh_cal_separator {
+    background: #c3c4c7;
+}
+
+/* Today highlight */
+.myvh_cal_cell_today {
+    background: #f0f6fc;
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────────── */
+.myvh-cal-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    font-size: 0.8em;
+    color: #50575e;
+    align-items: center;
+}
+
+.myvh-legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.myvh-legend-confirmed { background: #2271b1; }
+.myvh-legend-pending   { background: #f0a500; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .myvh-cal-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .myvh-cal-title {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .myvh-cal-btn {
+        padding: 5px 9px;
+        font-size: 0.8em;
+    }
+}
