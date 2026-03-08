@@ -71,6 +71,13 @@ class MYVH_Room_Rate_Repository {
         return $this->wpdb->get_row($sql, ARRAY_A);
     }
 
+    public function get_all() {
+        $sql = "SELECT * FROM {$this->table}";
+
+        return $this->wpdb->query($sql);
+
+    }
+
     private function get_format($data) {
         $formats = [];
 

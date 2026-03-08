@@ -7,9 +7,9 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$venues = MYVH_Registry::get( 'venue_repo' )->get_all();
-$rooms  = MYVH_Registry::get( 'room_repo'  )->get_all_with_venues();
-$customers = MYVH_Registry::get( 'customer_repo' )->get_all( [ 'orderby' => 'Name', 'order' => 'ASC', 'limit' => 500 ] );
+$venues = MYVH_Registry::get( 'venue_service' )->get_all();
+$rooms  = MYVH_Registry::get( 'room_service'  )->get_all_with_venues();
+$customers = MYVH_Registry::get( 'customer_service' )->get_all( [ 'orderby' => 'Name', 'order' => 'ASC', 'limit' => 500 ] );
 ?>
 <div class="wrap vbc-calendar-wrap">
     <h1><?php esc_html_e( 'Booking Calendar', 'my-village-hall' ); ?>
@@ -53,23 +53,23 @@ $customers = MYVH_Registry::get( 'customer_repo' )->get_all( [ 'orderby' => 'Nam
                 </label>
             </div>
             <div class="vbc-filter-actions">
-                <button id="vbc-new-booking" class="button button-primary"><?php esc_html_e( '+ New Booking', 'my-village-hall' ); ?></button>
-                <button id="vbc-refresh-calendar" class="button"><?php esc_html_e( 'Refresh', 'my-village-hall' ); ?></button>
+                <button type="button" id="vbc-new-booking" class="button button-primary"><?php esc_html_e( '+ New Booking', 'my-village-hall' ); ?></button>
+                <button type="button" id="vbc-refresh-calendar" class="button"><?php esc_html_e( 'Refresh', 'my-village-hall' ); ?></button>
             </div>
         </div>
 
         <!-- View switcher + title -->
         <div class="vbc-toolbar">
             <div class="vbc-toolbar-nav">
-                <button id="vbc-prev" class="button" aria-label="<?php esc_attr_e( 'Previous', 'my-village-hall' ); ?>">&#8249;</button>
-                <button id="vbc-today" class="button"><?php esc_html_e( 'Today', 'my-village-hall' ); ?></button>
-                <button id="vbc-next" class="button" aria-label="<?php esc_attr_e( 'Next', 'my-village-hall' ); ?>">&#8250;</button>
+                <button type="button" id="vbc-prev" class="button" aria-label="<?php esc_attr_e( 'Previous', 'my-village-hall' ); ?>">&#8249;</button>
+                <button type="button" id="vbc-today" class="button"><?php esc_html_e( 'Today', 'my-village-hall' ); ?></button>
+                <button type="button" id="vbc-next" class="button" aria-label="<?php esc_attr_e( 'Next', 'my-village-hall' ); ?>">&#8250;</button>
                 <span id="vbc-cal-title" class="vbc-cal-title"></span>
             </div>
             <div class="vbc-toolbar-views">
-                <button class="button vbc-view-btn active" data-view="Month"><?php esc_html_e( 'Month', 'my-village-hall' ); ?></button>
-                <button class="button vbc-view-btn" data-view="Week"><?php esc_html_e( 'Week', 'my-village-hall' ); ?></button>
-                <button class="button vbc-view-btn" data-view="Day"><?php esc_html_e( 'Day', 'my-village-hall' ); ?></button>
+                <button type="button" class="button vbc-view-btn" data-view="Day"><?php esc_html_e( 'Day', 'my-village-hall' ); ?></button>
+                <button type="button" class="button vbc-view-btn active" data-view="Week"><?php esc_html_e( 'Week', 'my-village-hall' ); ?></button>
+                <button type="button" class="button vbc-view-btn" data-view="Month"><?php esc_html_e( 'Month', 'my-village-hall' ); ?></button>
             </div>
         </div>
 
@@ -116,28 +116,27 @@ $customers = MYVH_Registry::get( 'customer_repo' )->get_all( [ 'orderby' => 'Nam
 
             <div class="vbc-form-row">
                 <div class="vbc-form-group">
-                    <label for="vbc-modal-venue"><?php esc_html_e( 'Venue', 'my-village-hall' ); ?></label>
-                    <select id="vbc-modal-venue">
-                        <option value=""><?php esc_html_e( '— All venues —', 'my-village-hall' ); ?></option>
-                        <?php foreach ( $venues as $venue ) : ?>
-                            <option value="<?php echo esc_attr( $venue['Id'] ); ?>"><?php echo esc_html( $venue['Name'] ); ?></option>
+                    <label for="vbc-modal-room"><?php esc_html_e( 'Venue &amp; Room', 'my-village-hall' ); ?> <span class="required">*</span></label>
+                    <select id="vbc-modal-room" required>
+                        <option value=""><?php esc_html_e( '— Select a room —', 'my-village-hall' ); ?></option>
+                        <?php
+                        // Group rooms by venue using optgroup
+                        $rooms_by_venue = [];
+                        foreach ( $rooms as $room ) {
+                            $rooms_by_venue[ $room['VenueId'] ][] = $room;
+                        }
+                        foreach ( $venues as $venue ) :
+                            if ( empty( $rooms_by_venue[ $venue['Id'] ] ) ) continue;
+                        ?>
+                        <optgroup label="<?php echo esc_attr( $venue['Name'] ); ?>">
+                            <?php foreach ( $rooms_by_venue[ $venue['Id'] ] as $room ) : ?>
+                                <option value="<?php echo esc_attr( $room['Id'] ); ?>">
+                                    <?php echo esc_html( $room['Name'] ); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </optgroup>
                         <?php endforeach; ?>
                     </select>
-                </div>
-            </div>
-
-            <div class="vbc-form-row">
-                <div class="vbc-form-group">
-                    <label><?php esc_html_e( 'Room', 'my-village-hall' ); ?> <span class="required">*</span></label>
-                    <div id="vbc-modal-room-container">
-                        <?php foreach ( $rooms as $room ) : ?>
-                            <label class="vbc-room-option" data-venue="<?php echo esc_attr( $room['VenueId'] ); ?>">
-                                <input type="radio" name="vbc_room_id" value="<?php echo esc_attr( $room['Id'] ); ?>">
-                                <strong><?php echo esc_html( $room['Name'] ); ?></strong>
-                                <span class="vbc-room-venue"><?php echo esc_html( $room['VenueName'] ); ?></span>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
                 </div>
             </div>
 
@@ -183,8 +182,8 @@ $customers = MYVH_Registry::get( 'customer_repo' )->get_all( [ 'orderby' => 'Nam
             </div>
         </div>
         <div class="vbc-modal-footer">
-            <button id="vbc-save-booking" class="button button-primary"><?php esc_html_e( 'Save Booking', 'my-village-hall' ); ?></button>
-            <button id="vbc-cancel-booking" class="button button-link-delete" style="display:none;"><?php esc_html_e( 'Cancel Booking', 'my-village-hall' ); ?></button>
+            <button type="button" id="vbc-save-booking" class="button button-primary"><?php esc_html_e( 'Save Booking', 'my-village-hall' ); ?></button>
+            <button type="button" id="vbc-cancel-booking" class="button button-link-delete" style="display:none;"><?php esc_html_e( 'Cancel Booking', 'my-village-hall' ); ?></button>
             <button class="vbc-modal-close button button-secondary" type="button"><?php esc_html_e( 'Close', 'my-village-hall' ); ?></button>
             <a id="vbc-edit-full" href="#" class="button" style="display:none;margin-left:auto;"><?php esc_html_e( 'Full Edit', 'my-village-hall' ); ?></a>
         </div>

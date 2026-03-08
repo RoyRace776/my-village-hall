@@ -72,7 +72,7 @@ class MYVH_Calendar_Ajax {
         $params[] = $start;
 
         if ( ! $show_cancelled ) {
-            $where[] = "b.Status != 'cancelled'";
+            $where[] = "b.Status != ". BookingStatus::CANCELLED;
         }
 
         if ( $venue_id > 0 ) {
@@ -160,10 +160,10 @@ class MYVH_Calendar_Ajax {
 
     private function status_colour( string $status ): string {
         $map = [
-            'confirmed' => '#2271b1',
-            'pending'   => '#f0a500',
-            'cancelled' => '#888888',
-            'completed' => '#46b450',
+            BookingStatus::CONFIRMED => '#2271b1',
+            BookingStatus::PENDING   => '#f0a500',
+            BookingStatus::CANCELLED => '#888888',
+            BookingStatus::COMPLETED => '#46b450',
         ];
         return $map[ strtolower( $status ) ] ?? '#2271b1';
     }
@@ -239,7 +239,7 @@ class MYVH_Calendar_Ajax {
             'end_date'    => sanitize_text_field( $_POST['end_date']    ?? '' ),
             'start_time'  => sanitize_text_field( $_POST['start_time']  ?? '' ),
             'end_time'    => sanitize_text_field( $_POST['end_time']    ?? '' ),
-            'status'      => sanitize_text_field( $_POST['status']      ?? 'pending' ),
+            'status'      => sanitize_text_field( $_POST['status']      ?? BookingStatus::PENDING ),
             'description' => sanitize_textarea_field( $_POST['description'] ?? '' ),
             'public'      => isset( $_POST['public'] ) ? 1 : 0,
             'addons'      => [],

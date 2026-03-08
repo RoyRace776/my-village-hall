@@ -277,3 +277,73 @@
     .vbc-toolbar        { flex-direction: column; align-items: flex-start; }
     .vbc-cal-title      { margin-left: 0; }
 }
+
+/* ── DayPilot Scheduler theme additions ──────────────────────────────────── */
+
+/* Row header (room name column) */
+.myvh_admin_cal_rowheader_inner {
+    font-weight: 600;
+    font-size: 12px;
+    color: #2c3338;
+    padding: 4px 8px;
+}
+
+/* Column header (date/time cells) */
+.myvh_admin_cal_colheader_inner {
+    font-size: 11px;
+    font-weight: 600;
+    color: #50575e;
+    text-align: center;
+    padding: 4px 2px;
+    background: #f6f7f7;
+    border-bottom: 1px solid #dcdcde;
+}
+
+/* Main grid cell */
+.myvh_admin_cal_cell_inner {
+    background: #fff;
+}
+
+.myvh_admin_cal_cell_business_inner {
+    background: #fff;
+}
+
+.myvh_admin_cal_cell_nonbusiness_inner {
+    background: #f9f9f9;
+}
+
+/* Today highlight */
+.myvh_admin_cal_cell_today_inner {
+    background: #f0f6fc;
+}
+
+/* Event bar */
+.myvh_admin_cal_event_inner {
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 5px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    opacity: 0.93;
+    cursor: pointer;
+    transition: opacity .1s, filter .1s;
+}
+.myvh_admin_cal_event_inner:hover {
+    opacity: 1;
+    filter: brightness(1.08);
+}
+
+/* Splitter between row header and grid */
+.myvh_admin_cal_splitter {
+    background: #dcdcde;
+    width: 4px;
+    cursor: col-resize;
+}
+
+/* Scrollbar area */
+.myvh_admin_cal_scroll_up,
+.myvh_admin_cal_scroll_down {
+    background: #f6f7f7;
+}

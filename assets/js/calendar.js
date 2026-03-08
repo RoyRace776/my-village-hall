@@ -1,37 +1,35 @@
 /**
- * My Village Hall – Admin Calendar (DayPilot Lite)
+ * My Village Hall – Admin Calendar (DayPilot Lite Scheduler)
  *
- * Defensive implementation:
- * - Waits for DayPilot to be available before initialising
- * - View switching re-uses the same container correctly
- * - Navigation updates startDate then calls update()
+ * Rooms = rows, time = columns.
+ * Horizontal scrolling is native browser scroll on the container.
+ * View switching tears down and rebuilds the scheduler cleanly.
  */
 (function ($) {
     'use strict';
 
     var cfg         = window.myvhAdminCal || {};
     var dp          = null;
-    var currentView = 'Month';
-    var currentDate = null;   // set once DayPilot is confirmed available
+    var currentView = 'Week';
+    var currentDate = null;
 
-    // ── Wait for DayPilot then boot ───────────────────────────────────────────
+    // ── Wait for DayPilot ─────────────────────────────────────────────────────
     function waitForDayPilot(attempts) {
         attempts = attempts || 0;
         if (attempts > 40) {
             $('#vbc-calendar').html(
                 '<div style="padding:20px;color:#c33;border:1px solid #c33;border-radius:4px;">' +
-                '<strong>Error:</strong> DayPilot calendar library could not be loaded. ' +
-                'Please check your internet connection and reload the page.</div>'
+                '<strong>Error:</strong> DayPilot library could not be loaded. ' +
+                'Check assets/js/daypilot-all.min.js exists and reload.</div>'
             );
             return;
         }
-        if (typeof DayPilot === 'undefined' || typeof DayPilot.Month === 'undefined') {
+        if (typeof DayPilot === 'undefined' || typeof DayPilot.Scheduler === 'undefined') {
             setTimeout(function () { waitForDayPilot(attempts + 1); }, 150);
             return;
         }
-        // DayPilot is ready
         currentDate = DayPilot.Date.today();
-        mountView(currentView);
+        initScheduler();
         bindUI();
     }
 
@@ -40,105 +38,87 @@
         waitForDayPilot();
     });
 
-    // ── Mount a view ──────────────────────────────────────────────────────────
-    function mountView(view) {
-        currentView = view;
-        updateViewButtons();
-        updateTitle();
-
-        // Destroy previous instance cleanly
-        if (dp) {
-            try { dp.dispose(); } catch (e) {}
-            // Also clear the DOM node so DayPilot doesn't find stale markup
-            $('#vbc-calendar').empty();
-            dp = null;
+    // ── View config ───────────────────────────────────────────────────────────
+    function viewCfg(view) {
+        if (view === 'Day') {
+            return {
+                days:        1,
+                scale:       'Hour',
+                cellWidth:   60,
+                timeHeaders: [
+                    { groupBy: 'Day',  format: 'dddd d MMMM yyyy' },
+                    { groupBy: 'Hour', format: 'HH:mm' },
+                ],
+            };
         }
-
-        if (view === 'Week' || view === 'Day') {
-            dp = new DayPilot.Calendar('vbc-calendar', {
-                viewType:                  view,
-                startDate:                 currentDate,
-                theme:                     'myvh_admin_cal',
-                heightSpec:                'Fixed',
-                height:                    600,
-                businessBeginsHour:        8,
-                businessEndsHour:          22,
-                eventMoveHandling:         'Disabled',
-                eventResizeHandling:       'Disabled',
-                timeRangeSelectedHandling: 'Enabled',
-                onTimeRangeSelected:       onRangeSelected,
-                onEventClick:              onEventClick,
-            });
-        } else {
-            dp = new DayPilot.Month('vbc-calendar', {
-                startDate:           currentDate,
-                theme:               'myvh_admin_cal',
-                cellHeight:          100,
-                eventMoveHandling:   'Disabled',
-                eventResizeHandling: 'Disabled',
-                onTimeRangeSelected: onRangeSelected,
-                onEventClick:        onEventClick,
-            });
+        if (view === 'Week') {
+            return {
+                days:        56,          // 8 weeks — wide enough to scroll through
+                scale:       'Day',
+                cellWidth:   44,
+                timeHeaders: [
+                    { groupBy: 'Month', format: 'MMMM yyyy' },
+                    { groupBy: 'Day',   format: 'ddd d' },
+                ],
+            };
         }
-
-        dp.init();
-        loadEvents();
-    }
-
-    // ── Load events from server ───────────────────────────────────────────────
-    function loadEvents() {
-        if (!dp) return;
-
-        var range    = getVisibleRange();
-        var venueId  = $('#vbc-venue-filter').val()         || 0;
-        var roomId   = $('#vbc-room-filter').val()          || 0;
-        var showCanc = $('#vbc-show-cancelled').is(':checked') ? 1 : 0;
-
-        $.get(cfg.ajax_url, {
-            action:         'myvh_cal_events',
-            nonce:          cfg.nonce,
-            start:          range.start,
-            end:            range.end,
-            venue_id:       venueId,
-            room_id:        roomId,
-            show_cancelled: showCanc,
-        })
-        .done(function (data) {
-            if (!dp) return;
-            dp.events.list = Array.isArray(data) ? data : [];
-            dp.update();
-        })
-        .fail(function () {
-            showNotice(cfg.strings && cfg.strings.error || 'Error loading events', 'error');
-        });
-    }
-
-    // ── Visible date range ────────────────────────────────────────────────────
-    function getVisibleRange() {
-        var d = new DayPilot.Date(currentDate);
-        if (currentView === 'Week') {
-            return { start: d.toString('yyyy-MM-dd'), end: d.addDays(7).toString('yyyy-MM-dd') };
-        }
-        if (currentView === 'Day') {
-            return { start: d.toString('yyyy-MM-dd'), end: d.addDays(1).toString('yyyy-MM-dd') };
-        }
-        // Month – pad by a week either side to capture partial weeks
+        // Month
         return {
-            start: d.firstDayOfMonth().addDays(-7).toString('yyyy-MM-dd'),
-            end:   d.firstDayOfMonth().addMonths(1).addDays(7).toString('yyyy-MM-dd'),
+            days:        365,             // full year — scroll left/right to browse
+            scale:       'Day',
+            cellWidth:   28,
+            timeHeaders: [
+                { groupBy: 'Month', format: 'MMM yyyy' },
+                { groupBy: 'Day',   format: 'd' },
+            ],
         };
     }
 
-    // ── Navigation ────────────────────────────────────────────────────────────
+    // ── Init / reinit scheduler ───────────────────────────────────────────────
+    function initScheduler() {
+        var vc = viewCfg(currentView);
+
+        // Fully clear the mount point before creating a new instance
+        $('#vbc-calendar').empty();
+
+        dp = new DayPilot.Scheduler('vbc-calendar', {
+            startDate:                 currentDate,
+            days:                      vc.days,
+            scale:                     vc.scale,
+            cellWidth:                 vc.cellWidth,
+            timeHeaders:               vc.timeHeaders,
+            theme:                     'myvh_admin_cal',
+            height:                    500,
+            eventMoveHandling:         'Disabled',
+            eventResizeHandling:       'Disabled',
+            timeRangeSelectedHandling: 'Enabled',
+            onTimeRangeSelected:       onRangeSelected,
+            onEventClick:              onEventClick,
+            rowHeaderWidth:            160,
+            rowHeaderColumns:          [{ title: 'Room', width: 160 }],
+        });
+
+        dp.init();
+        updateTitle();
+        updateViewButtons();
+        loadResources();
+    }
+
+    // ── Switch view ───────────────────────────────────────────────────────────
+    function switchView(view) {
+        currentView = view;
+        initScheduler();
+    }
+
+    // ── Navigation (moves startDate and rebuilds) ─────────────────────────────
     function navigate(direction) {
-        if (!dp) return;
         var d = new DayPilot.Date(currentDate);
-        if (currentView === 'Month') {
-            currentDate = d.addMonths(direction).firstDayOfMonth();
+        if (currentView === 'Day') {
+            currentDate = d.addDays(direction);
         } else if (currentView === 'Week') {
             currentDate = d.addDays(direction * 7);
         } else {
-            currentDate = d.addDays(direction);
+            currentDate = d.addMonths(direction).firstDayOfMonth();
         }
         dp.startDate = currentDate;
         dp.update();
@@ -147,12 +127,66 @@
     }
 
     function goToday() {
-        if (!dp) return;
-        currentDate = DayPilot.Date.today();
+        currentDate  = DayPilot.Date.today();
         dp.startDate = currentDate;
         dp.update();
         loadEvents();
         updateTitle();
+    }
+
+    // ── Load rooms (resources) then events ────────────────────────────────────
+    function loadResources() {
+        var venueId = $('#vbc-venue-filter').val() || 0;
+        var roomId  = $('#vbc-room-filter').val()  || 0;
+
+        $.get(cfg.ajax_url, {
+            action:   'myvh_cal_rooms',
+            nonce:    cfg.nonce,
+            venue_id: venueId,
+        })
+        .done(function (res) {
+            if (!dp || !res.success) return;
+            var rows = [];
+            $.each(res.data.rooms, function (i, room) {
+                if (roomId && String(room.Id) !== String(roomId)) return;
+                rows.push({
+                    id:   String(room.Id),
+                    name: room.VenueName ? room.VenueName + ' \u203a ' + room.Name : room.Name,
+                });
+            });
+            dp.resources = rows;
+            dp.update();
+            loadEvents();
+        })
+        .fail(function () { loadEvents(); });
+    }
+
+    // ── Load events ───────────────────────────────────────────────────────────
+    function loadEvents() {
+        if (!dp) return;
+        var d        = new DayPilot.Date(currentDate);
+        var days     = viewCfg(currentView).days;
+        var start    = d.toString('yyyy-MM-dd');
+        var end      = d.addDays(days).toString('yyyy-MM-dd');
+        var venueId  = $('#vbc-venue-filter').val()            || 0;
+        var roomId   = $('#vbc-room-filter').val()             || 0;
+        var showCanc = $('#vbc-show-cancelled').is(':checked') ? 1 : 0;
+
+        $.get(cfg.ajax_url, {
+            action: 'myvh_cal_events', nonce: cfg.nonce,
+            start: start, end: end,
+            venue_id: venueId, room_id: roomId, show_cancelled: showCanc,
+        })
+        .done(function (data) {
+            if (!dp) return;
+            dp.events.list = (Array.isArray(data) ? data : []).map(function (e) {
+                return $.extend({}, e, { resource: String(e.resource) });
+            });
+            dp.update();
+        })
+        .fail(function () {
+            showNotice((cfg.strings && cfg.strings.error) || 'Error loading events', 'error');
+        });
     }
 
     // ── Title ─────────────────────────────────────────────────────────────────
@@ -160,12 +194,12 @@
         if (!currentDate) return;
         var d   = new DayPilot.Date(currentDate);
         var out = '';
-        if (currentView === 'Month') {
-            out = d.toString('MMMM yyyy');
-        } else if (currentView === 'Week') {
-            out = d.toString('d MMM') + ' \u2013 ' + d.addDays(6).toString('d MMM yyyy');
-        } else {
+        if (currentView === 'Day') {
             out = d.toString('dddd, d MMMM yyyy');
+        } else if (currentView === 'Week') {
+            out = d.toString('d MMM yyyy') + ' \u2013 ' + d.addDays(55).toString('d MMM yyyy');
+        } else {
+            out = d.toString('d MMM yyyy') + ' \u2013 ' + d.addDays(364).toString('d MMM yyyy');
         }
         $('#vbc-cal-title').text(out);
     }
@@ -177,10 +211,11 @@
             .addClass('active');
     }
 
-    // ── DayPilot event callbacks ──────────────────────────────────────────────
+    // ── DayPilot callbacks ────────────────────────────────────────────────────
     function onRangeSelected(args) {
         var start = new DayPilot.Date(args.start);
         openModal('new', {
+            roomId:    args.resource,
             date:      start.toString('yyyy-MM-dd'),
             startTime: start.toString('HH:mm'),
             endTime:   new DayPilot.Date(args.end).toString('HH:mm'),
@@ -195,7 +230,6 @@
             id:          e.data.id,
             customerId:  t.customerId,
             roomId:      t.roomId,
-            venueId:     t.venueId,
             date:        new DayPilot.Date(e.data.start).toString('yyyy-MM-dd'),
             startTime:   new DayPilot.Date(e.data.start).toString('HH:mm'),
             endTime:     new DayPilot.Date(e.data.end).toString('HH:mm'),
@@ -205,30 +239,20 @@
         });
     }
 
-    // ── Booking modal ─────────────────────────────────────────────────────────
+    // ── Modal ─────────────────────────────────────────────────────────────────
     function openModal(mode, data) {
         data = data || {};
-
-        // Reset
-        $('#vbc-booking-id').val('');
-        $('#vbc-modal-customer').val('');
-        $('#vbc-modal-venue').val('');
-        $('#vbc-modal-date').val('');
-        $('#vbc-modal-start-time').val('');
-        $('#vbc-modal-end-time').val('');
+        $('#vbc-booking-id, #vbc-modal-customer, #vbc-modal-room, #vbc-modal-date, #vbc-modal-start-time, #vbc-modal-end-time, #vbc-modal-description').val('');
         $('#vbc-modal-status').val('pending');
-        $('#vbc-modal-description').val('');
         $('#vbc-modal-public').prop('checked', true);
-        $('input[name="vbc_room_id"]').prop('checked', false);
-        $('#vbc-cancel-booking').hide();
-        $('#vbc-edit-full').hide();
-        showAllRooms();
+        $('#vbc-cancel-booking, #vbc-edit-full').hide();
 
         if (mode === 'new') {
             $('#vbc-modal-title').text((cfg.strings && cfg.strings.newBooking) || 'New Booking');
             if (data.date)      $('#vbc-modal-date').val(data.date);
             if (data.startTime) $('#vbc-modal-start-time').val(data.startTime);
             if (data.endTime)   $('#vbc-modal-end-time').val(data.endTime);
+            if (data.roomId)    $('#vbc-modal-room').val(String(data.roomId));
         } else {
             $('#vbc-modal-title').text((cfg.strings && cfg.strings.editBooking) || 'Edit Booking');
             $('#vbc-booking-id').val(data.id);
@@ -238,56 +262,27 @@
             $('#vbc-modal-status').val(data.status || 'pending');
             $('#vbc-modal-description').val(data.description || '');
             $('#vbc-modal-public').prop('checked', !!data.isPublic);
+            if (data.roomId)     $('#vbc-modal-room').val(String(data.roomId));
+            if (data.customerId) $('#vbc-modal-customer').val(data.customerId);
             $('#vbc-cancel-booking').show();
             if (cfg.admin_url && data.id) {
                 $('#vbc-edit-full').attr('href', cfg.admin_url + 'admin.php?page=my-village-hall&edit=' + data.id).show();
             }
-            if (data.venueId) {
-                $('#vbc-modal-venue').val(data.venueId);
-                filterRoomsByVenue(data.venueId);
-            }
-            if (data.roomId) {
-                $('input[name="vbc_room_id"][value="' + data.roomId + '"]').prop('checked', true);
-            }
-            if (data.customerId) {
-                $('#vbc-modal-customer').val(data.customerId);
-            }
         }
-
         $('#vbc-booking-modal').fadeIn(200);
-    }
-
-    function filterRoomsByVenue(venueId) {
-        if (!venueId) { showAllRooms(); return; }
-        $('.vbc-room-option').each(function () {
-            $(this).toggle(String($(this).data('venue')) === String(venueId));
-        });
-    }
-
-    function showAllRooms() {
-        $('.vbc-room-option').show();
     }
 
     // ── Save booking ──────────────────────────────────────────────────────────
     function saveBooking() {
-        var roomId = $('input[name="vbc_room_id"]:checked').val();
-
-        if (!$('#vbc-modal-customer').val()) {
-            alert((cfg.strings && cfg.strings.selectCustomer) || 'Please select a customer');
-            return;
-        }
-        if (!roomId) {
-            alert((cfg.strings && cfg.strings.selectRoom) || 'Please select a room');
-            return;
-        }
+        var roomId = $('#vbc-modal-room').val();
+        if (!$('#vbc-modal-customer').val()) { alert((cfg.strings && cfg.strings.selectCustomer) || 'Please select a customer'); return; }
+        if (!roomId)                         { alert((cfg.strings && cfg.strings.selectRoom)     || 'Please select a room');     return; }
         if (!$('#vbc-modal-date').val() || !$('#vbc-modal-start-time').val() || !$('#vbc-modal-end-time').val()) {
-            alert('Please fill in the date and times');
-            return;
+            alert('Please fill in the date and times'); return;
         }
-
-        var payload = {
-            action:      'myvh_cal_save_booking',
-            nonce:       cfg.nonce,
+        var $btn = $('#vbc-save-booking').prop('disabled', true).text('Saving\u2026');
+        $.post(cfg.ajax_url, {
+            action: 'myvh_cal_save_booking', nonce: cfg.nonce,
             booking_id:  $('#vbc-booking-id').val() || '',
             customer_id: $('#vbc-modal-customer').val(),
             room_id:     roomId,
@@ -298,49 +293,24 @@
             status:      $('#vbc-modal-status').val(),
             description: $('#vbc-modal-description').val(),
             public:      $('#vbc-modal-public').is(':checked') ? 1 : 0,
-        };
-
-        var $btn = $('#vbc-save-booking').prop('disabled', true).text('Saving\u2026');
-
-        $.post(cfg.ajax_url, payload)
-         .done(function (res) {
-            if (res.success) {
-                showNotice(res.data.message, 'success');
-                $('#vbc-booking-modal').fadeOut(200);
-                loadEvents();
-            } else {
-                alert((res.data && res.data.message) || (cfg.strings && cfg.strings.error) || 'Error');
-            }
-         })
-         .fail(function () {
-            alert((cfg.strings && cfg.strings.error) || 'An error occurred');
-         })
-         .always(function () {
-            $btn.prop('disabled', false).text((cfg.strings && cfg.strings.save) || 'Save Booking');
-         });
+        })
+        .done(function (res) {
+            if (res.success) { showNotice(res.data.message, 'success'); $('#vbc-booking-modal').fadeOut(200); loadEvents(); }
+            else { alert((res.data && res.data.message) || (cfg.strings && cfg.strings.error) || 'Error'); }
+        })
+        .fail(function () { alert((cfg.strings && cfg.strings.error) || 'An error occurred'); })
+        .always(function () { $btn.prop('disabled', false).text((cfg.strings && cfg.strings.save) || 'Save Booking'); });
     }
 
     // ── Cancel booking ────────────────────────────────────────────────────────
     function cancelBooking() {
         if (!confirm((cfg.strings && cfg.strings.confirmCancel) || 'Cancel this booking?')) return;
-
-        $.post(cfg.ajax_url, {
-            action:     'myvh_cal_cancel_booking',
-            nonce:      cfg.nonce,
-            booking_id: $('#vbc-booking-id').val(),
-        })
+        $.post(cfg.ajax_url, { action: 'myvh_cal_cancel_booking', nonce: cfg.nonce, booking_id: $('#vbc-booking-id').val() })
         .done(function (res) {
-            if (res.success) {
-                showNotice(res.data.message, 'success');
-                $('#vbc-booking-modal').fadeOut(200);
-                loadEvents();
-            } else {
-                alert((res.data && res.data.message) || (cfg.strings && cfg.strings.error) || 'Error');
-            }
+            if (res.success) { showNotice(res.data.message, 'success'); $('#vbc-booking-modal').fadeOut(200); loadEvents(); }
+            else { alert((res.data && res.data.message) || (cfg.strings && cfg.strings.error) || 'Error'); }
         })
-        .fail(function () {
-            alert((cfg.strings && cfg.strings.error) || 'An error occurred');
-        });
+        .fail(function () { alert((cfg.strings && cfg.strings.error) || 'An error occurred'); });
     }
 
     // ── UI bindings ───────────────────────────────────────────────────────────
@@ -349,42 +319,23 @@
         $('#vbc-next').on('click',  function () { navigate(1); });
         $('#vbc-today').on('click', goToday);
 
-        // View buttons
         $(document).on('click', '.vbc-view-btn', function () {
             var view = $(this).data('view');
-            if (view && view !== currentView) {
-                mountView(view);
-            }
+            if (view && view !== currentView) switchView(view);
         });
 
-        // Filters
         $('#vbc-venue-filter').on('change', function () {
             filterRoomDropdownByVenue($(this).val());
-            loadEvents();
+            loadResources();
         });
-        $('#vbc-room-filter').on('change',    function () { loadEvents(); });
+        $('#vbc-room-filter').on('change',    function () { loadResources(); });
         $('#vbc-show-cancelled').on('change', function () { loadEvents(); });
-        $('#vbc-refresh-calendar').on('click',function () { loadEvents(); });
+        $('#vbc-refresh-calendar').on('click',function () { loadResources(); });
+        $('#vbc-new-booking').on('click',     function () { openModal('new', {}); });
 
-        // New booking button
-        $('#vbc-new-booking').on('click', function () { openModal('new', {}); });
+        $(document).on('click', '.vbc-modal-close', function () { $(this).closest('.vbc-modal').fadeOut(200); });
+        $(document).on('click', '.vbc-modal',       function (e) { if ($(e.target).hasClass('vbc-modal')) $(this).fadeOut(200); });
 
-        // Modal close
-        $(document).on('click', '.vbc-modal-close', function () {
-            $(this).closest('.vbc-modal').fadeOut(200);
-        });
-        $(document).on('click', '.vbc-modal', function (e) {
-            if ($(e.target).hasClass('vbc-modal')) {
-                $(this).fadeOut(200);
-            }
-        });
-
-        // Modal venue filter
-        $('#vbc-modal-venue').on('change', function () {
-            filterRoomsByVenue($(this).val());
-        });
-
-        // Save / cancel
         $('#vbc-save-booking').on('click',   saveBooking);
         $('#vbc-cancel-booking').on('click', cancelBooking);
     }
@@ -395,11 +346,8 @@
             if (!opt.val()) { opt.show(); return; }
             opt.toggle(!venueId || String(opt.data('venue')) === String(venueId));
         });
-        // Reset if the selected room is now hidden
         var $sel = $('#vbc-room-filter option:selected');
-        if ($sel.val() && $sel.is(':hidden')) {
-            $('#vbc-room-filter').val('');
-        }
+        if ($sel.val() && $sel.is(':hidden')) $('#vbc-room-filter').val('');
     }
 
     function showNotice(message, type) {

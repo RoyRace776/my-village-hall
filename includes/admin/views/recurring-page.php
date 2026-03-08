@@ -27,8 +27,8 @@ if ($edit_id || $view_id) {
     $room_map        = array_column($rooms ?? [], null, 'Id');
 
     $today     = date('Y-m-d');
-    $future    = array_filter($bookings, fn($b) => $b['StartDate'] >= $today && $b['Status'] !== 'cancelled');
-    $past      = array_filter($bookings, fn($b) => $b['StartDate'] < $today  || $b['Status'] === 'cancelled');
+    $future    = array_filter($bookings, fn($b) => $b['StartDate'] >= $today && $b['Status'] !== BookingStatus::CANCELLED);
+    $past      = array_filter($bookings, fn($b) => $b['StartDate'] < $today  || $b['Status'] === BookingStatus::CANCELLED);
     ?>
     <div class="wrap">
         <h1>
@@ -296,7 +296,8 @@ if ($edit_id || $view_id) {
                 </thead>
                 <tbody>
                 <?php
-                $status_colors = ['confirmed'=>'#46b450','pending'=>'#2271b1','cancelled'=>'#dc3232','completed'=>'#999'];
+                $status_colors = [BookingStatus::CONFIRMED=>'#46b450',BookingStatus::PENDING=>'#2271b1',
+                                BookingStatus::CANCELLED=>'#dc3232',BookingStatus::COMPLETED=>'#999'];
                 foreach ($bookings as $b):
                     $is_past  = $b['StartDate'] < $today;
                     $sc = $status_colors[$b['Status']] ?? '#999';
@@ -323,7 +324,7 @@ if ($edit_id || $view_id) {
                         <a href="<?php echo admin_url('admin.php?page=my-village-hall&edit=' . $b['Id']); ?>">
                             <?php _e('Edit', 'my-village-hall'); ?>
                         </a>
-                        <?php if ($b['Status'] !== 'cancelled'): ?>
+                        <?php if ($b['Status'] !== BookingStatus::CANCELLED): ?>
                             |
                             <a href="<?php echo wp_nonce_url(
                                 admin_url('admin-post.php?action=myvh_cancel_booking&id=' . $b['Id']),

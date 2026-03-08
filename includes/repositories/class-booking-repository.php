@@ -238,10 +238,12 @@ class MYVH_Booking_Repository {
     public function cancel_future_by_pattern($pattern_id) {
         return $this->wpdb->query($this->wpdb->prepare(
             "UPDATE {$this->table_name}
-             SET Status = 'cancelled'
-             WHERE RecurringPatternId = %d AND StartDate >= %s AND Status != 'cancelled'",
-            $pattern_id,
-            date('Y-m-d')
+             SET Status = %s
+             WHERE RecurringPatternId = %d AND StartDate >= %s AND Status != %s",
+                BookingStatus::CANCELLED,
+                $pattern_id,
+                date('Y-m-d'),
+                BookingStatus::CANCELLED
         ));
     }
 
@@ -272,14 +274,14 @@ class MYVH_Booking_Repository {
             "SELECT COUNT(*) FROM {$this->table_name}
              WHERE RoomId = %d
              AND StartDate = %s
-             AND Status != 'cancelled'
+             AND Status != %s
              AND (
-                 (StartTime < %s AND EndTime > %s) OR
                  (StartTime < %s AND EndTime > %s) OR
                  (StartTime >= %s AND EndTime <= %s)
              )",
             $room_id,
             $date,
+            BookingStatus::CANCELLED,
             $end_time, $start_time,
             $end_time, $start_time,
             $start_time, $end_time

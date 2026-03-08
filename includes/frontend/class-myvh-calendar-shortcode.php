@@ -49,7 +49,7 @@ class MYVH_Calendar_Shortcode {
      *
      * Only bookings that are:
      *   - Public = 1
-     *   - Status IN ('confirmed', 'pending')
+     *   - Status IN (BookingStatus::CONFIRMED, BookingStatus::PENDING)
      * are returned. Customer names are never exposed.
      */
     public function get_events( WP_REST_Request $request ): WP_REST_Response {
@@ -67,7 +67,7 @@ class MYVH_Calendar_Shortcode {
 
         $prefix = $wpdb->prefix;
 
-        $where  = [ '1=1', "b.Public = 1", "b.Status IN ('confirmed','pending')" ];
+        $where  = [ '1=1', "b.Public = 1", "b.Status IN (". BookingStatus::COMPLETED . "," . BookingStatus::PENDING . ")" ];
         $params = [];
 
         // Date range – bookings that overlap the requested window

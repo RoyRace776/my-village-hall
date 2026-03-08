@@ -3,6 +3,7 @@ if (!defined('ABSPATH')) exit;
 
 require_once MYVH_PLUGIN_DIR . 'includes/events/booking-events.php';
 require_once MYVH_PLUGIN_DIR . 'includes/events/class-myvh-event-dispatcher.php';
+require_once MYVH_PLUGIN_DIR . 'includes/domain/booking/class-myvh-booking-status.php';
 
 class MYVH_Booking_Service {
 
@@ -162,7 +163,7 @@ class MYVH_Booking_Service {
         $record = [
             'CustomerId'  => intval($data['customer_id']),
             'RoomId'      => intval($data['room_id']),
-            'Status'      => sanitize_text_field($data['status'] ?? 'pending'),
+            'Status'      => sanitize_text_field($data['status'] ?? BookingStatus::PENDING),
             'StartDate'   => sanitize_text_field($data['start_date']),
             'EndDate'     => !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : sanitize_text_field($data['start_date']),
             'StartTime'   => sanitize_text_field($data['start_time']),
@@ -292,7 +293,7 @@ class MYVH_Booking_Service {
 
     public function cancel($id) {
         return $this->booking_repo->update(
-            ['Status' => 'cancelled'],
+            ['Status' => BookingStatus::CANCELLED],
             ['Id' => $id]
         );
     }
@@ -393,7 +394,7 @@ class MYVH_Booking_Service {
     private function find_next_booking($bookings, $today) {
         foreach (array_reverse($bookings) as $b) {
 
-            if ($b['StartDate'] >= $today && $b['Status'] !== 'cancelled') {
+            if ($b['StartDate'] >= $today && $b['Status'] !== BookingStatus::CANCELLED) {
                 return $b;
             }
 
@@ -406,18 +407,18 @@ class MYVH_Booking_Service {
         $statuses = array_column($members, 'Status');
 
         foreach ($statuses as $status) {
-            if ($status === 'confirmed') {
-                return 'confirmed';
+            if ($status === BookingStatus::CONFIRMED) {
+                return BookingStatus::CONFIRMED;
             }
         }
 
         foreach ($statuses as $status) {
-            if ($status === 'pending') {
-                return 'pending';
+            if ($status === BookingStatus::PENDING) {
+                return BookingStatus::PENDING;
             }
         }
 
-        return $statuses[0] ?? 'completed';
+        return $statuses[0] ?? BookingStatus::COMPLETED;
     }
 
     private function dispatch_update_event($data) {
@@ -438,7 +439,7 @@ class MYVH_Booking_Service {
             );
         }
 
-        if ($new_status=='Cancelled' && $current_status<>'Cancelled') {
+        if ($new_status==BookingStatus::CANCELLED && $current_status<>BookingStatus::CANCELLED) {
             MYVH_Event_Dispatcher::dispatch(
                 MYVH_Booking_Events::CANCELLED,
                 [

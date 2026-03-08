@@ -49,10 +49,10 @@ $customer = $customer_service->get($edit_booking['CustomerId']);
 $room = $room_service->get($edit_booking['RoomId']);
 
 $status_colors = [
-    'pending' => '#2271b1',
-    'confirmed' => '#46b450',
-    'cancelled' => '#dc3232',
-    'completed' => '#999'
+    BookingStatus::PENDING => '#2271b1',
+    BookingStatus::CONFIRMED => '#46b450',
+    BookingStatus::CANCELLED => '#dc3232',
+    BookingStatus::COMPLETED => '#999'
 ];
 ?>
 
@@ -187,7 +187,7 @@ $status_colors = [
                         <a href="<?php echo admin_url('admin.php?page=my-village-hall'); ?>" class="button">
                             <?php _e('Back to All Bookings', 'my-village-hall'); ?>
                         </a>
-                        <?php if ($edit_booking['Status'] !== 'cancelled'): ?>
+                        <?php if ($edit_booking['Status'] !== BookingStatus::CANCELLED): ?>
                             <a href="<?php echo wp_nonce_url(
                                 admin_url('admin-post.php?action=myvh_cancel_booking&id=' . $booking_id),
                                 'myvh_cancel_booking'
@@ -383,16 +383,16 @@ $status_colors = [
                                 <th><?php _e('Status', 'my-village-hall'); ?></th>
                                 <td>
                                     <select name="status" class="regular-text">
-                                        <option value="pending" <?php selected($edit_booking && $edit_booking['Status'] == 'pending'); ?>>
+                                        <option value="pending" <?php selected($edit_booking && $edit_booking['Status'] == BookingStatus::PENDING); ?>>
                                             <?php _e('Pending', 'my-village-hall'); ?>
                                         </option>
-                                        <option value="confirmed" <?php selected(!$edit_booking || $edit_booking['Status'] == 'confirmed'); ?>>
+                                        <option value="confirmed" <?php selected(!$edit_booking || $edit_booking['Status'] == BookingStatus::CONFIRMED); ?>>
                                             <?php _e('Confirmed', 'my-village-hall'); ?>
                                         </option>
-                                        <option value="cancelled" <?php selected($edit_booking && $edit_booking['Status'] == 'cancelled'); ?>>
+                                        <option value="cancelled" <?php selected($edit_booking && $edit_booking['Status'] == BookingStatus::CANCELLED); ?>>
                                             <?php _e('Cancelled', 'my-village-hall'); ?>
                                         </option>
-                                        <option value="completed" <?php selected($edit_booking && $edit_booking['Status'] == 'completed'); ?>>
+                                        <option value="completed" <?php selected($edit_booking && $edit_booking['Status'] == BookingStatus::COMPLETED); ?>>
                                             <?php _e('Completed', 'my-village-hall'); ?>
                                         </option>
                                     </select>

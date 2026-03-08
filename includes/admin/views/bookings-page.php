@@ -35,10 +35,10 @@ $bookings = $booking_service->get_all_with_details($query_args);
 $today = date('Y-m-d');
 
 $status_colors = [
-    'pending'   => '#2271b1',
-    'confirmed' => '#46b450',
-    'cancelled' => '#dc3232',
-    'completed' => '#777',
+    BookingStatus::PENDING   => '#2271b1',
+    BookingStatus::CONFIRMED => '#46b450',
+    BookingStatus::CANCELLED => '#dc3232',
+    BookingStatus::CANCELLED => '#777',
 ];
 
 $total_shown = count($bookings);
@@ -75,10 +75,10 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                     <strong><?php _e('Status:', 'my-village-hall'); ?></strong>
                     <select name="status" style="margin-left:5px;">
                         <option value="all"       <?php selected($status_filter,'all');       ?>><?php _e('All Statuses','my-village-hall'); ?></option>
-                        <option value="pending"   <?php selected($status_filter,'pending');   ?>><?php _e('Pending',     'my-village-hall'); ?></option>
-                        <option value="confirmed" <?php selected($status_filter,'confirmed'); ?>><?php _e('Confirmed',   'my-village-hall'); ?></option>
-                        <option value="cancelled" <?php selected($status_filter,'cancelled'); ?>><?php _e('Cancelled',   'my-village-hall'); ?></option>
-                        <option value="completed" <?php selected($status_filter,'completed'); ?>><?php _e('Completed',   'my-village-hall'); ?></option>
+                        <option value="pending"   <?php selected($status_filter,BookingStatus::PENDING);   ?>><?php _e('Pending',     'my-village-hall'); ?></option>
+                        <option value="confirmed" <?php selected($status_filter,BookingStatus::CONFIRMED); ?>><?php _e('Confirmed',   'my-village-hall'); ?></option>
+                        <option value="cancelled" <?php selected($status_filter,BookingStatus::CANCELLED); ?>><?php _e('Cancelled',   'my-village-hall'); ?></option>
+                        <option value="completed" <?php selected($status_filter,BookingStatus::COMPLETED); ?>><?php _e('Completed',   'my-village-hall'); ?></option>
                     </select>
                 </label>
                 <label>
@@ -169,7 +169,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                     // Find next upcoming booking
                     $upcoming = null;
                     foreach (array_reverse($members) as $mb) {
-                        if ($mb['StartDate'] >= $today && $mb['Status'] !== 'cancelled') {
+                        if ($mb['StartDate'] >= $today && $mb['Status'] !== BookingStatus::CANCELLED) {
                             $upcoming = $mb;
                             break;
                         }
@@ -179,8 +179,8 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                     $group_id = 'rg_' . $pattern['Id'];
 
                     // Aggregate status: if any confirmed/pending, show that; otherwise cancelled/completed
-                    $active_statuses = array_filter(array_column($members, 'Status'), fn($s) => in_array($s, ['confirmed','pending']));
-                    $group_status    = !empty($active_statuses) ? reset($active_statuses) : ($members[0]['Status'] ?? 'completed');
+                    $active_statuses = array_filter(array_column($members, 'Status'), fn($s) => in_array($s, [BookingStatus::CONFIRMED,BookingStatus::PENDING]));
+                    $group_status    = !empty($active_statuses) ? reset($active_statuses) : ($members[0]['Status'] ?? BookingStatus::COMPLETED);
                     $group_sc        = $status_colors[$group_status] ?? '#777';
                     ?>
 
@@ -291,7 +291,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                             <a href="<?php echo admin_url('admin.php?page=my-village-hall&view=' . $b['Id']); ?>">
                                 <?php _e('View', 'my-village-hall'); ?>
                             </a>
-                            <?php if ($b['Status'] !== 'cancelled'): ?>
+                            <?php if ($b['Status'] !== BookingStatus::CANCELLED): ?>
                                 |
                                 <a href="<?php echo wp_nonce_url(
                                     admin_url('admin-post.php?action=myvh_cancel_booking&id=' . $b['Id']),
@@ -356,7 +356,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                             <a href="<?php echo admin_url('admin.php?page=my-village-hall&view=' . $b['Id']); ?>">
                                 <?php _e('View', 'my-village-hall'); ?>
                             </a>
-                            <?php if ($b['Status'] !== 'cancelled'): ?>
+                            <?php if ($b['Status'] !== BookingStatus::CANCELLED): ?>
                                 |
                                 <a href="<?php echo wp_nonce_url(
                                     admin_url('admin-post.php?action=myvh_cancel_booking&id=' . $b['Id']),
