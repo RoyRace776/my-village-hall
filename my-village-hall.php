@@ -1322,14 +1322,14 @@ require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-general-settings.ph
 require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-booking-settings.php';
 
 require_once MYVH_PLUGIN_DIR . 'includes/admin/settings-registry.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/settings-page.php';
+require_once MYVH_PLUGIN_DIR . 'includes/admin/views/settings-page.php';
 
 
 // Include the repository access classes
-require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-repositories.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-repositories.php';
 
 // Bootstrap
-require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-bootstrap.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-bootstrap.php';
 
 // Include frontend shortcodes
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-shortcode.php';

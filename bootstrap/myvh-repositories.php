@@ -7,7 +7,7 @@
  * have been removed. All instances live here.
  */
 
-require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/class-myvh-registry.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/class-myvh-registry.php';
 
 require_once MYVH_PLUGIN_DIR . 'modules/addons/class-addon-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-addon-repository.php';
