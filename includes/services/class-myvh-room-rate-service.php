@@ -27,60 +27,44 @@ class MYVH_Room_Rate_Service {
             return new WP_Error('validation', __('Room is required', 'my-village-hall'));
         }
 
-        if (empty($data['customer_group_id'])) {
-            return new WP_Error('validation', __('Customer group is required', 'my-village-hall'));
+        if (empty($data['name'])) {
+            return new WP_Error('validation', __('Rate name is required', 'my-village-hall'));
         }
 
-        if (!in_array($data['room-rate_type'], ['hourly', 'fixed'])) {
-            return new WP_Error('validation', __('Invalid room rate type', 'my-village-hall'));
+        $charge_type = sanitize_text_field($data['charge_type'] ?? '');
+        if (!in_array($charge_type, ['per_hour', 'per_day', 'fixed'])) {
+            return new WP_Error('validation', __('Invalid charge type', 'my-village-hall'));
         }
 
-        $amount = floatval($data['amount']);
-
-        if ($amount <= 0) {
-            return new WP_Error('validation', __('Amount must be greater than zero', 'my-village-hall'));
+        $rate = floatval($data['rate'] ?? 0);
+        if ($rate < 0) {
+            return new WP_Error('validation', __('Rate must be zero or greater', 'my-village-hall'));
         }
 
         $record = [
             'RoomId'          => intval($data['room_id']),
-            'CustomerGroupId' => intval($data['customer_group_id']),
-            'RateType'        => sanitize_text_field($data['room_rate_type']),
-            'Amount'          => $amount,
+            'CustomerGroupId' => !empty($data['customer_group_id']) ? intval($data['customer_group_id']) : null,
+            'ChargeType'      => $charge_type,
+            'Rate'            => $rate,
+            'Name'            => sanitize_text_field($data['name']),
+            'Description'     => sanitize_textarea_field($data['description'] ?? ''),
+            'MinimumHours'    => !empty($data['minimum_hours']) ? floatval($data['minimum_hours']) : null,
             'IsActive'        => isset($data['is_active']) ? 1 : 0,
+            'ValidFrom'       => !empty($data['valid_from']) ? sanitize_text_field($data['valid_from']) : null,
+            'ValidTo'         => !empty($data['valid_to'])   ? sanitize_text_field($data['valid_to'])   : null,
+            'Priority'        => intval($data['priority'] ?? 0),
         ];
 
-        if (!empty($data['room_rate_id'])) {
-            return $this->repo->update($record, ['Id' => intval($data['room_rate_id'])]);
+        if (!empty($data['rate_id'])) {
+            $result = $this->repo->update($record, ['Id' => intval($data['rate_id'])]);
+            return is_wp_error($result) ? $result : intval($data['rate_id']);
         }
 
-        return $this->repo->create($record);
+        $id = $this->repo->create($record);
+        return $id ? $id : new WP_Error('database', __('Failed to save rate', 'my-village-hall'));
     }
 
     public function delete($id) {
         return $this->repo->delete($id);
-    }
-
-    /**
-     * Pricing calculation logic (used later in booking service)
-     */
-    public function calculate_price($room_id, $group_id, $start_time, $end_time) {
-
-        $room_rates = $this->repo->get_active_room_rate($room_id, $group_id);
-
-        if (!$room_rates) {
-            return new WP_Error('no_room rate', __('No room rate configured', 'my-village-hall'));
-        }
-
-        if ($room_rates['RateType'] === 'fixed') {
-            return floatval($room_rates['Amount']);
-        }
-
-        // hourly calculation
-        $start = strtotime($start_time);
-        $end   = strtotime($end_time);
-
-        $hours = ($end - $start) / 3600;
-
-        return round($hours * floatval($room_rates['Amount']), 2);
     }
 }

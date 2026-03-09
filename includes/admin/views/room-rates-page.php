@@ -142,8 +142,8 @@ $groups    = $customer_group_service->get_all();
                                             <?php _e('Edit', 'my-village-hall'); ?>
                                         </a> |
                                         <a href="<?php echo wp_nonce_url(
-                                            admin_url('admin-post.php?action=myvh_delete_room_rate&id=' . $rate['Id']),
-                                            'myvh_delete_room_rate'
+                                            admin_url('admin-post.php?action=myvh_delete_rate&id=' . $rate['Id']),
+                                            'myvh_delete_rate'
                                         ); ?>" class="link-delete" onclick="return confirm('<?php _e('Are you sure?', 'my-village-hall'); ?>');">
                                             <?php _e('Delete', 'my-village-hall'); ?>
                                         </a>
@@ -173,8 +173,8 @@ $groups    = $customer_group_service->get_all();
                 <?php else: ?>
 
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
-                    <input type="hidden" name="action" value="myvh_save_room_rate">
-                    <?php wp_nonce_field('myvh_save_room_rate'); ?>
+                    <input type="hidden" name="action" value="myvh_save_rate">
+                    <?php wp_nonce_field('myvh_save_rate'); ?>
                     <?php if ($edit_rate): ?>
                         <input type="hidden" name="rate_id" value="<?php echo $edit_rate['Id']; ?>">
                     <?php endif; ?>

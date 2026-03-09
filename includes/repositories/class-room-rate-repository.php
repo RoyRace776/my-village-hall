@@ -48,6 +48,11 @@ class MYVH_Room_Rate_Repository {
         return $this->wpdb->get_row($sql, ARRAY_A);
     }
 
+    public function get_all($args = []) {
+        $sql = "SELECT * FROM {$this->table} ORDER BY Priority DESC, Name ASC";
+        return $this->wpdb->get_results($sql, ARRAY_A) ?: [];
+    }
+
     public function get_by_room($room_id) {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM {$this->table} WHERE RoomId = %d",
@@ -69,13 +74,6 @@ class MYVH_Room_Rate_Repository {
         );
 
         return $this->wpdb->get_row($sql, ARRAY_A);
-    }
-
-    public function get_all() {
-        $sql = "SELECT * FROM {$this->table}";
-
-        return $this->wpdb->query($sql);
-
     }
 
     private function get_format($data) {
