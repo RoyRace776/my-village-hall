@@ -1,9 +1,9 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-require_once MYVH_PLUGIN_DIR . 'includes/events/booking-events.php';
-require_once MYVH_PLUGIN_DIR . 'includes/events/class-myvh-event-dispatcher.php';
-require_once MYVH_PLUGIN_DIR . 'includes/domain/booking/class-myvh-booking-status.php';
+require_once MYVH_PLUGIN_DIR . 'modules/events/booking-events.php';
+require_once MYVH_PLUGIN_DIR . 'modules/events/class-myvh-event-dispatcher.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-status.php';
 
 class MYVH_Booking_Service {
 
@@ -110,7 +110,7 @@ class MYVH_Booking_Service {
                 );
             }
         }
-        
+
         return $booking_id;
     }
 
@@ -449,7 +449,7 @@ class MYVH_Booking_Service {
                     'end' => $data['end_time']
                 ]
             );
-        }        
+        }
 
         MYVH_Event_Dispatcher::dispatch(
             MYVH_Booking_Events::UPDATED,
@@ -462,5 +462,5 @@ class MYVH_Booking_Service {
         );
 
     }
-    
+
 }

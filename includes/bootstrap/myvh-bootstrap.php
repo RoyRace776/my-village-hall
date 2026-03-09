@@ -7,32 +7,32 @@
  */
 
 // ── Controllers ───────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-booking-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-customer-group-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-venue-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-room-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-room-rate-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-addon-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-customer-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-invoice-controller.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/controllers/class-myvh-recurring-pattern-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/customer-groups/class-myvh-customer-group-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-controller.php';
 
 // ── Services ──────────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-venue-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-room-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-customer-group-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-room-rate-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-booking-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-addon-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-customer-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-invoice-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/services/class-myvh-recurring-pattern-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/customer-groups/class-myvh-customer-group-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-service.php';
 
 // ── Domain services ───────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'includes/domain/booking/class-myvh-booking-validator.php';
-require_once MYVH_PLUGIN_DIR . 'includes/domain/booking/class-myvh-availability-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/domain/booking/class-myvh-pricing-service.php';
-require_once MYVH_PLUGIN_DIR . 'includes/domain/room/class-myvh-room-rules-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-validator.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-availability-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-pricing-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-rules-service.php';
 
 // ── Venue ─────────────────────────────────────────────────────────────────────
 $venue_service = new MYVH_Venue_Service(MYVH_Registry::get('venue_repo'));
@@ -112,5 +112,5 @@ MYVH_Registry::set('recurring_pattern_service',    $recurring_pattern_service);
 MYVH_Registry::set('recurring_pattern_controller', new MYVH_Recurring_Pattern_Controller($recurring_pattern_service));
 
 // ── Listeners ─────────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'includes/listeners/class-myvh-booking-listener.php';
+require_once MYVH_PLUGIN_DIR . 'modules/events/class-myvh-booking-listener.php';
 (new MYVH_Booking_Listener())->register();

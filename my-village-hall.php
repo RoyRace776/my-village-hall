@@ -12,7 +12,7 @@
  * Domain Path: /languages
  * Requires at least: 5.8
  * Requires PHP: 7.4
- * 
+ *
  * @package MyVillageHall
  */
 
@@ -33,7 +33,7 @@ define('MYVH_PLUGIN_BASENAME', plugin_basename(__FILE__)); // Plugin basename fo
 
 /**
  * Main My Village Hall Class
- * 
+ *
  * This is the core plugin class that initializes and manages the plugin.
  * It uses the Singleton pattern to ensure only one instance exists.
  *
@@ -43,24 +43,24 @@ define('MYVH_PLUGIN_BASENAME', plugin_basename(__FILE__)); // Plugin basename fo
  * - Asset enqueueing (CSS/JS files)
  * - Loading required files
  * - Creating database tables
- * 
+ *
  * @since 0.1.0
  */
 class My_Village_Hall {
-    
+
     /**
      * Single instance of this class
-     * 
+     *
      * @var My_Village_Hall|null
      */
     private static $instance = null;
-    
+
     /**
      * Get singleton instance
-     * 
+     *
      * This method implements the Singleton pattern, ensuring only one instance
      * of the plugin class exists. This prevents conflicts and duplicate initialization.
-     * 
+     *
      * @return My_Village_Hall The single instance of this class
      */
     public static function get_instance() {
@@ -69,30 +69,30 @@ class My_Village_Hall {
         }
         return self::$instance;
     }
-    
+
     /**
      * Constructor - private to enforce singleton pattern
-     * 
+     *
      * The constructor is private so it can't be called directly.
      * Use get_instance() instead to get the plugin instance.
      */
     private function __construct() {
         $this->init_hooks();
     }
-    
+
     /**
      * Initialize WordPress hooks
-     * 
+     *
      * Sets up all the WordPress action and filter hooks that the plugin needs.
      * These hooks tell WordPress when to run specific plugin functions.
      */
     private function init_hooks() {
         // Load plugin text domain for translations after all plugins are loaded
         add_action('plugins_loaded', array($this, 'load_plugin'));
-        
+
         // Add admin menu pages
         add_action('admin_menu', array($this, 'add_admin_menu'));
-        
+
         // Add the functionality for settings
         MYVH_Settings_Registry::auto_register(
             plugin_dir_path(__FILE__) . 'includes/settings'
@@ -100,7 +100,7 @@ class My_Village_Hall {
 
         $settings_page = new MYVH_Settings_Page();
         $settings_page->init();
-        
+
         // Enqueue admin styles and scripts
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
@@ -200,33 +200,33 @@ class My_Village_Hall {
             MYVH_Registry::get('recurring_pattern_controller')->process_patterns();
         });
     }
-    
+
     /**
      * Plugin activation handler
-     * 
+     *
      * This function runs when the plugin is activated. It creates all necessary
      * database tables and inserts default data.
-     * 
+     *
      * IMPORTANT: This uses dbDelta() which is WordPress's safe way to create/update
      * tables. It compares the desired schema with existing tables and makes only
      * the necessary changes.
-     * 
+     *
      * @global wpdb $wpdb WordPress database abstraction object
      */
     public function activate() {
         global $wpdb;
-        
+
         // Get the character set and collation for database tables
         // This ensures tables use the same encoding as WordPress
         $charset_collate = $wpdb->get_charset_collate();
-        
+
         // Include WordPress upgrade functions (needed for dbDelta)
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        
-        
+
+
         /**
          * Create Venues table
-         * 
+         *
          * A venue is a physical location that contains rooms.
          */
         $table_name = $wpdb->prefix . 'myvh_venues';
@@ -241,10 +241,10 @@ class My_Village_Hall {
             INDEX idx_name (Name)
         ) $charset_collate;";
         dbDelta($sql);
-        
+
         /**
          * Create Rooms table
-         * 
+         *
          * Rooms are bookable spaces within venues.
          */
         $table_name = $wpdb->prefix . 'myvh_rooms';
@@ -262,7 +262,7 @@ class My_Village_Hall {
             INDEX idx_name (Name)
         ) $charset_collate;";
         dbDelta($sql);
-        
+
         /**
          * Create Bookings table
          */
@@ -286,7 +286,7 @@ class My_Village_Hall {
             INDEX idx_recurring (RecurringPatternId)
         ) $charset_collate;";
         dbDelta($sql);
-        
+
         /**
          * Create Recurring Patterns table
          */
@@ -311,7 +311,7 @@ class My_Village_Hall {
 
         /**
          * Create Customer Groups table
-         * 
+         *
          * Defines different customer categories (Standard, Charity, Local Resident, etc.)
          * Each group can have different pricing applied
          */
@@ -359,7 +359,7 @@ class My_Village_Hall {
 
         /**
          * Create Room Rates table
-         * 
+         *
          * NOW WITH CUSTOMER GROUP SUPPORT
          * Each rate can be assigned to a specific customer group
          * If CustomerGroupId is NULL, it's available to all groups
@@ -389,7 +389,7 @@ class My_Village_Hall {
 
         /**
          * Create Add-ons table
-         * 
+         *
          * NOW WITH CUSTOMER GROUP SUPPORT
          * Add-ons can have different prices for different customer groups
          */
@@ -570,10 +570,10 @@ class My_Village_Hall {
 
         // Insert default data
         $this->insert_default_customer_groups();
-        
+
         // Store plugin version
         update_option('myvh_version', MYVH_VERSION);
-        
+
         // Flush rewrite rules
         flush_rewrite_rules();
     }
@@ -587,10 +587,10 @@ class My_Village_Hall {
 
     private function add_foreign_keys() {
         global $wpdb;
-        
+
         $results = array();
         $prefix = $wpdb->prefix;
-        
+
         // Array of all foreign key constraints to add
         $foreign_keys = array(
             // Rooms -> Venues
@@ -603,7 +603,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Bookings -> Customers
             array(
                 'table' => "{$prefix}myvh_bookings",
@@ -614,7 +614,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Bookings -> Rooms
             array(
                 'table' => "{$prefix}myvh_bookings",
@@ -625,7 +625,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Bookings -> Recurring Patterns
             array(
                 'table' => "{$prefix}myvh_bookings",
@@ -636,7 +636,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Recurring Patterns -> Bookings (Parent)
             array(
                 'table' => "{$prefix}myvh_recurring_patterns",
@@ -647,7 +647,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Customers -> Customer Groups
             array(
                 'table' => "{$prefix}myvh_customers",
@@ -658,7 +658,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Room Rates -> Rooms
             array(
                 'table' => "{$prefix}myvh_room_rates",
@@ -669,7 +669,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Room Rates -> Customer Groups
             array(
                 'table' => "{$prefix}myvh_room_rates",
@@ -680,7 +680,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Add-ons -> Customer Groups
             array(
                 'table' => "{$prefix}myvh_addons",
@@ -691,7 +691,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Add-ons -> Rooms
             array(
                 'table' => "{$prefix}myvh_addons",
@@ -702,7 +702,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Add-ons -> Venues
             array(
                 'table' => "{$prefix}myvh_addons",
@@ -713,7 +713,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Booking Charges -> Bookings
             array(
                 'table' => "{$prefix}myvh_booking_charges",
@@ -724,7 +724,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Booking Charges -> Room Rates
             array(
                 'table' => "{$prefix}myvh_booking_charges",
@@ -735,7 +735,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Booking Add-ons -> Bookings
             array(
                 'table' => "{$prefix}myvh_booking_addons",
@@ -746,7 +746,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Booking Add-ons -> Add-ons
             array(
                 'table' => "{$prefix}myvh_booking_addons",
@@ -757,7 +757,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Invoices -> Customers
             array(
                 'table' => "{$prefix}myvh_invoices",
@@ -768,7 +768,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Invoice Items -> Invoices
             array(
                 'table' => "{$prefix}myvh_invoice_items",
@@ -779,7 +779,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Invoice Items -> Bookings
             array(
                 'table' => "{$prefix}myvh_invoice_items",
@@ -790,7 +790,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Payments -> Invoices
             array(
                 'table' => "{$prefix}myvh_payments",
@@ -801,7 +801,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Discounts -> Rooms
             array(
                 'table' => "{$prefix}myvh_discounts",
@@ -812,7 +812,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Discounts -> Venues
             array(
                 'table' => "{$prefix}myvh_discounts",
@@ -823,7 +823,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Booking Discounts -> Bookings
             array(
                 'table' => "{$prefix}myvh_booking_discounts",
@@ -834,7 +834,7 @@ class My_Village_Hall {
                         ON DELETE RESTRICT
                         ON UPDATE CASCADE"
             ),
-            
+
             // Booking Discounts -> Discounts
             array(
                 'table' => "{$prefix}myvh_booking_discounts",
@@ -846,22 +846,22 @@ class My_Village_Hall {
                         ON UPDATE CASCADE"
             ),
         );
-        
+
         // Execute each foreign key constraint
         foreach ($foreign_keys as $fk) {
             // Check if constraint already exists
             $check_query = $wpdb->prepare(
-                "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS 
-                WHERE CONSTRAINT_SCHEMA = DATABASE() 
-                AND TABLE_NAME = %s 
-                AND CONSTRAINT_NAME = %s 
+                "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE CONSTRAINT_SCHEMA = DATABASE()
+                AND TABLE_NAME = %s
+                AND CONSTRAINT_NAME = %s
                 AND CONSTRAINT_TYPE = 'FOREIGN KEY'",
                 $fk['table'],
                 $fk['constraint']
             );
-            
+
             $exists = $wpdb->get_var($check_query);
-            
+
             if ($exists) {
                 $results[] = array(
                     'constraint' => $fk['constraint'],
@@ -871,10 +871,10 @@ class My_Village_Hall {
                 );
                 continue;
             }
-            
+
             // Add the foreign key
             $result = $wpdb->query($fk['sql']);
-            
+
             if ($result === false) {
                 $results[] = array(
                     'constraint' => $fk['constraint'],
@@ -891,17 +891,17 @@ class My_Village_Hall {
                 );
             }
         }
-        
+
         return $results;
     }
-    
+
     /**
      * Plugin deactivation handler
      */
     public function deactivate() {
         flush_rewrite_rules();
     }
-    
+
     /**
      * Load plugin text domain for translations
      */
@@ -912,7 +912,7 @@ class My_Village_Hall {
             dirname(MYVH_PLUGIN_BASENAME) . '/languages'
         );
     }
-    
+
     /**
      * Add admin menu pages
      */
@@ -927,7 +927,7 @@ class My_Village_Hall {
             'dashicons-calendar-alt',
             30
         );
-        
+
         // All Bookings (duplicate of main page for submenu)
         add_submenu_page(
             'my-village-hall',
@@ -937,7 +937,7 @@ class My_Village_Hall {
             'my-village-hall',
             array($this, 'render_bookings_page')
         );
-        
+
         // Booking Calendar
         add_submenu_page(
             'my-village-hall',
@@ -947,7 +947,7 @@ class My_Village_Hall {
             'myvh-calendar',
             array($this, 'render_calendar_page')
         );
-        
+
         // Customers
         add_submenu_page(
             'my-village-hall',
@@ -957,7 +957,7 @@ class My_Village_Hall {
             'myvh-customers',
             array($this, 'render_customers_page')
         );
-        
+
         // Customer Groups (NEW)
         add_submenu_page(
             'my-village-hall',
@@ -967,7 +967,7 @@ class My_Village_Hall {
             'myvh-customer-groups',
             array($this, 'render_customer_groups_page')
         );
-        
+
         // Separator (using a disabled submenu as visual separator)
         add_submenu_page(
             'my-village-hall',
@@ -977,7 +977,7 @@ class My_Village_Hall {
             '#',
             ''
         );
-        
+
         // Venues & Rooms section
         add_submenu_page(
             'my-village-hall',
@@ -987,7 +987,7 @@ class My_Village_Hall {
             'myvh-venues',
             array($this, 'render_venues_page')
         );
-        
+
         add_submenu_page(
             'my-village-hall',
             __('Rooms', 'my-village-hall'),
@@ -996,7 +996,7 @@ class My_Village_Hall {
             'myvh-rooms',
             array($this, 'render_rooms_page')
         );
-        
+
         // Separator
         add_submenu_page(
             'my-village-hall',
@@ -1006,7 +1006,7 @@ class My_Village_Hall {
             '#',
             ''
         );
-        
+
         // Pricing & Billing section
         add_submenu_page(
             'my-village-hall',
@@ -1016,7 +1016,7 @@ class My_Village_Hall {
             'myvh-room-rates',
             array($this, 'render_room_rates_page')
         );
-        
+
         add_submenu_page(
             'my-village-hall',
             __('Add-ons', 'my-village-hall'),
@@ -1025,7 +1025,7 @@ class My_Village_Hall {
             'myvh-addons',
             array($this, 'render_addons_page')
         );
-        
+
         add_submenu_page(
             'my-village-hall',
             __('Invoices', 'my-village-hall'),
@@ -1034,7 +1034,7 @@ class My_Village_Hall {
             'myvh-invoices',
             array($this, 'render_invoices_page')
         );
-        
+
         // Separator
         add_submenu_page(
             'my-village-hall',
@@ -1044,7 +1044,7 @@ class My_Village_Hall {
             '#',
             ''
         );
-        
+
         // Recurring Bookings
         add_submenu_page(
             'my-village-hall',
@@ -1056,7 +1056,7 @@ class My_Village_Hall {
         );
 
     }
-    
+
     /**
      * Enqueue admin assets (CSS and JavaScript)
      */
@@ -1065,14 +1065,14 @@ class My_Village_Hall {
         if (strpos($hook, 'my-village-hall') === false && strpos($hook, 'myvh-') === false) {
             return;
         }
-        
+
         wp_enqueue_style(
             'myvh-admin-css',
             MYVH_PLUGIN_URL . 'assets/css/admin.css',
             array(),
             MYVH_VERSION
         );
-        
+
         wp_enqueue_script(
             'myvh-admin-js',
             MYVH_PLUGIN_URL . 'assets/js/admin.js',
@@ -1080,18 +1080,18 @@ class My_Village_Hall {
             MYVH_VERSION,
             true
         );
-        
+
         wp_localize_script('myvh-admin-js', 'myvhAjax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('myvh-ajax-nonce')
         ));
-        
+
         // Load calendar assets on calendar page
         if (strpos($hook, 'myvh-calendar') !== false) {
             $this->enqueue_calendar_assets();
         }
     }
-    
+
     /**
      * Enqueue calendar-specific assets (DayPilot Lite)
      */
@@ -1135,7 +1135,7 @@ class My_Village_Hall {
             ),
         ));
     }
-    
+
     /**
      * Render admin pages
      */
@@ -1154,7 +1154,7 @@ class My_Village_Hall {
             include MYVH_PLUGIN_DIR . 'includes/admin/views/bookings-page.php';
         }
     }
-    
+
     public function render_customers_page() {
         if (!current_user_can('manage_options')) {
             wp_die(
@@ -1165,7 +1165,7 @@ class My_Village_Hall {
         }
         include MYVH_PLUGIN_DIR . 'includes/admin/views/customers-page.php';
     }
-    
+
     public function render_venues_page() {
         if (!current_user_can('manage_options')) {
             wp_die(
@@ -1176,7 +1176,7 @@ class My_Village_Hall {
         }
         include MYVH_PLUGIN_DIR . 'includes/admin/views/venues-page.php';
     }
-    
+
     public function render_rooms_page() {
         if (!current_user_can('manage_options')) {
             wp_die(
@@ -1187,7 +1187,7 @@ class My_Village_Hall {
         }
         include MYVH_PLUGIN_DIR . 'includes/admin/views/rooms-page.php';
     }
-    
+
     public function render_recurring_page() {
         if (!current_user_can('manage_options')) {
             wp_die(
@@ -1198,7 +1198,7 @@ class My_Village_Hall {
         }
         include MYVH_PLUGIN_DIR . 'includes/admin/views/recurring-page.php';
     }
-    
+
     public function render_calendar_page() {
         if (!current_user_can('manage_options')) {
             wp_die(
@@ -1332,7 +1332,7 @@ require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-repositories.php';
 require_once MYVH_PLUGIN_DIR . 'includes/bootstrap/myvh-bootstrap.php';
 
 // Include frontend shortcodes
-require_once MYVH_PLUGIN_DIR . 'includes/frontend/class-myvh-calendar-shortcode.php';
+require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-shortcode.php';
 
 // Admin calendar AJAX handlers
 require_once MYVH_PLUGIN_DIR . 'includes/admin/class-myvh-calendar-ajax.php';
@@ -1347,8 +1347,8 @@ ob_end_clean();
  * Initialize the plugin
  */
 function myvh_init() {
-    $plugin = My_Village_Hall::get_instance();    
-    
+    $plugin = My_Village_Hall::get_instance();
+
     // Frontend calendar shortcode + REST endpoint
     ( new MYVH_Calendar_Shortcode() )->init();
 
