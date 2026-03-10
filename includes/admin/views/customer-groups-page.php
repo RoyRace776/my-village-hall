@@ -10,7 +10,7 @@ if (!current_user_can('manage_myvh')) {
 global $myvh_container;
 
 $edit_id    = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$customer_group_service = $myvh_container->get('customer_group_service');
+$customer_group_service = $myvh_container->get(MYVH_Customer_Group_Service::class);
 $edit_group = $edit_id ? $customer_group_service->get($edit_id) : null;
 $groups     = $customer_group_service->get_all(false);
 ?>

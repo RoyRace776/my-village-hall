@@ -13,57 +13,21 @@ require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-co
 
 global $myvh_container;
 
-$myvh_container->bind('booking_controller', function($c) {
-    return new MYVH_Booking_Controller(
-        $c->get('booking_service')
-    );
-});
+$myvh_container->singleton(MYVH_Booking_Controller::class);
 
-$myvh_container->bind('customer_group_controller', function($c) {
-    return new MYVH_Customer_Group_Controller(
-        $c->get('customer_group_service')
-    );
-});
+$myvh_container->singleton(MYVH_Customer_Group_Controller::class);
 
-$myvh_container->bind('venue_controller', function($c) {
-    return new MYVH_Venue_Controller(
-        $c->get('venue_service')
-    );
-});
+$myvh_container->singleton(MYVH_Venue_Controller::class);
 
-$myvh_container->bind('room_controller', function($c) {
-    return new MYVH_Room_Controller(
-        $c->get('room_service')
-    );
-});
+$myvh_container->singleton(MYVH_Room_Controller::class);
 
-$myvh_container->bind('room_rate_controller', function($c) {
-    return new MYVH_Room_Rate_Controller(
-        $c->get('room_rate_service')
-    );
-});
+$myvh_container->singleton(MYVH_Room_Rate_Controller::class);
 
-$myvh_container->bind('addon_controller', function($c) {
-    return new MYVH_Addon_Controller(
-        $c->get('addon_service')
-    );
-});
+$myvh_container->singleton(MYVH_Addon_Controller::class);
 
-$myvh_container->bind('customer_controller', function($c) {
-    return new MYVH_Customer_Controller(
-        $c->get('customer_service')
-    );
-});
+$myvh_container->singleton(MYVH_Customer_Controller::class);
 
-$myvh_container->bind('invoice_controller', function($c) {
-    return new MYVH_Invoice_Controller(
-        $c->get('invoice_service')
-    );
-});
+$myvh_container->singleton(MYVH_Invoice_Controller::class);
 
-$myvh_container->bind('recurring_pattern_controller', function($c) {
-    return new MYVH_Recurring_Pattern_Controller(
-        $c->get('recurring_pattern_service')
-    );
-});
+$myvh_container->singleton(MYVH_Recurring_Pattern_Controller::class);
 

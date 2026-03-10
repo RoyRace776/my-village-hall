@@ -13,11 +13,11 @@ $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 $booking_id = $edit_id ?: $view_id;
 
-$booking_service           = $myvh_container->get('booking_service');
-$customer_service          = $myvh_container->get('customer_service');
-$room_service              = $myvh_container->get('room_service');
-$addon_service             = $myvh_container->get('addon_service');
-$recurring_pattern_service = $myvh_container->get('recurring_pattern_service');
+$booking_service           = $myvh_container->get(MYVH_Booking_Service::class);
+$customer_service          = $myvh_container->get(MYVH_Customer_Service::class);
+$room_service              = $myvh_container->get(MYVH_Room_Service::class);
+$addon_service             = $myvh_container->get(MYVH_Addon_Service::class);
+$recurring_pattern_service = $myvh_container->get(MYVH_Recurring_Pattern_Service::class);
 
 $edit_booking = $booking_id ? $booking_service->get_by_id($booking_id) : null;
 $is_view_mode = $view_id > 0;

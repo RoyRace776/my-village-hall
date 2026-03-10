@@ -196,7 +196,7 @@ class MYVH_Calendar_Ajax {
         $this->check();
 
         $id      = absint( $_POST['booking_id'] ?? 0 );
-        $service = $myvh_container->get( 'booking_service' );
+        $service = $myvh_container->get( MYVH_Booking_Service::class );
         $booking = $service->get_by_id( $id );
 
         if ( ! $booking ) {
@@ -253,7 +253,7 @@ class MYVH_Calendar_Ajax {
             unset( $data['booking_id'] );
         }
 
-        $service = $myvh_container->get( 'booking_service' );
+        $service = $myvh_container->get( MYVH_Booking_Service::class );
         $result  = $service->save( $data );
 
         if ( is_wp_error( $result ) ) {
@@ -275,7 +275,7 @@ class MYVH_Calendar_Ajax {
         $this->check();
 
         $id      = absint( $_POST['booking_id'] ?? 0 );
-        $service = $myvh_container->get( 'booking_service' );
+        $service = $myvh_container->get( MYVH_Booking_Service::class );
         $service->cancel( $id );
 
         wp_send_json_success( [ 'message' => __( 'Booking cancelled', 'my-village-hall' ) ] );

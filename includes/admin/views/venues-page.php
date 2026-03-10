@@ -12,7 +12,7 @@ global $myvh_container;
 $action   = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $venue_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-$venue_service = $myvh_container->get('venue_service');
+$venue_service = $myvh_container->get(MYVH_Venue_Service::class);
 $venue  = $venue_id ? $venue_service->get($venue_id) : null;
 $venues = $venue_service->get_all();
 ?>

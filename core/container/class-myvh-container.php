@@ -1,33 +1,64 @@
 <?php
-if (!defined('ABSPATH')) exit;
 
-class MYVH_Container {
-
+class MYVH_Container
+{
     private $bindings = [];
     private $instances = [];
 
-    public function bind($key, callable $factory) {
-        $this->bindings[$key] = $factory;
+    public function singleton($id, $factory = null)
+    {
+        $this->bindings[$id] = $factory ?? $id;
     }
 
-    public function singleton($key, callable $factory) {
-        $this->bindings[$key] = function($c) use ($factory, $key) {
-
-            if (!isset($this->instances[$key])) {
-                $this->instances[$key] = $factory($c);
-            }
-
-            return $this->instances[$key];
-        };
-    }
-
-    public function get($key) {
-
-        if (!isset($this->bindings[$key])) {
-            throw new Exception("Service not bound: {$key}");
+    public function get($id)
+    {
+        if (isset($this->instances[$id])) {
+            return $this->instances[$id];
         }
 
-        return $this->bindings[$key]($this);
+        $object = $this->resolve($id);
+
+        $this->instances[$id] = $object;
+
+        return $object;
     }
 
+    private function resolve($id)
+    {
+        if (isset($this->bindings[$id]) && is_callable($this->bindings[$id])) {
+            return $this->bindings[$id]($this);
+        }
+
+        return $this->build($id);
+    }
+
+    private function build($class)
+    {
+        $reflection = new ReflectionClass($class);
+
+        if (!$reflection->isInstantiable()) {
+            throw new Exception("Class $class is not instantiable");
+        }
+
+        $constructor = $reflection->getConstructor();
+
+        if (!$constructor) {
+            return new $class;
+        }
+
+        $dependencies = [];
+
+        foreach ($constructor->getParameters() as $param) {
+
+            $type = $param->getType();
+
+            if (!$type) {
+                throw new Exception("Cannot resolve {$param->getName()} in {$class}");
+            }
+
+            $dependencies[] = $this->get($type->getName());
+        }
+
+        return $reflection->newInstanceArgs($dependencies);
+    }
 }

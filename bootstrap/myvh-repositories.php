@@ -26,27 +26,39 @@ require_once MYVH_PLUGIN_DIR . 'modules/venues/class-venue-repository.php';
 
 global $wpdb;
 
-$myvh_container->singleton('addon_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('wpdb', function () {
+        global $wpdb;
+        return $wpdb;
+    }
+);
+
+$myvh_container->singleton('addon_repo', function($c) {
+    global $wpdb;
     return new MYVH_Addon_Repository($wpdb);
 });
 
-$myvh_container->singleton('booking_addon_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('booking_addon_repo', function($c) {
+    global $wpdb;
     return new MYVH_Booking_Addon_Repository($wpdb);
 });
 
-$myvh_container->singleton('booking_charge_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('booking_charge_repo', function($c) {
+    global $wpdb;
     return new MYVH_Booking_Charge_Repository($wpdb);
 });
 
-$myvh_container->singleton('booking_discount_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('booking_discount_repo', function($c) {
+    global $wpdb;
     return new MYVH_Booking_Discount_Repository($wpdb);
 });
 
-$myvh_container->singleton('booking_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('booking_repo', function($c) {
+    global $wpdb;
     return new MYVH_Booking_Repository($wpdb);
 });
 
-$myvh_container->singleton('customer_group_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('customer_group_repo', function($c) {
+    global $wpdb;
     return new MYVH_Customer_Group_Repository($wpdb);
 });
 
@@ -54,35 +66,43 @@ $myvh_container->singleton('customer_repo', function($c) use ($wpdb) {
     return new MYVH_Customer_Repository($wpdb);
 });
 
-$myvh_container->singleton('discount_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('discount_repo', function($c) {
+    global $wpdb;
     return new MYVH_Discount_Repository($wpdb);
 });
 
-$myvh_container->singleton('invoice_item_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('invoice_item_repo', function($c) {
+    global $wpdb;
     return new MYVH_Invoice_Item_Repository($wpdb);
 });
 
-$myvh_container->singleton('invoice_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('invoice_repo', function($c) {
+    global $wpdb;
     return new MYVH_Invoice_Repository($wpdb);
 });
 
-$myvh_container->singleton('payment_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('payment_repo', function($c) {
+    global $wpdb;
     return new MYVH_Payment_Repository($wpdb);
 });
 
-$myvh_container->singleton('recurring_pattern_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('recurring_pattern_repo', function($c) {
+    global $wpdb;
     return new MYVH_Recurring_Pattern_Repository($wpdb);
 });
 
-$myvh_container->singleton('room_rate_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('room_rate_repo', function($c) {
+    global $wpdb;
     return new MYVH_Room_Rate_Repository($wpdb);
 });
 
-$myvh_container->singleton('room_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('room_repo', function($c) {
+    global $wpdb;
     return new MYVH_Room_Repository($wpdb);
 });
 
-$myvh_container->singleton('venue_repo', function($c) use ($wpdb) {
+$myvh_container->singleton('venue_repo', function($c) {
+    global $wpdb;
     return new MYVH_Venue_Repository($wpdb);
 });
 

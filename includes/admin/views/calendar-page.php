@@ -9,9 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 global $myvh_container;
 
-$venues = $myvh_container->get( 'venue_service' )->get_all();
-$rooms  = $myvh_container->get( 'room_service'  )->get_all_with_venues();
-$customers = $myvh_container->get( 'customer_service' )->get_all( [ 'orderby' => 'Name', 'order' => 'ASC', 'limit' => 500 ] );
+$venues = $myvh_container->get( MYVH_Venue_Service::class )->get_all();
+$rooms  = $myvh_container->get( MYVH_Room_Service::class  )->get_all_with_venues();
+$customers = $myvh_container->get( MYVH_Customer_Service::class )->get_all( [ 'orderby' => 'Name', 'order' => 'ASC', 'limit' => 500 ] );
 ?>
 <div class="wrap vbc-calendar-wrap">
     <h1><?php esc_html_e( 'Booking Calendar', 'my-village-hall' ); ?>
