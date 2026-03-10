@@ -6,7 +6,8 @@ class MYVH_Customer_Service {
     private $repo;
     private $booking_repo;
 
-    public function __construct($repo, $booking_repo) {
+    public function __construct(MYVH_Customer_Repository $repo,
+                                MYVH_Booking_Repository $booking_repo) {
         $this->repo         = $repo;
         $this->booking_repo = $booking_repo;
     }
@@ -82,7 +83,7 @@ class MYVH_Customer_Service {
         if ($result === false) {
             return new WP_Error('database', __('Failed to create customer', 'my-village-hall'));
         }
-        
+
         return $result;
     }
 

@@ -62,7 +62,7 @@ class MYVH_Room_Rate_Repository {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function get_active_rate($room_id, $group_id) {
+    public function get_active_room_rate($room_id, $group_id) {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM {$this->table}
              WHERE RoomId = %d

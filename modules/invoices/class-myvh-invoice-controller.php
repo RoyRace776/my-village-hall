@@ -5,7 +5,7 @@ class MYVH_Invoice_Controller {
 
     private $service;
 
-    public function __construct($service) {
+    public function __construct(MYVH_Invoice_Service $service) {
         $this->service = $service;
     }
 

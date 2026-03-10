@@ -5,7 +5,7 @@ Class MYVH_Pricing_Service {
     // We need the room rate repo to make this work
     private $room_rate_repo;
 
-    public function __construct($repo) {
+    public function __construct(MYVH_Room_Rate_Repository $repo) {
         $this->room_rate_repo = $repo;
     }
 

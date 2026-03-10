@@ -5,7 +5,7 @@ class MYVH_Addon_Controller {
 
     private $service;
 
-    public function __construct($service) {
+    public function __construct(MYVH_Addon_Service $service) {
         $this->service = $service;
     }
 

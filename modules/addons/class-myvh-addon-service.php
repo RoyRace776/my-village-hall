@@ -5,7 +5,7 @@ class MYVH_Addon_Service {
 
     private $repo;
 
-    public function __construct($repo) {
+    public function __construct(MYVH_Addon_Repository $repo) {
         $this->repo = $repo;
     }
 
@@ -67,7 +67,7 @@ class MYVH_Addon_Service {
         if ($result === false) {
             return new WP_Error('database', __('Failed to create add-on', 'my-village-hall'));
         }
-        
+
         return $result;
     }
 

@@ -5,7 +5,7 @@ class MYVH_Customer_Group_Service {
 
     private $repo;
 
-    public function __construct($repo) {
+    public function __construct(MYVH_Customer_Group_Repository $repo) {
         $this->repo = $repo;
     }
 

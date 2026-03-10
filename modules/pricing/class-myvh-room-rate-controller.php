@@ -5,7 +5,7 @@ class MYVH_Room_Rate_Controller {
 
     private $service;
 
-    public function __construct($service) {
+    public function __construct(MYVH_Room_Rate_Service $service) {
         $this->service = $service;
     }
 

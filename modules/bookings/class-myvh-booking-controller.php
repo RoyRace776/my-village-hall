@@ -4,7 +4,7 @@ class MYVH_Booking_Controller {
 
     private $service;
 
-    public function __construct($service) {
+    public function __construct(MYVH_Booking_Service $service) {
         $this->service = $service;
     }
 
@@ -25,7 +25,7 @@ class MYVH_Booking_Controller {
         wp_redirect(admin_url('admin.php?page=myvh-bookings&created=1'));
         exit;
     }
-    
+
     public function save() {
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));

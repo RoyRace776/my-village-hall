@@ -1,13 +1,11 @@
 <?php
 
-require_once MYVH_PLUGIN_DIR .'includes/settings/class-myvh-settings-base.php';
-
 class MYVH_Booking_Settings extends MYVH_Settings_Base {
 
     protected $option_name = 'myvh_booking_settings';
 
     public function tab() {
-        return 
+        return
             ['key' => 'booking',
             'label' => 'Booking'];
     }

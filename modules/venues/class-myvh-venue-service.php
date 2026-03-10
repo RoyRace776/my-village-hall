@@ -5,7 +5,7 @@ class MYVH_Venue_Service {
 
     private $repo;
 
-    public function __construct($repo) {
+    public function __construct(MYVH_Venue_Repository $repo) {
         $this->repo = $repo;
     }
 

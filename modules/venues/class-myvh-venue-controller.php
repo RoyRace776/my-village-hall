@@ -6,7 +6,7 @@ class MYVH_Venue_Controller {
 
     private $service;
 
-    public function __construct($service) {
+    public function __construct(MYVH_Venue_Service $service) {
         $this->service = $service;
     }
 

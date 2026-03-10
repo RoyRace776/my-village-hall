@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) exit;
 
 /**
  * Recurring Pattern Service
- * 
+ *
  * This version creates all bookings immediately when the pattern is saved,
  * rather than relying on cron jobs. This is more reliable and gives users
  * immediate feedback.
@@ -13,7 +13,8 @@ class MYVH_Recurring_Pattern_Service {
     private $repo;
     private $booking_repo;
 
-    public function __construct($repo, $booking_repo = null) {
+    public function __construct(MYVH_Recurring_Pattern_Repository $repo,
+                                MYVH_Booking_Repository $booking_repo) {
         $this->repo = $repo;
         $this->booking_repo = $booking_repo;
     }
@@ -126,7 +127,7 @@ class MYVH_Recurring_Pattern_Service {
 
     /**
      * Create all bookings for a recurring pattern
-     * 
+     *
      * @param int $pattern_id The pattern ID
      * @param array $pattern Pattern data
      * @return array|WP_Error Results or error
@@ -144,7 +145,7 @@ class MYVH_Recurring_Pattern_Service {
 
         // Get parent booking details
         $parent_booking = $booking_repo->get_by_id($pattern['ParentBookingId']);
-        
+
         if (!$parent_booking) {
             return new WP_Error('not_found', __('Parent booking not found', 'my-village-hall'));
         }
@@ -208,7 +209,7 @@ class MYVH_Recurring_Pattern_Service {
 
         // Update occurrence count
         $this->repo->update(
-            ['OccurrenceCount' => $results['created']], 
+            ['OccurrenceCount' => $results['created']],
             ['Id' => $pattern_id]
         );
 

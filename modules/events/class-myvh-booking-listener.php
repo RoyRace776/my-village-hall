@@ -5,22 +5,22 @@ class MYVH_Booking_Listener {
     public function register() {
         add_action(
             'myvh_event_booking.created',
-            [$this, 'handle-booking_created']
+            [$this, 'handle_booking_created']
         );
 
         add_action(
             'myvh_event_booking.confirmed',
-            [$this, 'handle-booking_confirmed']
+            [$this, 'handle_booking_confirmed']
         );
 
         add_action(
             'myvh_event_booking.cancelled',
-            [$this, 'handle-booking_cancelled']
+            [$this, 'handle_booking_cancelled']
         );
 
         add_action(
             'myvh_event_booking.updated',
-            [$this, 'handle-booking_updated']
+            [$this, 'handle_booking_updated']
         );
     }
 

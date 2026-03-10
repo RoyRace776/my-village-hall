@@ -5,7 +5,7 @@ class MYVH_Recurring_Pattern_Controller {
 
     private $service;
 
-    public function __construct($service) {
+    public function __construct(MYVH_Recurring_Pattern_Service $service) {
         $this->service = $service;
     }
 

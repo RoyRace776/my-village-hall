@@ -16,18 +16,15 @@ class MYVH_Booking_Service {
     private $pricing;
     private $recurring_pattern_service = null;
 
-    public function set_recurring_pattern_service($service): void {
-        $this->recurring_pattern_service = $service;
-    }
-
     public function __construct(
-        $room_service,
-        $booking_repo,
-        $booking_addon_repo,
-        $validator,
-        $availability,
-        $room_rules,
-        $pricing
+        MYVH_Room_Service $room_service,
+        MYVH_Booking_Repository $booking_repo,
+        MYVH_Booking_Addon_Repository $booking_addon_repo,
+        MYVH_Booking_Validator $validator,
+        MYVH_Availability_Service $availability,
+        MYVH_Room_Rules_Service $room_rules,
+        MYVH_Pricing_Service $pricing,
+        MYVH_Recurring_Pattern_Service $recurring_pattern_service
     ) {
         $this->room_service = $room_service;
         $this->booking_repo = $booking_repo;
@@ -36,6 +33,7 @@ class MYVH_Booking_Service {
         $this->availability = $availability;
         $this->room_rules = $room_rules;
         $this->pricing = $pricing;
+        $this->recurring_pattern_service = $recurring_pattern_service;
     }
 
     public function create_booking($data) {
@@ -44,6 +42,7 @@ class MYVH_Booking_Service {
         $group_id  = intval($data['customer_group_id']);
         $start     = $data['start_time'];
         $end       = $data['end_time'];
+        $status    = $data['status'];
 
         // Validate input
         $result = $this->validator->validate($data);
@@ -64,6 +63,7 @@ class MYVH_Booking_Service {
 
         if (!$this->availability->room_is_available(
             $data['room_id'],
+            $data['start_date'],
             $data['start_time'],
             $data['end_time']
         )) {
@@ -81,7 +81,7 @@ class MYVH_Booking_Service {
             'StartTime'       => $start,
             'EndTime'         => $end,
             'TotalAmount'     => $price,
-            'Status'          => 'Confirmed', //TODO: Change this to set the status from the data
+            'Status'          => $status,
             'CreatedAt'       => current_time('mysql')
         ];
 
@@ -137,7 +137,7 @@ class MYVH_Booking_Service {
     }
 
     public function save($data) {
-        if (!empty($data['is_recurring']) && $this->recurring_pattern_service) {
+        if (empty($data['customer_id'])) {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
         }
 
@@ -206,7 +206,7 @@ class MYVH_Booking_Service {
             MYVH_Event_Dispatcher::dispatch(
                 MYVH_Booking_Events::CONFIRMED,
                 [
-                    'booking_id' => $data['booking_id'],
+                    'booking_id' => $booking_id,
                     'room_id' => $data['room_id'],
                     'start' => $data['start_time'],
                     'end' => $data['end_time']

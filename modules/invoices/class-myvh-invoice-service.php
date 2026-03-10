@@ -6,7 +6,8 @@ class MYVH_Invoice_Service {
     private $repo;
     private $payment_repo;
 
-    public function __construct($repo, $payment_repo) {
+    public function __construct(MYVH_Invoice_Repository $repo,
+                                MYVH_Payment_Repository $payment_repo) {
         $this->repo         = $repo;
         $this->payment_repo = $payment_repo;
     }
@@ -80,7 +81,7 @@ class MYVH_Invoice_Service {
         if ($result === false) {
             return new WP_Error('database', __('Failed to create invoice', 'my-village-hall'));
         }
-        
+
         return $result;
     }
 
@@ -101,7 +102,7 @@ class MYVH_Invoice_Service {
      */
     public function update_status($id, $status) {
         $valid_statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
-        
+
         if (!in_array($status, $valid_statuses)) {
             return new WP_Error('validation', __('Invalid invoice status', 'my-village-hall'));
         }
@@ -118,7 +119,7 @@ class MYVH_Invoice_Service {
      */
     public function record_payment($id, $amount) {
         $invoice = $this->repo->get_by_id($id);
-        
+
         if (!$invoice) {
             return new WP_Error('not_found', __('Invoice not found', 'my-village-hall'));
         }

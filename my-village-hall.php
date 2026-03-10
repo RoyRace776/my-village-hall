@@ -97,7 +97,7 @@ class My_Village_Hall {
 
         // Add the functionality for settings
         MYVH_Settings_Registry::auto_register(
-            plugin_dir_path(__FILE__) . 'includes/settings'
+            MYVH_PLUGIN_DIR . 'modules/settings'
         );
 
         $settings_page = new MYVH_Settings_Page();
@@ -126,7 +126,7 @@ class My_Village_Hall {
             $myvh_container->get('venue_controller')->delete();
         });
 
-        add_action('admin_post_myvh_save_room', function () {#
+        add_action('admin_post_myvh_save_room', function () {
             global $myvh_container;
             $myvh_container->get('room_controller')->save();
         });
@@ -1336,8 +1336,8 @@ add_action('wp_initialize_site', function($new_site) {
  */
 ob_start();
 //  Add in any utlility classes
-require_once MYVH_PLUGIN_DIR . 'includes/domain/helpers/time-helpers.php';
-require_once MYVH_PLUGIN_DIR . 'includes/domain/helpers/settings-helper.php';
+require_once MYVH_PLUGIN_DIR . 'core/support/time-helpers.php';
+require_once MYVH_PLUGIN_DIR . 'modules/settings/settings-helper.php';
 require_once MYVH_PLUGIN_DIR .'includes/admin/class-myvh-admin-notices.php';
 
 require_once MYVH_PLUGIN_DIR .'core/container/class-myvh-container.php';
@@ -1346,12 +1346,10 @@ global $myvh_container;
 $myvh_container = require MYVH_PLUGIN_DIR . '/bootstrap/myvh-container.php';
 
 //  Add in settings management
-require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-settings-base.php';
-
-require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-general-settings.php';
-require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-booking-settings.php';
-
-require_once MYVH_PLUGIN_DIR . 'includes/admin/settings-registry.php';
+require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-settings-base.php';
+require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-general-settings.php';
+require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-booking-settings.php';
+require_once MYVH_PLUGIN_DIR . 'modules/settings/settings-registry.php';
 require_once MYVH_PLUGIN_DIR . 'includes/admin/views/settings-page.php';
 
 
