@@ -1,31 +1,14 @@
 <?php
 
-$myvh_container->singleton(MYVH_Availability_Service::class);
-
-$myvh_container->singleton(MYVH_Pricing_Service::class);
-
-$myvh_container->singleton(MYVH_Room_Service::class);
-
-$myvh_container->singleton(MYVH_Booking_Validator::class);
-
-$myvh_container->singleton(MYVH_Room_Rules_Service::class);
-
-$myvh_container->singleton(MYVH_Customer_Service::class);
-
-$myvh_container->singleton(MYVH_Booking_Service::class);
-
-$myvh_container->singleton(MYVH_Recurring_Pattern_Service::class);
-
-$myvh_container->singleton(MYVH_Customer_Group_Service::class);
-
-$myvh_container->singleton(MYVH_Venue_Service::class);
-
-$myvh_container->singleton(MYVH_Room_Rate_Service::class);
-
-$myvh_container->singleton(MYVH_Addon_Service::class);
-
-//$myvh_container->singleton('calendar_service', function($c) {
-//    return new MYVH_Calendar_Service(
-//        $c->get('booking_repo')
-//    );
-//});
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-availability-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-validator.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/customer-groups/class-myvh-customer-group-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-service.php';

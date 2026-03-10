@@ -1341,8 +1341,22 @@ require_once MYVH_PLUGIN_DIR . 'includes/admin/class-myvh-admin-notices.php';
 
 require_once MYVH_PLUGIN_DIR . 'core/container/class-myvh-container.php';
 
+//  Include the repository access classes
+require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-repositories.php';
+
+// Include the controller classes
+require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-controllers.php';
+
+//  Include the service classes
+require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-services.php';
+
 global $myvh_container;
 $myvh_container = require MYVH_PLUGIN_DIR . '/bootstrap/myvh-container.php';
+
+$myvh_container->singleton(\wpdb::class, function () {
+    global $wpdb;
+    return $wpdb;
+});
 
 //  Add in settings management
 require_once MYVH_PLUGIN_DIR . 'modules/settings/settings-helper.php';
@@ -1353,8 +1367,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/settings/settings-registry.php';
 require_once MYVH_PLUGIN_DIR . 'includes/admin/views/settings-page.php';
 
 
-// Include the repository access classes
-//require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-repositories.php';
+
 
 // Bootstrap
 require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-bootstrap.php';
