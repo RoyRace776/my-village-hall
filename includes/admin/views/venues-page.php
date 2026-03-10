@@ -7,11 +7,12 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('You do not have sufficient permissions to access this page.', 'my-village-hall'));
 }
 
+global $myvh_container;
 
 $action   = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $venue_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-$venue_service = MYVH_Registry::get('venue_service');
+$venue_service = $myvh_container->get('venue_service');
 $venue  = $venue_id ? $venue_service->get($venue_id) : null;
 $venues = $venue_service->get_all();
 ?>

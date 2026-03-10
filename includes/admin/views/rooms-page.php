@@ -7,10 +7,11 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+global $myvh_container;
 
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$room_service  = MYVH_Registry::get('room_service');
-$venue_service = MYVH_Registry::get('venue_service');
+$room_service  = $myvh_container->get('room_service');
+$venue_service = $myvh_container->get('venue_service');
 $edit_room = $edit_id ? $room_service->get($edit_id) : null;
 $rooms     = $room_service->get_all_with_venues();
 $venues    = $venue_service->get_all();
@@ -63,11 +64,11 @@ $venues    = $venue_service->get_all();
                                 <td colspan="5"><?php _e('No rooms found. Please add a room to get started.', 'my-village-hall'); ?></td>
                             </tr>
                         <?php else: ?>
-                            <?php 
+                            <?php
                             $current_venue = '';
-                            foreach ($rooms as $room): 
+                            foreach ($rooms as $room):
                                 // Add venue separator row
-                                if ($current_venue !== $room['VenueName']): 
+                                if ($current_venue !== $room['VenueName']):
                                     $current_venue = $room['VenueName'];
                             ?>
                                 <tr style="background-color: #f0f0f0;">
@@ -91,7 +92,7 @@ $venues    = $venue_service->get_all();
                                     </td>
                                     <td>
                                         <?php if ($room['OpeningTime'] && $room['ClosingTime']): ?>
-                                            <?php echo date('g:i A', strtotime($room['OpeningTime'])); ?> - 
+                                            <?php echo date('g:i A', strtotime($room['OpeningTime'])); ?> -
                                             <?php echo date('g:i A', strtotime($room['ClosingTime'])); ?>
                                         <?php else: ?>
                                             <span style="color: #999;">Not set</span>
@@ -155,7 +156,7 @@ $venues    = $venue_service->get_all();
                                 <select name="venue_id" required class="regular-text">
                                     <option value=""><?php _e('Select Venue', 'my-village-hall'); ?></option>
                                     <?php foreach ($venues as $venue): ?>
-                                        <option value="<?php echo $venue['Id']; ?>" 
+                                        <option value="<?php echo $venue['Id']; ?>"
                                             <?php selected($edit_room && $edit_room['VenueId'] == $venue['Id']); ?>>
                                             <?php echo esc_html($venue['Name']); ?>
                                         </option>
@@ -176,7 +177,7 @@ $venues    = $venue_service->get_all();
                         <tr>
                             <th><?php _e('Description', 'my-village-hall'); ?></th>
                             <td>
-                                <textarea name="description" class="large-text" rows="3" 
+                                <textarea name="description" class="large-text" rows="3"
                                     placeholder="<?php _e('Optional description or notes about this room', 'my-village-hall'); ?>"><?php echo $edit_room ? esc_textarea($edit_room['Description']) : ''; ?></textarea>
                             </td>
                         </tr>

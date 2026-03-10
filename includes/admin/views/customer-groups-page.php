@@ -7,9 +7,10 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+global $myvh_container;
 
 $edit_id    = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$customer_group_service = MYVH_Registry::get('customer_group_service');
+$customer_group_service = $myvh_container->get('customer_group_service');
 $edit_group = $edit_id ? $customer_group_service->get($edit_id) : null;
 $groups     = $customer_group_service->get_all(false);
 ?>

@@ -6,8 +6,8 @@
  * during bootstrap and retrieved by key wherever it is needed.
  *
  * Usage:
- *   MYVH_Registry::set('booking_repo', new MYVH_Booking_Repository());
- *   $repo = MYVH_Registry::get('booking_repo');
+ *   $myvh_container->set('booking_repo', new MYVH_Booking_Repository());
+ *   $repo = $myvh_container->get('booking_repo');
  */
 
 if (!defined('ABSPATH')) exit;

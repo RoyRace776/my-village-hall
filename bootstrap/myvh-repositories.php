@@ -1,13 +1,12 @@
 <?php
 /**
- * Instantiate all repositories and register them in MYVH_Registry.
+ * Instantiate all repositories
  *
  * Each repository file no longer self-registers into a global variable —
  * the two lines at the bottom of each class file (global $x; $x = new X();)
  * have been removed. All instances live here.
  */
-
-require_once MYVH_PLUGIN_DIR . 'bootstrap/class-myvh-registry.php';
+global $myvh_container;
 
 require_once MYVH_PLUGIN_DIR . 'modules/addons/class-addon-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-addon-repository.php';
@@ -27,18 +26,82 @@ require_once MYVH_PLUGIN_DIR . 'modules/venues/class-venue-repository.php';
 
 global $wpdb;
 
-MYVH_Registry::set('addon_repo',              new MYVH_Addon_Repository($wpdb));
-MYVH_Registry::set('booking_addon_repo',      new MYVH_Booking_Addon_Repository($wpdb));
-MYVH_Registry::set('booking_charge_repo',     new MYVH_Booking_Charge_Repository($wpdb));
-MYVH_Registry::set('booking_discount_repo',   new MYVH_Booking_Discount_Repository($wpdb));
-MYVH_Registry::set('booking_repo',            new MYVH_Booking_Repository($wpdb));
-MYVH_Registry::set('customer_group_repo',     new MYVH_Customer_Group_Repository($wpdb));
-MYVH_Registry::set('customer_repo',           new MYVH_Customer_Repository($wpdb));
-MYVH_Registry::set('discount_repo',           new MYVH_Discount_Repository($wpdb));
-MYVH_Registry::set('invoice_item_repo',       new MYVH_Invoice_Item_Repository($wpdb));
-MYVH_Registry::set('invoice_repo',            new MYVH_Invoice_Repository($wpdb));
-MYVH_Registry::set('payment_repo',            new MYVH_Payment_Repository($wpdb));
-MYVH_Registry::set('recurring_pattern_repo',  new MYVH_Recurring_Pattern_Repository($wpdb));
-MYVH_Registry::set('room_rate_repo',          new MYVH_Room_Rate_Repository($wpdb));
-MYVH_Registry::set('room_repo',               new MYVH_Room_Repository($wpdb));
-MYVH_Registry::set('venue_repo',              new MYVH_Venue_Repository($wpdb));
+$myvh_container->singleton('addon_repo', function($c) use ($wpdb) {
+    return new MYVH_Addon_Repository($wpdb);
+});
+
+$myvh_container->singleton('booking_addon_repo', function($c) use ($wpdb) {
+    return new MYVH_Booking_Addon_Repository($wpdb);
+});
+
+$myvh_container->singleton('booking_charge_repo', function($c) use ($wpdb) {
+    return new MYVH_Booking_Charge_Repository($wpdb);
+});
+
+$myvh_container->singleton('booking_discount_repo', function($c) use ($wpdb) {
+    return new MYVH_Booking_Discount_Repository($wpdb);
+});
+
+$myvh_container->singleton('booking_repo', function($c) use ($wpdb) {
+    return new MYVH_Booking_Repository($wpdb);
+});
+
+$myvh_container->singleton('customer_group_repo', function($c) use ($wpdb) {
+    return new MYVH_Customer_Group_Repository($wpdb);
+});
+
+$myvh_container->singleton('customer_repo', function($c) use ($wpdb) {
+    return new MYVH_Customer_Repository($wpdb);
+});
+
+$myvh_container->singleton('discount_repo', function($c) use ($wpdb) {
+    return new MYVH_Discount_Repository($wpdb);
+});
+
+$myvh_container->singleton('invoice_item_repo', function($c) use ($wpdb) {
+    return new MYVH_Invoice_Item_Repository($wpdb);
+});
+
+$myvh_container->singleton('invoice_repo', function($c) use ($wpdb) {
+    return new MYVH_Invoice_Repository($wpdb);
+});
+
+$myvh_container->singleton('payment_repo', function($c) use ($wpdb) {
+    return new MYVH_Payment_Repository($wpdb);
+});
+
+$myvh_container->singleton('recurring_pattern_repo', function($c) use ($wpdb) {
+    return new MYVH_Recurring_Pattern_Repository($wpdb);
+});
+
+$myvh_container->singleton('room_rate_repo', function($c) use ($wpdb) {
+    return new MYVH_Room_Rate_Repository($wpdb);
+});
+
+$myvh_container->singleton('room_repo', function($c) use ($wpdb) {
+    return new MYVH_Room_Repository($wpdb);
+});
+
+$myvh_container->singleton('venue_repo', function($c) use ($wpdb) {
+    return new MYVH_Venue_Repository($wpdb);
+});
+
+
+
+
+
+//$myvh_container->set('addon_repo',              new MYVH_Addon_Repository($wpdb));
+//$myvh_container->set('booking_addon_repo',      new MYVH_Booking_Addon_Repository($wpdb));
+//$myvh_container->set('booking_charge_repo',     new MYVH_Booking_Charge_Repository($wpdb));
+//$myvh_container->set('booking_discount_repo',   new MYVH_Booking_Discount_Repository($wpdb));
+//$myvh_container->set('booking_repo',            new MYVH_Booking_Repository($wpdb));
+//$myvh_container->set('customer_group_repo',     new MYVH_Customer_Group_Repository($wpdb));
+//$myvh_container->set('customer_repo',           new MYVH_Customer_Repository($wpdb));
+//$myvh_container->set('discount_repo',           new MYVH_Discount_Repository($wpdb));
+//$myvh_container->set('invoice_item_repo',       new MYVH_Invoice_Item_Repository($wpdb));
+//$myvh_container->set('invoice_repo',            new MYVH_Invoice_Repository($wpdb));
+//$myvh_container->set('payment_repo',            new MYVH_Payment_Repository($wpdb));
+//$myvh_container->set('recurring_pattern_repo',  new MYVH_Recurring_Pattern_Repository($wpdb));
+//$myvh_container->set('room_rate_repo',          new MYVH_Room_Rate_Repository($wpdb));
+//$myvh_container->set('room_repo',               new MYVH_Room_Repository($wpdb));
+//$myvh_container->set('venue_repo',              new MYVH_Venue_Repository($wpdb));

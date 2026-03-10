@@ -7,10 +7,11 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+global $myvh_container;
 
 $edit_id       = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$customer_service       = MYVH_Registry::get('customer_service');
-$customer_group_service = MYVH_Registry::get('customer_group_service');
+$customer_service       = $myvh_container->get('customer_service');
+$customer_group_service = $myvh_container->get('customer_group_service');
 $edit_customer = $edit_id ? $customer_service->get($edit_id) : null;
 $customers     = $customer_service->get_with_groups();
 $groups        = $customer_group_service->get_all();
@@ -142,7 +143,7 @@ $groups        = $customer_group_service->get_all();
                                 <select name="customer_group_id" class="regular-text">
                                     <option value=""><?php _e('None', 'my-village-hall'); ?></option>
                                     <?php foreach ($groups as $group): ?>
-                                        <option value="<?php echo $group['Id']; ?>" 
+                                        <option value="<?php echo $group['Id']; ?>"
                                             <?php selected($edit_customer && $edit_customer['CustomerGroupId'] == $group['Id']); ?>>
                                             <?php echo esc_html($group['Name']); ?>
                                         </option>

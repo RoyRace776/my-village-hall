@@ -5,6 +5,7 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+global $myvh_container;
 
 $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
@@ -13,16 +14,16 @@ $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 if ($edit_id || $view_id) {
     $pattern_id   = $edit_id ?: $view_id;
     $is_view_mode = !$edit_id;
-    $pattern      = MYVH_Registry::get('recurring_pattern_service')->get($pattern_id);
+    $pattern      = $myvh_container->get('recurring_pattern_service')->get($pattern_id);
 
     if (!$pattern) {
         wp_die(__('Pattern not found.', 'my-village-hall'));
     }
 
-    $parent_booking  = MYVH_Registry::get('booking_service')->get_by_id($pattern['ParentBookingId']);
-    $bookings        = MYVH_Registry::get('recurring_pattern_service')->get_bookings_for_pattern($pattern_id);
-    $customers       = MYVH_Registry::get('customer_service')->get_all();
-    $rooms           = MYVH_Registry::get('room_service')->get_all_with_venues();
+    $parent_booking  = $myvh_container->get('booking_service')->get_by_id($pattern['ParentBookingId']);
+    $bookings        = $myvh_container->get('recurring_pattern_service')->get_bookings_for_pattern($pattern_id);
+    $customers       = $myvh_container->get('customer_service')->get_all();
+    $rooms           = $myvh_container->get('room_service')->get_all_with_venues();
     $customer_map    = array_column($customers ?? [], null, 'Id');
     $room_map        = array_column($rooms ?? [], null, 'Id');
 
@@ -406,7 +407,7 @@ if ($edit_id || $view_id) {
 }
 
 // ── LIST VIEW ─────────────────────────────────────────────────────────────────
-$patterns = MYVH_Registry::get('recurring_pattern_service')->get_active_with_bookings() ?? [];
+$patterns = $myvh_container->get('recurring_pattern_service')->get_active_with_bookings() ?? [];
 ?>
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php _e('Recurring Patterns', 'my-village-hall'); ?></h1>

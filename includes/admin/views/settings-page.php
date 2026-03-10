@@ -15,14 +15,23 @@ class MYVH_Settings_Page {
      */
     public function menu() {
 
-        add_menu_page(
-            'My Plugin Settings',
-            'My Plugin',
+        // Separator (using a disabled submenu as visual separator)
+        add_submenu_page(
+            'my-village-hall',
+            '',
+            '<span style="display:block; margin:5px 0; padding:0; border-top:1px solid #555; opacity:0.5;"></span>',
+            'manage_options',
+            '#',
+            ''
+        );
+
+        add_submenu_page(
+            'my-village-hall',
+            __('Settings', 'my-village-hall'),
+            __('Settings', 'my-village-hall'),
             'manage_options',
             'myvh-settings',
-            [$this, 'render_page'],
-            'dashicons-admin-generic',
-            60
+            [$this, 'render_page']
         );
 
     }

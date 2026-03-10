@@ -7,16 +7,17 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+global $myvh_container;
 
 $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 $booking_id = $edit_id ?: $view_id;
 
-$booking_service           = MYVH_Registry::get('booking_service');
-$customer_service          = MYVH_Registry::get('customer_service');
-$room_service              = MYVH_Registry::get('room_service');
-$addon_service             = MYVH_Registry::get('addon_service');
-$recurring_pattern_service = MYVH_Registry::get('recurring_pattern_service');
+$booking_service           = $myvh_container->get('booking_service');
+$customer_service          = $myvh_container->get('customer_service');
+$room_service              = $myvh_container->get('room_service');
+$addon_service             = $myvh_container->get('addon_service');
+$recurring_pattern_service = $myvh_container->get('recurring_pattern_service');
 
 $edit_booking = $booking_id ? $booking_service->get_by_id($booking_id) : null;
 $is_view_mode = $view_id > 0;
@@ -64,7 +65,7 @@ $status_colors = [
     <?php else: ?>
         <h1><?php _e('Add New Booking', 'my-village-hall'); ?></h1>
     <?php endif; ?>
-    
+
     <hr class="wp-header-end">
 
     <?php if (isset($_GET['error'])): ?>
@@ -79,12 +80,12 @@ $status_colors = [
             <div class="myvh-col-60">
                 <div class="myvh-card">
                     <h2><?php _e('Booking Details', 'my-village-hall'); ?></h2>
-                    
+
                     <?php
 
                     $status_color = $status_colors[$edit_booking['Status']] ?? '#999';
                     ?>
-                    
+
                     <table class="form-table">
                         <tr>
                             <th><?php _e('Booking ID', 'my-village-hall'); ?></th>
@@ -128,9 +129,9 @@ $status_colors = [
                         <tr>
                             <th><?php _e('Time', 'my-village-hall'); ?></th>
                             <td>
-                                <?php echo date('g:i A', strtotime($edit_booking['StartTime'])); ?> - 
+                                <?php echo date('g:i A', strtotime($edit_booking['StartTime'])); ?> -
                                 <?php echo date('g:i A', strtotime($edit_booking['EndTime'])); ?>
-                                
+
                                 <?php
                                 $duration_start = new DateTime($edit_booking['StartTime']);
                                 $duration_end = new DateTime($edit_booking['EndTime']);
@@ -275,7 +276,7 @@ $status_colors = [
                     <!-- Left Column -->
                     <div class="myvh-col-60">
                         <h2><?php _e('Booking Information', 'my-village-hall'); ?></h2>
-                        
+
                         <table class="form-table">
                             <tr>
                                 <th><?php _e('Customer', 'my-village-hall'); ?> *</th>
@@ -283,14 +284,14 @@ $status_colors = [
                                     <select name="customer_id" required class="regular-text">
                                         <option value=""><?php _e('Select Customer', 'my-village-hall'); ?></option>
                                         <?php foreach ($customers as $customer): ?>
-                                            <option value="<?php echo $customer['Id']; ?>" 
+                                            <option value="<?php echo $customer['Id']; ?>"
                                                 <?php selected($edit_booking && $edit_booking['CustomerId'] == $customer['Id']); ?>>
                                                 <?php echo esc_html($customer['Name'] . ' (' . $customer['Email'] . ')'); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
                                     <p class="description">
-                                        <?php _e('Or', 'my-village-hall'); ?> 
+                                        <?php _e('Or', 'my-village-hall'); ?>
                                         <a href="<?php echo admin_url('admin.php?page=myvh-customers&add=1'); ?>" target="_blank">
                                             <?php _e('add a new customer', 'my-village-hall'); ?>
                                         </a>
@@ -303,16 +304,16 @@ $status_colors = [
                                 <td>
                                     <select name="room_id" required class="regular-text" id="room-select">
                                         <option value=""><?php _e('Select Room', 'my-village-hall'); ?></option>
-                                        <?php 
+                                        <?php
                                         $current_venue = '';
-                                        foreach ($rooms as $room): 
-                                            if ($current_venue !== $room['VenueName']): 
+                                        foreach ($rooms as $room):
+                                            if ($current_venue !== $room['VenueName']):
                                                 if ($current_venue !== '') echo '</optgroup>';
                                                 echo '<optgroup label="' . esc_attr($room['VenueName']) . '">';
                                                 $current_venue = $room['VenueName'];
                                             endif;
                                         ?>
-                                            <option value="<?php echo $room['Id']; ?>" 
+                                            <option value="<?php echo $room['Id']; ?>"
                                                 data-opening="<?php echo esc_attr($room['OpeningTime']); ?>"
                                                 data-closing="<?php echo esc_attr($room['ClosingTime']); ?>"
                                                 <?php selected($edit_booking && $edit_booking['RoomId'] == $room['Id']); ?>>
@@ -321,7 +322,7 @@ $status_colors = [
                                                     (<?php echo $room['Capacity']; ?> people)
                                                 <?php endif; ?>
                                             </option>
-                                        <?php 
+                                        <?php
                                         endforeach;
                                         if ($current_venue !== '') echo '</optgroup>';
                                         ?>
@@ -367,7 +368,7 @@ $status_colors = [
                             <tr>
                                 <th><?php _e('Description', 'my-village-hall'); ?></th>
                                 <td>
-                                    <textarea name="description" class="large-text" rows="3" 
+                                    <textarea name="description" class="large-text" rows="3"
                                         placeholder="<?php _e('Purpose of the booking, event details, etc.', 'my-village-hall'); ?>"><?php echo $edit_booking ? esc_textarea($edit_booking['Description']) : ''; ?></textarea>
                                 </td>
                             </tr>
@@ -377,7 +378,7 @@ $status_colors = [
                     <!-- Right Column -->
                     <div class="myvh-col-40">
                         <h2><?php _e('Booking Options', 'my-village-hall'); ?></h2>
-                        
+
                         <table class="form-table">
                             <tr>
                                 <th><?php _e('Status', 'my-village-hall'); ?></th>
@@ -403,7 +404,7 @@ $status_colors = [
                                 <th><?php _e('Visibility', 'my-village-hall'); ?></th>
                                 <td>
                                     <label>
-                                        <input type="checkbox" name="public" value="1" 
+                                        <input type="checkbox" name="public" value="1"
                                             <?php checked(!$edit_booking || $edit_booking['Public']); ?>>
                                         <?php _e('Show on public calendar', 'my-village-hall'); ?>
                                     </label>
@@ -425,7 +426,7 @@ $status_colors = [
 
                             <div id="recurring-options" style="display: none; margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px;">
                                 <h3><?php _e('Recurring Pattern', 'my-village-hall'); ?></h3>
-                                
+
                                 <table class="form-table">
                                     <tr>
                                         <th><?php _e('Repeat', 'my-village-hall'); ?></th>
@@ -481,7 +482,7 @@ $status_colors = [
                                             <label>
                                                 <input type="radio" name="recurrence_end_type" value="date" checked>
                                                 <?php _e('On', 'my-village-hall'); ?>
-                                                <input type="date" name="recurrence_end_date" class="regular-text" 
+                                                <input type="date" name="recurrence_end_date" class="regular-text"
                                                     value="<?php echo date('Y-m-d', strtotime('+1 year')); ?>">
                                             </label>
                                             <br>
@@ -693,24 +694,24 @@ $status_colors = [
             function updateDuration() {
                 const startTime = $('#start-time').val();
                 const endTime = $('#end-time').val();
-                
+
                 if (startTime && endTime) {
                     const start = new Date('2000-01-01 ' + startTime);
                     const end = new Date('2000-01-01 ' + endTime);
                     const diff = (end - start) / 1000 / 60; // minutes
-                    
+
                     if (diff > 0) {
                         const hours = Math.floor(diff / 60);
                         const minutes = diff % 60;
                         let durationText = '';
-                        
+
                         if (hours > 0) {
                             durationText += hours + ' <?php _e('hour(s)', 'my-village-hall'); ?> ';
                         }
                         if (minutes > 0) {
                             durationText += minutes + ' <?php _e('minutes', 'my-village-hall'); ?>';
                         }
-                        
+
                         $('#duration-display').text('<?php _e('Duration:', 'my-village-hall'); ?> ' + durationText.trim());
                     } else {
                         $('#duration-display').text('<?php _e('End time must be after start time', 'my-village-hall'); ?>').css('color', 'red');
@@ -726,7 +727,7 @@ $status_colors = [
                 const selected = $(this).find(':selected');
                 const opening = selected.data('opening');
                 const closing = selected.data('closing');
-                
+
                 if (opening && !$('#start-time').val()) {
                     $('#start-time').val(opening);
                 }
@@ -747,11 +748,11 @@ $status_colors = [
             $('#booking-form').on('submit', function(e) {
                 const startTime = $('#start-time').val();
                 const endTime = $('#end-time').val();
-                
+
                 if (startTime && endTime) {
                     const start = new Date('2000-01-01 ' + startTime);
                     const end = new Date('2000-01-01 ' + endTime);
-                    
+
                     if (end <= start) {
                         e.preventDefault();
                         alert('<?php _e('End time must be after start time', 'my-village-hall'); ?>');

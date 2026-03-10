@@ -7,9 +7,11 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$venues = MYVH_Registry::get( 'venue_service' )->get_all();
-$rooms  = MYVH_Registry::get( 'room_service'  )->get_all_with_venues();
-$customers = MYVH_Registry::get( 'customer_service' )->get_all( [ 'orderby' => 'Name', 'order' => 'ASC', 'limit' => 500 ] );
+global $myvh_container;
+
+$venues = $myvh_container->get( 'venue_service' )->get_all();
+$rooms  = $myvh_container->get( 'room_service'  )->get_all_with_venues();
+$customers = $myvh_container->get( 'customer_service' )->get_all( [ 'orderby' => 'Name', 'order' => 'ASC', 'limit' => 500 ] );
 ?>
 <div class="wrap vbc-calendar-wrap">
     <h1><?php esc_html_e( 'Booking Calendar', 'my-village-hall' ); ?>

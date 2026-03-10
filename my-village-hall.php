@@ -87,6 +87,8 @@ class My_Village_Hall {
      * These hooks tell WordPress when to run specific plugin functions.
      */
     private function init_hooks() {
+        global $myvh_container;
+
         // Load plugin text domain for translations after all plugins are loaded
         add_action('plugins_loaded', array($this, 'load_plugin'));
 
@@ -105,99 +107,122 @@ class My_Village_Hall {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
         add_action('admin_post_myvh_save_booking', function () {
-            MYVH_Registry::get('booking_controller')->save();
+            global $myvh_container;
+            $myvh_container->get('booking_controller')->save();
         });
 
         add_action('admin_post_myvh_cancel_booking', function () {
-            MYVH_Registry::get('booking_controller')->cancel();
+            global $myvh_container;
+            $myvh_container->get('booking_controller')->cancel();
         });
 
         add_action('admin_post_myvh_save_venue', function () {
-            MYVH_Registry::get('venue_controller')->save();
+            global $myvh_container;
+            $myvh_container->get('venue_controller')->save();
         });
 
         add_action('admin_post_myvh_delete_venue', function () {
-            MYVH_Registry::get('venue_controller')->delete();
+            global $myvh_container;
+            $myvh_container->get('venue_controller')->delete();
         });
 
-        add_action('admin_post_myvh_save_room', function () {
-            MYVH_Registry::get('room_controller')->save();
+        add_action('admin_post_myvh_save_room', function () {#
+            global $myvh_container;
+            $myvh_container->get('room_controller')->save();
         });
 
         add_action('admin_post_myvh_delete_room', function () {
-            MYVH_Registry::get('room_controller')->delete();
+            global $myvh_container;
+            $myvh_container->get('room_controller')->delete();
         });
 
         add_action('admin_post_myvh_save_customer_group', function () {
-            MYVH_Registry::get('customer_group_controller')->save();
+            global $myvh_container;
+            $myvh_container->get('customer_group_controller')->save();
         });
 
         add_action('admin_post_myvh_delete_customer_group', function () {
-            MYVH_Registry::get('customer_group_controller')->delete();
+            global $myvh_container;
+            $myvh_container->get('customer_group_controller')->delete();
         });
 
         add_action('admin_post_myvh_save_rate', function () {
-            MYVH_Registry::get('room_rate_controller')->save();
+            global $myvh_container;
+            $myvh_container->get('room_rate_controller')->save();
         });
 
         add_action('admin_post_myvh_delete_rate', function () {
-            MYVH_Registry::get('room_rate_controller')->delete();
+            global $myvh_container;
+            $myvh_container->get('room_rate_controller')->delete();
         });
 
         // Addon actions
         add_action('admin_post_myvh_save_addon', function () {
-            MYVH_Registry::get('addon_controller')->save();
+            global $myvh_container;
+            $myvh_container->get('addon_controller')->save();
         });
 
         add_action('admin_post_myvh_delete_addon', function () {
-            MYVH_Registry::get('addon_controller')->delete();
+            global $myvh_container;
+            $myvh_container->get('addon_controller')->delete();
         });
 
         // Customer actions
         add_action('admin_post_myvh_save_customer', function () {
-            MYVH_Registry::get('customer_controller')->save();
+            global $myvh_container;
+            $myvh_container->get('customer_controller')->save();
         });
 
         add_action('admin_post_myvh_delete_customer', function () {
-            MYVH_Registry::get('customer_controller')->delete();
+            global $myvh_container;
+            $myvh_container->get('customer_controller')->delete();
         });
 
         // Invoice actions
         add_action('admin_post_myvh_save_invoice', function () {
-            MYVH_Registry::get('invoice_controller')->save();
+            global $myvh_container;
+            $myvh_container->get('invoice_controller')->save();
         });
 
         add_action('admin_post_myvh_delete_invoice', function () {
-            MYVH_Registry::get('invoice_controller')->delete();
+            global $myvh_container;
+            $myvh_container->get('invoice_controller')->delete();
         });
 
         add_action('admin_post_myvh_update_invoice_status', function () {
-            MYVH_Registry::get('invoice_controller')->update_status();
+            global $myvh_container;
+            $myvh_container->get('invoice_controller')->update_status();
         });
 
         add_action('admin_post_myvh_record_payment', function () {
-            MYVH_Registry::get('invoice_controller')->record_payment();
+            global $myvh_container;
+            $myvh_container->get('invoice_controller')->record_payment();
         });
 
         // Recurring pattern actions
         add_action('admin_post_myvh_save_recurring_pattern', function () {
-            MYVH_Registry::get('recurring_pattern_controller')->save();
+            global $myvh_container;
+            $myvh_container->get('recurring_pattern_controller')->save();
         });
 
         add_action('admin_post_myvh_delete_recurring_pattern', function () {
-            MYVH_Registry::get('recurring_pattern_controller')->delete();
+            global $myvh_container;
+            $myvh_container->get('recurring_pattern_controller')->delete();
         });
 
         add_action('admin_post_myvh_deactivate_recurring_pattern', function () {
-            MYVH_Registry::get('recurring_pattern_controller')->deactivate();
+            global $myvh_container;
+            $myvh_container->get('recurring_pattern_controller')->deactivate();
         });
 
         add_action('admin_post_myvh_delete_future_bookings', function () {
-            MYVH_Registry::get('recurring_pattern_controller')->delete_future_bookings();
+            global $myvh_container;
+            $myvh_container->get('recurring_pattern_controller')->delete_future_bookings();
         });
 
         add_action('admin_post_myvh_process_patterns', function () {
-            MYVH_Registry::get('recurring_pattern_controller')->process_patterns();
+            global $myvh_container;
+            $myvh_container->get('recurring_pattern_controller')->process_patterns();
         });
     }
 
@@ -1314,6 +1339,11 @@ ob_start();
 require_once MYVH_PLUGIN_DIR . 'includes/domain/helpers/time-helpers.php';
 require_once MYVH_PLUGIN_DIR . 'includes/domain/helpers/settings-helper.php';
 require_once MYVH_PLUGIN_DIR .'includes/admin/class-myvh-admin-notices.php';
+
+require_once MYVH_PLUGIN_DIR .'core/container/class-myvh-container.php';
+
+global $myvh_container;
+$myvh_container = require MYVH_PLUGIN_DIR . '/bootstrap/myvh-container.php';
 
 //  Add in settings management
 require_once MYVH_PLUGIN_DIR . 'includes/settings/class-myvh-settings-base.php';

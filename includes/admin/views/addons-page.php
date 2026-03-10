@@ -7,12 +7,13 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+global $myvh_container;
 
 $edit_id    = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$addon_service          = MYVH_Registry::get('addon_service');
-$customer_group_service = MYVH_Registry::get('customer_group_service');
-$room_service           = MYVH_Registry::get('room_service');
-$venue_service          = MYVH_Registry::get('venue_service');
+$addon_service          = $myvh_container->get('addon_service');
+$customer_group_service = $myvh_container->get('customer_group_service');
+$room_service           = $myvh_container->get('room_service');
+$venue_service          = $myvh_container->get('venue_service');
 $edit_addon = $edit_id ? $addon_service->get($edit_id) : null;
 $addons     = $addon_service->get_with_relations();
 $groups     = $customer_group_service->get_all();
@@ -74,7 +75,7 @@ $venues     = $venue_service->get_all();
                                     <td>£<?php echo number_format($addon['Price'], 2); ?></td>
                                     <td><?php echo esc_html(ucfirst($addon['ChargeType'])); ?></td>
                                     <td>
-                                        <?php 
+                                        <?php
                                         if ($addon['RoomName']) {
                                             echo esc_html($addon['RoomName']);
                                         } elseif ($addon['VenueName']) {
@@ -88,8 +89,8 @@ $venues     = $venue_service->get_all();
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php echo $addon['IsActive'] ? 
-                                            '<span style="color: #46b450;">●</span> ' . __('Active', 'my-village-hall') : 
+                                        <?php echo $addon['IsActive'] ?
+                                            '<span style="color: #46b450;">●</span> ' . __('Active', 'my-village-hall') :
                                             '<span style="color: #dc3232;">●</span> ' . __('Inactive', 'my-village-hall'); ?>
                                     </td>
                                     <td>
@@ -166,7 +167,7 @@ $venues     = $venue_service->get_all();
                                 <select name="room_id" class="regular-text">
                                     <option value=""><?php _e('All Rooms', 'my-village-hall'); ?></option>
                                     <?php foreach ($rooms as $room): ?>
-                                        <option value="<?php echo $room['Id']; ?>" 
+                                        <option value="<?php echo $room['Id']; ?>"
                                             <?php selected($edit_addon && $edit_addon['RoomId'] == $room['Id']); ?>>
                                             <?php echo esc_html($room['Name']); ?>
                                         </option>
@@ -182,7 +183,7 @@ $venues     = $venue_service->get_all();
                                 <select name="venue_id" class="regular-text">
                                     <option value=""><?php _e('All Venues', 'my-village-hall'); ?></option>
                                     <?php foreach ($venues as $venue): ?>
-                                        <option value="<?php echo $venue['Id']; ?>" 
+                                        <option value="<?php echo $venue['Id']; ?>"
                                             <?php selected($edit_addon && $edit_addon['VenueId'] == $venue['Id']); ?>>
                                             <?php echo esc_html($venue['Name']); ?>
                                         </option>
@@ -197,7 +198,7 @@ $venues     = $venue_service->get_all();
                                 <select name="customer_group_id" class="regular-text">
                                     <option value=""><?php _e('All Groups', 'my-village-hall'); ?></option>
                                     <?php foreach ($groups as $group): ?>
-                                        <option value="<?php echo $group['Id']; ?>" 
+                                        <option value="<?php echo $group['Id']; ?>"
                                             <?php selected($edit_addon && $edit_addon['CustomerGroupId'] == $group['Id']); ?>>
                                             <?php echo esc_html($group['Name']); ?>
                                         </option>

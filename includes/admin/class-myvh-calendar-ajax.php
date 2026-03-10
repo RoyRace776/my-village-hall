@@ -174,11 +174,12 @@ class MYVH_Calendar_Ajax {
      * Returns rooms (optionally filtered by venue) for the booking modal.
      */
     public function get_rooms() {
+        global $myvh_container;
         $this->check();
 
         $venue_id = absint( $_POST['venue_id'] ?? 0 );
 
-        $repo  = MYVH_Registry::get( 'room_repo' );
+        $repo  = $myvh_container->get( 'room_repo' );
         $rooms = $repo->get_all_with_venues();
 
         if ( $venue_id > 0 ) {
@@ -191,10 +192,11 @@ class MYVH_Calendar_Ajax {
     // ── GET booking detail ────────────────────────────────────────────────────
 
     public function get_booking_detail() {
+        global $myvh_container;
         $this->check();
 
         $id      = absint( $_POST['booking_id'] ?? 0 );
-        $service = MYVH_Registry::get( 'booking_service' );
+        $service = $myvh_container->get( 'booking_service' );
         $booking = $service->get_by_id( $id );
 
         if ( ! $booking ) {
@@ -207,10 +209,11 @@ class MYVH_Calendar_Ajax {
     // ── GET customers (search) ────────────────────────────────────────────────
 
     public function get_customers() {
+        global $myvh_container;
         $this->check();
 
         $search = sanitize_text_field( $_POST['search'] ?? '' );
-        $repo   = MYVH_Registry::get( 'customer_repo' );
+        $repo   = $myvh_container->get( 'customer_repo' );
 
         $customers = $search
             ? $repo->search( $search )
@@ -229,6 +232,7 @@ class MYVH_Calendar_Ajax {
      * description, public.
      */
     public function save_booking() {
+        global $myvh_container;
         $this->check();
 
         $data = [
@@ -249,7 +253,7 @@ class MYVH_Calendar_Ajax {
             unset( $data['booking_id'] );
         }
 
-        $service = MYVH_Registry::get( 'booking_service' );
+        $service = $myvh_container->get( 'booking_service' );
         $result  = $service->save( $data );
 
         if ( is_wp_error( $result ) ) {
@@ -267,10 +271,11 @@ class MYVH_Calendar_Ajax {
     // ── CANCEL booking ────────────────────────────────────────────────────────
 
     public function cancel_booking() {
+        global $myvh_container;
         $this->check();
 
         $id      = absint( $_POST['booking_id'] ?? 0 );
-        $service = MYVH_Registry::get( 'booking_service' );
+        $service = $myvh_container->get( 'booking_service' );
         $service->cancel( $id );
 
         wp_send_json_success( [ 'message' => __( 'Booking cancelled', 'my-village-hall' ) ] );

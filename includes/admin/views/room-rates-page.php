@@ -7,11 +7,12 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+global $myvh_container;
 
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$room_rate_service      = MYVH_Registry::get('room_rate_service');
-$room_service           = MYVH_Registry::get('room_service');
-$customer_group_service = MYVH_Registry::get('customer_group_service');
+$room_rate_service      = $myvh_container->get('room_rate_service');
+$room_service           = $myvh_container->get('room_service');
+$customer_group_service = $myvh_container->get('customer_group_service');
 $edit_rate = $edit_id ? $room_rate_service->get($edit_id) : null;
 $rates     = $room_rate_service->get_all();
 $rooms     = $room_service->get_all_with_venues();
@@ -84,7 +85,7 @@ $groups    = $customer_group_service->get_all();
                                         break;
                                     }
                                 }
-                                
+
                                 // Get group name
                                 $group_name = __('All Groups', 'my-village-hall');
                                 if ($rate['CustomerGroupId']) {
@@ -106,7 +107,7 @@ $groups    = $customer_group_service->get_all();
                                     <td><?php echo $room ? esc_html($room['Name']) : '<em>' . __('Deleted', 'my-village-hall') . '</em>'; ?></td>
                                     <td><strong>£<?php echo number_format($rate['Rate'], 2); ?></strong></td>
                                     <td>
-                                        <?php 
+                                        <?php
                                         $charge_types = [
                                             'per_hour' => __('Per Hour', 'my-village-hall'),
                                             'per_day' => __('Per Day', 'my-village-hall'),
@@ -122,7 +123,7 @@ $groups    = $customer_group_service->get_all();
                                         <?php else: ?>
                                             <span style="color: #dc3232;">●</span> <?php _e('Inactive', 'my-village-hall'); ?>
                                         <?php endif; ?>
-                                        
+
                                         <?php if ($rate['ValidFrom'] || $rate['ValidTo']): ?>
                                             <br><small style="color: #666;">
                                                 <?php if ($rate['ValidFrom']): ?>
@@ -194,20 +195,20 @@ $groups    = $customer_group_service->get_all();
                             <td>
                                 <select name="room_id" required class="regular-text">
                                     <option value=""><?php _e('Select Room', 'my-village-hall'); ?></option>
-                                    <?php 
+                                    <?php
                                     $current_venue = '';
-                                    foreach ($rooms as $room): 
-                                        if ($current_venue !== $room['VenueName']): 
+                                    foreach ($rooms as $room):
+                                        if ($current_venue !== $room['VenueName']):
                                             if ($current_venue !== '') echo '</optgroup>';
                                             echo '<optgroup label="' . esc_attr($room['VenueName']) . '">';
                                             $current_venue = $room['VenueName'];
                                         endif;
                                     ?>
-                                        <option value="<?php echo $room['Id']; ?>" 
+                                        <option value="<?php echo $room['Id']; ?>"
                                             <?php selected($edit_rate && $edit_rate['RoomId'] == $room['Id']); ?>>
                                             <?php echo esc_html($room['Name']); ?>
                                         </option>
-                                    <?php 
+                                    <?php
                                     endforeach;
                                     if ($current_venue !== '') echo '</optgroup>';
                                     ?>
@@ -247,7 +248,7 @@ $groups    = $customer_group_service->get_all();
                                 <select name="customer_group_id" class="regular-text">
                                     <option value=""><?php _e('All Groups', 'my-village-hall'); ?></option>
                                     <?php foreach ($groups as $group): ?>
-                                        <option value="<?php echo $group['Id']; ?>" 
+                                        <option value="<?php echo $group['Id']; ?>"
                                             <?php selected($edit_rate && $edit_rate['CustomerGroupId'] == $group['Id']); ?>>
                                             <?php echo esc_html($group['Name']); ?>
                                         </option>
