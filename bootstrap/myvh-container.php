@@ -33,6 +33,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/customer-groups/class-customer-group-ser
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-pricing-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/addons/class-addon-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-service-provider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/availability/class-availability-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-invoice-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/payments/class-payment-service-provider.php';
 
@@ -47,6 +48,7 @@ $providers = [
     MYVH_Pricing_Service_Provider::class,
     MYVH_Addon_Service_Provider::class,
     MYVH_Booking_Service_Provider::class,
+    MYVH_Availability_Service_Provider::class,
     MYVH_Invoice_Service_Provider::class,
     MYVH_Payment_Service_Provider::class,
 ];

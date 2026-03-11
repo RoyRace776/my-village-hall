@@ -538,4 +538,82 @@ class MYVH_Installer {
 
         return $results;
     }
+
+    public static function tidy_up() {
+        global $wpdb;
+
+        self::drop_tables($wpdb);
+        self::delete_all_options_by_prefix($wpdb);
+        self::delete_all_transients($wpdb);
+    }
+
+    private static function drop_tables($wpdb) {
+
+        $tables = [
+            'myvh_bookings',
+            'myvh_addons',
+            'myvh_booking_addons',
+            'myvh_invoices',
+            'myvh_invoice_items',
+            'myvh_rooms',
+            'myvh_venues',
+            'myvh_customers',
+            'myvh_customer_groups',
+            'myvh_recurring_pattens',
+            'myvh_room_rates',
+            'myvh_booking_charges',
+            'myvh_discounts',
+            'myvh_booking_discounts',
+            'myvh_payments'
+        ];
+
+        foreach ($tables as $table) {
+            $sql = "SET FOREIGN_KEY_CHECKS = 0;";
+            $wpdb->query($sql);
+            $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}";
+            $wpdb->query($sql);
+        }
+    }
+
+    private static function delete_all_options_by_prefix($wpdb) {
+
+        $prefix = $wpdb->esc_like('myvh_') . '%';
+
+        $options = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $prefix
+            )
+        );
+
+        foreach ($options as $option) {
+            self::delete_option($option);
+        }
+
+    }
+
+    private static function delete_all_transients($wpdb) {
+
+        $prefix = $wpdb->esc_like('_transient_myvh_') . '%';
+
+        $transients = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $prefix
+            )
+        );
+
+        foreach ($transients as $transient) {
+            self::delete_option($transient);
+        }
+
+    }
+
+    private static function delete_option($option) {
+        if ( is_multisite() ) {
+            return delete_site_option( $option );
+        }
+        return delete_option( $option );
+    }
+
 }

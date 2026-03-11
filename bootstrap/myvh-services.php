@@ -35,7 +35,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-pricing-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-service.php';
 
 // ── 4. Bookings ───────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-availability-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-validator.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-service.php';

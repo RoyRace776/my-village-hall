@@ -210,7 +210,17 @@ class My_Village_Hall {
     }
 
     /** Runs on plugin deactivation. */
-    public function deactivate(): void {
+    public function deactivate($network_wide): void {
+        //if the flag is set, then we need to tidy up
+        if ($network_wide && is_multisite()) {
+            if (get_site_option('myvh_delete_data_on_uninstall')) {
+                MYVH_Installer::tidy_up();
+            }
+        } else {
+            if (get_option('myvh_general_settings')['delete_on_deactivate']) {
+                MYVH_Installer::tidy_up();
+            }
+        }
         flush_rewrite_rules();
     }
 
@@ -517,11 +527,11 @@ function myvh_deactivate( bool $network_wide ): void {
     if ( is_multisite() && $network_wide ) {
         foreach ( get_sites( [ 'number' => 0 ] ) as $site ) {
             switch_to_blog( $site->blog_id );
-            My_Village_Hall::get_instance()->deactivate();
+            My_Village_Hall::get_instance()->deactivate($network_wide);
             restore_current_blog();
         }
     } else {
-        My_Village_Hall::get_instance()->deactivate();
+        My_Village_Hall::get_instance()->deactivate($network_wide);
     }
 }
 register_deactivation_hook( __FILE__, 'myvh_deactivate' );

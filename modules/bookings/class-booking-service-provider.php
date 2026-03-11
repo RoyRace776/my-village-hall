@@ -5,7 +5,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-addon-repository.
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-discount-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-charge-repository.php';
 
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-availability-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-validator.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-rules-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-pricing-service.php';

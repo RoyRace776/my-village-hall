@@ -45,7 +45,15 @@ class MYVH_General_Settings extends MYVH_Settings_Base {
                     'label' => 'Admin Email',
                     'default' => '',
                     'sanitize' => 'sanitize_email'
-                ]
+                ],
+
+                'delete_on_deactivate' => [
+                    'type' => 'boolean',
+                    'label' => 'Delete on deactivation',
+                    'default' => false,
+                    'sanitize' => 'boolval',
+                    'description' => 'WARNING: When set, ALL data will be removed when the plugin is deactivated. USE WITH CARE'
+                ],
 
             ]
 

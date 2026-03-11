@@ -153,5 +153,4 @@ abstract class MYVH_Settings_Base {
         }
         return update_option( $this->option_name, $value );
     }
-
 }

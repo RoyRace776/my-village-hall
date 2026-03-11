@@ -46,8 +46,10 @@ if ($edit_booking && $edit_booking['RecurringPatternId']) {
     $recurring_pattern = $recurring_pattern_service->get($edit_booking['RecurringPatternId']);
 }
 
-$customer = $customer_service->get($edit_booking['CustomerId']);
-$room = $room_service->get($edit_booking['RoomId']);
+if ($edit_booking) {
+    $customer = $customer_service->get($edit_booking['CustomerId']);
+    $room = $room_service->get($edit_booking['RoomId']);
+}
 
 $status_colors = [
     BookingStatus::PENDING => '#2271b1',
