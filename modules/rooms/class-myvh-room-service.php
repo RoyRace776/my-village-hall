@@ -38,6 +38,8 @@ class MYVH_Room_Service {
             'Description'  => sanitize_textarea_field($data['description']),
             'OpeningTime'  => sanitize_text_field($data['opening_time']),
             'ClosingTime'  => sanitize_text_field($data['closing_time']),
+            'AllowMultiDayBookings' => isset($data['allow-multi-day-bookings']) ? 1 : 0,
+            'CalcClosedHours' => isset($data['calc-closed-hours']) ? 1 : 0
         ];
 
         if (!empty($data['room_id'])) {

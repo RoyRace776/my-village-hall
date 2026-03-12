@@ -69,15 +69,17 @@ class MYVH_Installer {
 
         // ── Rooms ─────────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$p}myvh_rooms (
-            Id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            VenueId       INT UNSIGNED NOT NULL,
-            Name          VARCHAR(100) NOT NULL,
-            Description   VARCHAR(255),
-            BufferBefore  INT UNSIGNED DEFAULT 0,
-            BufferAfter   INT UNSIGNED DEFAULT 0,
-            Capacity      INT UNSIGNED DEFAULT 0,
-            OpeningTime   TIME,
-            ClosingTime   TIME,
+            Id                      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            VenueId                 INT UNSIGNED NOT NULL,
+            Name                    VARCHAR(100) NOT NULL,
+            Description             VARCHAR(255),
+            BufferBefore            INT UNSIGNED DEFAULT 0,
+            BufferAfter             INT UNSIGNED DEFAULT 0,
+            Capacity                INT UNSIGNED DEFAULT 0,
+            OpeningTime             TIME,
+            ClosingTime             TIME,
+            AllowMultiDayBookings   TINYINT(1) DEFAULT 0 NOT NULL,
+            CalcClosedHours         TINYINT(1) DEFAULT 0 NOT NULL,
             INDEX idx_venue (VenueId),
             INDEX idx_name  (Name)
         ) {$collate};" );
@@ -128,6 +130,7 @@ class MYVH_Installer {
             EndDate            DATE         NOT NULL,
             StartTime          TIME         NOT NULL,
             EndTime            TIME         NOT NULL,
+            ChargeableHours    INT UNSIGNED DEFAULT NULL,
             Public             TINYINT(1)   DEFAULT 1,
             Description        VARCHAR(255),
             RecurringPatternId INT UNSIGNED  DEFAULT NULL,

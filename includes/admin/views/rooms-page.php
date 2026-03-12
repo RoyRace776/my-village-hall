@@ -199,6 +199,18 @@ $venues    = $venue_service->get_all();
                                 <p class="description"><?php _e('Default closing time for this room', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
+                        <tr>
+                            <th><?php _e('Options', 'my-village-hall'); ?></th>
+                            <td>
+                                <label><input type="checkbox" name="allow-multi-day-bookings" value="1"
+                                    <?php checked($edit_room && $edit_room['AllowMultiDayBookings']); ?>>
+                                    <?php _e('Allow multi-day bookings', 'my-village-hall'); ?></label><br>
+
+                                <label><input type="checkbox" name="calc-closed-hours" value="1"
+                                    <?php checked($edit_room && $edit_room['CalcClosedHours']); ?>>
+                                    <?php _e('Include closed hours when calculating booking duration', 'my-village-hall'); ?></label>
+                            </td>
+                        </tr>
                     </table>
 
                     <p class="submit">

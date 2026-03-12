@@ -8,23 +8,23 @@ class MYVH_Booking_Controller {
         $this->service = $service;
     }
 
-    public function create() {
+    // public function create() {
 
-        if (!current_user_can('manage_myvh')) {
-            wp_die('Unauthorized');
-        }
+    //     if (!current_user_can('manage_myvh')) {
+    //         wp_die('Unauthorized');
+    //     }
 
-        check_admin_referer('myvh_create_booking');
+    //     check_admin_referer('myvh_create_booking');
 
-        $result = $this->service->create_booking($_POST);
+    //     $result = $this->service->create_booking($_POST);
 
-        if (is_wp_error($result)) {
-            wp_die($result->get_error_message());
-        }
+    //     if (is_wp_error($result)) {
+    //         wp_die($result->get_error_message());
+    //     }
 
-        wp_redirect(admin_url('admin.php?page=myvh-bookings&created=1'));
-        exit;
-    }
+    //     wp_redirect(admin_url('admin.php?page=myvh-bookings&created=1'));
+    //     exit;
+    // }
 
     public function save() {
         if (!current_user_can('manage_myvh')) {
@@ -47,7 +47,8 @@ class MYVH_Booking_Controller {
         $result = $this->service->save($data);
 
         if (is_wp_error($result)) {
-            wp_redirect(admin_url('admin.php?page=my-village-hall&error=' . urlencode($result->get_error_message())));
+            MYVH_Admin_Notices::error($result->get_error_message());
+            wp_redirect(admin_url('admin.php?page=my-village-hall'));
             exit;
         }
 

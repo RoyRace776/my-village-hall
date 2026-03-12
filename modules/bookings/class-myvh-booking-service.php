@@ -36,105 +36,108 @@ class MYVH_Booking_Service {
         $this->recurring_pattern_service = $recurring_pattern_service;
     }
 
-    public function create_booking($data) {
+    // public function create_booking($data) {
 
-        $room_id   = intval($data['room_id']);
-        $group_id  = intval($data['customer_group_id']);
-        $start     = $data['start_time'];
-        $end       = $data['end_time'];
-        $status    = $data['status'];
+    //     $room_id   = intval($data['room_id']);
+    //     $group_id  = intval($data['customer_group_id']);
+    //     $start     = $data['start_time'];
+    //     $end       = $data['end_time'];
+    //     $status    = $data['status'];
 
-        // Validate input
-        $result = $this->validator->validate($data);
-        if (is_wp_error($result)) return $result;
+    //     // Validate input
+    //     $result = $this->validator->validate($data);
+    //     if (is_wp_error($result)) return $result;
 
-        $room = $this->room_service->get($data['room_id']);
-        if (!$room) {
-            return new WP_Error('invalid_room');
-        }
+    //     $room = $this->room_service->get($data['room_id']);
+    //     if (!$room) {
+    //         return new WP_Error('invalid_room');
+    //     }
 
-        if (!$this->room_rules->within_opening_hours(
-            $room,
-            $data['start_time'],
-            $data['end_time']
-        )) {
-            return new WP_Error('invalid_time');
-        }
+    //     if (!$this->room_rules->within_opening_hours(
+    //         $room,
+    //         $data['start_time'],
+    //         $data['end_time']
+    //     )) {
+    //         return new WP_Error('invalid_time');
+    //     }
 
-        if (!$this->availability->room_is_available(
-            $data['room_id'],
-            $data['start_date'],
-            $data['start_time'],
-            $data['end_time']
-        )) {
-            return new WP_Error('not_available');
-        }
+    //     if (!$this->availability->room_is_available(
+    //         $data['room_id'],
+    //         $data['start_date'],
+    //         $data['start_time'],
+    //         $data['end_time']
+    //     )) {
+    //         return new WP_Error('not_available');
+    //     }
 
-        // TODO: Fix pricing calcualtion
-        //$price = $this->pricing->calculate_booking_price(...);
-        $price = 0;
+    //     // TODO: Fix pricing calcualtion
+    //     //$price = $this->pricing->calculate_booking_price(...);
+    //     $price = 0;
 
-        // 5️⃣ Save booking
-        $booking = [
-            'RoomId'          => $room_id,
-            'CustomerGroupId' => $group_id,
-            'StartTime'       => $start,
-            'EndTime'         => $end,
-            'TotalAmount'     => $price,
-            'Status'          => $status,
-            'CreatedAt'       => current_time('mysql')
-        ];
+    //     $chargable_hours = $this->calculate_chargeable_hours($data['start_date'], $start, $data['enddate'], $end);
 
-        $booking_id = $this->booking_repo->create($booking);
+    //     // 5️⃣ Save booking
+    //     $booking = [
+    //         'RoomId'          => $room_id,
+    //         'CustomerGroupId' => $group_id,
+    //         'StartTime'       => $start,
+    //         'EndTime'         => $end,
+    //         'TotalAmount'     => $price,
+    //         'Status'          => $status,
+    //         'ChargeableHours' => $chargable_hours,
+    //         'CreatedAt'       => current_time('mysql')
+    //     ];
 
-        If ($booking_id > 0) {
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::CREATED,
-                [
-                    'booking_id' => $booking_id,
-                    'room_id' => $data['room_id'],
-                    'start' => $data['start_time'],
-                    'end' => $data['end_time']
-                ]
-            );
+    //     $booking_id = $this->booking_repo->create($booking);
 
-            if ($data['status'] == 'Confirmed') {
-                MYVH_Event_Dispatcher::dispatch(
-                    MYVH_Booking_Events::CONFIRMED,
-                    [
-                        'booking_id' => $data['booking_id'],
-                        'room_id' => $data['room_id'],
-                        'start' => $data['start_time'],
-                        'end' => $data['end_time']
-                    ]
-                );
-            }
-        }
+    //     If ($booking_id > 0) {
+    //         MYVH_Event_Dispatcher::dispatch(
+    //             MYVH_Booking_Events::CREATED,
+    //             [
+    //                 'booking_id' => $booking_id,
+    //                 'room_id' => $data['room_id'],
+    //                 'start' => $data['start_time'],
+    //                 'end' => $data['end_time']
+    //             ]
+    //         );
 
-        return $booking_id;
-    }
+    //         if ($data['status'] == 'Confirmed') {
+    //             MYVH_Event_Dispatcher::dispatch(
+    //                 MYVH_Booking_Events::CONFIRMED,
+    //                 [
+    //                     'booking_id' => $data['booking_id'],
+    //                     'room_id' => $data['room_id'],
+    //                     'start' => $data['start_time'],
+    //                     'end' => $data['end_time']
+    //                 ]
+    //             );
+    //         }
+    //     }
 
-    private function within_opening_hours($room, $start, $end) {
+    //     return $booking_id;
+    // }
 
-        $room_open  = strtotime($room['OpeningTime']);
-        $room_close = strtotime($room['ClosingTime']);
+    // private function within_opening_hours($room, $start, $end) {
 
-        $start_time = strtotime(date('H:i', strtotime($start)));
-        $end_time   = strtotime(date('H:i', strtotime($end)));
+    //     $room_open  = strtotime($room['OpeningTime']);
+    //     $room_close = strtotime($room['ClosingTime']);
 
-        return ($start_time >= $room_open && $end_time <= $room_close);
-    }
+    //     $start_time = strtotime(date('H:i', strtotime($start)));
+    //     $end_time   = strtotime(date('H:i', strtotime($end)));
 
-    private function is_available($room_id, $start, $end) {
+    //     return ($start_time >= $room_open && $end_time <= $room_close);
+    // }
 
-        $conflicts = $this->booking_repo->get_conflicts(
-            $room_id,
-            $start,
-            $end
-        );
+    // private function is_available($room_id, $start, $end) {
 
-        return empty($conflicts);
-    }
+    //     $conflicts = $this->booking_repo->get_conflicts(
+    //         $room_id,
+    //         $start,
+    //         $end
+    //     );
+
+    //     return empty($conflicts);
+    // }
 
     public function save($data) {
         if (empty($data['customer_id'])) {
@@ -154,22 +157,42 @@ class MYVH_Booking_Service {
         }
 
         // Validate time
+        $room = $this->room_service->get($data['room_id']);
+        $start_date = sanitize_text_field($data['start_date']);
+        $end_date = !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : $start_date;
+        if ($start_date <> $end_date) {
+            if (!$room['AllowMultiDayBookings'] ){
+                return new WP_Error('validation', __('Multi day bookings are not allowed for this room', 'my-village-hall'));
+            }
+        }
         $start = strtotime($data['start_time']);
         $end = strtotime($data['end_time']);
-        if ($end <= $start) {
+        $start_datetime = new DateTime($start_date . ' ' . $data['start_time']);
+        $end_datetime = new DateTime($end_date . ' ' . $data['end_time']);
+
+        if ($end_datetime <= $start_datetime) {
             return new WP_Error('validation', __('End time must be after start time', 'my-village-hall'));
         }
 
+        if (!isset($data['chargeable_hours'])) {
+            $chargeable_hours = $this->calculate_chargeable_hours($data['start_date'], $data['start_time'],
+                                                                  $end_date, $data['end_time'],
+                                                                  $room );
+        } else {
+            $chargeable_hours = $data['chargeable_hours'];
+        }
+
         $record = [
-            'CustomerId'  => intval($data['customer_id']),
-            'RoomId'      => intval($data['room_id']),
-            'Status'      => sanitize_text_field($data['status'] ?? BookingStatus::PENDING),
-            'StartDate'   => sanitize_text_field($data['start_date']),
-            'EndDate'     => !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : sanitize_text_field($data['start_date']),
-            'StartTime'   => sanitize_text_field($data['start_time']),
-            'EndTime'     => sanitize_text_field($data['end_time']),
-            'Description' => sanitize_textarea_field($data['description'] ?? ''),
-            'Public'      => isset($data['public']) ? 1 : 0,
+            'CustomerId'        => intval($data['customer_id']),
+            'RoomId'            => intval($data['room_id']),
+            'Status'            => sanitize_text_field($data['status'] ?? BookingStatus::PENDING),
+            'StartDate'         => $start_date,
+            'EndDate'           => $end_date,
+            'StartTime'         => sanitize_text_field($data['start_time']),
+            'EndTime'           => sanitize_text_field($data['end_time']),
+            'Description'       => sanitize_textarea_field($data['description'] ?? ''),
+            'Public'            => isset($data['public']) ? 1 : 0,
+            'ChargeableHours'   => $chargeable_hours
         ];
 
         // Update existing booking
@@ -461,6 +484,29 @@ class MYVH_Booking_Service {
             ]
         );
 
+    }
+
+    private function calculate_chargeable_hours($startdate, $start_time, $enddate, $end_time, $room) {
+        $start = new DateTime($startdate . ' ' . $start_time);
+        $end   = new DateTime($enddate . ' ' . $end_time);
+
+        $closed_hours = 0;
+
+        if (!$room['CalcClosedHours']) {
+            $room_open = strtotime($room['OpeningTime']);
+            $room_close = strtotime($room['ClosingTime']);
+            $closed_hours = 24 - ($room_close-$room_open)/60/60;
+        }
+
+
+        $interval = $start->diff($end);
+
+        $hours =
+            ($interval->days * 24) +
+            $interval->h +
+            ($interval->i / 60);
+
+        return $hours - $closed_hours;
     }
 
 }

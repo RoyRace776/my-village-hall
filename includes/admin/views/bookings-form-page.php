@@ -335,7 +335,7 @@ $status_colors = [
                             <tr>
                                 <th><?php _e('Start Date', 'my-village-hall'); ?> *</th>
                                 <td>
-                                    <input type="date" name="start_date" required class="regular-text"
+                                    <input type="date" name="start_date" required class="regular-text" id='start-date'
                                         value="<?php echo $edit_booking ? esc_attr($edit_booking['StartDate']) : date('Y-m-d'); ?>"
                                         min="<?php echo date('Y-m-d'); ?>">
                                 </td>
@@ -344,7 +344,7 @@ $status_colors = [
                             <tr>
                                 <th><?php _e('End Date', 'my-village-hall'); ?></th>
                                 <td>
-                                    <input type="date" name="end_date" class="regular-text"
+                                    <input type="date" name="end_date" class="regular-text" id='end-date'
                                         value="<?php echo $edit_booking ? esc_attr($edit_booking['EndDate']) : ''; ?>">
                                     <p class="description"><?php _e('Leave blank for same-day booking', 'my-village-hall'); ?></p>
                                 </td>
@@ -694,34 +694,29 @@ $status_colors = [
 
             // Calculate and display duration
             function updateDuration() {
-                const startTime = $('#start-time').val();
-                const endTime = $('#end-time').val();
 
-                if (startTime && endTime) {
-                    const start = new Date('2000-01-01 ' + startTime);
-                    const end = new Date('2000-01-01 ' + endTime);
-                    const diff = (end - start) / 1000 / 60; // minutes
+                const start = new Date($('#start-date').val() + 'T' + $('#start-time').val());
+                const end   = new Date(($('#end-date').val() || $('#start-date').val()) + 'T' + $('#end-time').val());
 
-                    if (diff > 0) {
-                        const hours = Math.floor(diff / 60);
-                        const minutes = diff % 60;
-                        let durationText = '';
+                const diffMinutes = (end - start) / 60000;
 
-                        if (hours > 0) {
-                            durationText += hours + ' <?php _e('hour(s)', 'my-village-hall'); ?> ';
-                        }
-                        if (minutes > 0) {
-                            durationText += minutes + ' <?php _e('minutes', 'my-village-hall'); ?>';
-                        }
-
-                        $('#duration-display').text('<?php _e('Duration:', 'my-village-hall'); ?> ' + durationText.trim());
-                    } else {
-                        $('#duration-display').text('<?php _e('End time must be after start time', 'my-village-hall'); ?>').css('color', 'red');
-                    }
+                if (diffMinutes <= 0) {
+                    $('#duration-display')
+                        .text('End time must be after start time')
+                        .css('color', 'red');
+                    return;
                 }
+
+                const hours = Math.floor(diffMinutes / 60);
+                const minutes = diffMinutes % 60;
+
+                $('#duration-display')
+                    .text(`Duration: ${hours}h ${minutes}m`)
+                    .css('color', '');
             }
 
-            $('#start-time, #end-time').on('change', updateDuration);
+            $('#start-time, #end-time, #start-date, #end-date').on('change', updateDuration);
+
             updateDuration(); // Initial calculation
 
             // Auto-fill times based on room selection
@@ -750,10 +745,12 @@ $status_colors = [
             $('#booking-form').on('submit', function(e) {
                 const startTime = $('#start-time').val();
                 const endTime = $('#end-time').val();
+                const startDate = $('#start-date').val();
+                const endDate = $('#end-date').val();
 
                 if (startTime && endTime) {
-                    const start = new Date('2000-01-01 ' + startTime);
-                    const end = new Date('2000-01-01 ' + endTime);
+                    const start = new Date(startDate + 'T' + startTime);
+                    const end = new Date(endDate + 'T' + endTime);
 
                     if (end <= start) {
                         e.preventDefault();
