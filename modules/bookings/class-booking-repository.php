@@ -320,8 +320,37 @@ class MYVH_Booking_Repository {
             $start
         );
 
-        return $this->wpdb->get_results($sql);
+        return $this->wpdb->get_results($sql, ARRAY_A);
     }
+
+    public function get_between($start, $end) {
+        $sql = $this->wpdb->prepare(
+            "SELECT * FROM {$this->table_name}
+            WHERE StartDate >= %s
+            AND StartDate <= %s",
+            $start,
+            $end
+        );
+
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    public function move_booking($id, $start, $end, $room) {
+        $sql = $this->wpdb->prepare(
+            "UPDATE {$this->table_name}
+            SET StartDate = %s,
+                EndDate = %s,
+                RoomId = %d
+            WHERE Id = %d",
+            $start,
+            $end,
+            $room,
+            $id
+        );
+
+        return $this->wpdb->query($sql);
+    }
+
 
     /**
      * Get the format array for wpdb operations

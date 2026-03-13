@@ -36,6 +36,13 @@ require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-service-provider.
 require_once MYVH_PLUGIN_DIR . 'modules/availability/class-availability-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-invoice-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/payments/class-payment-service-provider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-calendar-service-provider.php';
+
+// Register wpdb so it can be injected like any other dependency
+$myvh_container->singleton( \wpdb::class, function () {
+    global $wpdb;
+    return $wpdb;
+} );
 
 // ── Register providers with the container ─────────────────────────────────────
 // Order follows the dependency graph (no provider should depend on a later one).
@@ -51,10 +58,14 @@ $providers = [
     MYVH_Availability_Service_Provider::class,
     MYVH_Invoice_Service_Provider::class,
     MYVH_Payment_Service_Provider::class,
+    MYVH_Calendar_Service_Provider::class,
 ];
 
 foreach ( $providers as $provider ) {
     ( new $provider() )->register( $myvh_container );
 }
+
+$calendar_ajax = $myvh_container->get(MYVH_Calendar_Ajax_Controller::class);
+$calendar_ajax->register_routes();
 
 return $myvh_container;

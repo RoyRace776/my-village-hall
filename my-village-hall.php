@@ -36,7 +36,6 @@ ob_start();
 
 // Core infrastructure
 require_once MYVH_PLUGIN_DIR . 'core/container/class-myvh-container.php';
-require_once MYVH_PLUGIN_DIR . 'core/support/time-helpers.php';
 require_once MYVH_PLUGIN_DIR . 'bootstrap/class-myvh-installer.php';
 
 // Admin utilities
@@ -55,11 +54,6 @@ require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-controllers.php';
 global $myvh_container;
 $myvh_container = require MYVH_PLUGIN_DIR . 'bootstrap/myvh-container.php';
 
-// Register wpdb so it can be injected like any other dependency
-$myvh_container->singleton( \wpdb::class, function () {
-    global $wpdb;
-    return $wpdb;
-} );
 
 // Settings module
 require_once MYVH_PLUGIN_DIR . 'modules/settings/settings-helper.php';

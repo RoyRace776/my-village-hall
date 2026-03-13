@@ -13,6 +13,7 @@ $action   = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $venue_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 $venue_service = $myvh_container->get(MYVH_Venue_Service::class);
+$availability_service = $myvh_container->get(MYVH_Availability_Service::class);
 $venue  = $venue_id ? $venue_service->get($venue_id) : null;
 $venues = $venue_service->get_all();
 ?>
@@ -109,7 +110,7 @@ $venues = $venue_service->get_all();
                     <th><label><?php _e('Opening Time', 'my-village-hall'); ?></label></th>
                     <td>
                         <select name="opening_time">
-                            <?php echo myvh_get_time_options($venue ? $venue['OpeningTime'] : '09:00'); ?>
+                            <?php echo $availability_service->get_time_options($venue ? $venue['OpeningTime'] : '09:00', 0, 23,true); ?>
                         </select>
                     </td>
                 </tr>
@@ -118,8 +119,8 @@ $venues = $venue_service->get_all();
                     <th><label><?php _e('Closing Time', 'my-village-hall'); ?></label></th>
                     <td>
                         <select name="closing_time">
-                            <?php echo myvh_get_time_options($venue ? $venue['ClosingTime'] : '17:00'); ?>
-                        </select>
+                            <?php echo $availability_service->get_time_options($venue ? $venue['ClosingTime'] : '17:00', 0, 23,true); ?>
+                            </select>
                     </td>
                 </tr>
             </table>

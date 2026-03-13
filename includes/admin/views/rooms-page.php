@@ -12,6 +12,8 @@ global $myvh_container;
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $room_service  = $myvh_container->get(MYVH_Room_Service::class);
 $venue_service = $myvh_container->get(MYVH_Venue_Service::class);
+$availability_service = $myvh_container->get(MYVH_Availability_Service::class);
+
 $edit_room = $edit_id ? $room_service->get($edit_id) : null;
 $rooms     = $room_service->get_all_with_venues();
 $venues    = $venue_service->get_all();
@@ -183,20 +185,20 @@ $venues    = $venue_service->get_all();
                         </tr>
 
                         <tr>
-                            <th><?php _e('Opening Time', 'my-village-hall'); ?></th>
+                            <th><label><?php _e('Opening Time', 'my-village-hall'); ?></label></th>
                             <td>
-                                <input type="time" name="opening_time" class="regular-text"
-                                    value="<?php echo $edit_room ? esc_attr($edit_room['OpeningTime']) : '08:00'; ?>">
-                                <p class="description"><?php _e('Default opening time for this room', 'my-village-hall'); ?></p>
+                                <select name="opening_time">
+                                    <?php echo $availability_service->get_time_options($room ? $room['OpeningTime'] : '09:00', 0, 23,true); ?>
+                                </select>
                             </td>
                         </tr>
 
                         <tr>
-                            <th><?php _e('Closing Time', 'my-village-hall'); ?></th>
+                            <th><label><?php _e('Closing Time', 'my-village-hall'); ?></label></th>
                             <td>
-                                <input type="time" name="closing_time" class="regular-text"
-                                    value="<?php echo $edit_room ? esc_attr($edit_room['ClosingTime']) : '22:00'; ?>">
-                                <p class="description"><?php _e('Default closing time for this room', 'my-village-hall'); ?></p>
+                                <select name="closing_time">
+                                    <?php echo $availability_service->get_time_options($edit_room ? $edit_room['ClosingTime'] : '17:00', 0, 23,true); ?>
+                                    </select>
                             </td>
                         </tr>
                         <tr>

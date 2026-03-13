@@ -254,6 +254,22 @@ class MYVH_Booking_Service {
         ];
     }
 
+    public function get_between($start, $end) {
+
+        $bookings = $this->booking_repo->get_between($start, $end);
+        return $bookings;
+    }
+
+    public function move_booking($id, $start, $end, $room) {
+        $return =  $this->booking_repo->move_booking($id, $start, $end, $room);
+
+        if ($return <> 1) {
+            return new WP_Error('Move booking', __('Something went wrong', 'my-village-hall'));
+        }
+
+        return $return;
+    }
+
     private function group_bookings($bookings) {
         $groups = [];
         $today = date('Y-m-d');
