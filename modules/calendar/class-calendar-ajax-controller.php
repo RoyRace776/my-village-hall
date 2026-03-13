@@ -52,7 +52,7 @@ class MYVH_Calendar_Ajax_Controller {
 
             $events[] = [
                 "id" => $b['Id'],
-                "text" => $b['CustomerName'],
+                "text" => $b['Description'],
                 "start" => $b['StartDate'] . "T" . $b['StartTime'],
                 "end"   => $b['EndDate'] . "T" . $b['EndTime'],
                 "resource" => $b['RoomId']

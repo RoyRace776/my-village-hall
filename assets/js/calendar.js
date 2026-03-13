@@ -1,201 +1,437 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    const calendar = new DayPilot.Calendar("vbc-calendar");
+    const CalendarManager = {
 
-    calendar.startDate = DayPilot.Date.today();
-    calendar.viewType = "Resources";
+        calendar: null,
+        monthCalendar: null,
+        currentView: "Week",
+        weekCalendarReady: false,
 
-    calendar.businessBeginsHour = 7;
-    calendar.businessEndsHour = 23;
+        init() {
 
-    calendar.cellDuration = 15;
-    calendar.timeRangeSelectedHandling = "Enabled";
+            // BUG FIX 5: Don't call switchView("Week") here — initWeekCalendar()
+            // is async (fetches rooms), so this.calendar isn't ready yet.
+            // Instead, set the initial active button state directly, and let
+            // initWeekCalendar() call this.calendar.init() once rooms are loaded.
+            this.setActiveViewButton("Week");
 
-    calendar.eventMoveHandling = "Update";
-    calendar.eventResizeHandling = "Update";
+            this.initWeekCalendar();
+            this.initMonthCalendar();
 
-    /*
-    --------------------------------
-    Create booking by dragging
-    --------------------------------
-    */
+            this.attachButtons();
 
-    calendar.onTimeRangeSelected = function (args) {
+        },
 
-        const start = args.start.toString();
-        const end = args.end.toString();
-        const room = args.resource;
+        /*
+        -----------------------------
+        Week / Day calendar
+        -----------------------------
+        */
 
-        window.location =
-            "admin.php?page=myvh-bookings&action=new" +
-            "&room_id=" + room +
-            "&start=" + encodeURIComponent(start) +
-            "&end=" + encodeURIComponent(end);
+        initWeekCalendar() {
 
-        calendar.clearSelection();
-    };
+            this.calendar = new DayPilot.Calendar("vbc-calendar");
 
-    /*
-    --------------------------------
-    Move booking
-    --------------------------------
-    */
+            this.calendar.headerDateFormat = this.phpDateToDayPilot(myvhAdminCal.dateFormat);
 
-    calendar.onEventMoved = function (args) {
+            this.calendar.startDate = DayPilot.Date.today();
+            this.calendar.viewType = "Week";
 
-        updateBooking(
-            args.e.id(),
-            args.newStart,
-            args.newEnd,
-            args.newResource
-        );
+            this.calendar.businessBeginsHour = 7;
+            this.calendar.businessEndsHour = 23;
 
-    };
+            this.calendar.cellDuration = 15;
 
-    /*
-    --------------------------------
-    Resize booking
-    --------------------------------
-    */
+            this.calendar.timeRangeSelectedHandling = "Enabled";
+            this.calendar.eventMoveHandling = "Update";
+            this.calendar.eventResizeHandling = "Update";
 
-    calendar.onEventResized = function (args) {
+            /*
+            Create booking
+            */
 
-        updateBooking(
-            args.e.id(),
-            args.newStart,
-            args.newEnd,
-            args.newResource
-        );
+            this.calendar.onTimeRangeSelected = (args) => {
 
-    };
+                const start = args.start.toString();
+                const end = args.end.toString();
+                const room = args.resource;
 
-    /*
-    --------------------------------
-    Click booking to edit
-    --------------------------------
-    */
+                window.location =
+                    "admin.php?page=my-village-hall&add=1" +
+                    "&room_id=" + room +
+                    "&start=" + encodeURIComponent(start) +
+                    "&end=" + encodeURIComponent(end);
 
-    calendar.onEventClicked = function (args) {
+                this.calendar.clearSelection();
 
-        window.location =
-            "admin.php?page=myvh-bookings&action=edit&id=" +
-            args.e.id();
+            };
 
-    };
+            /*
+            Move booking
+            */
 
-    /*
-    --------------------------------
-    Load rooms first
-    --------------------------------
-    */
+            this.calendar.onEventMoved = (args) => {
 
-    fetch(ajaxurl + "?action=myvh_calendar_rooms")
-        .then(r => r.json())
-        .then(rooms => {
+                this.updateBooking(
+                    args.e.id(),
+                    args.newStart,
+                    args.newEnd,
+                    args.newResource
+                );
 
-            calendar.columns.list = rooms;
+            };
 
-            calendar.init();
+            /*
+            Resize booking
+            */
 
-            loadEvents();
+            this.calendar.onEventResized = (args) => {
 
-        });
+                this.updateBooking(
+                    args.e.id(),
+                    args.newStart,
+                    args.newEnd,
+                    args.newResource
+                );
 
-    /*
-    --------------------------------
-    Load bookings
-    --------------------------------
-    */
+            };
 
-    function loadEvents() {
+            /*
+            Edit booking
+            */
 
-        calendar.events.load(
-            ajaxurl + "?action=myvh_calendar_events"
-        );
+            this.calendar.onEventClicked = (args) => {
 
-    }
+                this.editBooking(args.e.id());
 
-    /*
-    --------------------------------
-    Update booking (drag/drop)
-    --------------------------------
-    */
+            };
 
-    function updateBooking(id, start, end, room) {
+            /*
+            Load rooms
+            */
 
-        fetch(ajaxurl, {
-            method: "POST",
-            headers: {
-                "Content-Type":
-                    "application/x-www-form-urlencoded"
-            },
-            body: new URLSearchParams({
-                action: "myvh_move_booking",
-                id: id,
-                start: start,
-                end: end,
-                room_id: room
-            })
-        })
-            .then(r => r.json())
-            .then(data => {
+            fetch(ajaxurl + "?action=myvh_calendar_rooms")
+                .then(r => r.json())
+                .then(rooms => {
 
-                if (!data.success) {
+                    this.calendar.columns.list = rooms;
 
-                    alert(data.data);
+                    // Only init and load if the user hasn't switched away
+                    // from a week/day view while the fetch was in flight.
+                    if (this.currentView !== "Month") {
 
-                    loadEvents();
+                        this.calendar.init();
+
+                        this.weekCalendarReady = true;
+
+                        this.loadEvents();
+
+                    }
+
+                });
+
+        },
+
+        /*
+        -----------------------------
+        Month calendar
+        -----------------------------
+        */
+
+        initMonthCalendar() {
+
+            // BUG FIX 3: Use a separate container ID for the month calendar
+            // so it doesn't collide with the week/day calendar div.
+            this.monthCalendar = new DayPilot.Month("vbc-month-calendar");
+
+            this.monthCalendar.startDate = DayPilot.Date.today();
+
+            this.monthCalendar.eventHeight = 20;
+
+            this.monthCalendar.onEventClicked = (args) => {
+
+                this.editBooking(args.e.id());
+
+            };
+
+        },
+
+        /*
+        -----------------------------
+        Set active view button
+        -----------------------------
+        */
+
+        setActiveViewButton(view) {
+
+            document
+                .querySelectorAll(".vbc-view-btn")
+                .forEach(b => b.classList.remove("active"));
+
+            // BUG FIX 1: Match the capitalised data-view values used in the PHP
+            document
+                .querySelector(`[data-view="${view}"]`)
+                ?.classList.add("active");
+
+        },
+
+        /*
+        -----------------------------
+        Switch view
+        -----------------------------
+        */
+
+        switchView(view) {
+
+            this.currentView = view;
+
+            this.setActiveViewButton(view);
+
+            if (view === "Month") {
+
+                // Hide week/day calendar, show month calendar
+                document.getElementById("vbc-calendar").style.display = "none";
+                document.getElementById("vbc-month-calendar").style.display = "";
+
+                this.monthCalendar.init();
+
+                this.loadMonthEvents();
+
+            } else {
+
+                // Hide month calendar, show week/day calendar
+                document.getElementById("vbc-calendar").style.display = "";
+                document.getElementById("vbc-month-calendar").style.display = "none";
+
+                // BUG FIX 4: update viewType and call update() rather than
+                // dispose() + init() — the calendar object was already init'd
+                // by initWeekCalendar() and must not be re-init'd from scratch.
+                this.calendar.viewType = view;
+
+                if (this.weekCalendarReady) {
+                    this.calendar.update();
+                } else {
+                    this.calendar.init();
+                    this.weekCalendarReady = true;
                 }
 
-            });
+                this.loadEvents();
 
-    }
+            }
 
-    /*
-    --------------------------------
-    Navigation buttons
-    --------------------------------
-    */
+        },
 
-    document
-        .getElementById("vbc-prev")
-        .addEventListener("click", () => calendar.prev());
+        /*
+        -----------------------------
+        Load week/day events
+        -----------------------------
+        */
 
-    document
-        .getElementById("vbc-next")
-        .addEventListener("click", () => calendar.next());
+        loadEvents() {
 
-    document
-        .getElementById("vbc-today")
-        .addEventListener("click", () => calendar.today());
+            const start = this.calendar.visibleStart();
+            const end = this.calendar.visibleEnd();
 
-    /*
-    --------------------------------
-    View buttons
-    --------------------------------
-    */
+            this.calendar.events.load(
+                ajaxurl +
+                "?action=myvh_calendar_events" +
+                "&start=" + start +
+                "&end=" + end
+            );
 
-    document
-        .querySelectorAll(".vbc-view-btn")
-        .forEach(btn => {
+        },
 
-            btn.addEventListener("click", function () {
+        /*
+        -----------------------------
+        Load month events
+        -----------------------------
+        */
 
-                document
-                    .querySelectorAll(".vbc-view-btn")
-                    .forEach(b =>
-                        b.classList.remove("active")
-                    );
+        loadMonthEvents() {
 
-                this.classList.add("active");
+            const start = this.monthCalendar.visibleStart();
+            const end = this.monthCalendar.visibleEnd();
 
-                calendar.viewType =
-                    this.dataset.view;
+            this.monthCalendar.events.load(
+                ajaxurl +
+                "?action=myvh_calendar_events" +
+                "&start=" + start +
+                "&end=" + end
+            );
 
-                calendar.update();
+        },
 
-            });
+        /*
+        -----------------------------
+        Update booking
+        -----------------------------
+        */
 
-        });
+        updateBooking(id, start, end, room) {
+
+            fetch(ajaxurl, {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+
+                body: new URLSearchParams({
+                    action: "myvh_move_booking",
+                    id: id,
+                    start: start,
+                    end: end,
+                    room_id: room
+                })
+
+            })
+                .then(r => r.json())
+                .then(data => {
+
+                    if (!data.success) {
+
+                        alert(data.data);
+
+                        this.loadEvents();
+
+                    }
+
+                });
+
+        },
+
+        /*
+        -----------------------------
+        Edit booking
+        -----------------------------
+        */
+
+        editBooking(id) {
+
+            window.location =
+                "admin.php?page=my-village-hall&edit=" + id;
+
+        },
+
+        /*
+        -----------------------------
+        Navigation
+        -----------------------------
+        */
+
+        attachButtons() {
+
+            document
+                .getElementById("vbc-prev")
+                .addEventListener("click", () => {
+
+                    if (this.currentView === "Month") {
+
+                        this.monthCalendar.prev();
+                        this.loadMonthEvents();
+
+                    } else {
+
+                        this.calendar.prev();
+                        this.loadEvents();
+
+                    }
+
+                });
+
+            document
+                .getElementById("vbc-next")
+                .addEventListener("click", () => {
+
+                    if (this.currentView === "Month") {
+
+                        this.monthCalendar.next();
+                        this.loadMonthEvents();
+
+                    } else {
+
+                        this.calendar.next();
+                        this.loadEvents();
+
+                    }
+
+                });
+
+            document
+                .getElementById("vbc-today")
+                .addEventListener("click", () => {
+
+                    if (this.currentView === "Month") {
+
+                        this.monthCalendar.startDate = DayPilot.Date.today();
+                        this.monthCalendar.update();
+                        this.loadMonthEvents();
+
+                    } else {
+
+                        this.calendar.startDate = DayPilot.Date.today();
+                        this.calendar.update();
+                        this.loadEvents();
+
+                    }
+
+                });
+
+            /*
+            View buttons
+            BUG FIX 1 & 2: Match the capitalised data-view values from the PHP,
+            and handle the "Resources" view (the Rooms button).
+            */
+
+            document
+                .querySelectorAll(".vbc-view-btn")
+                .forEach(btn => {
+
+                    btn.addEventListener("click", () => {
+
+                        const view = btn.dataset.view;
+
+                        if (view === "Resources") this.switchView("Resources");
+                        if (view === "Day") this.switchView("Day");
+                        if (view === "Week") this.switchView("Week");
+                        if (view === "Month") this.switchView("Month");
+
+                    });
+
+                });
+
+        },
+
+        /*
+        -----------------------------
+        Convert PHP date format to DayPilot format
+        -----------------------------
+        */
+        phpDateToDayPilot(phpFormat) {
+
+            const map = {
+                'd': 'dd',    // Day, leading zero
+                'j': 'd',     // Day, no leading zero
+                'D': 'ddd',   // Mon, Tue…
+                'l': 'dddd',  // Monday, Tuesday…
+                'm': 'MM',    // Month, leading zero
+                'n': 'M',     // Month, no leading zero
+                'M': 'MMM',   // Jan, Feb…
+                'F': 'MMMM',  // January, February…
+                'Y': 'yyyy',  // 4-digit year
+                'y': 'yy',    // 2-digit year
+            };
+
+            return phpFormat
+                .split('')
+                .map(ch => map[ch] ?? ch)
+                .join('');
+
+        }
+
+    };
+
+    CalendarManager.init();
 
 });

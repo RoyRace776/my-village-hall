@@ -428,10 +428,11 @@ class My_Village_Hall {
         );
 
         wp_localize_script( 'myvh-calendar-js', 'myvhAdminCal', [
-            'ajax_url'  => admin_url( 'admin-ajax.php' ),
-            'admin_url' => admin_url(),
-            'nonce'     => wp_create_nonce( 'myvh-ajax-nonce' ),
-            'strings'   => [
+            'ajax_url'   => admin_url( 'admin-ajax.php' ),
+            'admin_url'  => admin_url(),
+            'nonce'      => wp_create_nonce( 'myvh-ajax-nonce' ),
+            'dateFormat' => 'D d M',
+            'strings'    => [
                 'error'          => __( 'An error occurred. Please try again.', 'my-village-hall' ),
                 'confirmCancel'  => __( 'Cancel this booking?',                 'my-village-hall' ),
                 'selectRoom'     => __( 'Please select a room',                 'my-village-hall' ),

@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
     </div>
 
     <div class="myvh-calendar-views">
-        <button class="button vbc-view-btn active" data-view="Resources">
+        <button class="button vbc-view-btn" data-view="Resources">
             <?php _e('Rooms', 'my-village-hall'); ?>
         </button>
 
@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) exit;
             <?php _e('Day', 'my-village-hall'); ?>
         </button>
 
-        <button class="button vbc-view-btn" data-view="Week">
+        <button class="button vbc-view-btn active" data-view="Week">
             <?php _e('Week', 'my-village-hall'); ?>
         </button>
 
@@ -36,6 +36,10 @@ if (!defined('ABSPATH')) exit;
 
 </div>
 
+<!-- Week / Day calendar -->
 <div id="vbc-calendar" style="height:700px;"></div>
+
+<!-- Month calendar (BUG FIX 3: separate container, hidden by default) -->
+<div id="vbc-month-calendar" style="height:700px; display:none;"></div>
 
 </div>
