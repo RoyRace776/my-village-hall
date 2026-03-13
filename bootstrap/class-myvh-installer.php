@@ -562,7 +562,7 @@ class MYVH_Installer {
             'myvh_venues',
             'myvh_customers',
             'myvh_customer_groups',
-            'myvh_recurring_pattens',
+            'myvh_recurring_patterns',
             'myvh_room_rates',
             'myvh_booking_charges',
             'myvh_discounts',

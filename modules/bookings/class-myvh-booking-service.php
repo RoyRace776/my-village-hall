@@ -36,109 +36,6 @@ class MYVH_Booking_Service {
         $this->recurring_pattern_service = $recurring_pattern_service;
     }
 
-    // public function create_booking($data) {
-
-    //     $room_id   = intval($data['room_id']);
-    //     $group_id  = intval($data['customer_group_id']);
-    //     $start     = $data['start_time'];
-    //     $end       = $data['end_time'];
-    //     $status    = $data['status'];
-
-    //     // Validate input
-    //     $result = $this->validator->validate($data);
-    //     if (is_wp_error($result)) return $result;
-
-    //     $room = $this->room_service->get($data['room_id']);
-    //     if (!$room) {
-    //         return new WP_Error('invalid_room');
-    //     }
-
-    //     if (!$this->room_rules->within_opening_hours(
-    //         $room,
-    //         $data['start_time'],
-    //         $data['end_time']
-    //     )) {
-    //         return new WP_Error('invalid_time');
-    //     }
-
-    //     if (!$this->availability->room_is_available(
-    //         $data['room_id'],
-    //         $data['start_date'],
-    //         $data['start_time'],
-    //         $data['end_time']
-    //     )) {
-    //         return new WP_Error('not_available');
-    //     }
-
-    //     // TODO: Fix pricing calcualtion
-    //     //$price = $this->pricing->calculate_booking_price(...);
-    //     $price = 0;
-
-    //     $chargable_hours = $this->calculate_chargeable_hours($data['start_date'], $start, $data['enddate'], $end);
-
-    //     // 5️⃣ Save booking
-    //     $booking = [
-    //         'RoomId'          => $room_id,
-    //         'CustomerGroupId' => $group_id,
-    //         'StartTime'       => $start,
-    //         'EndTime'         => $end,
-    //         'TotalAmount'     => $price,
-    //         'Status'          => $status,
-    //         'ChargeableHours' => $chargable_hours,
-    //         'CreatedAt'       => current_time('mysql')
-    //     ];
-
-    //     $booking_id = $this->booking_repo->create($booking);
-
-    //     If ($booking_id > 0) {
-    //         MYVH_Event_Dispatcher::dispatch(
-    //             MYVH_Booking_Events::CREATED,
-    //             [
-    //                 'booking_id' => $booking_id,
-    //                 'room_id' => $data['room_id'],
-    //                 'start' => $data['start_time'],
-    //                 'end' => $data['end_time']
-    //             ]
-    //         );
-
-    //         if ($data['status'] == 'Confirmed') {
-    //             MYVH_Event_Dispatcher::dispatch(
-    //                 MYVH_Booking_Events::CONFIRMED,
-    //                 [
-    //                     'booking_id' => $data['booking_id'],
-    //                     'room_id' => $data['room_id'],
-    //                     'start' => $data['start_time'],
-    //                     'end' => $data['end_time']
-    //                 ]
-    //             );
-    //         }
-    //     }
-
-    //     return $booking_id;
-    // }
-
-    // private function within_opening_hours($room, $start, $end) {
-
-    //     $room_open  = strtotime($room['OpeningTime']);
-    //     $room_close = strtotime($room['ClosingTime']);
-
-    //     $start_time = strtotime(date('H:i', strtotime($start)));
-    //     $end_time   = strtotime(date('H:i', strtotime($end)));
-
-    //     return ($start_time >= $room_open && $end_time <= $room_close);
-    // }
-
-    // private function is_available($room_id, $start, $end) {
-
-    //     $conflicts = $this->booking_repo->get_conflicts(
-    //         $room_id,
-    //         $start,
-    //         $end
-    //     );
-
-    //     return empty($conflicts);
-    // }
-
     public function save($data) {
         if (empty($data['customer_id'])) {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
@@ -204,6 +101,8 @@ class MYVH_Booking_Service {
             // Replace addons: delete existing then re-save
             $this->save_addons(intval($data['booking_id']), $data['addons'] ?? [], true);
 
+            $estimated_price = $this->pricing->calculate_price(intval($data['booking_id']));
+
             $this->dispatch_update_event($data);
 
             return intval($data['booking_id']);
@@ -214,6 +113,8 @@ class MYVH_Booking_Service {
         if ($booking_id === false) {
             return new WP_Error('database', __('Failed to create booking', 'my-village-hall'));
         }
+
+        $estimated_price = $this->pricing->calculate_price($booking_id);
 
         MYVH_Event_Dispatcher::dispatch(
             MYVH_Booking_Events::CREATED,

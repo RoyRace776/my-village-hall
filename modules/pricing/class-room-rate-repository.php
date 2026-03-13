@@ -62,16 +62,29 @@ class MYVH_Room_Rate_Repository {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function get_active_room_rate($room_id, $group_id) {
-        $sql = $this->wpdb->prepare(
+    public function get_active_room_rate($room_id, $group_id = NULL) {
+        if ($group_id) {
+            $sql = $this->wpdb->prepare(
             "SELECT * FROM {$this->table}
              WHERE RoomId = %d
              AND CustomerGroupId = %d
              AND IsActive = 1
+             ORDER BY Priority DESC
              LIMIT 1",
             $room_id,
             $group_id
-        );
+            );
+        } else {
+            $sql = $this->wpdb->prepare(
+                "SELECT * FROM {$this->table}
+                 WHERE RoomId = %d
+                 AND CustomerGroupId IS NULL
+                 AND IsActive = 1
+                 ORDER BY Priority DESC
+                 LIMIT 1",
+                $room_id
+                );
+        }
 
         return $this->wpdb->get_row($sql, ARRAY_A);
     }

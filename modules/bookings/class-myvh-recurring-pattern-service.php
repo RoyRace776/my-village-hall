@@ -108,11 +108,16 @@ class MYVH_Recurring_Pattern_Service {
             $pattern_id = intval($data['pattern_id']);
             // Delete future bookings so they can be regenerated with the new schedule
             $this->get_booking_repo()->delete_future_by_pattern($pattern_id);
-        } else {
+        } else { //This is a new pattern
             $pattern_id = $this->repo->create($record);
             if ($pattern_id === false) {
                 return new WP_Error('database', __('Failed to create pattern', 'my-village-hall'));
             }
+
+            //Update the parent booking with the pattern id
+            $update = [ 'RecurringPatternId' => $pattern_id ];
+            $id = ['Id' => intval($data['parent_booking_id'])];
+            $this->booking_repo->update($update, $id);
         }
 
         // Immediately create all future bookings
@@ -166,6 +171,11 @@ class MYVH_Recurring_Pattern_Service {
 
         // Create bookings for each date
         foreach ($dates as $date) {
+            // Don't recreate the parent booking
+            if ( $parent_booking['StartDate'] == $date) {
+                $results['created']++;
+                continue;
+            }
             // Check for conflicts
             $conflict = $this->check_booking_conflict(
                 $parent_booking['RoomId'],
@@ -254,7 +264,7 @@ class MYVH_Recurring_Pattern_Service {
                 case 'weekly':  $current->modify("+{$interval} weeks");  break;
                 case 'monthly': $current->modify("+{$interval} months"); break;
                 case 'yearly':  $current->modify("+{$interval} years");  break;
-                default: break 2; // unknown type – stop
+                default: break; // unknown type – stop
             }
         }
 

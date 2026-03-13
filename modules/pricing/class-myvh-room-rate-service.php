@@ -4,9 +4,12 @@ if (!defined('ABSPATH')) exit;
 class MYVH_Room_Rate_Service {
 
     private $repo;
+    private $customer_repo;
 
-    public function __construct(MYVH_Room_Rate_Repository $repo) {
+    public function __construct(MYVH_Room_Rate_Repository $repo,
+                                MYVH_Customer_Repository $customer_repo) {
         $this->repo = $repo;
+        $this->customer_repo = $customer_repo;
     }
 
     public function get_all() {
@@ -62,6 +65,25 @@ class MYVH_Room_Rate_Service {
 
         $id = $this->repo->create($record);
         return $id ? $id : new WP_Error('database', __('Failed to save rate', 'my-village-hall'));
+    }
+
+    public function get_booking_rate( $room_id, $customer_id) {
+
+        // Get the customer group
+        $customer = $this->customer_repo->get_by_id($customer_id);
+        $group_id = $customer['CustomerGroupId'];
+
+        // First try to find any active rates with both the room id and the group id
+        $rate = $this->repo->get_active_room_rate($room_id, $group_id);
+
+        // If no matching rates were found, then look for a null group id
+        if (!$rate) {
+            $rate = $this->repo->get_active_room_rate($room_id);
+
+        }
+
+        // If nothing was found again, then we don'r have any rates for the, so retrun nothing
+        return $rate;
     }
 
     public function delete($id) {

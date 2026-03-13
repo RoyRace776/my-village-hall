@@ -77,9 +77,9 @@ require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-shortcode.p
 require_once MYVH_PLUGIN_DIR . 'includes/admin/class-myvh-calendar-ajax.php';
 
 // Multisite network dashboard
-require_once MYVH_PLUGIN_DIR . 'includes/network/class-myvh-network-dashboard.php';
-require_once MYVH_PLUGIN_DIR . 'includes/network/class-myvh-network-sites-table.php';
-require_once MYVH_PLUGIN_DIR . 'includes/network/class-myvh-network-stats.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-dashboard.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-sites-table.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-stats.php';
 
 ob_end_clean();
 
