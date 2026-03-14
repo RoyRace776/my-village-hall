@@ -41,6 +41,7 @@ class MYVH_Installer {
 
         self::create_tables( $wpdb, $collate );
         self::add_foreign_keys( $wpdb );
+        self::initialise_tables( $wpdb );
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -84,24 +85,41 @@ class MYVH_Installer {
             INDEX idx_name  (Name)
         ) {$collate};" );
 
-        // ── Customer Groups ───────────────────────────────────────────────────
-        // Defined before Customers because Customers has a FK to this table.
-        dbDelta( "CREATE TABLE {$p}myvh_customer_groups (
+        // ── Organisations  ───────────────────────────────────────────────────
+        //
+        dbDelta( "CREATE TABLE {$p}myvh_organisations (
+            Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Name               VARCHAR(100) NOT NULL,
+            OrganisatonTypeId  INT UNSIGNED NOT NULL,
+            ContactEmail       VARCHAR(100),
+            ContactPhone       VARCHAR(100),
+            IsActive           TINYINT(1)    DEFAULT 1,
+            Created            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_name    (Name),
+            INDEX      idx_active  (IsActive)
+        ) {$collate};" );
+
+        // ── Organisation Types ───────────────────────────────────────────────────
+        //
+        dbDelta( "CREATE TABLE {$p}myvh_organisation_types (
             Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             Name               VARCHAR(100) NOT NULL,
             Description        VARCHAR(255),
-            DiscountPercentage DECIMAL(5,2)  DEFAULT 0.00,
-            IsDefault          TINYINT(1)    DEFAULT 0,
-            IsActive           TINYINT(1)    DEFAULT 1,
-            DisplayOrder       INT UNSIGNED  DEFAULT 0,
             Created            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uq_name    (Name),
-            INDEX      idx_default (IsDefault),
-            INDEX      idx_active  (IsActive),
-            INDEX      idx_order   (DisplayOrder)
+            UNIQUE KEY         uq_name (Name),
         ) {$collate};" );
 
-        // ── Customers ─────────────────────────────────────────────────────────
+        // ── Organisation Members ───────────────────────────────────────────────────
+        //
+        dbDelta( "CREATE TABLE {$p}myvh_organisation_members (
+            Id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            OrganisationId INT UNSIGNED NOT NULL,
+            UserId         INT UNSIGNED NOT NULL,
+            Created        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY     uq_member (OrganisationId, UserId)
+        ) {$collate};" );
+
+    // ── Customers ─────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$p}myvh_customers (
             Id              INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
             UserId          BIGINT UNSIGNED NULL,
@@ -111,19 +129,18 @@ class MYVH_Installer {
             PhoneNumber     VARCHAR(100),
             PostCode        VARCHAR(100),
             AddressLine1    VARCHAR(100),
-            CustomerGroupId INT UNSIGNED  DEFAULT NULL,
             Created         DATETIME     DEFAULT CURRENT_TIMESTAMP,
             Updated         DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uq_user_client     (UserId),
             INDEX      idx_user           (UserId),
-            INDEX      idx_email          (Email),
-            INDEX      idx_customer_group (CustomerGroupId)
+            INDEX      idx_email          (Email)
         ) {$collate};" );
 
         // ── Bookings ──────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$p}myvh_bookings (
             Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             CustomerId         INT UNSIGNED NOT NULL,
+            OrganisationId     INT UNSIGNED NOT NULL,
             RoomId             INT UNSIGNED NOT NULL,
             Status             VARCHAR(12)  NOT NULL,
             StartDate          DATE         NOT NULL,
@@ -135,10 +152,11 @@ class MYVH_Installer {
             Description        VARCHAR(255),
             RecurringPatternId INT UNSIGNED  DEFAULT NULL,
             Created            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_customer  (CustomerId),
-            INDEX idx_room      (RoomId),
-            INDEX idx_dates     (StartDate, EndDate),
-            INDEX idx_recurring (RecurringPatternId)
+            INDEX idx_user          (UserId),
+            INDEX idx_organisation  (OrganisationId),
+            INDEX idx_room          (RoomId),
+            INDEX idx_dates         (StartDate, EndDate),
+            INDEX idx_recurring     (RecurringPatternId)
         ) {$collate};" );
 
         // ── Recurring Patterns ────────────────────────────────────────────────
@@ -161,21 +179,21 @@ class MYVH_Installer {
 
         // ── Room Rates ────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$p}myvh_room_rates (
-            Id              INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
-            RoomId          INT UNSIGNED   NOT NULL,
-            CustomerGroupId INT UNSIGNED   DEFAULT NULL,
-            ChargeType      VARCHAR(12)    NOT NULL,
-            Rate            DECIMAL(10,2)  NOT NULL,
-            Name            VARCHAR(100)   NOT NULL,
-            Description     VARCHAR(255),
-            MinimumHours    DECIMAL(5,2)   DEFAULT NULL,
-            IsActive        TINYINT(1)     DEFAULT 1,
-            ValidFrom       DATE           DEFAULT NULL,
-            ValidTo         DATE           DEFAULT NULL,
-            Priority        INT UNSIGNED   DEFAULT 0,
-            Created         TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
+            Id                  INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            RoomId              INT UNSIGNED   NOT NULL,
+            OrganisationTypeId  INT UNSIGNED   DEFAULT NULL,
+            ChargeType          VARCHAR(12)    NOT NULL,
+            Rate                DECIMAL(10,2)  NOT NULL,
+            Name                VARCHAR(100)   NOT NULL,
+            Description         VARCHAR(255),
+            MinimumHours        DECIMAL(5,2)   DEFAULT NULL,
+            IsActive            TINYINT(1)     DEFAULT 1,
+            ValidFrom           DATE           DEFAULT NULL,
+            ValidTo             DATE           DEFAULT NULL,
+            Priority            INT UNSIGNED   DEFAULT 0,
+            Created             TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_room           (RoomId),
-            INDEX idx_customer_group (CustomerGroupId),
+            INDEX idx_org_type       (OrganisationTypeId),
             INDEX idx_active         (IsActive),
             INDEX idx_valid_dates    (ValidFrom, ValidTo),
             INDEX idx_priority       (Priority)
@@ -187,14 +205,12 @@ class MYVH_Installer {
             Name            VARCHAR(100)  NOT NULL,
             Description     VARCHAR(255),
             Price           DECIMAL(10,2) NOT NULL,
-            CustomerGroupId INT UNSIGNED  DEFAULT NULL,
             ChargeType      VARCHAR(12)   NOT NULL,
             RoomId          INT UNSIGNED  DEFAULT NULL,
             VenueId         INT UNSIGNED  DEFAULT NULL,
             IsActive        TINYINT(1)    DEFAULT 1,
             DisplayOrder    INT UNSIGNED  DEFAULT 0,
             Created         TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_customer_group (CustomerGroupId),
             INDEX idx_room           (RoomId),
             INDEX idx_venue          (VenueId),
             INDEX idx_active         (IsActive),
@@ -349,168 +365,229 @@ class MYVH_Installer {
          */
         $foreign_keys = [
 
-            // Rooms → Venues
-            [ "{$p}myvh_rooms", 'fk_rooms_venue',
-              "ALTER TABLE {$p}myvh_rooms
-               ADD CONSTRAINT fk_rooms_venue
-               FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // ── Organisations ─────────────────────────────────────────────────────────
 
-            // Customers → Customer Groups
-            [ "{$p}myvh_customers", 'fk_customers_customer_group',
-              "ALTER TABLE {$p}myvh_customers
-               ADD CONSTRAINT fk_customers_customer_group
-               FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Organisations → Organisation Types
+        [ "{$p}myvh_organisations", 'fk_organisations_org_type',
+          "ALTER TABLE {$p}myvh_organisations
+           ADD CONSTRAINT fk_organisations_org_type
+           FOREIGN KEY (OrganisationTypeId) REFERENCES {$p}myvh_organisation_types(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Bookings → Customers
-            [ "{$p}myvh_bookings", 'fk_bookings_customer',
-              "ALTER TABLE {$p}myvh_bookings
-               ADD CONSTRAINT fk_bookings_customer
-               FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Organisation Members → Organisations
+        [ "{$p}myvh_organisation_members", 'fk_org_members_organisation',
+          "ALTER TABLE {$p}myvh_organisation_members
+           ADD CONSTRAINT fk_org_members_organisation
+           FOREIGN KEY (OrganisationId) REFERENCES {$p}myvh_organisations(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Bookings → Rooms
-            [ "{$p}myvh_bookings", 'fk_bookings_room',
-              "ALTER TABLE {$p}myvh_bookings
-               ADD CONSTRAINT fk_bookings_room
-               FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Organisation Members → Users
+        [ "{$p}myvh_organisation_members", 'fk_org_members_user',
+          "ALTER TABLE {$p}myvh_organisation_members
+           ADD CONSTRAINT fk_org_members_user
+           FOREIGN KEY (UserId) REFERENCES {$p}users(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Bookings → Recurring Patterns
-            [ "{$p}myvh_bookings", 'fk_bookings_recurring_pattern',
-              "ALTER TABLE {$p}myvh_bookings
-               ADD CONSTRAINT fk_bookings_recurring_pattern
-               FOREIGN KEY (RecurringPatternId) REFERENCES {$p}myvh_recurring_patterns(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // ── Customers ─────────────────────────────────────────────────────────────
 
-            // Recurring Patterns → Bookings (parent)
-            [ "{$p}myvh_recurring_patterns", 'fk_recurring_patterns_parent_booking',
-              "ALTER TABLE {$p}myvh_recurring_patterns
-               ADD CONSTRAINT fk_recurring_patterns_parent_booking
-               FOREIGN KEY (ParentBookingId) REFERENCES {$p}myvh_bookings(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Customers → Customer Groups
+        [ "{$p}myvh_customers", 'fk_customers_customer_group',
+          "ALTER TABLE {$p}myvh_customers
+           ADD CONSTRAINT fk_customers_customer_group
+           FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Room Rates → Rooms
-            [ "{$p}myvh_room_rates", 'fk_room_rates_room',
-              "ALTER TABLE {$p}myvh_room_rates
-               ADD CONSTRAINT fk_room_rates_room
-               FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // ── Venues & Rooms ────────────────────────────────────────────────────────
 
-            // Room Rates → Customer Groups
-            [ "{$p}myvh_room_rates", 'fk_room_rates_customer_group',
-              "ALTER TABLE {$p}myvh_room_rates
-               ADD CONSTRAINT fk_room_rates_customer_group
-               FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Rooms → Venues
+        [ "{$p}myvh_rooms", 'fk_rooms_venue',
+          "ALTER TABLE {$p}myvh_rooms
+           ADD CONSTRAINT fk_rooms_venue
+           FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Add-ons → Customer Groups
-            [ "{$p}myvh_addons", 'fk_addons_customer_group',
-              "ALTER TABLE {$p}myvh_addons
-               ADD CONSTRAINT fk_addons_customer_group
-               FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // ── Bookings ──────────────────────────────────────────────────────────────
 
-            // Add-ons → Rooms
-            [ "{$p}myvh_addons", 'fk_addons_room',
-              "ALTER TABLE {$p}myvh_addons
-               ADD CONSTRAINT fk_addons_room
-               FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Bookings → Customers
+        [ "{$p}myvh_bookings", 'fk_bookings_customer',
+          "ALTER TABLE {$p}myvh_bookings
+           ADD CONSTRAINT fk_bookings_customer
+           FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Add-ons → Venues
-            [ "{$p}myvh_addons", 'fk_addons_venue',
-              "ALTER TABLE {$p}myvh_addons
-               ADD CONSTRAINT fk_addons_venue
-               FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Bookings → Organisations
+        [ "{$p}myvh_bookings", 'fk_bookings_organisation',
+          "ALTER TABLE {$p}myvh_bookings
+           ADD CONSTRAINT fk_bookings_organisation
+           FOREIGN KEY (OrganisationId) REFERENCES {$p}myvh_organisations(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Booking Charges → Bookings
-            [ "{$p}myvh_booking_charges", 'fk_booking_charges_booking',
-              "ALTER TABLE {$p}myvh_booking_charges
-               ADD CONSTRAINT fk_booking_charges_booking
-               FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Bookings → Rooms
+        [ "{$p}myvh_bookings", 'fk_bookings_room',
+          "ALTER TABLE {$p}myvh_bookings
+           ADD CONSTRAINT fk_bookings_room
+           FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Booking Charges → Room Rates
-            [ "{$p}myvh_booking_charges", 'fk_booking_charges_room_rate',
-              "ALTER TABLE {$p}myvh_booking_charges
-               ADD CONSTRAINT fk_booking_charges_room_rate
-               FOREIGN KEY (RoomRateId) REFERENCES {$p}myvh_room_rates(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Bookings → Recurring Patterns (nullable — SET NULL on delete)
+        [ "{$p}myvh_bookings", 'fk_bookings_recurring_pattern',
+          "ALTER TABLE {$p}myvh_bookings
+           ADD CONSTRAINT fk_bookings_recurring_pattern
+           FOREIGN KEY (RecurringPatternId) REFERENCES {$p}myvh_recurring_patterns(Id)
+           ON DELETE SET NULL ON UPDATE CASCADE" ],
 
-            // Booking Add-ons → Bookings
-            [ "{$p}myvh_booking_addons", 'fk_booking_addons_booking',
-              "ALTER TABLE {$p}myvh_booking_addons
-               ADD CONSTRAINT fk_booking_addons_booking
-               FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Recurring Patterns → Bookings (parent)
+        [ "{$p}myvh_recurring_patterns", 'fk_recurring_patterns_parent_booking',
+          "ALTER TABLE {$p}myvh_recurring_patterns
+           ADD CONSTRAINT fk_recurring_patterns_parent_booking
+           FOREIGN KEY (ParentBookingId) REFERENCES {$p}myvh_bookings(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Booking Add-ons → Add-ons
-            [ "{$p}myvh_booking_addons", 'fk_booking_addons_addon',
-              "ALTER TABLE {$p}myvh_booking_addons
-               ADD CONSTRAINT fk_booking_addons_addon
-               FOREIGN KEY (AddonId) REFERENCES {$p}myvh_addons(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // ── Room Rates ────────────────────────────────────────────────────────────
 
-            // Booking Discounts → Bookings
-            [ "{$p}myvh_booking_discounts", 'fk_booking_discounts_booking',
-              "ALTER TABLE {$p}myvh_booking_discounts
-               ADD CONSTRAINT fk_booking_discounts_booking
-               FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Room Rates → Rooms
+        [ "{$p}myvh_room_rates", 'fk_room_rates_room',
+          "ALTER TABLE {$p}myvh_room_rates
+           ADD CONSTRAINT fk_room_rates_room
+           FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Booking Discounts → Discounts
-            [ "{$p}myvh_booking_discounts", 'fk_booking_discounts_discount',
-              "ALTER TABLE {$p}myvh_booking_discounts
-               ADD CONSTRAINT fk_booking_discounts_discount
-               FOREIGN KEY (DiscountId) REFERENCES {$p}myvh_discounts(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Room Rates → Organisation Types (nullable)
+        [ "{$p}myvh_room_rates", 'fk_room_rates_org_type',
+          "ALTER TABLE {$p}myvh_room_rates
+           ADD CONSTRAINT fk_room_rates_org_type
+           FOREIGN KEY (OrganisationTypeId) REFERENCES {$p}myvh_organisation_types(Id)
+           ON DELETE SET NULL ON UPDATE CASCADE" ],
 
-            // Discounts → Rooms
-            [ "{$p}myvh_discounts", 'fk_discounts_room',
-              "ALTER TABLE {$p}myvh_discounts
-               ADD CONSTRAINT fk_discounts_room
-               FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Room Rates → Customer Groups
+        [ "{$p}myvh_room_rates", 'fk_room_rates_customer_group',
+          "ALTER TABLE {$p}myvh_room_rates
+           ADD CONSTRAINT fk_room_rates_customer_group
+           FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Discounts → Venues
-            [ "{$p}myvh_discounts", 'fk_discounts_venue',
-              "ALTER TABLE {$p}myvh_discounts
-               ADD CONSTRAINT fk_discounts_venue
-               FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // ── Add-ons ───────────────────────────────────────────────────────────────
 
-            // Invoices → Customers
-            [ "{$p}myvh_invoices", 'fk_invoices_customer',
-              "ALTER TABLE {$p}myvh_invoices
-               ADD CONSTRAINT fk_invoices_customer
-               FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Add-ons → Rooms (nullable)
+        [ "{$p}myvh_addons", 'fk_addons_room',
+          "ALTER TABLE {$p}myvh_addons
+           ADD CONSTRAINT fk_addons_room
+           FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
+           ON DELETE SET NULL ON UPDATE CASCADE" ],
 
-            // Invoice Items → Invoices
-            [ "{$p}myvh_invoice_items", 'fk_invoice_items_invoice',
-              "ALTER TABLE {$p}myvh_invoice_items
-               ADD CONSTRAINT fk_invoice_items_invoice
-               FOREIGN KEY (InvoiceId) REFERENCES {$p}myvh_invoices(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Add-ons → Venues (nullable)
+        [ "{$p}myvh_addons", 'fk_addons_venue',
+          "ALTER TABLE {$p}myvh_addons
+           ADD CONSTRAINT fk_addons_venue
+           FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
+           ON DELETE SET NULL ON UPDATE CASCADE" ],
 
-            // Invoice Items → Bookings
-            [ "{$p}myvh_invoice_items", 'fk_invoice_items_booking',
-              "ALTER TABLE {$p}myvh_invoice_items
-               ADD CONSTRAINT fk_invoice_items_booking
-               FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
+        // Add-ons → Customer Groups
+        [ "{$p}myvh_addons", 'fk_addons_customer_group',
+          "ALTER TABLE {$p}myvh_addons
+           ADD CONSTRAINT fk_addons_customer_group
+           FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
-            // Payments → Invoices
-            [ "{$p}myvh_payments", 'fk_payments_invoice',
-              "ALTER TABLE {$p}myvh_payments
-               ADD CONSTRAINT fk_payments_invoice
-               FOREIGN KEY (InvoiceId) REFERENCES {$p}myvh_invoices(Id)
-               ON DELETE RESTRICT ON UPDATE CASCADE" ],
-        ];
+        // ── Booking Charges ───────────────────────────────────────────────────────
 
+        // Booking Charges → Bookings
+        [ "{$p}myvh_booking_charges", 'fk_booking_charges_booking',
+          "ALTER TABLE {$p}myvh_booking_charges
+           ADD CONSTRAINT fk_booking_charges_booking
+           FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+        // Booking Charges → Room Rates
+        [ "{$p}myvh_booking_charges", 'fk_booking_charges_room_rate',
+          "ALTER TABLE {$p}myvh_booking_charges
+           ADD CONSTRAINT fk_booking_charges_room_rate
+           FOREIGN KEY (RoomRateId) REFERENCES {$p}myvh_room_rates(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+        // ── Booking Add-ons ───────────────────────────────────────────────────────
+
+        // Booking Add-ons → Bookings
+        [ "{$p}myvh_booking_addons", 'fk_booking_addons_booking',
+          "ALTER TABLE {$p}myvh_booking_addons
+           ADD CONSTRAINT fk_booking_addons_booking
+           FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+        // Booking Add-ons → Add-ons
+        [ "{$p}myvh_booking_addons", 'fk_booking_addons_addon',
+          "ALTER TABLE {$p}myvh_booking_addons
+           ADD CONSTRAINT fk_booking_addons_addon
+           FOREIGN KEY (AddonId) REFERENCES {$p}myvh_addons(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+        // ── Discounts ─────────────────────────────────────────────────────────────
+
+        // Discounts → Rooms (nullable)
+        [ "{$p}myvh_discounts", 'fk_discounts_room',
+          "ALTER TABLE {$p}myvh_discounts
+           ADD CONSTRAINT fk_discounts_room
+           FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
+           ON DELETE SET NULL ON UPDATE CASCADE" ],
+
+        // Discounts → Venues (nullable)
+        [ "{$p}myvh_discounts", 'fk_discounts_venue',
+          "ALTER TABLE {$p}myvh_discounts
+           ADD CONSTRAINT fk_discounts_venue
+           FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
+           ON DELETE SET NULL ON UPDATE CASCADE" ],
+
+        // ── Booking Discounts ─────────────────────────────────────────────────────
+
+        // Booking Discounts → Bookings
+        [ "{$p}myvh_booking_discounts", 'fk_booking_discounts_booking',
+          "ALTER TABLE {$p}myvh_booking_discounts
+           ADD CONSTRAINT fk_booking_discounts_booking
+           FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+        // Booking Discounts → Discounts (nullable — discount code may be ad-hoc)
+        [ "{$p}myvh_booking_discounts", 'fk_booking_discounts_discount',
+          "ALTER TABLE {$p}myvh_booking_discounts
+           ADD CONSTRAINT fk_booking_discounts_discount
+           FOREIGN KEY (DiscountId) REFERENCES {$p}myvh_discounts(Id)
+           ON DELETE SET NULL ON UPDATE CASCADE" ],
+
+        // ── Invoices ──────────────────────────────────────────────────────────────
+
+        // Invoices → Customers
+        [ "{$p}myvh_invoices", 'fk_invoices_customer',
+          "ALTER TABLE {$p}myvh_invoices
+           ADD CONSTRAINT fk_invoices_customer
+           FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+        // ── Invoice Items ─────────────────────────────────────────────────────────
+
+        // Invoice Items → Invoices
+        [ "{$p}myvh_invoice_items", 'fk_invoice_items_invoice',
+          "ALTER TABLE {$p}myvh_invoice_items
+           ADD CONSTRAINT fk_invoice_items_invoice
+           FOREIGN KEY (InvoiceId) REFERENCES {$p}myvh_invoices(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+        // Invoice Items → Bookings (nullable)
+        [ "{$p}myvh_invoice_items", 'fk_invoice_items_booking',
+          "ALTER TABLE {$p}myvh_invoice_items
+           ADD CONSTRAINT fk_invoice_items_booking
+           FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
+           ON DELETE SET NULL ON UPDATE CASCADE" ],
+
+        // ── Payments ──────────────────────────────────────────────────────────────
+
+        // Payments → Invoices
+        [ "{$p}myvh_payments", 'fk_payments_invoice',
+          "ALTER TABLE {$p}myvh_payments
+           ADD CONSTRAINT fk_payments_invoice
+           FOREIGN KEY (InvoiceId) REFERENCES {$p}myvh_invoices(Id)
+           ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+    ];
         $results = [];
 
         foreach ( $foreign_keys as [ $table, $constraint, $sql ] ) {
@@ -550,10 +627,38 @@ class MYVH_Installer {
         self::delete_all_transients($wpdb);
     }
 
+    // We need to set default vaules for
+    //          OrganisationType needs the default "person"
+    //          Organisation needs a default organisation for all new customers to have
+    private static function initialise_tables($wpdb) {
+
+    //Insert the type first
+    $table_name = $wpdb->prefix . 'myvh_organisation_types';
+    $data = ['Name' => 'Personal',
+             'Description' => 'Default type for every new customer'];
+
+    // Name is a unique key in the OrganisationType table, so this can run without duplicating the record
+    if ( $wpdb->insert($table_name, $data) <> false ){
+        // Now add the Organisation to use the new type if the inert was successful
+        $org_id = $wpdb->insert_id;
+        $table_name = $wpdb->prefix . 'myvh_organisations';
+        $data = ['Name'              => 'Personal booking',
+                'OrganisationTypeId' => $org_id,
+                'IsActive'           => 1];
+
+        $wpdb->insert($table_name, $data);
+    }
+
+
+    }
+
     private static function drop_tables($wpdb) {
 
         $tables = [
             'myvh_bookings',
+            'myvh_organisations',
+            'myvh_organisation_types',
+            'myvh-organisation_members',
             'myvh_addons',
             'myvh_booking_addons',
             'myvh_invoices',
@@ -561,7 +666,6 @@ class MYVH_Installer {
             'myvh_rooms',
             'myvh_venues',
             'myvh_customers',
-            'myvh_customer_groups',
             'myvh_recurring_patterns',
             'myvh_room_rates',
             'myvh_booking_charges',

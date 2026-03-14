@@ -326,56 +326,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 .getElementById("vbc-prev")
                 .addEventListener("click", () => {
 
-                    if (this.currentView === "Month") {
-
-                        this.monthCalendar.prev();
-                        this.loadMonthEvents();
-
-                    } else {
-
-                        this.calendar.prev();
-                        this.loadEvents();
-
-                    }
-
+                    this.navigatePrev();
                 });
 
             document
                 .getElementById("vbc-next")
                 .addEventListener("click", () => {
 
-                    if (this.currentView === "Month") {
-
-                        this.monthCalendar.next();
-                        this.loadMonthEvents();
-
-                    } else {
-
-                        this.calendar.next();
-                        this.loadEvents();
-
-                    }
-
+                    this.navigateNext();
                 });
 
             document
                 .getElementById("vbc-today")
                 .addEventListener("click", () => {
 
-                    if (this.currentView === "Month") {
-
-                        this.monthCalendar.startDate = DayPilot.Date.today();
-                        this.monthCalendar.update();
-                        this.loadMonthEvents();
-
-                    } else {
-
-                        this.calendar.startDate = DayPilot.Date.today();
-                        this.calendar.update();
-                        this.loadEvents();
-
-                    }
-
+                    this.navigateToday();
                 });
 
             /*
@@ -428,9 +393,65 @@ document.addEventListener("DOMContentLoaded", function () {
                 .map(ch => map[ch] ?? ch)
                 .join('');
 
+        },
+
+        navigatePrev() {
+
+            if (this.currentView === "Month") {
+                this.monthCalendar.startDate = this.monthCalendar.startDate.addMonths(-1);
+                this.monthCalendar.update();
+                this.loadMonthEvents();
+            } else if (this.currentView === "Week") {
+                this.calendar.startDate = this.calendar.startDate.addDays(-7);
+                this.calendar.update();
+                this.loadEvents();
+            } else { // Day
+                this.calendar.startDate = this.calendar.startDate.addDays(-1);
+                this.calendar.update();
+                this.loadEvents();
+            }
+
+        },
+
+        navigateNext() {
+
+            if (this.currentView === "Month") {
+                this.monthCalendar.startDate = this.monthCalendar.startDate.addMonths(1);
+                this.monthCalendar.update();
+                this.loadMonthEvents();
+            } else if (this.currentView === "Week") {
+                this.calendar.startDate = this.calendar.startDate.addDays(7);
+                this.calendar.update();
+                this.loadEvents();
+            } else { // Day
+                this.calendar.startDate = this.calendar.startDate.addDays(1);
+                this.calendar.update();
+                this.loadEvents();
+            }
+
+        },
+
+        navigateToday() {
+
+            if (this.currentView === "Month") {
+
+                this.monthCalendar.startDate = DayPilot.Date.today();
+                this.monthCalendar.update();
+                this.loadMonthEvents();
+
+            } else {
+
+                this.calendar.startDate = DayPilot.Date.today();
+                this.calendar.update();
+                this.loadEvents();
+
+            }
+
         }
 
     };
+
+
 
     CalendarManager.init();
 
