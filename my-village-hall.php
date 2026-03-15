@@ -92,6 +92,7 @@ class My_Village_Hall {
 
     /** @var My_Village_Hall|null */
     private static $instance = null;
+    private static $separator_count = 0;
 
     // ── Singleton ─────────────────────────────────────────────────────────────
 
@@ -159,11 +160,17 @@ class My_Village_Hall {
         $this->on_admin_post( 'myvh_save_room',    MYVH_Room_Controller::class,  'save' );
         $this->on_admin_post( 'myvh_delete_room',  MYVH_Room_Controller::class,  'delete' );
 
-        // Customers & Groups
+        // Customers
         $this->on_admin_post( 'myvh_save_customer',          MYVH_Customer_Controller::class,       'save' );
         $this->on_admin_post( 'myvh_delete_customer',        MYVH_Customer_Controller::class,       'delete' );
-        $this->on_admin_post( 'myvh_save_customer_group',    MYVH_Customer_Group_Controller::class, 'save' );
-        $this->on_admin_post( 'myvh_delete_customer_group',  MYVH_Customer_Group_Controller::class, 'delete' );
+
+        // Organisations
+        $this->on_admin_post( 'myvh_save_organisation',   MYVH_Organisation_Controller::class,      'save' );
+        $this->on_admin_post( 'myvh_delete_organisation', MYVH_Organisation_Controller::class,      'delete' );
+        $this->on_admin_post( 'myvh_add_org_member',      MYVH_Organisation_Controller::class,      'add_member' );
+        $this->on_admin_post( 'myvh_remove_org_member',   MYVH_Organisation_Controller::class,      'remove_member' );
+        $this->on_admin_post( 'myvh_save_org_type',       MYVH_Organisation_Type_Controller::class, 'save' );
+        $this->on_admin_post( 'myvh_delete_org_type',     MYVH_Organisation_Type_Controller::class, 'delete' );
 
         // Pricing
         $this->on_admin_post( 'myvh_save_rate',   MYVH_Room_Rate_Controller::class, 'save' );
@@ -240,7 +247,6 @@ class My_Village_Hall {
      *   ├── Calendar
      *   ├── ── (separator) ──
      *   ├── Customers
-     *   ├── Customer Groups
      *   ├── ── (separator) ──
      *   ├── Venues
      *   ├── Rooms
@@ -288,10 +294,25 @@ class My_Village_Hall {
             'manage_options', 'myvh-customers', [ $this, 'render_customers_page' ]
         );
 
+        $this->add_menu_separator();
+
+        // ── Organisations ──────────────────────────────────────────────────────
         add_submenu_page( 'my-village-hall',
-            __( 'Customer Groups', 'my-village-hall' ),
-            __( 'Customer Groups', 'my-village-hall' ),
-            'manage_options', 'myvh-customer-groups', [ $this, 'render_customer_groups_page' ]
+            __( 'Organisations',      'my-village-hall' ),
+            __( 'Organisations',      'my-village-hall' ),
+            'manage_options', 'myvh-organisations', [ $this, 'render_organisations_page' ]
+        );
+
+        add_submenu_page( 'my-village-hall',
+            __( 'Organisation Types', 'my-village-hall' ),
+            __( 'Org Types',          'my-village-hall' ),
+            'manage_options', 'myvh-org-types', [ $this, 'render_org_types_page' ]
+        );
+
+        add_submenu_page( 'my-village-hall',
+            __( 'Organisation Members', 'my-village-hall' ),
+            __( 'Org Members',          'my-village-hall' ),
+            'manage_options', 'myvh-org-members', [ $this, 'render_org_members_page' ]
         );
 
         $this->add_menu_separator();
@@ -344,15 +365,37 @@ class My_Village_Hall {
      * Adds a visual divider in the admin submenu.
      * Uses a non-functional "#" slug so WordPress still registers the entry.
      */
-    private function add_menu_separator(): void {
+    public static function add_menu_separator(): void {
+        self::$separator_count++;
+        $slug = 'myvh-separator-' . self::$separator_count;
+
         add_submenu_page(
             'my-village-hall',
             '',
-            '<span style="display:block;margin:5px 0;padding:0;border-top:1px solid #555;opacity:.5;"></span>',
+            ' ',
             'manage_options',
-            '#',
-            ''
+            $slug,
+            '__return_null'
         );
+
+        add_action('admin_head', function() use ($slug) {
+
+            echo '<style>
+            li a[href="admin.php?page=' . esc_attr($slug) . '"] {
+                pointer-events:none;
+                cursor:default;
+                height:10px;
+                margin:6px 0;
+                padding:0;
+                border-top:1px solid rgba(255,255,255,0.2);
+            }
+
+            li a[href="admin.php?page=' . esc_attr($slug) . '"] span {
+                display:none;
+            }
+            </style>';
+
+        });
     }
 
     // ── Asset enqueueing ──────────────────────────────────────────────────────
@@ -448,16 +491,18 @@ class My_Village_Hall {
     // Each method checks capability then includes the relevant view file.
     // A private helper keeps things DRY.
 
-    public function render_bookings_page():       void { $this->render_page( 'bookings',       true ); }
-    public function render_calendar_page():       void { $this->render_page( 'calendar' ); }
-    public function render_customers_page():      void { $this->render_page( 'customers' ); }
-    public function render_customer_groups_page():void { $this->render_page( 'customer-groups' ); }
-    public function render_venues_page():         void { $this->render_page( 'venues' ); }
-    public function render_rooms_page():          void { $this->render_page( 'rooms' ); }
-    public function render_room_rates_page():     void { $this->render_page( 'room-rates' ); }
-    public function render_addons_page():         void { $this->render_page( 'addons' ); }
-    public function render_invoices_page():       void { $this->render_page( 'invoices' ); }
-    public function render_recurring_page():      void { $this->render_page( 'recurring' ); }
+    public function render_bookings_page():        void { $this->render_page( 'bookings',        true ); }
+    public function render_calendar_page():        void { $this->render_page( 'calendar' ); }
+    public function render_customers_page():       void { $this->render_page( 'customers' ); }
+    public function render_organisations_page():   void { $this->render_page( 'organisations' ); }
+    public function render_org_types_page():       void { $this->render_page( 'org-types' ); }
+    public function render_org_members_page():     void { $this->render_page( 'org-members' ); }
+    public function render_venues_page():          void { $this->render_page( 'venues' ); }
+    public function render_rooms_page():           void { $this->render_page( 'rooms' ); }
+    public function render_room_rates_page():      void { $this->render_page( 'room-rates' ); }
+    public function render_addons_page():          void { $this->render_page( 'addons' ); }
+    public function render_invoices_page():        void { $this->render_page( 'invoices' ); }
+    public function render_recurring_page():       void { $this->render_page( 'recurring' ); }
 
     /**
      * Capability-checks, then includes the view file for $page.

@@ -15,6 +15,7 @@ $booking_id = $edit_id ?: $view_id;
 
 $booking_service           = $myvh_container->get(MYVH_Booking_Service::class);
 $customer_service          = $myvh_container->get(MYVH_Customer_Service::class);
+$org_service               = $myvh_container->get(MYVH_Organisation_Service::class);
 $room_service              = $myvh_container->get(MYVH_Room_Service::class);
 $addon_service             = $myvh_container->get(MYVH_Addon_Service::class);
 $recurring_pattern_service = $myvh_container->get(MYVH_Recurring_Pattern_Service::class);
@@ -22,8 +23,9 @@ $recurring_pattern_service = $myvh_container->get(MYVH_Recurring_Pattern_Service
 $edit_booking = $booking_id ? $booking_service->get_by_id($booking_id) : null;
 $is_view_mode = $view_id > 0;
 
-$customers  = $customer_service->get_all();
-$rooms      = $room_service->get_all_with_venues();
+$customers      = $customer_service->get_all();
+$organisations  = $org_service->get_all(true);
+$rooms          = $room_service->get_all_with_venues();
 $all_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
 
 // Active addons only for the form
@@ -113,6 +115,17 @@ $status_colors = [
                                 <?php endif; ?>
                             </td>
                         </tr>
+                        <?php
+                        $booking_org = $edit_booking['OrganisationId']
+                            ? $org_service->get($edit_booking['OrganisationId'])
+                            : null;
+                        ?>
+                        <?php if ($booking_org): ?>
+                        <tr>
+                            <th><?php _e('Organisation', 'my-village-hall'); ?></th>
+                            <td><strong><?php echo esc_html($booking_org['Name']); ?></strong></td>
+                        </tr>
+                        <?php endif; ?>
                         <tr>
                             <th><?php _e('Room', 'my-village-hall'); ?></th>
                             <td>
@@ -296,6 +309,27 @@ $status_colors = [
                                         <?php _e('Or', 'my-village-hall'); ?>
                                         <a href="<?php echo admin_url('admin.php?page=myvh-customers&add=1'); ?>" target="_blank">
                                             <?php _e('add a new customer', 'my-village-hall'); ?>
+                                        </a>
+                                    </p>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th><?php _e('Organisation', 'my-village-hall'); ?></th>
+                                <td>
+                                    <select name="organisation_id" class="regular-text">
+                                        <option value=""><?php _e('— None —', 'my-village-hall'); ?></option>
+                                        <?php foreach ($organisations as $org): ?>
+                                            <option value="<?php echo $org['Id']; ?>"
+                                                <?php selected($edit_booking && $edit_booking['OrganisationId'] == $org['Id']); ?>>
+                                                <?php echo esc_html($org['Name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description">
+                                        <?php _e('Optionally associate this booking with an organisation.', 'my-village-hall'); ?>
+                                        <a href="<?php echo admin_url('admin.php?page=myvh-organisations'); ?>" target="_blank">
+                                            <?php _e('Manage organisations', 'my-village-hall'); ?>
                                         </a>
                                     </p>
                                 </td>

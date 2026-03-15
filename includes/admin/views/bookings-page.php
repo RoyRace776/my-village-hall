@@ -11,8 +11,10 @@ $room_filter     = isset($_GET['room_id'])     ? intval($_GET['room_id'])       
 $customer_filter = isset($_GET['customer_id']) ? intval($_GET['customer_id'])           : 0;
 
 $booking_service = $myvh_container->get(MYVH_Booking_Service::class);
-$rooms     = $myvh_container->get(MYVH_Room_Service::class)->get_all_with_venues();
-$customers = $myvh_container->get(MYVH_Customer_Service::class)->get_all();
+$org_service     = $myvh_container->get(MYVH_Organisation_Service::class);
+$rooms           = $myvh_container->get(MYVH_Room_Service::class)->get_all_with_venues();
+$customers       = $myvh_container->get(MYVH_Customer_Service::class)->get_all();
+$organisations   = $org_service->get_all();
 
 $result = $booking_service->get_booking_list([
     'status'      => $status_filter !== 'all' ? $status_filter : '',
@@ -148,6 +150,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                 <tr>
                     <th style="width:175px;"><?php _e('Date & Time', 'my-village-hall'); ?></th>
                     <th><?php _e('Customer', 'my-village-hall'); ?></th>
+                    <th><?php _e('Organisation', 'my-village-hall'); ?></th>
                     <th><?php _e('Room', 'my-village-hall'); ?></th>
                     <th><?php _e('Description', 'my-village-hall'); ?></th>
                     <th style="width:105px;"><?php _e('Status', 'my-village-hall'); ?></th>
@@ -206,6 +209,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                         <td>
                             <strong><?php echo esc_html($rep['CustomerName'] ?? '—'); ?></strong>
                         </td>
+                        <td><?php echo esc_html($rep['OrganisationName'] ?? '—'); ?></td>
                         <td>
                             <?php echo esc_html($rep['RoomName'] ?? '—'); ?>
                             <?php if (!empty($rep['VenueName'])): ?>
@@ -265,6 +269,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                             </small>
                         </td>
                         <td><?php echo esc_html($b['CustomerName'] ?? '—'); ?></td>
+                        <td><?php echo esc_html($b['OrganisationName'] ?? '—'); ?></td>
                         <td>
                             <?php echo esc_html($b['RoomName'] ?? '—'); ?>
                             <?php if (!empty($b['VenueName'])): ?>
@@ -330,6 +335,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                                 <br><small><?php echo esc_html($b['CustomerEmail']); ?></small>
                             <?php endif; ?>
                         </td>
+                        <td><?php echo esc_html($b['OrganisationName'] ?? '—'); ?></td>
                         <td>
                             <?php echo esc_html($b['RoomName'] ?? '—'); ?>
                             <?php if (!empty($b['VenueName'])): ?>

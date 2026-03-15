@@ -9,14 +9,14 @@ if (!current_user_can('manage_myvh')) {
 
 global $myvh_container;
 
-$edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$room_rate_service      = $myvh_container->get(MYVH_Room_Rate_Service::class);
-$room_service           = $myvh_container->get(MYVH_Room_Service::class);
-$customer_group_service = $myvh_container->get(MYVH_Customer_Group_Service::class);
-$edit_rate = $edit_id ? $room_rate_service->get($edit_id) : null;
-$rates     = $room_rate_service->get_all();
-$rooms     = $room_service->get_all_with_venues();
-$groups    = $customer_group_service->get_all();
+$edit_id           = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$room_rate_service = $myvh_container->get(MYVH_Room_Rate_Service::class);
+$room_service      = $myvh_container->get(MYVH_Room_Service::class);
+$org_type_service  = $myvh_container->get(MYVH_Organisation_Type_Service::class);
+$edit_rate         = $edit_id ? $room_rate_service->get($edit_id) : null;
+$rates             = $room_rate_service->get_all();
+$rooms             = $room_service->get_all_with_venues();
+$org_types         = $org_type_service->get_all();
 ?>
 
 <div class="wrap">
@@ -53,7 +53,7 @@ $groups    = $customer_group_service->get_all();
                 <div class="notice notice-info inline">
                     <p>
                         <strong><?php _e('How rates work:', 'my-village-hall'); ?></strong><br>
-                        <?php _e('Room rates define how much to charge for bookings. You can set different rates based on room, customer group, charge type, and date validity.', 'my-village-hall'); ?>
+                        <?php _e('Room rates define how much to charge for bookings. You can set different rates based on room, organisation type, charge type, and date validity.', 'my-village-hall'); ?>
                     </p>
                 </div>
 
@@ -64,7 +64,7 @@ $groups    = $customer_group_service->get_all();
                             <th><?php _e('Room', 'my-village-hall'); ?></th>
                             <th><?php _e('Rate', 'my-village-hall'); ?></th>
                             <th><?php _e('Type', 'my-village-hall'); ?></th>
-                            <th><?php _e('Group', 'my-village-hall'); ?></th>
+                            <th><?php _e('Org Type', 'my-village-hall'); ?></th>
                             <th><?php _e('Status', 'my-village-hall'); ?></th>
                             <th><?php _e('Actions', 'my-village-hall'); ?></th>
                         </tr>
@@ -77,21 +77,18 @@ $groups    = $customer_group_service->get_all();
                         <?php else: ?>
                             <?php foreach ($rates as $rate): ?>
                                 <?php
-                                // Get room name
+                                // Resolve room name
                                 $room = null;
                                 foreach ($rooms as $r) {
-                                    if ($r['Id'] == $rate['RoomId']) {
-                                        $room = $r;
-                                        break;
-                                    }
+                                    if ($r['Id'] == $rate['RoomId']) { $room = $r; break; }
                                 }
 
-                                // Get group name
-                                $group_name = __('All Groups', 'my-village-hall');
-                                if ($rate['CustomerGroupId']) {
-                                    foreach ($groups as $g) {
-                                        if ($g['Id'] == $rate['CustomerGroupId']) {
-                                            $group_name = $g['Name'];
+                                // Resolve organisation type name
+                                $org_type_name = __('All Types', 'my-village-hall');
+                                if (!empty($rate['OrganisationTypeId'])) {
+                                    foreach ($org_types as $ot) {
+                                        if ($ot['Id'] == $rate['OrganisationTypeId']) {
+                                            $org_type_name = $ot['Name'];
                                             break;
                                         }
                                     }
@@ -110,13 +107,13 @@ $groups    = $customer_group_service->get_all();
                                         <?php
                                         $charge_types = [
                                             'per_hour' => __('Per Hour', 'my-village-hall'),
-                                            'per_day' => __('Per Day', 'my-village-hall'),
-                                            'fixed' => __('Fixed', 'my-village-hall'),
+                                            'per_day'  => __('Per Day',  'my-village-hall'),
+                                            'fixed'    => __('Fixed',    'my-village-hall'),
                                         ];
                                         echo $charge_types[$rate['ChargeType']] ?? esc_html($rate['ChargeType']);
                                         ?>
                                     </td>
-                                    <td><?php echo esc_html($group_name); ?></td>
+                                    <td><?php echo esc_html($org_type_name); ?></td>
                                     <td>
                                         <?php if ($rate['IsActive']): ?>
                                             <span style="color: #46b450;">●</span> <?php _e('Active', 'my-village-hall'); ?>
@@ -129,9 +126,7 @@ $groups    = $customer_group_service->get_all();
                                                 <?php if ($rate['ValidFrom']): ?>
                                                     <?php echo date('M j, Y', strtotime($rate['ValidFrom'])); ?>
                                                 <?php endif; ?>
-                                                <?php if ($rate['ValidFrom'] && $rate['ValidTo']): ?>
-                                                    -
-                                                <?php endif; ?>
+                                                <?php if ($rate['ValidFrom'] && $rate['ValidTo']): ?> - <?php endif; ?>
                                                 <?php if ($rate['ValidTo']): ?>
                                                     <?php echo date('M j, Y', strtotime($rate['ValidTo'])); ?>
                                                 <?php endif; ?>
@@ -243,18 +238,18 @@ $groups    = $customer_group_service->get_all();
                         </tr>
 
                         <tr>
-                            <th><?php _e('Customer Group', 'my-village-hall'); ?></th>
+                            <th><?php _e('Organisation Type', 'my-village-hall'); ?></th>
                             <td>
-                                <select name="customer_group_id" class="regular-text">
-                                    <option value=""><?php _e('All Groups', 'my-village-hall'); ?></option>
-                                    <?php foreach ($groups as $group): ?>
-                                        <option value="<?php echo $group['Id']; ?>"
-                                            <?php selected($edit_rate && $edit_rate['CustomerGroupId'] == $group['Id']); ?>>
-                                            <?php echo esc_html($group['Name']); ?>
+                                <select name="organisation_type_id" class="regular-text">
+                                    <option value=""><?php _e('All Types', 'my-village-hall'); ?></option>
+                                    <?php foreach ($org_types as $ot): ?>
+                                        <option value="<?php echo $ot['Id']; ?>"
+                                            <?php selected($edit_rate && $edit_rate['OrganisationTypeId'] == $ot['Id']); ?>>
+                                            <?php echo esc_html($ot['Name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <p class="description"><?php _e('Leave blank to apply to all customer groups', 'my-village-hall'); ?></p>
+                                <p class="description"><?php _e('Leave blank to apply to all organisation types.', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
 

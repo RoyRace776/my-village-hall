@@ -11,7 +11,7 @@
  *
  * Load order follows domain groupings:
  *   1. Venues & Rooms       — physical locations
- *   2. Customers & Groups   — who makes bookings
+ *   2. Customers            — who makes bookings
  *   3. Bookings             — the core booking records
  *   4. Pricing              — rates, add-ons, discounts
  *   5. Invoices & Payments  — billing
@@ -25,9 +25,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once MYVH_PLUGIN_DIR . 'modules/venues/class-venue-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-room-repository.php';
 
-// ── 2. Customers & Groups ─────────────────────────────────────────────────────
+// ── 2. Customers ─────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/customers/class-customer-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/customer-groups/class-customer-group-repository.php';
+
+// ── 3. Organisations ──────────────────────────────────────────────────────────
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-type-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-member-repository.php';
 
 // ── 3. Bookings ───────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-repository.php';

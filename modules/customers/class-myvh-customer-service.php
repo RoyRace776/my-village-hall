@@ -20,8 +20,12 @@ class MYVH_Customer_Service {
         return $this->repo->get_by_id($id);
     }
 
-    public function get_with_groups() {
-        return $this->repo->get_all_with_groups();
+    public function get_with_organisations() {
+        return $this->repo->get_all_with_organisations();
+    }
+
+    public function get_organisations_for_customer( int $customer_id ): array {
+        return $this->repo->get_organisations_for_customer( $customer_id );
     }
 
     public function get_by_email($email) {
@@ -57,18 +61,17 @@ class MYVH_Customer_Service {
         }
 
         $record = [
-            'Name'              => sanitize_text_field($data['name']),
-            'Email'             => sanitize_email($data['email']),
-            'PhoneNumber'       => sanitize_text_field($data['phone_number'] ?? ''),
-            'PostCode'          => sanitize_text_field($data['post_code'] ?? ''),
-            'AddressLine1'      => sanitize_text_field($data['address_line1'] ?? ''),
-            'CustomerGroupId'   => !empty($data['customer_group_id']) ? intval($data['customer_group_id']) : null,
-            'EmailVerified'     => isset($data['email_verified']) ? 1 : 0,
+            'Name'           => sanitize_text_field($data['name']),
+            'Email'          => sanitize_email($data['email']),
+            'PhoneNumber'    => sanitize_text_field($data['phone_number'] ?? ''),
+            'PostCode'       => sanitize_text_field($data['post_code'] ?? ''),
+            'AddressLine1'   => sanitize_text_field($data['address_line1'] ?? ''),
+            'EmailVerified'  => isset($data['email_verified']) ? 1 : 0,
         ];
 
-        // Link to WordPress user if UserId is provided
+        // Link to WordPress user if CustomerId is provided
         if (!empty($data['user_id'])) {
-            $record['UserId'] = intval($data['user_id']);
+            $record['CustomerId'] = intval($data['user_id']);
         }
 
         if (!empty($data['customer_id'])) {

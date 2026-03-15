@@ -21,9 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-controller.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-controller.php';
 
-// ── Customers & Groups ────────────────────────────────────────────────────────
+// ── Customers ────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-controller.php';
-require_once MYVH_PLUGIN_DIR . 'modules/customer-groups/class-myvh-customer-group-controller.php';
+
+// ── Organisations ─────────────────────────────────────────────────────────────
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-type-controller.php';
 
 // ── Pricing ───────────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-controller.php';

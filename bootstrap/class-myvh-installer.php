@@ -11,7 +11,7 @@
  *
  * Table inventory:
  *   Venues & Rooms        myvh_venues, myvh_rooms
- *   Customers & Groups    myvh_customers, myvh_customer_groups
+ *   Customers             myvh_customers
  *   Bookings              myvh_bookings, myvh_recurring_patterns
  *   Pricing               myvh_room_rates, myvh_addons
  *   Booking line items    myvh_booking_charges, myvh_booking_addons, myvh_booking_discounts
@@ -41,7 +41,6 @@ class MYVH_Installer {
 
         self::create_tables( $wpdb, $collate );
         self::add_foreign_keys( $wpdb );
-        self::initialise_tables( $wpdb );
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -90,7 +89,7 @@ class MYVH_Installer {
         dbDelta( "CREATE TABLE {$p}myvh_organisations (
             Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             Name               VARCHAR(100) NOT NULL,
-            OrganisatonTypeId  INT UNSIGNED NOT NULL,
+            OrganisationTypeId  INT UNSIGNED NOT NULL,
             ContactEmail       VARCHAR(100),
             ContactPhone       VARCHAR(100),
             IsActive           TINYINT(1)    DEFAULT 1,
@@ -106,7 +105,7 @@ class MYVH_Installer {
             Name               VARCHAR(100) NOT NULL,
             Description        VARCHAR(255),
             Created            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY         uq_name (Name),
+            UNIQUE KEY         uq_name (Name)
         ) {$collate};" );
 
         // ── Organisation Members ───────────────────────────────────────────────────
@@ -114,15 +113,14 @@ class MYVH_Installer {
         dbDelta( "CREATE TABLE {$p}myvh_organisation_members (
             Id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             OrganisationId INT UNSIGNED NOT NULL,
-            UserId         INT UNSIGNED NOT NULL,
+            CustomerId         INT UNSIGNED NOT NULL,
             Created        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY     uq_member (OrganisationId, UserId)
+            UNIQUE KEY     uq_member (OrganisationId, CustomerId)
         ) {$collate};" );
 
     // ── Customers ─────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$p}myvh_customers (
             Id              INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
-            UserId          BIGINT UNSIGNED NULL,
             Name            VARCHAR(100) NOT NULL,
             Email           VARCHAR(100) NOT NULL,
             EmailVerified   TINYINT(1)   DEFAULT 0,
@@ -131,8 +129,6 @@ class MYVH_Installer {
             AddressLine1    VARCHAR(100),
             Created         DATETIME     DEFAULT CURRENT_TIMESTAMP,
             Updated         DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uq_user_client     (UserId),
-            INDEX      idx_user           (UserId),
             INDEX      idx_email          (Email)
         ) {$collate};" );
 
@@ -152,7 +148,7 @@ class MYVH_Installer {
             Description        VARCHAR(255),
             RecurringPatternId INT UNSIGNED  DEFAULT NULL,
             Created            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_user          (UserId),
+            INDEX idx_user          (CustomerId),
             INDEX idx_organisation  (OrganisationId),
             INDEX idx_room          (RoomId),
             INDEX idx_dates         (StartDate, EndDate),
@@ -385,16 +381,7 @@ class MYVH_Installer {
         [ "{$p}myvh_organisation_members", 'fk_org_members_user',
           "ALTER TABLE {$p}myvh_organisation_members
            ADD CONSTRAINT fk_org_members_user
-           FOREIGN KEY (UserId) REFERENCES {$p}users(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // ── Customers ─────────────────────────────────────────────────────────────
-
-        // Customers → Customer Groups
-        [ "{$p}myvh_customers", 'fk_customers_customer_group',
-          "ALTER TABLE {$p}myvh_customers
-           ADD CONSTRAINT fk_customers_customer_group
-           FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
+           FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
            ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
         // ── Venues & Rooms ────────────────────────────────────────────────────────
@@ -459,13 +446,6 @@ class MYVH_Installer {
            FOREIGN KEY (OrganisationTypeId) REFERENCES {$p}myvh_organisation_types(Id)
            ON DELETE SET NULL ON UPDATE CASCADE" ],
 
-        // Room Rates → Customer Groups
-        [ "{$p}myvh_room_rates", 'fk_room_rates_customer_group',
-          "ALTER TABLE {$p}myvh_room_rates
-           ADD CONSTRAINT fk_room_rates_customer_group
-           FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
         // ── Add-ons ───────────────────────────────────────────────────────────────
 
         // Add-ons → Rooms (nullable)
@@ -481,13 +461,6 @@ class MYVH_Installer {
            ADD CONSTRAINT fk_addons_venue
            FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
            ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // Add-ons → Customer Groups
-        [ "{$p}myvh_addons", 'fk_addons_customer_group',
-          "ALTER TABLE {$p}myvh_addons
-           ADD CONSTRAINT fk_addons_customer_group
-           FOREIGN KEY (CustomerGroupId) REFERENCES {$p}myvh_customer_groups(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
         // ── Booking Charges ───────────────────────────────────────────────────────
 
@@ -627,38 +600,13 @@ class MYVH_Installer {
         self::delete_all_transients($wpdb);
     }
 
-    // We need to set default vaules for
-    //          OrganisationType needs the default "person"
-    //          Organisation needs a default organisation for all new customers to have
-    private static function initialise_tables($wpdb) {
-
-    //Insert the type first
-    $table_name = $wpdb->prefix . 'myvh_organisation_types';
-    $data = ['Name' => 'Personal',
-             'Description' => 'Default type for every new customer'];
-
-    // Name is a unique key in the OrganisationType table, so this can run without duplicating the record
-    if ( $wpdb->insert($table_name, $data) <> false ){
-        // Now add the Organisation to use the new type if the inert was successful
-        $org_id = $wpdb->insert_id;
-        $table_name = $wpdb->prefix . 'myvh_organisations';
-        $data = ['Name'              => 'Personal booking',
-                'OrganisationTypeId' => $org_id,
-                'IsActive'           => 1];
-
-        $wpdb->insert($table_name, $data);
-    }
-
-
-    }
-
     private static function drop_tables($wpdb) {
 
         $tables = [
             'myvh_bookings',
             'myvh_organisations',
             'myvh_organisation_types',
-            'myvh-organisation_members',
+            'myvh_organisation_members',
             'myvh_addons',
             'myvh_booking_addons',
             'myvh_invoices',

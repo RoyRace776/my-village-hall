@@ -81,6 +81,7 @@ class MYVH_Booking_Service {
 
         $record = [
             'CustomerId'        => intval($data['customer_id']),
+            'OrganisationId'    => !empty($data['organisation_id']) ? intval($data['organisation_id']) : null,
             'RoomId'            => intval($data['room_id']),
             'Status'            => sanitize_text_field($data['status'] ?? BookingStatus::PENDING),
             'StartDate'         => $start_date,

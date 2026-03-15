@@ -16,14 +16,7 @@ class MYVH_Settings_Page {
     public function menu() {
 
         // Separator (using a disabled submenu as visual separator)
-        add_submenu_page(
-            'my-village-hall',
-            '',
-            '<span style="display:block; margin:5px 0; padding:0; border-top:1px solid #555; opacity:0.5;"></span>',
-            'manage_options',
-            '#',
-            ''
-        );
+        My_Village_Hall::add_menu_separator();
 
         add_submenu_page(
             'my-village-hall',

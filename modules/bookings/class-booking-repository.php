@@ -189,6 +189,7 @@ class MYVH_Booking_Repository {
                     b.*,
                     c.Name  AS CustomerName,
                     c.Email AS CustomerEmail,
+                    o.Name  AS OrganisationName,
                     r.Name  AS RoomName,
                     v.Name  AS VenueName,
                     rp.RecurrenceType,
@@ -199,10 +200,11 @@ class MYVH_Booking_Repository {
                     rp.EndDate    AS PatternEndDate,
                     rp.IsActive   AS PatternIsActive
                 FROM {$this->table_name} b
-                LEFT JOIN {$this->wpdb->prefix}myvh_customers c        ON b.CustomerId         = c.Id
-                LEFT JOIN {$this->wpdb->prefix}myvh_rooms r            ON b.RoomId             = r.Id
-                LEFT JOIN {$this->wpdb->prefix}myvh_venues v           ON r.VenueId            = v.Id
-                LEFT JOIN {$this->wpdb->prefix}myvh_recurring_patterns rp ON b.RecurringPatternId = rp.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_customers c              ON b.CustomerId         = c.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_organisations o          ON b.OrganisationId     = o.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_rooms r                  ON b.RoomId             = r.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_venues v                 ON r.VenueId            = v.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_recurring_patterns rp    ON b.RecurringPatternId = rp.Id
                 WHERE {$where_sql}
                 ORDER BY {$order_sql}";
 

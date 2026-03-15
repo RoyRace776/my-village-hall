@@ -158,15 +158,11 @@ class MYVH_Addon_Repository {
      * @return array|null Array of records or null on failure
      */
     public function get_all_with_relations() {
-        $sql = "SELECT 
+        $sql = "SELECT
                     a.*,
-                    cg.Name as CustomerGroupName,
-                    r.Name as RoomName,
-                    v.Name as VenueName
-                FROM $this->table_name a
-                LEFT JOIN {$this->wpdb->prefix}myvh_customer_groups cg ON a.CustomerGroupId = cg.Id
+                    r.Name as RoomName
+                FROM {$this->table_name} a
                 LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON a.RoomId = r.Id
-                LEFT JOIN {$this->wpdb->prefix}myvh_venues v ON a.VenueId = v.Id
                 ORDER BY a.DisplayOrder, a.Name";
 
         $results = $this->wpdb->get_results($sql, ARRAY_A);
@@ -199,27 +195,6 @@ class MYVH_Addon_Repository {
         return $results;
     }
 
-    /**
-     * Get addons by venue ID
-     *
-     * @param int $venue_id The venue ID
-     * @return array|null Array of records or null on failure
-     */
-    public function get_by_venue($venue_id) {
-        $sql = $this->wpdb->prepare(
-            "SELECT * FROM $this->table_name WHERE (VenueId = %d OR VenueId IS NULL) AND IsActive = 1 ORDER BY DisplayOrder",
-            $venue_id
-        );
-        
-        $results = $this->wpdb->get_results($sql, ARRAY_A);
-        
-        if ($results === null) {
-            error_log('MYVH Addon Repository Error (get_by_venue): ' . $this->wpdb->last_error);
-        }
-        
-        return $results;
-    }
-    
     /**
      * Get the format array for wpdb operations
      *

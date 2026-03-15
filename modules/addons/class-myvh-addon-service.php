@@ -25,10 +25,6 @@ class MYVH_Addon_Service {
         return $this->repo->get_by_room($room_id);
     }
 
-    public function get_by_venue($venue_id) {
-        return $this->repo->get_by_venue($venue_id);
-    }
-
     public function save($data) {
 
         if (empty($data['name'])) {
@@ -44,15 +40,13 @@ class MYVH_Addon_Service {
         }
 
         $record = [
-            'Name'              => sanitize_text_field($data['name']),
-            'Description'       => sanitize_textarea_field($data['description'] ?? ''),
-            'Price'             => floatval($data['price']),
-            'ChargeType'        => sanitize_text_field($data['charge_type']),
-            'CustomerGroupId'   => !empty($data['customer_group_id']) ? intval($data['customer_group_id']) : null,
-            'RoomId'            => !empty($data['room_id']) ? intval($data['room_id']) : null,
-            'VenueId'           => !empty($data['venue_id']) ? intval($data['venue_id']) : null,
-            'IsActive'          => isset($data['is_active']) ? 1 : 0,
-            'DisplayOrder'      => intval($data['display_order'] ?? 0),
+            'Name'         => sanitize_text_field($data['name']),
+            'Description'  => sanitize_textarea_field($data['description'] ?? ''),
+            'Price'        => floatval($data['price']),
+            'ChargeType'   => sanitize_text_field($data['charge_type']),
+            'RoomId'       => !empty($data['room_id']) ? intval($data['room_id']) : null,
+            'IsActive'     => isset($data['is_active']) ? 1 : 0,
+            'DisplayOrder' => intval($data['display_order'] ?? 0),
         ];
 
         if (!empty($data['addon_id'])) {

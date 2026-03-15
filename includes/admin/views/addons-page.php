@@ -9,16 +9,12 @@ if (!current_user_can('manage_myvh')) {
 
 global $myvh_container;
 
-$edit_id    = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$addon_service          = $myvh_container->get(MYVH_Addon_Service::class);
-$customer_group_service = $myvh_container->get(MYVH_Customer_Group_Service::class);
-$room_service           = $myvh_container->get(MYVH_Room_Service::class);
-$venue_service          = $myvh_container->get(MYVH_Venue_Service::class);
-$edit_addon = $edit_id ? $addon_service->get($edit_id) : null;
-$addons     = $addon_service->get_with_relations();
-$groups     = $customer_group_service->get_all();
-$rooms      = $room_service->get_all();
-$venues     = $venue_service->get_all();
+$edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$addon_service = $myvh_container->get(MYVH_Addon_Service::class);
+$room_service  = $myvh_container->get(MYVH_Room_Service::class);
+$edit_addon    = $edit_id ? $addon_service->get($edit_id) : null;
+$addons        = $addon_service->get_with_relations();
+$rooms         = $room_service->get_all();
 ?>
 
 <div class="wrap">
@@ -58,7 +54,7 @@ $venues     = $venue_service->get_all();
                             <th><?php _e('Name', 'my-village-hall'); ?></th>
                             <th><?php _e('Price', 'my-village-hall'); ?></th>
                             <th><?php _e('Type', 'my-village-hall'); ?></th>
-                            <th><?php _e('Scope', 'my-village-hall'); ?></th>
+                            <th><?php _e('Room', 'my-village-hall'); ?></th>
                             <th><?php _e('Status', 'my-village-hall'); ?></th>
                             <th><?php _e('Actions', 'my-village-hall'); ?></th>
                         </tr>
@@ -71,27 +67,25 @@ $venues     = $venue_service->get_all();
                         <?php else: ?>
                             <?php foreach ($addons as $addon): ?>
                                 <tr>
-                                    <td><strong><?php echo esc_html($addon['Name']); ?></strong></td>
-                                    <td>£<?php echo number_format($addon['Price'], 2); ?></td>
-                                    <td><?php echo esc_html(ucfirst($addon['ChargeType'])); ?></td>
                                     <td>
-                                        <?php
-                                        if ($addon['RoomName']) {
-                                            echo esc_html($addon['RoomName']);
-                                        } elseif ($addon['VenueName']) {
-                                            echo esc_html($addon['VenueName']);
-                                        } else {
-                                            _e('All', 'my-village-hall');
-                                        }
-                                        ?>
-                                        <?php if ($addon['CustomerGroupName']): ?>
-                                            <br><small><?php echo esc_html($addon['CustomerGroupName']); ?></small>
+                                        <strong><?php echo esc_html($addon['Name']); ?></strong>
+                                        <?php if ($addon['Description']): ?>
+                                            <br><small style="color:#666;"><?php echo esc_html($addon['Description']); ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>£<?php echo number_format($addon['Price'], 2); ?></td>
+                                    <td><?php echo esc_html(ucfirst(str_replace('_', ' ', $addon['ChargeType']))); ?></td>
+                                    <td>
+                                        <?php if (!empty($addon['RoomName'])): ?>
+                                            <?php echo esc_html($addon['RoomName']); ?>
+                                        <?php else: ?>
+                                            <span style="color:#999;"><?php _e('All Rooms', 'my-village-hall'); ?></span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php echo $addon['IsActive'] ?
-                                            '<span style="color: #46b450;">●</span> ' . __('Active', 'my-village-hall') :
-                                            '<span style="color: #dc3232;">●</span> ' . __('Inactive', 'my-village-hall'); ?>
+                                        <?php echo $addon['IsActive']
+                                            ? '<span style="color: #46b450;">●</span> ' . __('Active',   'my-village-hall')
+                                            : '<span style="color: #dc3232;">●</span> ' . __('Inactive', 'my-village-hall'); ?>
                                     </td>
                                     <td>
                                         <a href="<?php echo admin_url('admin.php?page=myvh-addons&edit=' . $addon['Id']); ?>">
@@ -127,13 +121,17 @@ $venues     = $venue_service->get_all();
                     <table class="form-table">
                         <tr>
                             <th><?php _e('Name', 'my-village-hall'); ?> *</th>
-                            <td><input type="text" name="name" required class="regular-text"
-                                value="<?php echo $edit_addon ? esc_attr($edit_addon['Name']) : ''; ?>"></td>
+                            <td>
+                                <input type="text" name="name" required class="regular-text"
+                                    value="<?php echo $edit_addon ? esc_attr($edit_addon['Name']) : ''; ?>">
+                            </td>
                         </tr>
 
                         <tr>
                             <th><?php _e('Description', 'my-village-hall'); ?></th>
-                            <td><textarea name="description" class="large-text" rows="3"><?php echo $edit_addon ? esc_textarea($edit_addon['Description']) : ''; ?></textarea></td>
+                            <td>
+                                <textarea name="description" class="large-text" rows="3"><?php echo $edit_addon ? esc_textarea($edit_addon['Description']) : ''; ?></textarea>
+                            </td>
                         </tr>
 
                         <tr>
@@ -173,52 +171,26 @@ $venues     = $venue_service->get_all();
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <p class="description"><?php _e('Leave blank for all rooms', 'my-village-hall'); ?></p>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><?php _e('Venue', 'my-village-hall'); ?></th>
-                            <td>
-                                <select name="venue_id" class="regular-text">
-                                    <option value=""><?php _e('All Venues', 'my-village-hall'); ?></option>
-                                    <?php foreach ($venues as $venue): ?>
-                                        <option value="<?php echo $venue['Id']; ?>"
-                                            <?php selected($edit_addon && $edit_addon['VenueId'] == $venue['Id']); ?>>
-                                            <?php echo esc_html($venue['Name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><?php _e('Customer Group', 'my-village-hall'); ?></th>
-                            <td>
-                                <select name="customer_group_id" class="regular-text">
-                                    <option value=""><?php _e('All Groups', 'my-village-hall'); ?></option>
-                                    <?php foreach ($groups as $group): ?>
-                                        <option value="<?php echo $group['Id']; ?>"
-                                            <?php selected($edit_addon && $edit_addon['CustomerGroupId'] == $group['Id']); ?>>
-                                            <?php echo esc_html($group['Name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <p class="description"><?php _e('Leave blank to make available for all rooms.', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
 
                         <tr>
                             <th><?php _e('Display Order', 'my-village-hall'); ?></th>
-                            <td><input type="number" name="display_order" min="0"
-                                value="<?php echo $edit_addon ? esc_attr($edit_addon['DisplayOrder']) : '0'; ?>"></td>
+                            <td>
+                                <input type="number" name="display_order" min="0"
+                                    value="<?php echo $edit_addon ? esc_attr($edit_addon['DisplayOrder']) : '0'; ?>">
+                            </td>
                         </tr>
 
                         <tr>
                             <th><?php _e('Options', 'my-village-hall'); ?></th>
                             <td>
-                                <label><input type="checkbox" name="is_active" value="1"
-                                    <?php checked(!$edit_addon || $edit_addon['IsActive']); ?>>
-                                    <?php _e('Active', 'my-village-hall'); ?></label>
+                                <label>
+                                    <input type="checkbox" name="is_active" value="1"
+                                        <?php checked(!$edit_addon || $edit_addon['IsActive']); ?>>
+                                    <?php _e('Active', 'my-village-hall'); ?>
+                                </label>
                             </td>
                         </tr>
                     </table>

@@ -11,8 +11,8 @@
  *
  * Load order mirrors the dependency graph:
  *   1. Venues & Rooms       — no dependencies on other services
- *   2. Customers & Groups   — no dependencies on other services
- *   3. Pricing              — depends on rooms and customer groups
+ *   2. Customers            — no dependencies on other services
+ *   3. Pricing              — depends on rooms and organisation type
  *   4. Bookings             — depends on rooms, customers, and pricing
  *   5. Invoices             — depends on bookings and customers
  */
@@ -25,9 +25,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-service.php';
 
-// ── 2. Customers & Groups ─────────────────────────────────────────────────────
+// ── 2. Customers  ─────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-service.php';
-require_once MYVH_PLUGIN_DIR . 'modules/customer-groups/class-myvh-customer-group-service.php';
+
+// ── 3. Organisations ──────────────────────────────────────────────────────────
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-type-service.php';
 
 // ── 3. Pricing ────────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-service.php';

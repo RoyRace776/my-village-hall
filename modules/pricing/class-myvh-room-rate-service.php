@@ -45,9 +45,9 @@ class MYVH_Room_Rate_Service {
         }
 
         $record = [
-            'RoomId'          => intval($data['room_id']),
-            'CustomerGroupId' => !empty($data['customer_group_id']) ? intval($data['customer_group_id']) : null,
-            'ChargeType'      => $charge_type,
+            'RoomId'             => intval($data['room_id']),
+            'OrganisationTypeId' => !empty($data['organisation_type_id']) ? intval($data['organisation_type_id']) : null,
+            'ChargeType'         => $charge_type,
             'Rate'            => $rate,
             'Name'            => sanitize_text_field($data['name']),
             'Description'     => sanitize_textarea_field($data['description'] ?? ''),
@@ -67,22 +67,36 @@ class MYVH_Room_Rate_Service {
         return $id ? $id : new WP_Error('database', __('Failed to save rate', 'my-village-hall'));
     }
 
-    public function get_booking_rate( $room_id, $customer_id) {
+    public function get_booking_rate( $room_id, $customer_id ) {
 
-        // Get the customer group
-        $customer = $this->customer_repo->get_by_id($customer_id);
-        $group_id = $customer['CustomerGroupId'];
+        // Resolve the organisation type for this customer via their WP user's membership.
+        // A customer may belong to multiple organisations; use the type of the first active one found.
+        $org_type_id = null;
+        $customer    = $this->customer_repo->get_by_id( $customer_id );
 
-        // First try to find any active rates with both the room id and the group id
-        $rate = $this->repo->get_active_room_rate($room_id, $group_id);
-
-        // If no matching rates were found, then look for a null group id
-        if (!$rate) {
-            $rate = $this->repo->get_active_room_rate($room_id);
-
+        if ( $customer && !empty( $customer['UserId'] ) ) {
+            $wpdb        = $this->customer_repo->wpdb();
+            $org_type_id = $wpdb->get_var( $wpdb->prepare(
+                "SELECT o.OrganisationTypeId
+                 FROM {$wpdb->prefix}myvh_organisation_members om
+                 JOIN {$wpdb->prefix}myvh_organisations o ON om.OrganisationId = o.Id
+                 WHERE om.UserId = %d
+                   AND o.IsActive = 1
+                   AND o.OrganisationTypeId IS NOT NULL
+                 ORDER BY o.OrganisationTypeId
+                 LIMIT 1",
+                intval( $customer['UserId'] )
+            ) ) ?: null;
         }
 
-        // If nothing was found again, then we don'r have any rates for the, so retrun nothing
+        // First try a rate specific to this room + organisation type
+        $rate = $this->repo->get_active_room_rate( $room_id, $org_type_id );
+
+        // Fall back to a rate with no organisation type restriction
+        if ( !$rate ) {
+            $rate = $this->repo->get_active_room_rate( $room_id );
+        }
+
         return $rate;
     }
 
