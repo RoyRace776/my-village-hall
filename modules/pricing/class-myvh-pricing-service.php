@@ -5,15 +5,18 @@ Class MYVH_Pricing_Service {
     private $room_rate_service;
     private $booking_repo;
     private $customer_repo;
+    private $organisation_repo;
     private $booking_addon_repo;
 
     public function __construct(MYVH_Room_Rate_Service $room_rate_service,
                                 MYVH_Booking_Repository $booking_repo,
                                 MYVH_Customer_Repository $customer_repo,
+                                MYVH_Organisation_Repository $organisation_repo,
                                 MYVH_Booking_Addon_Repository $booking_addons_repo) {
         $this->room_rate_service = $room_rate_service;
         $this->booking_repo = $booking_repo;
         $this->customer_repo = $customer_repo;
+        $this->organisation_repo = $organisation_repo;
         $this->booking_addon_repo = $booking_addons_repo;
     }
 
@@ -31,7 +34,12 @@ Class MYVH_Pricing_Service {
             return new WP_Error('no customer', __('No customer found for booking', 'my-village-hall'));
         }
 
-        $room_rate = $this->room_rate_service->get_booking_rate($booking['RoomId'], $booking['CustomerId']);
+        $organisation = $this->organisation_repo->get_by_id($booking['OrganisationId']);
+        if (!$organisation) {
+            return new WP_Error('no organisation', __('No organisation found for booking', 'my-village-hall'));
+        }
+
+        $room_rate = $this->room_rate_service->get_booking_rate($booking['RoomId'], $customer, $organisation);
         if (!$room_rate) {
             return new WP_Error('no room rate', __('No room rate configured', 'my-village-hall'));
         }

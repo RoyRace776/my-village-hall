@@ -95,25 +95,47 @@ class MYVH_Booking_Service {
 
         // Update existing booking
         if (!empty($data['booking_id'])) {
-            $result = $this->booking_repo->update($record, ['Id' => intval($data['booking_id'])]);
-            if ($result === false) {
-                return new WP_Error('database', __('Failed to update booking', 'my-village-hall'));
-            }
-            // Replace addons: delete existing then re-save
-            $this->save_addons(intval($data['booking_id']), $data['addons'] ?? [], true);
+            return $this->update_booking($data, $record);
 
-            $estimated_price = $this->pricing->calculate_price(intval($data['booking_id']));
-
-            $this->dispatch_update_event($data);
-
-            return intval($data['booking_id']);
         }
 
         // Create new booking
-        $booking_id = $this->booking_repo->create($record);
+        return $this->create_booking($data, $record);
+
+    }
+
+    private function update_booking($data, $record) {
+        $result = $this->booking_repo->update($record, ['Id' => intval($data['booking_id'])]);
+        if ($result === false) {
+            return new WP_Error('database', __('Failed to update booking', 'my-village-hall'));
+        }
+        // Replace addons: delete existing then re-save.  This saves the price for theadd ons
+        $this->save_addons(intval($data['booking_id']), $data['addons'] ?? [], true);
+
+        //TODO: Add in the row to the booking charges table to fix the charges, but only if
+        //      the booking is still pending
+
+
+        // TODO: This is the total price (room + add ons).  We don't nned it really
+        $estimated_price = $this->pricing->calculate_price(intval($data['booking_id']));
+
+        $this->dispatch_update_event($data);
+
+        return intval($data['booking_id']);
+
+    }
+
+    private function create_booking($data, $record) {
+                $booking_id = $this->booking_repo->create($record);
         if ($booking_id === false) {
             return new WP_Error('database', __('Failed to create booking', 'my-village-hall'));
         }
+
+        //TODO: Add in the row to the booking charges table to fix the charges, but only if
+        //      the booking is still pending
+
+
+        // TODO: This is the total price (room + add ons).  We don't nned it really
 
         $estimated_price = $this->pricing->calculate_price($booking_id);
 

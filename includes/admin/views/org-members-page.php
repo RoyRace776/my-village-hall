@@ -6,6 +6,7 @@ global $myvh_container;
 
 $org_id      = isset($_GET['organisation_id']) ? intval($_GET['organisation_id']) : 0;
 $org_service = $myvh_container->get(MYVH_Organisation_Service::class);
+$customer_service = $myvh_container->get(MYVH_Customer_Service::class);
 
 if (!$org_id) {
     // Show a list of all organisations to pick from
@@ -49,12 +50,11 @@ if (!$organisation) {
 
 $members  = $org_service->get_members($org_id);
 
-// TODO: Switch this  to use the cusotmers table because customers aren't WP users
-$wp_users = get_users(['orderby' => 'display_name', 'order' => 'ASC']);
+$customers = $customer_service->get_all();
 
 // Build a set of already-added user IDs so we can exclude them from the add dropdown
 $existing_user_ids = array_column($members, 'CustomerId');
-$available_users   = array_filter($wp_users, fn($u) => !in_array($u->ID, $existing_user_ids));
+$available_users   = array_filter($customers, fn($u) => !in_array($u['Id'], $existing_user_ids));
 ?>
 
 <div class="wrap">
@@ -98,8 +98,8 @@ $available_users   = array_filter($wp_users, fn($u) => !in_array($u->ID, $existi
                         <?php else: ?>
                             <?php foreach ($members as $member): ?>
                                 <tr>
-                                    <td><strong><?php echo esc_html($member['UserDisplayName'] ?? __('Unknown user', 'my-village-hall')); ?></strong></td>
-                                    <td><?php echo esc_html($member['UserEmail'] ?? ''); ?></td>
+                                    <td><strong><?php echo esc_html($member['Name'] ?? __('Unknown user', 'my-village-hall')); ?></strong></td>
+                                    <td><?php echo esc_html($member['Email'] ?? ''); ?></td>
                                     <td><?php echo $member['Created'] ? date('d M Y', strtotime($member['Created'])) : '—'; ?></td>
                                     <td>
                                         <a href="<?php echo wp_nonce_url(
@@ -124,7 +124,7 @@ $available_users   = array_filter($wp_users, fn($u) => !in_array($u->ID, $existi
                 <h2><?php _e('Add Member', 'my-village-hall'); ?></h2>
 
                 <?php if (empty($available_users)): ?>
-                    <p><?php _e('All WordPress users are already members of this organisation.', 'my-village-hall'); ?></p>
+                    <p><?php _e('All users are already members of this organisation.', 'my-village-hall'); ?></p>
                 <?php else: ?>
                     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                         <input type="hidden" name="action" value="myvh_add_org_member">
@@ -133,13 +133,13 @@ $available_users   = array_filter($wp_users, fn($u) => !in_array($u->ID, $existi
 
                         <table class="form-table">
                             <tr>
-                                <th><?php _e('WordPress User', 'my-village-hall'); ?> *</th>
+                                <th><?php _e('User', 'my-village-hall'); ?> *</th>
                                 <td>
                                     <select name="user_id" required class="regular-text">
                                         <option value=""><?php _e('— Select User —', 'my-village-hall'); ?></option>
                                         <?php foreach ($available_users as $user): ?>
-                                            <option value="<?php echo $user->ID; ?>">
-                                                <?php echo esc_html($user->display_name . ' (' . $user->user_email . ')'); ?>
+                                            <option value="<?php echo $user['Id']; ?>">
+                                                <?php echo esc_html($user['Name'] . ' (' . $user['Email'] . ')'); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>

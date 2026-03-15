@@ -48,14 +48,14 @@ class MYVH_Room_Rate_Service {
             'RoomId'             => intval($data['room_id']),
             'OrganisationTypeId' => !empty($data['organisation_type_id']) ? intval($data['organisation_type_id']) : null,
             'ChargeType'         => $charge_type,
-            'Rate'            => $rate,
-            'Name'            => sanitize_text_field($data['name']),
-            'Description'     => sanitize_textarea_field($data['description'] ?? ''),
-            'MinimumHours'    => !empty($data['minimum_hours']) ? floatval($data['minimum_hours']) : null,
-            'IsActive'        => isset($data['is_active']) ? 1 : 0,
-            'ValidFrom'       => !empty($data['valid_from']) ? sanitize_text_field($data['valid_from']) : null,
-            'ValidTo'         => !empty($data['valid_to'])   ? sanitize_text_field($data['valid_to'])   : null,
-            'Priority'        => intval($data['priority'] ?? 0),
+            'Rate'               => $rate,
+            'Name'               => sanitize_text_field($data['name']),
+            'Description'        => sanitize_textarea_field($data['description'] ?? ''),
+            'MinimumHours'       => !empty($data['minimum_hours']) ? floatval($data['minimum_hours']) : null,
+            'IsActive'           => isset($data['is_active']) ? 1 : 0,
+            'ValidFrom'          => !empty($data['valid_from']) ? sanitize_text_field($data['valid_from']) : null,
+            'ValidTo'            => !empty($data['valid_to'])   ? sanitize_text_field($data['valid_to'])   : null,
+            'Priority'           => intval($data['priority'] ?? 0),
         ];
 
         if (!empty($data['rate_id'])) {
@@ -67,27 +67,9 @@ class MYVH_Room_Rate_Service {
         return $id ? $id : new WP_Error('database', __('Failed to save rate', 'my-village-hall'));
     }
 
-    public function get_booking_rate( $room_id, $customer_id ) {
+    public function get_booking_rate( $room_id, $customer, $organisation ) {
 
-        // Resolve the organisation type for this customer via their WP user's membership.
-        // A customer may belong to multiple organisations; use the type of the first active one found.
-        $org_type_id = null;
-        $customer    = $this->customer_repo->get_by_id( $customer_id );
-
-        if ( $customer && !empty( $customer['UserId'] ) ) {
-            $wpdb        = $this->customer_repo->wpdb();
-            $org_type_id = $wpdb->get_var( $wpdb->prepare(
-                "SELECT o.OrganisationTypeId
-                 FROM {$wpdb->prefix}myvh_organisation_members om
-                 JOIN {$wpdb->prefix}myvh_organisations o ON om.OrganisationId = o.Id
-                 WHERE om.UserId = %d
-                   AND o.IsActive = 1
-                   AND o.OrganisationTypeId IS NOT NULL
-                 ORDER BY o.OrganisationTypeId
-                 LIMIT 1",
-                intval( $customer['UserId'] )
-            ) ) ?: null;
-        }
+        $org_type_id = $organisation['OrganisationTypeId'];
 
         // First try a rate specific to this room + organisation type
         $rate = $this->repo->get_active_room_rate( $room_id, $org_type_id );

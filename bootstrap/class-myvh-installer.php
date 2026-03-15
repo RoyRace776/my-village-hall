@@ -111,10 +111,11 @@ class MYVH_Installer {
         // ── Organisation Members ───────────────────────────────────────────────────
         //
         dbDelta( "CREATE TABLE {$p}myvh_organisation_members (
-            Id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            OrganisationId INT UNSIGNED NOT NULL,
-            CustomerId         INT UNSIGNED NOT NULL,
-            Created        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            Id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            OrganisationId      INT UNSIGNED NOT NULL,
+            CustomerId          INT UNSIGNED NOT NULL,
+            IsOrganisationAdmin TINYINT(1) NOT NULL DEFAULT 0,
+            Created             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY     uq_member (OrganisationId, CustomerId)
         ) {$collate};" );
 

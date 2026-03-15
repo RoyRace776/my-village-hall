@@ -45,11 +45,11 @@ class MYVH_Organisation_Member_Repository {
      */
     public function get_by_organisation( int $org_id ): array {
         $sql = $this->wpdb->prepare(
-            "SELECT om.*, u.display_name AS UserDisplayName, u.user_email AS UserEmail
+            "SELECT om.*, u.Name AS Name, u.Email AS Email
              FROM {$this->table} om
-             LEFT JOIN {$this->wpdb->users} u ON om.CustomerId = u.ID
+             LEFT JOIN {$this->wpdb->prefix}myvh_customers u ON om.CustomerId = u.Id
              WHERE om.OrganisationId = %d
-             ORDER BY u.display_name",
+             ORDER BY u.Name",
             $org_id
         );
 
@@ -57,7 +57,7 @@ class MYVH_Organisation_Member_Repository {
     }
 
     /**
-     * Get all organisations a given WP user belongs to.
+     * Get all organisations a given user belongs to.
      */
     public function get_by_user( int $user_id ): array {
         $sql = $this->wpdb->prepare(
