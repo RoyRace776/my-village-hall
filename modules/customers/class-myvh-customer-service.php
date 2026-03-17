@@ -82,13 +82,66 @@ class MYVH_Customer_Service {
             return intval($data['customer_id']);
         }
 
-        $result = $this->repo->create($record);
-        if ($result === false) {
-            return new WP_Error('database', __('Failed to create customer', 'my-village-hall'));
-        }
+        $result = $this->create_customer($record);
+
+        // $result = $this->repo->create($record);
+        // if ($result === false) {
+        //     return new WP_Error('database', __('Failed to create customer', 'my-village-hall'));
+        // }
 
         return $result;
     }
+
+    public function create_customer(array $data): int
+    {
+
+        $email = $data['Email'];
+        $user = get_user_by('Email', $email);
+
+        if (!$user) {
+
+            $user_id = wp_insert_user([
+                'user_login' => $email,
+                'user_email' => $email,
+                'user_pass'  => wp_generate_password(),
+                'role'       => 'myvh_customer'
+            ]);
+
+            if (is_wp_error($user_id)) {
+                throw new Exception($user_id->get_error_message());
+            }
+
+            $created_user = true;
+
+        } else {
+
+            $user_id = $user->ID;
+            $created_user = false;
+
+        }
+
+        try {
+
+            if (is_multisite()) {
+                add_user_to_blog(get_current_blog_id(), $user_id, 'myvh_customer');
+            }
+
+            $data['WPUserId'] = $user_id;
+
+            $customer_id = $this->repo->create($data);
+
+            return $customer_id;
+
+        } catch (Exception $e) {
+
+            if ($created_user) {
+                wp_delete_user($user_id);
+            }
+
+            throw $e;
+        }
+    }
+
 
     public function delete($id) {
         if ($this->booking_repo->count_by_customer($id) > 0) {

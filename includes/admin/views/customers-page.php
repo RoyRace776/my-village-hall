@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
+//TODO: Update to make password mandatory when creating or editing customer
 
 global $myvh_container;
 

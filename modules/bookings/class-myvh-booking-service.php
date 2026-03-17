@@ -14,6 +14,7 @@ class MYVH_Booking_Service {
     private $availability;
     private $room_rules;
     private $pricing;
+    private $customer_repo;
     private $recurring_pattern_service = null;
 
     public function __construct(
@@ -24,6 +25,7 @@ class MYVH_Booking_Service {
         MYVH_Availability_Service $availability,
         MYVH_Room_Rules_Service $room_rules,
         MYVH_Pricing_Service $pricing,
+        MYVH_Customer_Repository $customer_repo,
         MYVH_Recurring_Pattern_Service $recurring_pattern_service
     ) {
         $this->room_service = $room_service;
@@ -33,6 +35,7 @@ class MYVH_Booking_Service {
         $this->availability = $availability;
         $this->room_rules = $room_rules;
         $this->pricing = $pricing;
+        $this->customer_repo = $customer_repo;
         $this->recurring_pattern_service = $recurring_pattern_service;
     }
 
@@ -291,6 +294,12 @@ class MYVH_Booking_Service {
         }
 
         return $return;
+    }
+
+    public function get_upcoming_bookings($wp_user) {
+        $customer_id = $this->customer_repo->get_customer_id($wp_user);
+
+        return $this->booking_repo->get_upcoming_bookings($customer_id);
     }
 
     private function group_bookings($bookings) {

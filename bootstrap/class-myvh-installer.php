@@ -41,6 +41,7 @@ class MYVH_Installer {
 
         self::create_tables( $wpdb, $collate );
         self::add_foreign_keys( $wpdb );
+        self::set_default_data( $wpdb );
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -123,6 +124,7 @@ class MYVH_Installer {
         dbDelta( "CREATE TABLE {$p}myvh_customers (
             Id              INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
             Name            VARCHAR(100) NOT NULL,
+            WPUserId        BIGINT UNSIGNED,
             Email           VARCHAR(100) NOT NULL,
             EmailVerified   TINYINT(1)   DEFAULT 0,
             PhoneNumber     VARCHAR(100),
@@ -130,7 +132,8 @@ class MYVH_Installer {
             AddressLine1    VARCHAR(100),
             Created         DATETIME     DEFAULT CURRENT_TIMESTAMP,
             Updated         DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX      idx_email          (Email)
+            INDEX      idx_email          (Email),
+            UNIQUE KEY uq_wpuser (WPUserId)
         ) {$collate};" );
 
         // ── Bookings ──────────────────────────────────────────────────────────
@@ -591,6 +594,26 @@ class MYVH_Installer {
         }
 
         return $results;
+    }
+
+    // Set up defaults like organisation types and organisations if they don't already exist
+    public static function set_default_data($wpdb) {
+
+        // Name is unique, so this will fail if the record already exists
+        $table_name = $wpdb->prefix . 'myvh_organisation_types';
+        $data = [ 'Name'        => 'Person',
+                  'Description' => 'Individual person'];
+
+        // If the tpye already exists, then the organisation will also exist
+        if ( $wpdb->insert($table_name, $data) <> false ) {
+            $insert_id = $wpdb->insert_id;
+            $table_name = $wpdb->prefix . 'myvh_organisations';
+            $data = ['Name'             => 'Personal booking',
+                     'OrganisationTypeId' => $insert_id];
+
+            $wpdb->insert($table_name,$data);
+        }
+
     }
 
     public static function tidy_up() {

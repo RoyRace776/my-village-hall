@@ -198,6 +198,16 @@ class MYVH_Customer_Repository {
         return $this->wpdb->get_results($sql, ARRAY_A) ?? [];
     }
 
+    public function get_customer_id($wp_user) {
+        $sql = $this->wpdb->prepare(
+            "SELECT Id from {$this->table_name}
+            WHERE WPUserId = %d",
+            intval($wp_user)
+        );
+
+        return $this->wpdb->get_var($sql);
+    }
+
     /**
      * Get customer by email
      *

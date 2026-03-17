@@ -337,6 +337,21 @@ class MYVH_Booking_Repository {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
+    public function get_upcoming_bookings($customer_id) {
+
+        //$date = new datetime();
+        $start = date('Y-m-d');
+        $sql = $this->wpdb->prepare(
+            "SELECT b.*, r.Name as RoomName FROM {$this->table_name} b
+            LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
+            WHERE StartDate >= %s
+            AND   CustomerId = %d",
+            $start,
+            intval($customer_id));
+
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
     public function move_booking($id, $start, $end, $room) {
         $sql = $this->wpdb->prepare(
             "UPDATE {$this->table_name}
