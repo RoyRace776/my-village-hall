@@ -214,11 +214,13 @@ class My_Village_Hall {
     public function deactivate($network_wide): void {
         //if the flag is set, then we need to tidy up
         if ($network_wide && is_multisite()) {
-            if (get_site_option('myvh_delete_data_on_uninstall')) {
+            $options = get_site_option('myvh_general_settings');
+            if (isset($options) && $options['delete_on_deactivate']) {
                 MYVH_Installer::tidy_up();
             }
         } else {
-            if (get_option('myvh_general_settings')['delete_on_deactivate']) {
+            $options = get_option('myvh_general_settings');
+            if (isset($options) && $options['delete_on_deactivate']) {
                 MYVH_Installer::tidy_up();
             }
         }

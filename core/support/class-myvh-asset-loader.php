@@ -47,7 +47,7 @@ class MYVH_Asset_Loader {
 
             wp_enqueue_script(
                 'myvh-calendar',
-                MYVH_PLUGIN_URL . 'assets/js/calendar.js',
+                MYVH_PLUGIN_URL . 'assets/js/calendar-admin.js',
                 ['jquery', 'daypilot-lite'],
                 null,
                 true
@@ -88,14 +88,14 @@ class MYVH_Asset_Loader {
 
         wp_enqueue_style(
             'myvh-admin-calendar',
-            MYVH_PLUGIN_URL . 'assets/css/admin-calendar.css',
+            MYVH_PLUGIN_URL . 'assets/css/calendar.css',
             [],
             '1.0'
         );
 
         wp_enqueue_script(
             'myvh-admin-calendar',
-            MYVH_PLUGIN_URL . 'assets/js/admin-calendar.js',
+            MYVH_PLUGIN_URL . 'assets/js/calendar-admin.js',
             ['jquery'],
             '1.0',
             true
@@ -172,7 +172,7 @@ class MYVH_Asset_Loader {
 
         wp_enqueue_script(
             'myvh-calendar',
-            MYVH_PLUGIN_URL . 'assets/js/public-calendar.js',
+            MYVH_PLUGIN_URL . 'assets/js/calendar-public.js',
             [],
             '1.0',
             true

@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", function () {
             Load rooms
             */
 
-            fetch(ajaxurl + "?action=myvh_calendar_rooms")
+            fetch(ajaxurl + "?action=myvh_calendar_rooms&_ajax_nonce=" + myvhAdminCal.nonce)
                 .then(r => r.json())
                 .then(rooms => {
 
@@ -235,6 +235,7 @@ document.addEventListener("DOMContentLoaded", function () {
             this.calendar.events.load(
                 ajaxurl +
                 "?action=myvh_calendar_events" +
+                "&_ajax_nonce=" + myvhAdminCal.nonce +
                 "&start=" + start +
                 "&end=" + end
             );
@@ -255,6 +256,7 @@ document.addEventListener("DOMContentLoaded", function () {
             this.monthCalendar.events.load(
                 ajaxurl +
                 "?action=myvh_calendar_events" +
+                "&_ajax_nonce=" + myvhAdminCal.nonce +
                 "&start=" + start +
                 "&end=" + end
             );
@@ -279,6 +281,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 body: new URLSearchParams({
                     action: "myvh_move_booking",
+                    _ajax_nonce: myvhAdminCal.nonce,
                     id: id,
                     start: start,
                     end: end,

@@ -354,14 +354,29 @@ class MYVH_Booking_Repository {
     }
 
     public function move_booking($id, $start, $end, $room) {
+
+        // DayPilot sends full ISO datetimes: "2025-06-14T09:00:00"
+        // Split into date and time parts before storing.
+        $start_parts = explode( 'T', $start );
+        $end_parts   = explode( 'T', $end );
+
+        $start_date = $start_parts[0];
+        $start_time = $start_parts[1] ?? '00:00:00';
+        $end_date   = $end_parts[0];
+        $end_time   = $end_parts[1] ?? '00:00:00';
+
         $sql = $this->wpdb->prepare(
             "UPDATE {$this->table_name}
             SET StartDate = %s,
-                EndDate = %s,
-                RoomId = %d
+                StartTime = %s,
+                EndDate   = %s,
+                EndTime   = %s,
+                RoomId    = %d
             WHERE Id = %d",
-            $start,
-            $end,
+            $start_date,
+            $start_time,
+            $end_date,
+            $end_time,
             $room,
             $id
         );

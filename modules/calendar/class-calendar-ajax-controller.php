@@ -24,6 +24,12 @@ class MYVH_Calendar_Ajax_Controller {
 
     public function get_rooms() {
 
+        check_ajax_referer( 'myvh-ajax-nonce' );
+
+        if ( ! current_user_can( 'manage_myvh' ) ) {
+            wp_send_json_error( 'Permission denied', 403 );
+        }
+
         $rooms = $this->room_repository->get_all();
 
         $columns = [];
@@ -40,6 +46,12 @@ class MYVH_Calendar_Ajax_Controller {
     }
 
     public function get_events() {
+
+        check_ajax_referer( 'myvh-ajax-nonce' );
+
+        if ( ! current_user_can( 'manage_myvh' ) ) {
+            wp_send_json_error( 'Permission denied', 403 );
+        }
 
         $start = sanitize_text_field($_GET['start'] ?? null);
         $end   = sanitize_text_field($_GET['end'] ?? null);
@@ -63,6 +75,12 @@ class MYVH_Calendar_Ajax_Controller {
     }
 
     public function move_booking() {
+
+        check_ajax_referer( 'myvh-ajax-nonce' );
+
+        if ( ! current_user_can( 'manage_myvh' ) ) {
+            wp_send_json_error( 'Permission denied', 403 );
+        }
 
         $id = intval($_POST['id']);
         $start = sanitize_text_field($_POST['start']);

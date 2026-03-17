@@ -108,6 +108,10 @@ class MYVH_Booking_Service {
     }
 
     private function update_booking($data, $record) {
+        // Capture the current status BEFORE overwriting the row, so that
+        // dispatch_update_event() can compare old vs new correctly.
+        $current_record = $this->booking_repo->get_by_id( intval( $data['booking_id'] ) );
+
         $result = $this->booking_repo->update($record, ['Id' => intval($data['booking_id'])]);
         if ($result === false) {
             return new WP_Error('database', __('Failed to update booking', 'my-village-hall'));
@@ -122,7 +126,7 @@ class MYVH_Booking_Service {
         // TODO: This is the total price (room + add ons).  We don't nned it really
         $estimated_price = $this->pricing->calculate_price(intval($data['booking_id']));
 
-        $this->dispatch_update_event($data);
+        $this->dispatch_update_event($data, $current_record['Status'] ?? null);
 
         return intval($data['booking_id']);
 
@@ -152,7 +156,7 @@ class MYVH_Booking_Service {
             ]
         );
 
-        if ($data['status'] == 'Confirmed') {
+        if ($data['status'] == BookingStatus::CONFIRMED) {
             MYVH_Event_Dispatcher::dispatch(
                 MYVH_Booking_Events::CONFIRMED,
                 [
@@ -393,11 +397,10 @@ class MYVH_Booking_Service {
         return $statuses[0] ?? BookingStatus::COMPLETED;
     }
 
-    private function dispatch_update_event($data) {
+    private function dispatch_update_event($data, $old_status = null) {
         // TODO: Update this to handle status changes
         $new_status = $data['status'];
-        $current_record = $this->booking_repo->get_by_id($data['booking_id']);
-        $current_status = $current_record['Status'];
+        $current_status = $old_status;
 
         if ($new_status=='Confirmed' && $current_status<>'Confirmed') {
             MYVH_Event_Dispatcher::dispatch(
