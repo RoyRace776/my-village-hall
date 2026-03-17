@@ -43,13 +43,12 @@ require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-calendar-service-provider
 // Get the files needed for shortcodes
 require_once MYVH_PLUGIN_DIR . 'core/shortcode/shortcode-interface.php';
 require_once MYVH_PLUGIN_DIR . 'core/shortcode/class-myvh-shortcode-registry.php';
-require_once MYVH_PLUGIN_DIR . 'modules/portal/shortcodes/class-myvh-login-shortcode.php';
-//require_once MYVH_PLUGIN_DIR . 'modules/portal/shortcodes/class-myvh-dashboard-shortcode.php';
+require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-shortcode.php';
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-shortcode.php';
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-controller.php';
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-assets.php';
 
-require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-login-handler.php';
+require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-handler.php';
 
 
 // Register wpdb so it can be injected like any other dependency
@@ -100,9 +99,5 @@ $portal_shortcode->register();
 
 $portal_controller = $myvh_container->get(MYVH_Portal_Controller::class);
 $portal_controller->register();
-
-add_action('wp_enqueue_scripts', function() {
-    MYVH_Portal_Assets::enqueue();
-});
 
 return $myvh_container;

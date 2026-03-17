@@ -12,6 +12,8 @@ class MYVH_Portal_Shortcode {
             return do_shortcode('[myvh_login]');
         }
 
+        MYVH_Asset_Loader::enqueue_portal();
+
         ob_start();
         include MYVH_PLUGIN_DIR . 'modules/portal/templates/portal-shell.php';
         return ob_get_clean();

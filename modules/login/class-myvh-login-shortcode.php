@@ -10,9 +10,9 @@ class MYVH_Login_Shortcode implements MYVH_Shortcode_Interface
 
     public function render($atts = [], $content = null): string
     {
-        wp_enqueue_script(
+        wp_enqueue_style(
             'myvh-login',
-            MYVH_PLUGIN_URL . 'module/portal/css/login.css',
+            MYVH_PLUGIN_URL . 'assets/css/login.css',
             null,
             '1.0',
             true
@@ -24,7 +24,7 @@ class MYVH_Login_Shortcode implements MYVH_Shortcode_Interface
 
         ob_start();
 
-        include MYVH_PLUGIN_DIR . 'modules/portal/templates/login.php';
+        include MYVH_PLUGIN_DIR . 'modules/login/login.php';
 
         return ob_get_clean();
     }

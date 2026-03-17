@@ -37,9 +37,10 @@ ob_start();
 // Core infrastructure
 require_once MYVH_PLUGIN_DIR . 'core/container/class-myvh-container.php';
 require_once MYVH_PLUGIN_DIR . 'bootstrap/class-myvh-installer.php';
+require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-asset-loader.php';
 
 // Admin utilities
-require_once MYVH_PLUGIN_DIR . 'includes/admin/class-myvh-admin-notices.php';
+require_once MYVH_PLUGIN_DIR . 'admin/class-myvh-admin-notices.php';
 
 // Data layer — repositories (class definitions only; no instantiation here)
 require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-repositories.php';
@@ -61,14 +62,14 @@ require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-settings-base.php';
 require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-general-settings.php';
 require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-booking-settings.php';
 require_once MYVH_PLUGIN_DIR . 'modules/settings/settings-registry.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/views/settings-page.php';
+require_once MYVH_PLUGIN_DIR . 'admin/views/settings-page.php';
 
 // Bootstrap event listeners and any remaining wiring
 require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-bootstrap.php';
 
 // Feature modules
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-shortcode.php';
-require_once MYVH_PLUGIN_DIR . 'includes/admin/class-myvh-calendar-ajax.php';
+require_once MYVH_PLUGIN_DIR . 'admin/class-myvh-calendar-ajax.php';
 
 // Multisite network dashboard
 require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-dashboard.php';
@@ -122,9 +123,8 @@ class My_Village_Hall {
     private function register_hooks(): void {
 
         // 1. Core WordPress integration
-        add_action( 'plugins_loaded', [ $this, 'load_textdomain' ] );
+        add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
         add_action( 'admin_menu',     [ $this, 'register_admin_menu' ] );
-        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
 
         // 2. Settings
         MYVH_Settings_Registry::auto_register( MYVH_PLUGIN_DIR . 'modules/settings' );
@@ -228,12 +228,15 @@ class My_Village_Hall {
     // ── Translations ──────────────────────────────────────────────────────────
 
     /** Loads the plugin's translation files. */
-    public function load_textdomain(): void {
+    public function plugins_loaded(): void {
+
         load_plugin_textdomain(
             'my-village-hall',
             false,
             dirname( MYVH_PLUGIN_BASENAME ) . '/languages'
         );
+
+        MYVH_Asset_Loader::init();
     }
 
     // ── Admin menu ────────────────────────────────────────────────────────────
@@ -398,94 +401,6 @@ class My_Village_Hall {
         });
     }
 
-    // ── Asset enqueueing ──────────────────────────────────────────────────────
-
-    /**
-     * Enqueues CSS and JS on plugin admin pages only.
-     *
-     * @param string $hook The current admin page hook suffix.
-     */
-    public function enqueue_admin_assets( string $hook ): void {
-
-        // Only load on pages that belong to this plugin
-        if ( strpos( $hook, 'my-village-hall' ) === false
-             && strpos( $hook, 'myvh-' ) === false ) {
-            return;
-        }
-
-        wp_enqueue_style(
-            'myvh-admin-css',
-            MYVH_PLUGIN_URL . 'assets/css/admin.css',
-            [],
-            MYVH_VERSION
-        );
-
-        wp_enqueue_script(
-            'myvh-admin-js',
-            MYVH_PLUGIN_URL . 'assets/js/admin.js',
-            [ 'jquery' ],
-            MYVH_VERSION,
-            true  // load in footer
-        );
-
-        // Pass server-side values to JavaScript
-        wp_localize_script( 'myvh-admin-js', 'myvhAjax', [
-            'ajax_url' => admin_url( 'admin-ajax.php' ),
-            'nonce'    => wp_create_nonce( 'myvh-ajax-nonce' ),
-        ] );
-
-        // Calendar page needs additional assets
-        if ( strpos( $hook, 'myvh-calendar' ) !== false ) {
-            $this->enqueue_calendar_assets();
-        }
-    }
-
-    /**
-     * Enqueues DayPilot Lite and the calendar module scripts.
-     * Called only on the Calendar admin page.
-     */
-    private function enqueue_calendar_assets(): void {
-
-        // DayPilot Lite is open-source and requires no licence key
-        wp_enqueue_script(
-            'daypilot-lite',
-            MYVH_PLUGIN_URL . 'assets/js/daypilot-all.min.js',
-            [],
-            '2026.1',
-            true
-        );
-
-        wp_enqueue_style(
-            'myvh-calendar-css',
-            MYVH_PLUGIN_URL . 'assets/css/calendar.css',
-            [],
-            MYVH_VERSION
-        );
-
-        wp_enqueue_script(
-            'myvh-calendar-js',
-            MYVH_PLUGIN_URL . 'assets/js/calendar.js',
-            [ 'jquery', 'daypilot-lite' ],
-            MYVH_VERSION,
-            true
-        );
-
-        wp_localize_script( 'myvh-calendar-js', 'myvhAdminCal', [
-            'ajax_url'   => admin_url( 'admin-ajax.php' ),
-            'admin_url'  => admin_url(),
-            'nonce'      => wp_create_nonce( 'myvh-ajax-nonce' ),
-            'dateFormat' => 'D d M',
-            'strings'    => [
-                'error'          => __( 'An error occurred. Please try again.', 'my-village-hall' ),
-                'confirmCancel'  => __( 'Cancel this booking?',                 'my-village-hall' ),
-                'selectRoom'     => __( 'Please select a room',                 'my-village-hall' ),
-                'selectCustomer' => __( 'Please select a customer',             'my-village-hall' ),
-                'newBooking'     => __( 'New Booking',                          'my-village-hall' ),
-                'editBooking'    => __( 'Edit Booking',                         'my-village-hall' ),
-                'save'           => __( 'Save Booking',                         'my-village-hall' ),
-            ],
-        ] );
-    }
 
     // ── Page renderers ────────────────────────────────────────────────────────
     // Each method checks capability then includes the relevant view file.
@@ -525,9 +440,9 @@ class My_Village_Hall {
 
         if ( $has_detail_view
              && ( isset( $_GET['add'] ) || isset( $_GET['edit'] ) || isset( $_GET['view'] ) ) ) {
-            include MYVH_PLUGIN_DIR . "includes/admin/views/{$page}-form-page.php";
+            include MYVH_PLUGIN_DIR . "/admin/views/{$page}-form-page.php";
         } else {
-            include MYVH_PLUGIN_DIR . "includes/admin/views/{$page}-page.php";
+            include MYVH_PLUGIN_DIR . "/admin/views/{$page}-page.php";
         }
     }
 }

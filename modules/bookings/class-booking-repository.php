@@ -325,7 +325,8 @@ class MYVH_Booking_Repository {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function get_between($start, $end) {
+    //TODO: implement filters on get_between
+    public function get_between($start, $end, $filters = []) {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM {$this->table_name}
             WHERE StartDate >= %s

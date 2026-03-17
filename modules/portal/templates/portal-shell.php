@@ -1,7 +1,7 @@
 
 <div id="myvh-portal">
 
-    <nav class="portal-nav">
+    <nav class="<?php echo esc_attr( apply_filters( 'myvh_portal_nav_class', 'portal-nav' ) ); ?>">
 
         <a href="#dashboard">Dashboard</a>
         <a href="#bookings">My Bookings</a>
