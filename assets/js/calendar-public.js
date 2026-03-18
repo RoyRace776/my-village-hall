@@ -1,42 +1,43 @@
-import { initCalendar } from './calendar-core.js';
+var MYVH_CalendarPublic = (function () {
 
-document.addEventListener('DOMContentLoaded', () => {
+    var api = null;
 
-    const calendar = initCalendar("myvh-calendar", {
-        ajaxUrl: myvhPortal.ajaxUrl,
-        context: "public",
+    function bindControls() {
 
-        // Portal is usually read-only (adjust if needed)
-        editable: false,
-        selectable: false,
+        var dayBtn   = document.getElementById('myvh-day');
+        var weekBtn  = document.getElementById('myvh-week');
+        var monthBtn = document.getElementById('myvh-month');
+        var nextBtn  = document.getElementById('myvh-next');
+        var prevBtn  = document.getElementById('myvh-prev');
+        var todayBtn = document.getElementById('myvh-today');
 
-        // ─────────────────────────────
-        // Event hooks (portal behaviour)
-        // ─────────────────────────────
-        onEventClick: (args) => {
-            openBookingModal(args.e.data);
-        }
-    });
+        if (dayBtn)   dayBtn.addEventListener('click',   function () { api.setView('Day'); });
+        if (weekBtn)  weekBtn.addEventListener('click',  function () { api.setView('Week'); });
+        if (monthBtn) monthBtn.addEventListener('click', function () { api.setView('Month'); });
 
-    // ─────────────────────────────
-    // View buttons (Day / Week / Month)
-    // ─────────────────────────────
-    document.querySelectorAll('[data-view]').forEach(button => {
-        button.addEventListener('click', () => {
-            const view = button.dataset.view;
-            calendar.setView(view);
+        if (nextBtn)  nextBtn.addEventListener('click',  function () { api.next(); });
+        if (prevBtn)  prevBtn.addEventListener('click',  function () { api.prev(); });
+        if (todayBtn) todayBtn.addEventListener('click', function () { api.today(); });
+    }
+
+    function init() {
+
+        api = MYVH_CalendarCore.initCalendar('myvh-calendar', {
+            ajaxUrl:    myvhCalConfig.ajaxUrl,   // ← was MYVH.ajax_url
+            context:    'public',
+            editable:   false,
+            selectable: false,
+            readOnly:   true,
+
+            onEventClick: function (args) {
+                var data = args.e.data;
+                alert((data.text || 'Booking') + '\n' + data.start + ' – ' + data.end);
+            }
         });
-    });
 
-    // ─────────────────────────────
-    // Navigation buttons
-    // ─────────────────────────────
-    const nextBtn  = document.querySelector('[data-nav="next"]');
-    const prevBtn  = document.querySelector('[data-nav="prev"]');
-    const todayBtn = document.querySelector('[data-nav="today"]');
+        bindControls();
+    }
 
-    if (nextBtn)  nextBtn.addEventListener('click', calendar.next);
-    if (prevBtn)  prevBtn.addEventListener('click', calendar.prev);
-    if (todayBtn) todayBtn.addEventListener('click', calendar.today);
+    return { init: init };
 
-});
+}());

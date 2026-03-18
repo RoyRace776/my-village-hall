@@ -1,43 +1,47 @@
-import { initCalendar } from './calendar-core.js';
+var MYVH_CalendarAdmin = (function () {
 
-document.addEventListener('DOMContentLoaded', () => {
+    var api = null;
 
-    const calendar = initCalendar("myvh-calendar", {
-        ajaxUrl: myvhPortal.ajaxUrl,
-        context: "admin",
+    function bindControls() {
 
-        // Portal is usually read-only (adjust if needed)
-        editable: false,
-        selectable: false,
-        selectable: false,
-
-        // ─────────────────────────────
-        // Event hooks (portal behaviour)
-        // ─────────────────────────────
-        onEventClick: (args) => {
-            openBookingModal(args.e.data);
-        }
-    });
-
-    // ─────────────────────────────
-    // View buttons (Day / Week / Month)
-    // ─────────────────────────────
-    document.querySelectorAll('[data-view]').forEach(button => {
-        button.addEventListener('click', () => {
-            const view = button.dataset.view;
-            calendar.setView(view);
+        document.querySelectorAll('[data-view]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                api.setView(btn.dataset.view);
+            });
         });
-    });
 
-    // ─────────────────────────────
-    // Navigation buttons
-    // ─────────────────────────────
-    const nextBtn  = document.querySelector('[data-nav="next"]');
-    const prevBtn  = document.querySelector('[data-nav="prev"]');
-    const todayBtn = document.querySelector('[data-nav="today"]');
+        var dayBtn   = document.getElementById('myvh-day');
+        var weekBtn  = document.getElementById('myvh-week');
+        var monthBtn = document.getElementById('myvh-month');
+        var nextBtn  = document.getElementById('myvh-next');
+        var prevBtn  = document.getElementById('myvh-prev');
+        var todayBtn = document.getElementById('myvh-today');
 
-    if (nextBtn)  nextBtn.addEventListener('click', calendar.next);
-    if (prevBtn)  prevBtn.addEventListener('click', calendar.prev);
-    if (todayBtn) todayBtn.addEventListener('click', calendar.today);
+        if (dayBtn)   dayBtn.addEventListener('click',   function () { api.setView('Day'); });
+        if (weekBtn)  weekBtn.addEventListener('click',  function () { api.setView('Week'); });
+        if (monthBtn) monthBtn.addEventListener('click', function () { api.setView('Month'); });
 
-});
+        if (nextBtn)  nextBtn.addEventListener('click',  function () { api.next(); });
+        if (prevBtn)  prevBtn.addEventListener('click',  function () { api.prev(); });
+        if (todayBtn) todayBtn.addEventListener('click', function () { api.today(); });
+    }
+
+    function init() {
+
+        api = MYVH_CalendarCore.initCalendar('myvh-calendar', {
+            ajaxUrl:    myvhAdminCal.ajax_url,   // ← was myvhPortal.ajaxUrl
+            context:    'admin',
+            editable:   true,
+            selectable: true,
+
+            onEventClick: function (args) {
+                openBookingModal(args.e.data);
+            }
+        });
+
+        bindControls();
+    }
+
+    return { init: init };
+
+}());

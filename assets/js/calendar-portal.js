@@ -1,42 +1,51 @@
-import { initCalendar } from './calendar-core.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+var MYVH_Calendar = (function() {
 
-    const calendar = initCalendar("myvh-calendar", {
-        ajaxUrl: myvhPortal.ajaxUrl,
-        context: "portal",
+    var api = null;
 
-        // Portal is usually read-only (adjust if needed)
-        editable: false,
-        selectable: false,
+    function bindControls() {
 
-        // ─────────────────────────────
-        // Event hooks (portal behaviour)
-        // ─────────────────────────────
-        onEventClick: (args) => {
-            openBookingModal(args.e.data);
-        }
-    });
+        const dayBtn   = document.getElementById('myvh-day');
+        const weekBtn  = document.getElementById('myvh-week');
+        const monthBtn = document.getElementById('myvh-month');
 
-    // ─────────────────────────────
-    // View buttons (Day / Week / Month)
-    // ─────────────────────────────
-    document.querySelectorAll('[data-view]').forEach(button => {
-        button.addEventListener('click', () => {
-            const view = button.dataset.view;
-            calendar.setView(view);
+        const nextBtn  = document.getElementById('myvh-next');
+        const prevBtn  = document.getElementById('myvh-prev');
+        const todayBtn = document.getElementById('myvh-today');
+
+        if (dayBtn)   dayBtn.addEventListener('click', () => api.setView('Day'));
+        if (weekBtn)  weekBtn.addEventListener('click', () => api.setView('Week'));
+        if (monthBtn) monthBtn.addEventListener('click', () => api.setView('Month'));
+
+        if (nextBtn)  nextBtn.addEventListener('click', api.next);
+        if (prevBtn)  prevBtn.addEventListener('click', api.prev);
+        if (todayBtn) todayBtn.addEventListener('click', api.today);
+    }
+
+    function init() {
+
+        api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
+
+            context: "portal",
+            ajaxUrl: MYVH.ajax_url,
+
+            editable: false,
+            selectable: false,
+            readOnly: false,
+
+            onEventClick: function(args) {
+                const id = args.e.id();
+
+                // Route inside dashboard
+                window.location.href = '/dashboard/?tab=view-booking&id=' + id;
+            }
         });
-    });
 
-    // ─────────────────────────────
-    // Navigation buttons
-    // ─────────────────────────────
-    const nextBtn  = document.querySelector('[data-nav="next"]');
-    const prevBtn  = document.querySelector('[data-nav="prev"]');
-    const todayBtn = document.querySelector('[data-nav="today"]');
+        bindControls();
+    }
 
-    if (nextBtn)  nextBtn.addEventListener('click', calendar.next);
-    if (prevBtn)  prevBtn.addEventListener('click', calendar.prev);
-    if (todayBtn) todayBtn.addEventListener('click', calendar.today);
+    return {
+        init: init
+    };
 
-});
+})();

@@ -1,3 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+/* ==========================================================================
+   My Village Hall – Dashboard
+   ========================================================================== */
+
+/* ── Design tokens ── */
 
 :root {
   --cream:    #f7f3ee;
@@ -12,7 +19,13 @@
   --shadow:   0 2px 16px rgba(28,26,23,.08);
 }
 
+/* ── Reset (scoped) ── */
+
 .myvh-dashboard * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ==========================================================================
+   1. PAGE SHELL
+   ========================================================================== */
 
 .myvh-dashboard {
   font-family: 'DM Sans', sans-serif;
@@ -22,7 +35,17 @@
   color: var(--ink);
 }
 
-/* ── Header ── */
+/* Legacy container used outside the .myvh-dashboard shell */
+.myvh-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ==========================================================================
+   2. HEADER
+   ========================================================================== */
+
 .myvh-header {
   display: flex;
   align-items: baseline;
@@ -54,7 +77,10 @@
   white-space: nowrap;
 }
 
-/* ── Main grid ── */
+/* ==========================================================================
+   3. LAYOUT GRID
+   ========================================================================== */
+
 .myvh-dashboard-columns {
   display: grid;
   grid-template-columns: 1fr 260px;
@@ -63,13 +89,21 @@
   margin-bottom: 1.75rem;
 }
 
-@media (max-width: 720px) {
-  .myvh-dashboard-columns { grid-template-columns: 1fr; }
-  .myvh-header { flex-wrap: wrap; }
-  .myvh-header .tagline { margin-left: 0; }
+.myvh-dashboard-section {
+  margin-top: 20px;
 }
 
-/* ── Section title ── */
+.myvh-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   4. SECTION TITLE
+   ========================================================================== */
+
 .section-title {
   font-family: 'Playfair Display', serif;
   font-size: 1.15rem;
@@ -89,9 +123,28 @@
   border-radius: 1px;
 }
 
+/* ==========================================================================
+   5. CARDS
+   ========================================================================== */
 
+.myvh-card,
+.myvh-booking-card {
+  background: var(--card-bg);
+  border: 1px solid var(--warm);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
 
-/* ── Booking table ── */
+.myvh-booking-card.is-past {
+  opacity: 0.6;
+}
+
+/* ==========================================================================
+   6. BOOKING TABLE
+   ========================================================================== */
+
 .booking-table {
   width: 100%;
   border-collapse: collapse;
@@ -136,11 +189,98 @@
   vertical-align: middle;
 }
 
-.col-room { font-weight: 500; }
-.col-date { color: var(--muted); white-space: nowrap; }
-.col-time { color: var(--muted); white-space: nowrap; font-size: .85rem; }
+.col-room    { font-weight: 500; }
+.col-date    { color: var(--muted); white-space: nowrap; }
+.col-time    { color: var(--muted); white-space: nowrap; font-size: .85rem; }
 .col-actions { text-align: right; white-space: nowrap; }
 
+/* ==========================================================================
+   7. BOOKING CARD LAYOUT (portal list view)
+   ========================================================================== */
+
+.myvh-booking-main {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.myvh-booking-date {
+  min-width: 160px;
+  font-size: 14px;
+}
+
+.myvh-booking-details {
+  flex: 1;
+  font-size: 14px;
+}
+
+.myvh-booking-status {
+  min-width: 120px;
+  text-align: right;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.myvh-booking-actions {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   8. RECURRING GROUPS (accordion)
+   ========================================================================== */
+
+.myvh-booking-group {
+  border: 1px solid var(--warm);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.myvh-group-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 14px;
+  cursor: pointer;
+  background: var(--cream);
+  transition: background .15s;
+}
+
+.myvh-group-header:hover   { background: var(--warm); }
+.myvh-group-header.is-open { background: #eef0eb; }
+
+.myvh-group-toggle {
+  font-size: 14px;
+  color: var(--accent);
+  transition: transform .2s;
+}
+
+.myvh-group-header.is-open .myvh-group-toggle {
+  transform: rotate(90deg);
+}
+
+.myvh-group-main        { flex: 1; }
+.myvh-group-main strong { font-size: 15px; }
+.myvh-group-meta        { font-size: 12px; color: var(--muted); }
+.myvh-group-room        { font-weight: 600; font-size: 14px; }
+
+.myvh-group-children {
+  display: none;
+  padding: 12px;
+  background: var(--card-bg);
+}
+
+.myvh-group-children.is-open { display: block; }
+
+.myvh-child { margin-bottom: 10px; }
+
+/* ==========================================================================
+   9. BUTTONS
+   ========================================================================== */
+
+/* Table action buttons (used inside .booking-table) */
 .booking-actions {
   display: inline-flex;
   gap: .5rem;
@@ -169,17 +309,37 @@
 }
 .btn-cancel:hover { background: var(--accent-l); }
 
-.no-bookings {
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  text-align: center;
-  color: var(--muted);
-  font-size: .9rem;
-  box-shadow: var(--shadow);
+/* General purpose buttons */
+.myvh-button {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  border: 1px solid var(--warm);
+  background: var(--cream);
+  color: var(--ink);
+  transition: background .15s, border-color .15s;
+  cursor: pointer;
 }
 
-/* ── Quick actions ── */
+.myvh-button:hover { background: var(--warm); }
+
+.myvh-button-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.myvh-button-primary:hover {
+  background: #9a3a15;
+  border-color: #9a3a15;
+}
+
+/* ==========================================================================
+   10. QUICK ACTION CARDS (right sidebar)
+   ========================================================================== */
+
 .dashboard-right .section-title { margin-bottom: .85rem; }
 
 .action-cards {
@@ -222,7 +382,10 @@
   flex-shrink: 0;
 }
 
-/* ── Notices ── */
+/* ==========================================================================
+   11. NOTICES PANEL
+   ========================================================================== */
+
 .dashboard-notices {
   background: var(--green);
   border-radius: var(--radius);
@@ -261,4 +424,55 @@
   font-size: 1.1rem;
   line-height: 1.3;
   flex-shrink: 0;
+}
+
+/* ==========================================================================
+   12. EMPTY STATE
+   ========================================================================== */
+
+.no-bookings {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: .9rem;
+  box-shadow: var(--shadow);
+}
+
+/* ==========================================================================
+   13. UTILITIES
+   ========================================================================== */
+
+.myvh-badge {
+  display: inline-block;
+  background: var(--green);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  margin-left: 6px;
+}
+
+.myvh-link-danger       { color: #dc3232; }
+.myvh-link-danger:hover { text-decoration: underline; }
+
+.myvh-muted { color: var(--muted); }
+.myvh-small { font-size: 12px; }
+
+/* ==========================================================================
+   14. RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 720px) {
+  .myvh-dashboard-columns { grid-template-columns: 1fr; }
+  .myvh-header             { flex-wrap: wrap; }
+  .myvh-header .tagline    { margin-left: 0; }
+}
+
+@media (max-width: 768px) {
+  .myvh-booking-main    { flex-direction: column; gap: 10px; }
+  .myvh-booking-status  { text-align: left; }
+  .myvh-group-header    { flex-direction: column; align-items: flex-start; }
+  .myvh-group-room      { margin-top: 5px; }
 }

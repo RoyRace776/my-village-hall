@@ -215,12 +215,12 @@ class My_Village_Hall {
         //if the flag is set, then we need to tidy up
         if ($network_wide && is_multisite()) {
             $options = get_site_option('myvh_general_settings');
-            if (isset($options) && $options['delete_on_deactivate']) {
+            if (is_array($options) && $options['delete_on_deactivate']) {
                 MYVH_Installer::tidy_up();
             }
         } else {
             $options = get_option('myvh_general_settings');
-            if (isset($options) && $options['delete_on_deactivate']) {
+            if (is_array($options) && $options['delete_on_deactivate']) {
                 MYVH_Installer::tidy_up();
             }
         }

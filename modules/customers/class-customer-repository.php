@@ -237,7 +237,7 @@ class MYVH_Customer_Repository {
      */
     public function get_by_user_id($user_id) {
         $sql = $this->wpdb->prepare(
-            "SELECT * FROM $this->table_name WHERE CustomerId = %d",
+            "SELECT * FROM $this->table_name WHERE WPUserId = %d",
             $user_id
         );
 
