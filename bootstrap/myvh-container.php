@@ -46,7 +46,6 @@ require_once MYVH_PLUGIN_DIR . 'core/shortcode/class-myvh-shortcode-registry.php
 require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-shortcode.php';
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-shortcode.php';
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-controller.php';
-require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-assets.php';
 
 require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-handler.php';
 

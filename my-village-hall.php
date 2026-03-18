@@ -126,6 +126,8 @@ class My_Village_Hall {
         add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
         add_action( 'admin_menu',     [ $this, 'register_admin_menu' ] );
 
+        MYVH_Asset_Loader::init();
+
         // 2. Settings
         MYVH_Settings_Registry::auto_register( MYVH_PLUGIN_DIR . 'modules/settings' );
         ( new MYVH_Settings_Page() )->init();
@@ -238,7 +240,6 @@ class My_Village_Hall {
             dirname( MYVH_PLUGIN_BASENAME ) . '/languages'
         );
 
-        MYVH_Asset_Loader::init();
     }
 
     // ── Admin menu ────────────────────────────────────────────────────────────

@@ -30,7 +30,7 @@ $current_user = wp_get_current_user();
             <?php foreach ($bookings as $booking): ?>
               <tr>
                 <td class="col-room"><?= esc_html($booking['RoomName']) ?></td>
-                <td class="col-date"><?= esc_html(date('D j M', strtotime($booking['StartTime']))) ?></td>
+                <td class="col-date"><?= esc_html( $booking['StartDate']) ?></td>
                 <td class="col-time">
                   <?= esc_html(date('H:i', strtotime($booking['StartTime']))) ?>
                   &ndash;

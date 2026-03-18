@@ -18,5 +18,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.addEventListener("hashchange", router);
 
+    // --- Group toggle ---
+    document.getElementById('portal-content').addEventListener('click', function (e) {
+        const header = e.target.closest('.myvh-group-header');
+        if (!header) return;
+
+        const group   = header.dataset.group;
+        const children = document.querySelector(`.myvh-group-children[data-group="${group}"]`);
+        const toggle   = header.querySelector('.myvh-group-toggle');
+
+        if (!children) return;
+
+        const isOpen = children.classList.toggle('is-open');
+        if (toggle) toggle.textContent = isOpen ? '▼' : '▶';
+    });
+
     router();
 });

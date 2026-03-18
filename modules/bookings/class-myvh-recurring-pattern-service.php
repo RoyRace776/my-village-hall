@@ -82,7 +82,7 @@ class MYVH_Recurring_Pattern_Service {
             return new WP_Error('validation', __('Either end date or max occurrences is required', 'my-village-hall'));
         }
 
-        // Limit max occurrences to prevent abuse
+        // TODO: get the 365 number from setting to limit max occurrences to prevent abuse
         if (!empty($data['max_occurrences']) && intval($data['max_occurrences']) > 365) {
             return new WP_Error('validation', __('Maximum 365 occurrences allowed', 'my-village-hall'));
         }
@@ -202,7 +202,8 @@ class MYVH_Recurring_Pattern_Service {
                 'EndTime'            => $parent_booking['EndTime'],
                 'Public'             => $parent_booking['Public'],
                 'Description'        => $parent_booking['Description'],
-                'RecurringPatternId' => $pattern_id
+                'RecurringPatternId' => $pattern_id,
+                'OrganisationId'     => $parent_booking['OrganisationId']
             ];
 
             $new_booking_id = $booking_repo->create($booking_data);

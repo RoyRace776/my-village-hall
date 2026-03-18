@@ -28,7 +28,7 @@ class MYVH_Asset_Loader {
 
     public static function enqueue_admin( $hook ) {
 
-        if ( strpos( $hook, 'myvh' ) === false ) return;
+        if ( strpos( $hook, 'myvh' ) === false && strpos( $hook, 'my-village-hall' ) === false ) return;
 
         // Shared across all plugin admin pages
         wp_enqueue_style(  'myvh-admin', MYVH_PLUGIN_URL . 'assets/css/admin.css', [], MYVH_VERSION );

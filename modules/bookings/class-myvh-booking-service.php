@@ -65,8 +65,6 @@ class MYVH_Booking_Service {
                 return new WP_Error('validation', __('Multi day bookings are not allowed for this room', 'my-village-hall'));
             }
         }
-        $start = strtotime($data['start_time']);
-        $end = strtotime($data['end_time']);
         $start_datetime = new DateTime($start_date . ' ' . $data['start_time']);
         $end_datetime = new DateTime($end_date . ' ' . $data['end_time']);
 
@@ -133,7 +131,7 @@ class MYVH_Booking_Service {
     }
 
     private function create_booking($data, $record) {
-                $booking_id = $this->booking_repo->create($record);
+        $booking_id = $this->booking_repo->create($record);
         if ($booking_id === false) {
             return new WP_Error('database', __('Failed to create booking', 'my-village-hall'));
         }
