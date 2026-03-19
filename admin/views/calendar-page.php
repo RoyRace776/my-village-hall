@@ -17,19 +17,19 @@ if (!defined('ABSPATH')) exit;
     </div>
 
     <div class="myvh-calendar-views">
-        <button class="button myvh-view-btn" data-view="Resources">
+        <button id="myvh_rooms" class="button myvh-view-btn" data-view="Resources">
             <?php _e('Rooms', 'my-village-hall'); ?>
         </button>
 
-        <button class="button myvh-view-btn" data-view="Day">
+        <button id="myvh-day" class="button myvh-view-btn" data-view="Day">
             <?php _e('Day', 'my-village-hall'); ?>
         </button>
 
-        <button class="button myvh-view-btn active" data-view="Week">
+        <button id="myvh-week" class="button myvh-view-btn active" data-view="Week">
             <?php _e('Week', 'my-village-hall'); ?>
         </button>
 
-        <button class="button myvh-view-btn" data-view="Month">
+        <button id="myvh-month" class="button myvh-view-btn" data-view="Month">
             <?php _e('Month', 'my-village-hall'); ?>
         </button>
     </div>

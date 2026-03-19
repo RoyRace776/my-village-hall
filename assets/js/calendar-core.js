@@ -71,7 +71,7 @@ window.MYVH_CalendarCore = {
                 const firstDay = calendar.startDate.firstDayOfMonth();
                 const start    = firstDay.firstDayOfWeek();
                 const lastDay  = firstDay.addMonths(1).addDays(-1);
-                const end      = lastDay.lastDayOfWeek();
+                const end      = firstDay.addDays(6);
                 const totalDays = Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1;
 
                 calendar.viewType  = "Days";

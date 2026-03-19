@@ -49,6 +49,8 @@ class MYVH_Calendar_Ajax_Controller {
 
     public function get_events() {
 
+        //TODO: Fix this to make sure it returns the right data for the right context
+
         $context = $_GET['context'] ?? 'public';
 
         switch ($context) {
