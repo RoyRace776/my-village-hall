@@ -1,47 +1,128 @@
-var MYVH_CalendarAdmin = (function () {
+var MYVH_CalendarAdmin = (function() {
 
     var api = null;
 
+    // ─────────────────────────────
+    // UI Controls (view + nav)
+    // ─────────────────────────────
     function bindControls() {
 
-        document.querySelectorAll('[data-view]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                api.setView(btn.dataset.view);
-            });
-        });
+        const dayBtn   = document.getElementById('myvh-day');
+        const weekBtn  = document.getElementById('myvh-week');
+        const monthBtn = document.getElementById('myvh-month');
 
-        var dayBtn   = document.getElementById('myvh-day');
-        var weekBtn  = document.getElementById('myvh-week');
-        var monthBtn = document.getElementById('myvh-month');
-        var nextBtn  = document.getElementById('myvh-next');
-        var prevBtn  = document.getElementById('myvh-prev');
-        var todayBtn = document.getElementById('myvh-today');
+        const nextBtn  = document.getElementById('myvh-next');
+        const prevBtn  = document.getElementById('myvh-prev');
+        const todayBtn = document.getElementById('myvh-today');
 
-        if (dayBtn)   dayBtn.addEventListener('click',   function () { api.setView('Day'); });
-        if (weekBtn)  weekBtn.addEventListener('click',  function () { api.setView('Week'); });
-        if (monthBtn) monthBtn.addEventListener('click', function () { api.setView('Month'); });
+        if (dayBtn)   dayBtn.addEventListener('click', () => api.setView('Day'));
+        if (weekBtn)  weekBtn.addEventListener('click', () => api.setView('Week'));
+        if (monthBtn) monthBtn.addEventListener('click', () => api.setView('Month'));
 
-        if (nextBtn)  nextBtn.addEventListener('click',  function () { api.next(); });
-        if (prevBtn)  prevBtn.addEventListener('click',  function () { api.prev(); });
-        if (todayBtn) todayBtn.addEventListener('click', function () { api.today(); });
+        if (nextBtn)  nextBtn.addEventListener('click', () => api.next());
+        if (prevBtn)  prevBtn.addEventListener('click', () => api.prev());
+        if (todayBtn) todayBtn.addEventListener('click', () => api.today());
     }
 
+    // ─────────────────────────────
+    // AJAX Helpers
+    // ─────────────────────────────
+    function updateEvent(data) {
+
+        return jQuery.post(myvhCal.ajax_url, {
+            action: 'myvh_update_event',
+            nonce:  myvhCal.nonce,
+            ...data
+        });
+    }
+
+    function createEvent(data) {
+
+        return jQuery.post(myvhCal.ajax_url, {
+            action: 'myvh_create_event',
+            nonce:  myvhCal.nonce,
+            ...data
+        });
+    }
+
+    // ─────────────────────────────
+    // Init
+    // ─────────────────────────────
     function init() {
 
-        api = MYVH_CalendarCore.initCalendar('myvh-calendar', {
-            ajaxUrl:    myvhAdminCal.ajax_url,   // ← was myvhPortal.ajaxUrl
-            context:    'admin',
+        api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
+
+            context:    "admin",
+            ajaxUrl:    myvhCal.ajax_url,
+            nonce:      myvhCal.nonce,
+
             editable:   true,
             selectable: true,
+            readOnly:   false,
 
-            onEventClick: function (args) {
-                openBookingModal(args.e.data);
+            // ───── Click = open/edit booking
+            onEventClick: function(args) {
+                const id = args.e.id();
+                window.location.href = '/wp-admin/admin.php?page=myvh-bookings&action=edit&id=' + id;
+            },
+
+            // ───── Drag move
+            onEventMoved: function(args) {
+                updateEvent({
+                    id:    args.e.id(),
+                    start: args.newStart.toString(),
+                    end:   args.newEnd.toString()
+                }).fail(function() {
+                    alert('Failed to move event');
+                    api.reload();
+                });
+            },
+
+            // ───── Resize
+            onEventResized: function(args) {
+                updateEvent({
+                    id:    args.e.id(),
+                    start: args.newStart.toString(),
+                    end:   args.newEnd.toString()
+                }).fail(function() {
+                    alert('Failed to resize event');
+                    api.reload();
+                });
+            },
+
+            // ───── Create (drag select)
+            onTimeRangeSelected: function(args) {
+
+                const title = prompt("Booking title:");
+
+                if (!title) {
+                    api.calendar.clearSelection();
+                    return;
+                }
+
+                createEvent({
+                    start: args.start.toString(),
+                    end:   args.end.toString(),
+                    text:  title
+                }).done(function() {
+                    api.reload();
+                }).fail(function() {
+                    alert('Failed to create booking');
+                });
+
+                api.calendar.clearSelection();
             }
         });
 
         bindControls();
     }
 
-    return { init: init };
+    return {
+        init: init
+    };
 
-}());
+})();
+
+jQuery(function() {
+    MYVH_CalendarAdmin.init();
+});

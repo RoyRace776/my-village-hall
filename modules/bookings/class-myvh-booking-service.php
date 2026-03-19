@@ -282,9 +282,9 @@ class MYVH_Booking_Service {
         ];
     }
 
-    public function get_between($start, $end) {
+    public function get_between($start, $end, $context = null) {
 
-        $bookings = $this->booking_repo->get_between($start, $end);
+        $bookings = $this->booking_repo->get_between($start, $end, $context = null);
         return $bookings;
     }
 

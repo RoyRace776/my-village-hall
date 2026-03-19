@@ -48,12 +48,34 @@ class MYVH_Asset_Loader {
         // Calendar page only
         if ( strpos( $hook, 'myvh-calendar' ) !== false ) {
 
-            wp_enqueue_script( 'myvh-calendar-core',  MYVH_PLUGIN_URL . 'assets/js/calendar-core.js',  ['daypilot'], MYVH_VERSION, true );
-            wp_enqueue_script( 'myvh-calendar-admin', MYVH_PLUGIN_URL . 'assets/js/calendar-admin.js', ['myvh-calendar-core'], MYVH_VERSION, true );
-            wp_localize_script( 'myvh-calendar-admin', 'myvhAdminCal', [
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce'    => wp_create_nonce('myvh-ajax-nonce'),
-            ]);
+            wp_enqueue_script(
+                'daypilot',
+                MYVH_PLUGIN_URL . 'assets/js/daypilot-all.min.js',
+                [],
+                MYVH_VERSION,
+                true
+            );
+
+            wp_enqueue_script(
+                'myvh-calendar-core',
+                MYVH_PLUGIN_URL . 'assets/js/calendar-core.js',
+                [ 'daypilot' ],
+                MYVH_VERSION,
+                true
+            );
+
+            wp_enqueue_script(
+                'myvh-calendar-admin',
+                MYVH_PLUGIN_URL . 'assets/js/calendar-admin.js',
+                [ 'myvh-calendar-core' ],
+                MYVH_VERSION,
+                true
+            );
+
+            wp_localize_script( 'myvh-calendar-admin', 'myvhCal', [
+                'ajax_url' => admin_url( 'admin-ajax.php' ),
+                'nonce'    => wp_create_nonce( 'myvh_calendar' ),
+            ] );
         }
     }
 
@@ -73,7 +95,7 @@ class MYVH_Asset_Loader {
 
         wp_enqueue_style(
             'myvh-dashboard',
-            MYVH_PLUGIN_URL . 'assets/css/dashboard.css',        // portal.css is identical — deleted
+            MYVH_PLUGIN_URL . 'assets/css/dashboard.css',
             $fonts_url ? [ 'myvh-google-fonts' ] : [],
             MYVH_VERSION
         );
@@ -138,9 +160,10 @@ class MYVH_Asset_Loader {
             'nonce'   => wp_create_nonce( 'myvh_portal' ),
         ] );
 
-        // calendar-portal.js reads from MYVH.ajax_url
-        wp_localize_script( 'myvh-calendar-portal', 'MYVH', [
+        // myvhCal used by calendar-core.js via calendar-portal.js
+        wp_localize_script( 'myvh-calendar-portal', 'myvhCal', [
             'ajax_url' => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( 'myvh_calendar' ),
         ] );
     }
 
@@ -148,11 +171,34 @@ class MYVH_Asset_Loader {
 
     public static function enqueue_public_calendar() {
 
-        wp_enqueue_script( 'myvh-calendar-core',   MYVH_PLUGIN_URL . 'assets/js/calendar-core.js',   ['daypilot'], MYVH_VERSION, true );
-        wp_enqueue_script( 'myvh-calendar-public', MYVH_PLUGIN_URL . 'assets/js/calendar-public.js', ['myvh-calendar-core'], MYVH_VERSION, true );
+        wp_enqueue_script(
+            'daypilot',
+            MYVH_PLUGIN_URL . 'assets/js/daypilot-all.min.js',
+            [],
+            MYVH_VERSION,
+            true
+        );
+
+        wp_enqueue_script(
+            'myvh-calendar-core',
+            MYVH_PLUGIN_URL . 'assets/js/calendar-core.js',
+            [ 'daypilot' ],
+            MYVH_VERSION,
+            true
+        );
+
+        wp_enqueue_script(
+            'myvh-calendar-public',
+            MYVH_PLUGIN_URL . 'assets/js/calendar-public.js',
+            [ 'myvh-calendar-core' ],
+            MYVH_VERSION,
+            true
+        );
+
         wp_localize_script( 'myvh-calendar-public', 'myvhCalConfig', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'nonce'   => wp_create_nonce( 'myvh_calendar' ),
             'view'    => 'month',
-        ]);
+        ] );
     }
 }

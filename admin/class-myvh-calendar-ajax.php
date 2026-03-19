@@ -37,7 +37,7 @@ class MYVH_Calendar_Ajax {
         if ( ! current_user_can( 'manage_myvh' ) ) {
             wp_send_json_error( [ 'message' => __( 'Permission denied', 'my-village-hall' ) ], 403 );
         }
-        check_ajax_referer( 'myvh-ajax-nonce', 'nonce' );
+        check_ajax_referer( 'myvhCal.nonce', 'nonce' );
     }
 
     // ── GET events ────────────────────────────────────────────────────────────

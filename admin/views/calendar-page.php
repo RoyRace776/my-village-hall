@@ -9,27 +9,27 @@ if (!defined('ABSPATH')) exit;
 <div class="myvh-calendar-toolbar">
 
     <div class="myvh-calendar-nav">
-        <button id="vbc-prev" class="button">&lt;</button>
-        <button id="vbc-today" class="button button-primary">
+        <button id="myvh-prev" class="button">&lt;</button>
+        <button id="myvh-today" class="button button-primary">
             <?php _e('Today', 'my-village-hall'); ?>
         </button>
-        <button id="vbc-next" class="button">&gt;</button>
+        <button id="myvh-next" class="button">&gt;</button>
     </div>
 
     <div class="myvh-calendar-views">
-        <button class="button vbc-view-btn" data-view="Resources">
+        <button class="button myvh-view-btn" data-view="Resources">
             <?php _e('Rooms', 'my-village-hall'); ?>
         </button>
 
-        <button class="button vbc-view-btn" data-view="Day">
+        <button class="button myvh-view-btn" data-view="Day">
             <?php _e('Day', 'my-village-hall'); ?>
         </button>
 
-        <button class="button vbc-view-btn active" data-view="Week">
+        <button class="button myvh-view-btn active" data-view="Week">
             <?php _e('Week', 'my-village-hall'); ?>
         </button>
 
-        <button class="button vbc-view-btn" data-view="Month">
+        <button class="button myvh-view-btn" data-view="Month">
             <?php _e('Month', 'my-village-hall'); ?>
         </button>
     </div>
@@ -37,9 +37,7 @@ if (!defined('ABSPATH')) exit;
 </div>
 
 <!-- Week / Day calendar -->
-<div id="vbc-calendar" style="height:700px;"></div>
+<div id="myvh-calendar" style="height:700px;"></div>
 
-<!-- Month calendar (BUG FIX 3: separate container, hidden by default) -->
-<div id="vbc-month-calendar" style="height:700px; display:none;"></div>
 
 </div>

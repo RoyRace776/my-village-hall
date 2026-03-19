@@ -10,8 +10,8 @@ window.MYVH_CalendarCore = {
         calendar.startDate = DayPilot.Date.today();
 
         // Feature flags
-        calendar.eventMoveHandling   = options.editable ? "Update" : "Disabled";
-        calendar.eventResizeHandling = options.editable ? "Update" : "Disabled";
+        calendar.eventMoveHandling     = options.editable   ? "Update"  : "Disabled";
+        calendar.eventResizeHandling   = options.editable   ? "Update"  : "Disabled";
         calendar.timeRangeSelectedHandling = options.selectable ? "Enabled" : "Disabled";
 
         if (options.readOnly) {
@@ -25,16 +25,16 @@ window.MYVH_CalendarCore = {
             const start = calendar.visibleStart();
             const end   = calendar.visibleEnd();
 
-            const url = `${options.ajaxUrl}?action=myvh_get_events`
-                + `&context=${options.context}`
-                + `&start=${start.toString()}`
-                + `&end=${end.toString()}`;
+            const url = `${options.ajaxUrl}?action=myvh_calendar_events`
+                            + `&nonce=${options.nonce}`
+                            + `&start=${start.toString()}`
+                            + `&end=${end.toString()}`;
 
             calendar.events.load(url);
         }
 
         // ─────────────────────────────
-        // Hooks (delegated to wrappers)
+        // Hooks (delegated to callers)
         // ─────────────────────────────
         calendar.onEventClick = (args) => {
             options.onEventClick?.(args);
@@ -62,39 +62,26 @@ window.MYVH_CalendarCore = {
         loadEvents();
 
         // ─────────────────────────────
-        // Navigation API (IMPORTANT)
+        // Navigation API
         // ─────────────────────────────
         function setView(view) {
 
             if (view === "Month") {
 
                 const firstDay = calendar.startDate.firstDayOfMonth();
-
-                // Start from beginning of week (Monday)
-                const start = firstDay.firstDayOfWeek();
-
-                calendar.viewType = "Days";
-
-                // Calculate how many days needed (usually 35 or 42)
-                const lastDay = firstDay.addMonths(1).addDays(-1);
-                const end = lastDay.lastDayOfWeek();
-
+                const start    = firstDay.firstDayOfWeek();
+                const lastDay  = firstDay.addMonths(1).addDays(-1);
+                const end      = lastDay.lastDayOfWeek();
                 const totalDays = Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1;
 
+                calendar.viewType  = "Days";
                 calendar.startDate = start;
-                calendar.days = totalDays;
+                calendar.days      = totalDays;
 
             } else {
 
                 calendar.viewType = view;
-
-                if (view === "Day") {
-                    calendar.days = 1;
-                }
-
-                if (view === "Week") {
-                    calendar.days = 7;
-                }
+                calendar.days     = view === "Day" ? 1 : 7;
             }
 
             calendar.update();
@@ -103,9 +90,8 @@ window.MYVH_CalendarCore = {
 
         function next() {
             calendar.startDate = calendar.startDate.addDays(
-                calendar.viewType === "Day" ? 1 :
-                calendar.viewType === "Week" ? 7 :
-                31
+                calendar.viewType === "Day"  ?  1 :
+                calendar.viewType === "Week" ?  7 : 31
             );
             calendar.update();
             loadEvents();
@@ -113,9 +99,8 @@ window.MYVH_CalendarCore = {
 
         function prev() {
             calendar.startDate = calendar.startDate.addDays(
-                calendar.viewType === "Day" ? -1 :
-                calendar.viewType === "Week" ? -7 :
-                -31
+                calendar.viewType === "Day"  ?  -1 :
+                calendar.viewType === "Week" ?  -7 : -31
             );
             calendar.update();
             loadEvents();
@@ -128,7 +113,7 @@ window.MYVH_CalendarCore = {
         }
 
         // ─────────────────────────────
-        // Public API returned
+        // Public API
         // ─────────────────────────────
         return {
             calendar,
@@ -139,4 +124,4 @@ window.MYVH_CalendarCore = {
             reload: loadEvents
         };
     }
-}
+};
