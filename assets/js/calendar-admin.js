@@ -53,7 +53,7 @@ var MYVH_CalendarAdmin = (function() {
         api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
 
             context:    "admin",
-            ajaxUrl:    myvhCal.ajax_url,
+            ajax_url:    myvhCal.ajax_url,
             nonce:      myvhCal.nonce,
 
             editable:   true,
@@ -89,33 +89,51 @@ var MYVH_CalendarAdmin = (function() {
                     api.reload();
                 });
             },
+        });
 
-            // ───── Create (drag select)
+        bindControls();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const modal = MYVH_BookingModal;
+
+        modal.init({
+            ajax_url: myvhCal.ajax_url,
+            nonce: myvhCal.nonce,
+
+            loadRooms: () =>
+                fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}`)
+                    .then(r => r.json()),
+
+            loadCustomers: () =>
+                fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
+                    .then(r => r.json()),
+
+            loadOrganisations: () =>
+                fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}`)
+                    .then(r => r.json()),
+
+            onSuccess: () => api.reload()
+        });
+
+        api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
+            ajax_url: myvhCal.ajax_url,
+            nonce: myvhCal.nonce,
+            editable: true,
+            selectable: true,
+
             onTimeRangeSelected: function(args) {
 
-                const title = prompt("Booking title:");
-
-                if (!title) {
-                    api.calendar.clearSelection();
-                    return;
-                }
-
-                createEvent({
+                modal.open({
                     start: args.start.toString(),
-                    end:   args.end.toString(),
-                    text:  title
-                }).done(function() {
-                    api.reload();
-                }).fail(function() {
-                    alert('Failed to create booking');
+                    end: args.end.toString()
                 });
 
                 api.calendar.clearSelection();
             }
         });
-
-        bindControls();
-    }
+    });
 
     return {
         init: init
@@ -123,6 +141,6 @@ var MYVH_CalendarAdmin = (function() {
 
 })();
 
-jQuery(function() {
+document.addEventListener("DOMContentLoaded", function() {
     MYVH_CalendarAdmin.init();
 });

@@ -198,6 +198,26 @@ class MYVH_Customer_Repository {
         return $this->wpdb->get_results($sql, ARRAY_A) ?? [];
     }
 
+    /**
+     * Get all organisations for a single WP user (via their WP user id).
+     *
+     * @param int $user_id
+     * @return array
+     */
+    public function get_organisations_for_user_id( int $user_id ): array {
+        $sql = $this->wpdb->prepare(
+            "SELECT o.*
+             FROM {$this->table_name} c
+             JOIN {$this->wpdb->prefix}myvh_organisation_members om ON c.Id = om.CustomerId
+             JOIN {$this->wpdb->prefix}myvh_organisations o         ON om.OrganisationId = o.Id
+             WHERE c.WPUserId = %d
+             ORDER BY o.Name",
+            $user_id
+        );
+
+        return $this->wpdb->get_results($sql, ARRAY_A) ?? [];
+    }
+
     public function get_customer_id($wp_user) {
         $sql = $this->wpdb->prepare(
             "SELECT Id from {$this->table_name}

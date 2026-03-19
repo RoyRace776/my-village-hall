@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function loadPage(page) {
 
-        fetch(myvhPortal.ajaxUrl + "?action=myvh_portal_page&page=" + page)
+        fetch(myvhPortal.ajax_url + "?action=myvh_portal_page&page=" + page)
             .then(r => r.text())
             .then(html => {
                 document.getElementById("portal-content").innerHTML = html;

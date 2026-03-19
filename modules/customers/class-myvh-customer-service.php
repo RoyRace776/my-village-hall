@@ -28,6 +28,9 @@ class MYVH_Customer_Service {
         return $this->repo->get_organisations_for_customer( $customer_id );
     }
 
+    public function get_organisations_for_user_id( int $user_id ): array {
+        return $this->repo->get_organisations_for_user_id( $user_id );
+    }
     public function get_by_email($email) {
         return $this->repo->get_by_email($email);
     }

@@ -25,7 +25,7 @@ window.MYVH_CalendarCore = {
             const start = calendar.visibleStart();
             const end   = calendar.visibleEnd();
 
-            const url = `${options.ajaxUrl}?action=myvh_calendar_events`
+            const url = `${options.ajax_url}?action=myvh_calendar_events`
                             + `&nonce=${options.nonce}`
                             + `&start=${start.toString()}`
                             + `&end=${end.toString()}`;

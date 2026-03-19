@@ -5,13 +5,16 @@ class MYVH_Calendar_Ajax_Controller {
 
     private $booking_service;
     private $room_repository;
+    private $customer_service;
 
     public function __construct(
         MYVH_Booking_Service $booking_service,
-        MYVH_Room_Repository $room_repository) {
+        MYVH_Room_Repository $room_repository,
+        MYVH_Customer_Service $customer_service) {
 
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;
+        $this->customer_service = $customer_service;
     }
 
     public function register_routes() {
@@ -21,7 +24,35 @@ class MYVH_Calendar_Ajax_Controller {
         add_action('wp_ajax_myvh_move_booking', [$this, 'move_booking']);
         add_action('wp_ajax_myvh_create_event', [$this, 'create_event']);
         add_action('wp_ajax_myvh_update_event', [$this, 'update_event']);
+        add_action('wp_ajax_myvh_my_customer', [$this, 'get_customer']);
+        add_action('wp_ajax_myvh_my_organisations', [$this, 'get_organisations']);
 
+    }
+
+    public function get_customer() {
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Not logged in', 401);
+        }
+
+        $user_id = get_current_user_id();
+
+        // Map WP user → customer
+        $customer = $this->customer_service->get_by_user_id($user_id);
+
+        wp_send_json([
+            [
+                'id' => $customer['Id'],
+                'name' => $customer['Name']
+            ]
+        ]);
+    }
+
+    public function geet_organisations() {
+
+        $orgs = $this->customer_service->get_organisations_for_user_id(get_current_user_id());
+
+        wp_send_json($orgs);
     }
 
     public function get_rooms() {

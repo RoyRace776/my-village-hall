@@ -59,22 +59,30 @@ class MYVH_Asset_Loader {
             wp_enqueue_script(
                 'myvh-calendar-core',
                 MYVH_PLUGIN_URL . 'assets/js/calendar-core.js',
-                [ 'daypilot' ],
-                MYVH_VERSION,
+                ['daypilot'],
+                '1.0',
+                true
+            );
+
+            wp_enqueue_script(
+                'myvh-booking-modal',
+                MYVH_PLUGIN_URL . 'assets/js/booking-modal.js',
+                ['myvh-calendar-core'], // optional but safe
+                '1.0',
                 true
             );
 
             wp_enqueue_script(
                 'myvh-calendar-admin',
                 MYVH_PLUGIN_URL . 'assets/js/calendar-admin.js',
-                [ 'myvh-calendar-core' ],
-                MYVH_VERSION,
+                ['jquery', 'myvh-booking-modal'], // ✅ critical
+                '1.0',
                 true
             );
 
             wp_localize_script( 'myvh-calendar-admin', 'myvhCal', [
                 'ajax_url' => admin_url( 'admin-ajax.php' ),
-                'nonce'    => wp_create_nonce( 'myvh_calendar' ),
+                'nonce'    => wp_create_nonce( 'myvh_calendar' )
             ] );
         }
     }
@@ -124,9 +132,17 @@ class MYVH_Asset_Loader {
         );
 
         wp_enqueue_script(
+            'myvh-booking-modal',
+            MYVH_PLUGIN_URL . 'assets/js/booking-modal.js',
+            ['myvh-calendar-core'], // optional but safe
+            '1.0',
+            true
+        );
+
+        wp_enqueue_script(
             'myvh-calendar-portal',
             MYVH_PLUGIN_URL . 'assets/js/calendar-portal.js',
-            [ 'myvh-calendar-core' ],
+            [ 'myvh-booking-modal' ],
             MYVH_VERSION,
             true
         );
@@ -156,7 +172,7 @@ class MYVH_Asset_Loader {
         );
 
         wp_localize_script( 'myvh-portal-app', 'myvhPortal', [
-            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'myvh_portal' ),
         ] );
 
@@ -196,7 +212,7 @@ class MYVH_Asset_Loader {
         );
 
         wp_localize_script( 'myvh-calendar-public', 'myvhCalConfig', [
-            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'myvh_calendar' ),
             'view'    => 'month',
         ] );

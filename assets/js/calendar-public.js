@@ -31,7 +31,7 @@ var MYVH_CalendarPublic = (function() {
         api = MYVH_CalendarCore.initCalendar('myvh-calendar', {
 
             context:    'public',
-            ajaxUrl:    myvhCalConfig.ajaxUrl,
+            ajax_url:    myvhCalConfig.ajax_url,
             nonce:      myvhCalConfig.nonce,
 
             editable:   false,

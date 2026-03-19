@@ -32,7 +32,7 @@ var MYVH_Calendar = (function() {
         api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
 
             context:    "portal",
-            ajaxUrl:    myvhCal.ajax_url,
+            ajax_url:    myvhCal.ajax_url,
             nonce:      myvhCal.nonce,
 
             editable:   false,
@@ -47,6 +47,57 @@ var MYVH_Calendar = (function() {
 
         bindControls();
     }
+
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const modal = MYVH_BookingModal;
+
+        modal.init({
+            ajax_url: myvhCal.ajax_url,
+            nonce: myvhCal.nonce,
+
+            // Restricted loaders
+            loadRooms: () =>
+                fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}`)
+                    .then(r => r.json()),
+
+            loadCustomers: () =>
+                fetch(`${myvhCal.ajax_url}?action=myvh_my_customer&nonce=${myvhCal.nonce}`)
+                    .then(r => r.json()),
+
+            loadOrganisations: () =>
+                fetch(`${myvhCal.ajax_url}?action=myvh_my_organisations&nonce=${myvhCal.nonce}`)
+                    .then(r => r.json()),
+
+            // 🔐 Lock fields
+            lockCustomer: true,
+            lockOrganisation: true,
+
+            onSuccess: () => api.reload()
+        });
+
+        api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
+            ajax_url: myvhCal.ajax_url,
+            nonce: myvhCal.nonce,
+            selectable: true,
+            editable: false,
+
+            onTimeRangeSelected: function(args) {
+
+                modal.open({
+                    start: args.start.toString(),
+                    end: args.end.toString(),
+
+                    // 👇 Passed from backend via wp_localize_script
+                    customer_id: MYVH.currentCustomerId,
+                    organisation_id: MYVH.defaultOrganisationId
+                });
+
+                api.calendar.clearSelection();
+            }
+        });
+
+    });
 
     return {
         init: init

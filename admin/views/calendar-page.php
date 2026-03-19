@@ -41,3 +41,43 @@ if (!defined('ABSPATH')) exit;
 
 
 </div>
+
+<?php
+add_action('admin_footer', function() {
+    ?>
+        <div id="myvh-booking-modal" class="myvh-modal hidden">
+        <div class="myvh-modal-content">
+            <h2>Create Booking</h2>
+
+            <form id="myvh-booking-form">
+                <input type="hidden" name="start">
+                <input type="hidden" name="end">
+
+                <table class="form-table">
+                    <tr>
+                        <th>Room</th>
+                        <td><select name="room_id"></select></td>
+                    </tr>
+                    <tr>
+                        <th>Customer</th>
+                        <td><select name="customer_id"></select></td>
+                    </tr>
+                    <tr>
+                        <th>Organisation</th>
+                        <td><select name="organisation_id"></select></td>
+                    </tr>
+                    <tr>
+                        <th>Description</th>
+                        <td><input type="text" name="text"></td>
+                    </tr>
+                </table>
+
+                <p>
+                    <button type="submit" class="button button-primary">Create Booking</button>
+                    <button type="button" class="button myvh-cancel">Cancel</button>
+                </p>
+            </form>
+        </div>
+    </div>
+    <?php
+});

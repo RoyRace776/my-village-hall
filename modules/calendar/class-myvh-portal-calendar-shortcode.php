@@ -31,7 +31,7 @@ class MYVH_Portal_Calendar_Shortcode {
 
         <script>
             window.myvhCalendarConfig = {
-                ajaxUrl: "<?php echo admin_url('admin-ajax.php'); ?>",
+                ajax_url: "<?php echo admin_url('admin-ajax.php'); ?>",
                 endpoint: "myvh_portal_calendar_events"
             };
         </script>
