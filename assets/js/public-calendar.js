@@ -18,7 +18,8 @@
     var lastEvents = [];
     var headerDateFormat = cfg.headerDateFormat || 'd MMM';
     var current = {
-        view : cfg.view || 'month',
+        mode : 'calendar',
+        detail : cfg.view || 'month',
         date : DayPilot.Date.today(),
     };
 
@@ -63,25 +64,28 @@
 
         wrap = container.closest('.myvh-public-calendar-wrap');
 
-        mountView(current.view);
+        mountView(current.detail, current.mode);
         bindToolbar();
     });
 
     // ── Mount / re-mount a DayPilot view ─────────────────────────────────────
-    function mountView(view) {
-        var previousView = current.view;
+    function mountView(detail, mode) {
+        var previousDetail = current.detail;
+        var previousMode = current.mode;
         var container = document.getElementById(cfg.containerId);
-        current.view = view;
+        current.detail = detail;
+        current.mode = mode;
 
         // When moving from month to week/day, jump to the first visible event date
         // so week/day doesn't appear empty if today's range has no bookings.
-        if (previousView === 'month' && (view === 'week' || view === 'day') && lastEvents.length > 0) {
+        if (previousMode === 'calendar' && previousDetail === 'month' && (detail === 'week' || detail === 'day') && lastEvents.length > 0) {
             try {
                 current.date = new DayPilot.Date(lastEvents[0].start);
             } catch (e) { /* keep current date */ }
         }
 
-        updateViewButtons();
+        updateModeButtons();
+        updateDetailButtons();
 
         // Dispose previous control
         if (dp) {
@@ -94,21 +98,162 @@
             container.innerHTML = '';
         }
 
-        switch (view) {
-            case 'week':
-                dp = new DayPilot.Calendar(cfg.containerId, buildWeekConfig(false));
-                break;
-            case 'day':
-                dp = new DayPilot.Calendar(cfg.containerId, buildWeekConfig(true));
-                break;
-            default:
-                dp = new DayPilot.Month(cfg.containerId, buildMonthConfig());
-                break;
+        if (mode === 'scheduler') {
+            dp = new DayPilot.Scheduler(cfg.containerId, buildSchedulerConfig(detail));
+            dp.resources = buildSchedulerResources(lastEvents);
+        } else {
+            switch (detail) {
+                case 'week':
+                    dp = new DayPilot.Calendar(cfg.containerId, buildWeekConfig(false));
+                    break;
+                case 'day':
+                    dp = new DayPilot.Calendar(cfg.containerId, buildWeekConfig(true));
+                    break;
+                default:
+                    dp = new DayPilot.Month(cfg.containerId, buildMonthConfig());
+                    break;
+            }
         }
 
         dp.init();
         loadEvents();
         updateTitle();
+    }
+
+    function buildSchedulerConfig(detail) {
+        var start = new DayPilot.Date(current.date);
+        var maxBookingDaysAhead = Number.isFinite(Number(cfg.maxBookingDaysAhead)) ? Number(cfg.maxBookingDaysAhead) : 365;
+        var startHour = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 0;
+        var endHour = Number.isFinite(Number(cfg.visibleEndHour)) ? Number(cfg.visibleEndHour) : 24;
+        var base = {
+            startDate: detail === 'month' ? start.firstDayOfMonth() : start,
+            eventResourceField: 'resource',
+            treeEnabled: true,
+            rowHeaderWidth: 220,
+            timeRangeSelectedHandling: 'Disabled',
+            eventMoveHandling: 'Disabled',
+            eventResizeHandling: 'Disabled',
+            onEventClick: handleEventClick,
+            onEventHover: handleEventHover,
+            onBeforeRowHeaderRender: function(args) {
+                var tags = (args.row && args.row.tags) ? args.row.tags : {};
+
+                if (tags.type === 'venue') {
+                    args.row.html = '<div style="font-weight:700;color:#2c3338;letter-spacing:.01em;">' + String(args.row.name || '') + '</div>';
+                    return;
+                }
+
+                args.row.html = '<div style="padding-left:14px;color:#50575e;">' + String(args.row.name || '') + '</div>';
+            },
+        };
+
+        if (detail === 'day') {
+            base.startDate = DayPilot.Date.today().getDatePart();
+            base.scale = 'Hour';
+            base.days = Math.max(1, maxBookingDaysAhead);
+            base.cellDuration = 60;
+            base.timeHeaders = [
+                { groupBy: 'Day', format: headerDateFormat },
+                { groupBy: 'Hour' }
+            ];
+            base.businessBeginsHour = startHour;
+            base.businessEndsHour = endHour;
+        } else if (detail === 'month') {
+            base.startDate = DayPilot.Date.today().getDatePart();
+            base.scale = 'Day';
+            base.days = Math.max(1, maxBookingDaysAhead);
+            base.timeHeaders = [
+                { groupBy: 'Month' },
+                { groupBy: 'Day', format: headerDateFormat }
+            ];
+        } else {
+            base.startDate = DayPilot.Date.today().getDatePart();
+            base.scale = 'Day';
+            base.days = Math.max(1, maxBookingDaysAhead);
+            base.timeHeaders = [
+                { groupBy: 'Month' },
+                { groupBy: 'Day', format: headerDateFormat }
+            ];
+        }
+
+        return base;
+    }
+
+    function buildSchedulerResources(events) {
+        if (Array.isArray(cfg.rooms) && cfg.rooms.length > 0) {
+            var groups = {};
+
+            cfg.rooms.forEach(function (room) {
+                var venueId = room.venueId || 'venue-unknown';
+                var venueName = room.venue || 'Venue';
+
+                if (!groups[venueId]) {
+                    groups[venueId] = {
+                        name: venueName,
+                        rooms: []
+                    };
+                }
+
+                groups[venueId].rooms.push({
+                    id: room.id,
+                    name: room.name || 'Room'
+                });
+            });
+
+            var flatResources = [];
+
+            Object.keys(groups).sort(function (a, b) {
+                var aName = (groups[a] && groups[a].name) ? groups[a].name.toLowerCase() : '';
+                var bName = (groups[b] && groups[b].name) ? groups[b].name.toLowerCase() : '';
+                return aName.localeCompare(bName);
+            }).forEach(function (venueId) {
+                var venue = groups[venueId];
+
+                // Non-bookable visual heading row for the venue.
+                flatResources.push({
+                    id: 'venue-heading-' + venueId,
+                    name: venue.name,
+                    tags: { type: 'venue' }
+                });
+
+                venue.rooms.sort(function (a, b) {
+                    return String(a.name || '').toLowerCase().localeCompare(String(b.name || '').toLowerCase());
+                }).forEach(function (room) {
+                    flatResources.push({
+                        id: room.id,
+                        name: room.name,
+                        tags: { type: 'room', venueId: venueId }
+                    });
+                });
+            });
+
+            return flatResources;
+        }
+
+        var byId = {};
+
+        (events || []).forEach(function (event) {
+            var id = event.resource || (event.tags && event.tags.roomId) || 'all';
+            if (!id) {
+                id = 'all';
+            }
+
+            if (!byId[id]) {
+                var roomName = (event.tags && event.tags.room) ? event.tags.room : 'Room';
+                byId[id] = {
+                    id: id,
+                    name: roomName
+                };
+            }
+        });
+
+        var list = Object.keys(byId).map(function (id) { return byId[id]; });
+
+        if (list.length === 0) {
+            list.push({ id: 'all', name: 'Bookings' });
+        }
+
+        return list;
     }
 
     // ── DayPilot Month config ─────────────────────────────────────────────────
@@ -177,6 +322,7 @@
                     start : normalized.start,
                     end   : normalized.end,
                     text  : e.text,
+                    resource: e.resource,
                     tags  : e.tags,
                     backColor : STATUS_COLOURS[e.tags && e.tags.status] || STATUS_COLOURS.confirmed,
                     fontColor : '#ffffff',
@@ -225,13 +371,13 @@
             return { start: s.toString('yyyy-MM-dd'), end: end.toString('yyyy-MM-dd') };
         }
 
-        // Day/week views can produce ambiguous visibleEnd values in some DayPilot builds,
+        // Day/week scheduler/detail views can produce ambiguous visibleEnd values in some DayPilot builds,
         // so compute deterministic windows from the control startDate.
-        if (current.view === 'week' || current.view === 'day') {
+        if (current.detail === 'week' || current.detail === 'day') {
             var calStart = new DayPilot.Date(dp.startDate || current.date);
             return {
                 start: calStart.toString('yyyy-MM-dd'),
-                end: calStart.addDays(current.view === 'day' ? 1 : 7).toString('yyyy-MM-dd'),
+                end: calStart.addDays(current.detail === 'day' ? 1 : 7).toString('yyyy-MM-dd'),
             };
         }
 
@@ -257,7 +403,7 @@
     function navigate(direction) {
         var d = new DayPilot.Date(current.date);
 
-        switch (current.view) {
+        switch (current.detail) {
             case 'month':
                 current.date = (direction > 0) ? d.addMonths(1).firstDayOfMonth()
                                                : d.addMonths(-1).firstDayOfMonth();
@@ -293,7 +439,7 @@
         var d   = new DayPilot.Date(current.date);
         var out = '';
 
-        switch (current.view) {
+        switch (current.detail) {
             case 'month':
                 out = d.toString(headerDateFormat);
                 break;
@@ -340,17 +486,32 @@
             if (btn.classList.contains('myvh-cal-next'))  { navigate(1);  return; }
             if (btn.classList.contains('myvh-cal-today')) { goToday();    return; }
 
-            if (btn.classList.contains('myvh-view-btn')) {
+            if (btn.classList.contains('myvh-mode-btn')) {
+                var mode = btn.dataset.mode;
+                if (mode) {
+                    mountView(current.detail, mode);
+                }
+                return;
+            }
+
+            if (btn.classList.contains('myvh-detail-btn')) {
                 var view = btn.dataset.view;
-                if (view) { mountView(view); }
+                if (view) { mountView(view, current.mode); }
             }
         });
     }
 
-    function updateViewButtons() {
+    function updateModeButtons() {
         if (!wrap) { return; }
-        wrap.querySelectorAll('.myvh-view-btn').forEach(function (btn) {
-            btn.classList.toggle('active', btn.dataset.view === current.view);
+        wrap.querySelectorAll('.myvh-mode-btn').forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.mode === current.mode);
+        });
+    }
+
+    function updateDetailButtons() {
+        if (!wrap) { return; }
+        wrap.querySelectorAll('.myvh-detail-btn').forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.view === current.detail);
         });
     }
 

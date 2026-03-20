@@ -2,7 +2,9 @@ window.MYVH_CalendarCore = (function () {
 
     let calendar = null;
     let scheduler = null;
-    let currentView = "Week";
+    let currentMode = "Calendar";
+    let currentDetail = "Week";
+    let currentContainerId = "myvh-calendar";
 
     function formatUsesShortWeekday(format) {
         return typeof format === "string" && /(^|[^d])ddd([^d]|$)/.test(format);
@@ -34,14 +36,29 @@ window.MYVH_CalendarCore = (function () {
         return value ? new DayPilot.Date(value) : null;
     }
 
-    function getSchedulerStartDate(mode, value) {
+    function toMode(value) {
+        return String(value || "").toLowerCase() === "scheduler" ? "Scheduler" : "Calendar";
+    }
+
+    function toDetail(value) {
+        const detail = String(value || "").toLowerCase();
+        if (detail === "day") {
+            return "Day";
+        }
+        if (detail === "month") {
+            return "Month";
+        }
+        return "Week";
+    }
+
+    function getSchedulerStartDate(detail, value) {
         const date = toDayPilotDate(value) || DayPilot.Date.today();
 
-        if (mode === "Month") {
+        if (detail === "Month") {
             return date.firstDayOfMonth();
         }
 
-        return date;
+        return date.getDatePart();
     }
 
     function destroy() {
@@ -54,7 +71,7 @@ window.MYVH_CalendarCore = (function () {
             scheduler = null;
         }
 
-        const container = document.getElementById("myvh-calendar");
+        const container = document.getElementById(currentContainerId);
         if (container) {
             while (container.firstChild) {
                 container.removeChild(container.firstChild);
@@ -93,7 +110,7 @@ window.MYVH_CalendarCore = (function () {
     // ───────────────────────────────────────────────
     // CALENDAR (Day/Week)
     // ───────────────────────────────────────────────
-    function createCalendar(containerId, opts) {
+    function createDayWeekCalendar(containerId, opts, detail) {
 
         destroy();
 
@@ -101,7 +118,7 @@ window.MYVH_CalendarCore = (function () {
         const visibleEndHour = Number.isFinite(Number(opts.visibleEndHour)) ? Number(opts.visibleEndHour) : null;
 
         calendar = new DayPilot.Calendar(containerId);
-        calendar.viewType = opts.view;
+        calendar.viewType = detail;
         calendar.startDate = toDayPilotDate(opts.startDate) || DayPilot.Date.today();
         if (opts.headerDateFormat) {
             calendar.headerDateFormat = opts.headerDateFormat;
@@ -132,42 +149,140 @@ window.MYVH_CalendarCore = (function () {
         loadEvents(opts.ajax_url, opts.nonce, opts.context);
     }
 
-    // ───────────────────────────────────────────────
-    // SCHEDULER (Rooms / Month)
-    // ───────────────────────────────────────────────
-    function createScheduler(containerId, opts, mode) {
+    function createMonthCalendar(containerId, opts) {
 
         destroy();
 
-        let startDate, days;
+        calendar = new DayPilot.Month(containerId, {
+            startDate: (toDayPilotDate(opts.startDate) || DayPilot.Date.today()).firstDayOfMonth(),
+            locale: document.documentElement.lang || "en-us",
+            eventMoveHandling: opts.editable ? "Update" : "Disabled",
+            eventResizeHandling: opts.editable ? "Update" : "Disabled",
+            onEventClick: args => opts.onEventClick?.(args),
+            onEventMoved: args => opts.onEventMoved?.(args),
+            onEventResized: args => opts.onEventResized?.(args),
+            onTimeRangeSelected: args => opts.onTimeRangeSelected?.(args),
+            timeRangeSelectedHandling: opts.selectable ? "Enabled" : "Disabled",
+        });
 
-        if (mode === "Month") {
-            startDate = getSchedulerStartDate(mode, opts.startDate);
-            days = startDate.daysInMonth();
-        } else {
-            // Rooms view = week grid
-            startDate = getSchedulerStartDate(mode, opts.startDate);
-            days = 7;
-        }
+        calendar.init();
+        loadEvents(opts.ajax_url, opts.nonce, opts.context);
+    }
 
-        scheduler = new DayPilot.Scheduler(containerId, {
-            scale: "Day",
-            startDate,
-            days,
+    // ───────────────────────────────────────────────
+    // SCHEDULER (Day / Week / Month)
+    // ───────────────────────────────────────────────
+    function buildGroupedSchedulerResources(rooms) {
+        const groups = {};
+
+        (rooms || []).forEach(room => {
+            const venueId = room.venue_id || room.VenueId || "venue-unknown";
+            const venueName = room.venue || room.VenueName || "Venue";
+
+            if (!groups[venueId]) {
+                groups[venueId] = {
+                    name: venueName,
+                    rooms: []
+                };
+            }
+
+            groups[venueId].rooms.push({
+                id: room.id,
+                name: room.name || "Room"
+            });
+        });
+
+        const flatResources = [];
+
+        Object.keys(groups).sort((a, b) => {
+            const aName = (groups[a]?.name || "").toLowerCase();
+            const bName = (groups[b]?.name || "").toLowerCase();
+            return aName.localeCompare(bName);
+        }).forEach(venueId => {
+            const venue = groups[venueId];
+
+            flatResources.push({
+                id: `venue-heading-${venueId}`,
+                name: venue.name,
+                tags: { type: "venue" }
+            });
+
+            venue.rooms.sort((a, b) => String(a.name || "").toLowerCase().localeCompare(String(b.name || "").toLowerCase()))
+                .forEach(room => {
+                    flatResources.push({
+                        id: room.id,
+                        name: room.name,
+                        tags: { type: "room", venueId }
+                    });
+                });
+        });
+
+        return flatResources;
+    }
+
+    function createScheduler(containerId, opts, detail) {
+
+        destroy();
+
+        const maxBookingDaysAhead = Number.isFinite(Number(opts.maxBookingDaysAhead)) ? Number(opts.maxBookingDaysAhead) : 365;
+        let startDate = getSchedulerStartDate(detail, opts.startDate);
+        const config = {
+            startDate: startDate,
             eventResourceField: "resource",
-            timeHeaders: [
-                { groupBy: "Month" },
-                { groupBy: "Day", format: opts.headerDateFormat || "d" }
-            ],
+            rowHeaderWidth: 220,
             timeRangeSelectedHandling: opts.selectable ? "Enabled" : "Disabled",
             onEventClick: args => opts.onEventClick?.(args),
             onEventMoved: args => opts.onEventMoved?.(args),
             onEventResized: args => opts.onEventResized?.(args),
-            onTimeRangeSelected: args => opts.onTimeRangeSelected?.(args)
-        });
+            onTimeRangeSelected: args => opts.onTimeRangeSelected?.(args),
+            onBeforeRowHeaderRender: args => {
+                const tags = (args.row && args.row.tags) ? args.row.tags : {};
+
+                if (tags.type === "venue") {
+                    args.row.html = `<div style="font-weight:700;color:#2c3338;letter-spacing:.01em;">${String(args.row.name || "")}</div>`;
+                    return;
+                }
+
+                args.row.html = `<div style="padding-left:14px;color:#50575e;">${String(args.row.name || "")}</div>`;
+            }
+        };
+
+        if (detail === "Day") {
+            startDate = DayPilot.Date.today().getDatePart();
+            config.startDate = startDate;
+            config.scale = "Hour";
+            config.days = Math.max(1, maxBookingDaysAhead);
+            config.cellDuration = 60;
+            config.timeHeaders = [
+                { groupBy: "Day", format: opts.headerDateFormat || "d MMM" },
+                { groupBy: "Hour" }
+            ];
+        } else if (detail === "Month") {
+            startDate = DayPilot.Date.today().getDatePart();
+            config.startDate = startDate;
+            config.scale = "Day";
+            config.days = Math.max(1, maxBookingDaysAhead);
+            config.timeHeaders = [
+                { groupBy: "Month" },
+                { groupBy: "Day", format: opts.headerDateFormat || "d" }
+            ];
+        } else {
+            startDate = DayPilot.Date.today().getDatePart();
+            config.startDate = startDate;
+            config.scale = "Day";
+            config.days = Math.max(1, maxBookingDaysAhead);
+            config.timeHeaders = [
+                { groupBy: "Month" },
+                { groupBy: "Day", format: opts.headerDateFormat || "d" }
+            ];
+        }
+
+        scheduler = new DayPilot.Scheduler(containerId, config);
 
         // Load rooms first
-        fetch(`${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}`)
+        const roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
+
+        fetch(roomsUrl)
             .then(r => r.json())
             .then(res => {
 
@@ -175,7 +290,7 @@ window.MYVH_CalendarCore = (function () {
                     ? res.data
                     : Object.values(res?.data || res || {});
 
-                scheduler.resources = rooms;
+                scheduler.resources = buildGroupedSchedulerResources(rooms);
 
                 scheduler.init();
                 loadEvents(opts.ajax_url, opts.nonce, opts.context);
@@ -185,30 +300,50 @@ window.MYVH_CalendarCore = (function () {
         });
     }
 
+    function render(containerId, opts, startDate = null) {
+        if (currentMode === "Scheduler") {
+            createScheduler(containerId, { ...opts, startDate }, currentDetail);
+            return;
+        }
+
+        if (currentDetail === "Month") {
+            createMonthCalendar(containerId, { ...opts, startDate });
+            return;
+        }
+
+        createDayWeekCalendar(containerId, { ...opts, startDate }, currentDetail);
+    }
+
+    function currentStartDateValue() {
+        if (calendar?.startDate) {
+            return calendar.startDate;
+        }
+
+        if (scheduler?.startDate) {
+            return scheduler.startDate;
+        }
+
+        return DayPilot.Date.today();
+    }
+
     // ───────────────────────────────────────────────
     // PUBLIC API
     // ───────────────────────────────────────────────
     function init(containerId, opts) {
 
         ensureThreeLetterEnglishWeekdays(opts.headerDateFormat);
+        currentContainerId = containerId || "myvh-calendar";
 
         const initialState = opts.initialState || null;
-        const initialView = initialState?.view || "Week";
+        const legacyView = initialState?.view || null;
+        const initialMode = initialState?.mode || opts.initialMode || (legacyView === "Rooms" ? "Scheduler" : "Calendar");
+        const initialDetail = initialState?.detail || opts.initialDetail || (legacyView === "Rooms" ? "Week" : (legacyView || "Week"));
         const initialStart = initialState?.start || null;
 
-        currentView = initialView;
+        currentMode = toMode(initialMode);
+        currentDetail = toDetail(initialDetail);
 
-        if (initialView === "Day" || initialView === "Week") {
-            createCalendar(containerId, { ...opts, view: initialView, startDate: initialStart });
-        }
-
-        if (initialView === "Rooms") {
-            createScheduler(containerId, { ...opts, startDate: initialStart }, "Rooms");
-        }
-
-        if (initialView === "Month") {
-            createScheduler(containerId, { ...opts, startDate: initialStart }, "Month");
-        }
+        render(currentContainerId, opts, initialStart);
 
         return {
 
@@ -227,7 +362,9 @@ window.MYVH_CalendarCore = (function () {
 
             getState() {
                 return {
-                    view: currentView,
+                    mode: currentMode,
+                    detail: currentDetail,
+                    view: currentDetail,
                     start: calendar
                         ? calendar.startDate.toString()
                         : scheduler
@@ -241,11 +378,14 @@ window.MYVH_CalendarCore = (function () {
                     return;
                 }
 
-                const view = state.view || currentView;
+                const mode = toMode(state.mode || currentMode);
+                const detail = toDetail(state.detail || state.view || currentDetail);
                 const start = state.start ? new DayPilot.Date(state.start) : null;
 
-                if (view !== currentView) {
-                    this.setView(view, start);
+                if (mode !== currentMode || detail !== currentDetail) {
+                    currentMode = mode;
+                    currentDetail = detail;
+                    render(currentContainerId, opts, start);
                     return;
                 }
 
@@ -260,41 +400,54 @@ window.MYVH_CalendarCore = (function () {
                 }
 
                 if (scheduler) {
-                    scheduler.startDate = view === "Month" ? start.firstDayOfMonth() : start;
+                    scheduler.startDate = currentDetail === "Month" ? start.firstDayOfMonth() : start;
                     scheduler.update();
                     loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
             },
 
+            setMode(mode, startDate = null) {
+                currentMode = toMode(mode);
+                render(currentContainerId, opts, startDate || currentStartDateValue());
+            },
+
+            setDetail(detail, startDate = null) {
+                currentDetail = toDetail(detail);
+                render(currentContainerId, opts, startDate || currentStartDateValue());
+            },
+
+            setModeAndDetail(mode, detail, startDate = null) {
+                currentMode = toMode(mode);
+                currentDetail = toDetail(detail);
+                render(currentContainerId, opts, startDate || currentStartDateValue());
+            },
+
             setView(view, startDate = null) {
-                currentView = view;
-
-                if (view === "Day" || view === "Week") {
-                    createCalendar(containerId, { ...opts, view, startDate });
-                }
-
                 if (view === "Rooms") {
-                    createScheduler(containerId, { ...opts, startDate }, "Rooms");
+                    this.setModeAndDetail("Scheduler", "Week", startDate);
+                    return;
                 }
 
-                if (view === "Month") {
-                    createScheduler(containerId, { ...opts, startDate }, "Month");
-                }
+                this.setDetail(view, startDate);
             },
 
             next() {
                 if (calendar) {
-                    calendar.startDate = calendar.startDate.addDays(
-                        currentView === "Day" ? 1 : 7
-                    );
+                    if (currentDetail === "Month") {
+                        calendar.startDate = calendar.startDate.addMonths(1).firstDayOfMonth();
+                    } else {
+                        calendar.startDate = calendar.startDate.addDays(currentDetail === "Day" ? 1 : 7);
+                    }
                     calendar.update();
                     loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
 
                 if (scheduler) {
-                    scheduler.startDate = scheduler.startDate.addDays(
-                        currentView === "Month" ? scheduler.startDate.daysInMonth() : 7
-                    );
+                    if (currentDetail === "Month") {
+                        scheduler.startDate = scheduler.startDate.addMonths(1).firstDayOfMonth();
+                    } else {
+                        scheduler.startDate = scheduler.startDate.addDays(currentDetail === "Day" ? 1 : 7);
+                    }
                     scheduler.update();
                     loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
@@ -302,17 +455,21 @@ window.MYVH_CalendarCore = (function () {
 
             prev() {
                 if (calendar) {
-                    calendar.startDate = calendar.startDate.addDays(
-                        currentView === "Day" ? -1 : -7
-                    );
+                    if (currentDetail === "Month") {
+                        calendar.startDate = calendar.startDate.addMonths(-1).firstDayOfMonth();
+                    } else {
+                        calendar.startDate = calendar.startDate.addDays(currentDetail === "Day" ? -1 : -7);
+                    }
                     calendar.update();
                     loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
 
                 if (scheduler) {
-                    scheduler.startDate = scheduler.startDate.addDays(
-                        currentView === "Month" ? -scheduler.startDate.daysInMonth() : -7
-                    );
+                    if (currentDetail === "Month") {
+                        scheduler.startDate = scheduler.startDate.addMonths(-1).firstDayOfMonth();
+                    } else {
+                        scheduler.startDate = scheduler.startDate.addDays(currentDetail === "Day" ? -1 : -7);
+                    }
                     scheduler.update();
                     loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
@@ -320,13 +477,17 @@ window.MYVH_CalendarCore = (function () {
 
             today() {
                 if (calendar) {
-                    calendar.startDate = DayPilot.Date.today();
+                    calendar.startDate = currentDetail === "Month"
+                        ? DayPilot.Date.today().firstDayOfMonth()
+                        : DayPilot.Date.today();
                     calendar.update();
                     loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
 
                 if (scheduler) {
-                    scheduler.startDate = DayPilot.Date.today().firstDayOfMonth();
+                    scheduler.startDate = currentDetail === "Month"
+                        ? DayPilot.Date.today().firstDayOfMonth()
+                        : DayPilot.Date.today();
                     scheduler.update();
                     loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
@@ -339,7 +500,7 @@ window.MYVH_CalendarCore = (function () {
     }
 
     return {
-            init,
-           };
+        init,
+        };
 
 })();

@@ -2,22 +2,38 @@ var MYVH_CalendarAdmin = (function() {
 
     var api = null;
 
-    function setActiveViewButton(view) {
-        document.querySelectorAll('.myvh-view-btn').forEach(function(button) {
-            button.classList.toggle('active', button.dataset.view === view);
+    function setActiveModeButton(mode) {
+        document.querySelectorAll('.myvh-mode-btn').forEach(function(button) {
+            button.classList.toggle('active', button.dataset.mode === mode);
+        });
+    }
+
+    function setActiveDetailButton(detail) {
+        document.querySelectorAll('.myvh-detail-btn').forEach(function(button) {
+            button.classList.toggle('active', button.dataset.view === detail);
         });
     }
 
     function getStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
+        const mode = params.get('cal_mode');
+        const detail = params.get('cal_detail');
         const view = params.get('cal_view');
         const start = params.get('cal_start');
 
-        if (!view && !start) {
+        if (!mode && !detail && !view && !start) {
             return null;
         }
 
-        return { view, start };
+        if (!mode && !detail && view) {
+            return {
+                mode: view === 'Rooms' ? 'Scheduler' : 'Calendar',
+                detail: view === 'Rooms' ? 'Week' : view,
+                start,
+            };
+        }
+
+        return { mode, detail, start };
     }
 
     function buildCalendarReturnUrl() {
@@ -28,6 +44,20 @@ var MYVH_CalendarAdmin = (function() {
 
         if (state?.view) {
             url.searchParams.set('cal_view', state.view);
+        } else {
+            url.searchParams.delete('cal_view');
+        }
+
+        if (state?.mode) {
+            url.searchParams.set('cal_mode', state.mode);
+        } else {
+            url.searchParams.delete('cal_mode');
+        }
+
+        if (state?.detail) {
+            url.searchParams.set('cal_detail', state.detail);
+        } else {
+            url.searchParams.delete('cal_detail');
         }
 
         if (state?.start) {
@@ -42,7 +72,8 @@ var MYVH_CalendarAdmin = (function() {
     // ─────────────────────────────
     function bindControls() {
 
-        const roomsBtn = document.getElementById('myvh_rooms');
+        const calendarModeBtn = document.getElementById('myvh-mode-calendar');
+        const schedulerModeBtn = document.getElementById('myvh-mode-scheduler');
         const dayBtn   = document.getElementById('myvh-day');
         const weekBtn  = document.getElementById('myvh-week');
         const monthBtn = document.getElementById('myvh-month');
@@ -51,24 +82,29 @@ var MYVH_CalendarAdmin = (function() {
         const prevBtn  = document.getElementById('myvh-prev');
         const todayBtn = document.getElementById('myvh-today');
 
-        if (roomsBtn) roomsBtn.addEventListener('click', () => {
-            api.setView('Rooms');
-            setActiveViewButton('Resources');
+        if (calendarModeBtn) calendarModeBtn.addEventListener('click', () => {
+            api.setMode('Calendar');
+            setActiveModeButton('Calendar');
+        });
+
+        if (schedulerModeBtn) schedulerModeBtn.addEventListener('click', () => {
+            api.setMode('Scheduler');
+            setActiveModeButton('Scheduler');
         });
 
         if (dayBtn) dayBtn.addEventListener('click', () => {
-            api.setView('Day');
-            setActiveViewButton('Day');
+            api.setDetail('Day');
+            setActiveDetailButton('Day');
         });
 
         if (weekBtn) weekBtn.addEventListener('click', () => {
-            api.setView('Week');
-            setActiveViewButton('Week');
+            api.setDetail('Week');
+            setActiveDetailButton('Week');
         });
 
         if (monthBtn) monthBtn.addEventListener('click', () => {
-            api.setView('Month');
-            setActiveViewButton('Month');
+            api.setDetail('Month');
+            setActiveDetailButton('Month');
         });
 
         if (nextBtn)  nextBtn.addEventListener('click', () => api.next());
@@ -131,6 +167,8 @@ var MYVH_CalendarAdmin = (function() {
             editable: true,
             selectable: true,
             initialState: restoredState,
+            initialMode: restoredState?.mode || 'Calendar',
+            initialDetail: restoredState?.detail || 'Week',
             headerDateFormat: myvhCal.headerDateFormat || null,
             visibleStartHour: Number(myvhCal.visibleStartHour || 0),
             visibleEndHour: Number(myvhCal.visibleEndHour || 24),
@@ -177,7 +215,9 @@ var MYVH_CalendarAdmin = (function() {
         });
 
         bindControls();
-        setActiveViewButton(restoredState?.view === 'Rooms' ? 'Resources' : (restoredState?.view || 'Week'));
+    const state = api.getState?.() || {};
+    setActiveModeButton(state.mode || 'Calendar');
+    setActiveDetailButton(state.detail || 'Week');
 
         // Optional: expose for debugging
         window.myvhApi = api;

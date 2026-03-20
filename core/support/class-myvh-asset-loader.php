@@ -151,6 +151,7 @@ class MYVH_Asset_Loader {
                 'ajax_url'         => admin_url( 'admin-ajax.php' ),
                 'nonce'            => wp_create_nonce( 'myvh_calendar' ),
                 'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+                'maxBookingDaysAhead' => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
                 'visibleStartHour' => $visible_hours['start'],
                 'visibleEndHour'   => $visible_hours['end'],
             ] );
@@ -269,6 +270,7 @@ class MYVH_Asset_Loader {
             'ajax_url'         => admin_url( 'admin-ajax.php' ),
             'nonce'            => wp_create_nonce( 'myvh_calendar' ),
             'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+            'maxBookingDaysAhead' => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
             'currentCustomerId' => $current_customer_id,
             'defaultOrganisationId' => $default_organisation_id,
             'visibleStartHour' => $visible_hours['start'],

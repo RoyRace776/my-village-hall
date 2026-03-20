@@ -34,9 +34,15 @@ var MYVH_Calendar = (function() {
         }
     }
 
-    function setActiveViewButton(view) {
-        document.querySelectorAll('.myvh-view-btn').forEach(function(button) {
-            button.classList.toggle('active', button.dataset.view === view);
+    function setActiveModeButton(mode) {
+        document.querySelectorAll('.myvh-mode-btn').forEach(function(button) {
+            button.classList.toggle('active', button.dataset.mode === mode);
+        });
+    }
+
+    function setActiveDetailButton(detail) {
+        document.querySelectorAll('.myvh-detail-btn').forEach(function(button) {
+            button.classList.toggle('active', button.dataset.view === detail);
         });
     }
 
@@ -45,6 +51,8 @@ var MYVH_Calendar = (function() {
     // ─────────────────────────────
     function bindControls() {
 
+        const calendarModeBtn = document.getElementById('myvh-mode-calendar');
+        const schedulerModeBtn = document.getElementById('myvh-mode-scheduler');
         const dayBtn   = document.getElementById('myvh-day');
         const weekBtn  = document.getElementById('myvh-week');
         const monthBtn = document.getElementById('myvh-month');
@@ -53,21 +61,33 @@ var MYVH_Calendar = (function() {
         const prevBtn  = document.getElementById('myvh-prev');
         const todayBtn = document.getElementById('myvh-today');
 
+        if (calendarModeBtn) calendarModeBtn.addEventListener('click', () => {
+            api.setMode('Calendar');
+            setActiveModeButton('Calendar');
+            ensureSelectableRangeHandlers();
+        });
+
+        if (schedulerModeBtn) schedulerModeBtn.addEventListener('click', () => {
+            api.setMode('Scheduler');
+            setActiveModeButton('Scheduler');
+            ensureSelectableRangeHandlers();
+        });
+
         if (dayBtn) dayBtn.addEventListener('click', () => {
-            api.setView('Day');
-            setActiveViewButton('Day');
+            api.setDetail('Day');
+            setActiveDetailButton('Day');
             ensureSelectableRangeHandlers();
         });
 
         if (weekBtn) weekBtn.addEventListener('click', () => {
-            api.setView('Week');
-            setActiveViewButton('Week');
+            api.setDetail('Week');
+            setActiveDetailButton('Week');
             ensureSelectableRangeHandlers();
         });
 
         if (monthBtn) monthBtn.addEventListener('click', () => {
-            api.setView('Month');
-            setActiveViewButton('Month');
+            api.setDetail('Month');
+            setActiveDetailButton('Month');
             ensureSelectableRangeHandlers();
         });
 
@@ -120,6 +140,8 @@ var MYVH_Calendar = (function() {
             editable:   false,
             selectable: true,
             readOnly:   true,
+            initialMode: 'Calendar',
+            initialDetail: 'Week',
 
             onEventClick: function(args) {
                 const id = args.e.id ? args.e.id() : args.e.data.id;
@@ -130,7 +152,9 @@ var MYVH_Calendar = (function() {
         });
 
         bindControls();
-        setActiveViewButton('Week');
+        const state = api.getState?.() || {};
+        setActiveModeButton(state.mode || 'Calendar');
+        setActiveDetailButton(state.detail || 'Week');
         ensureSelectableRangeHandlers();
     }
 

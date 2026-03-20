@@ -22,19 +22,23 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
     </div>
 
     <div class="myvh-calendar-views">
-        <button id="myvh_rooms" class="button myvh-view-btn" data-view="Resources">
-            <?php _e('Rooms', 'my-village-hall'); ?>
+        <button id="myvh-mode-calendar" class="button myvh-view-btn myvh-mode-btn active" data-mode="Calendar" type="button">
+            <?php _e('Calendar', 'my-village-hall'); ?>
         </button>
 
-        <button id="myvh-day" class="button myvh-view-btn" data-view="Day">
+        <button id="myvh-mode-scheduler" class="button myvh-view-btn myvh-mode-btn" data-mode="Scheduler" type="button">
+            <?php _e('Scheduler', 'my-village-hall'); ?>
+        </button>
+
+        <button id="myvh-day" class="button myvh-view-btn myvh-detail-btn" data-view="Day" type="button">
             <?php _e('Day', 'my-village-hall'); ?>
         </button>
 
-        <button id="myvh-week" class="button myvh-view-btn active" data-view="Week">
+        <button id="myvh-week" class="button myvh-view-btn myvh-detail-btn active" data-view="Week" type="button">
             <?php _e('Week', 'my-village-hall'); ?>
         </button>
 
-        <button id="myvh-month" class="button myvh-view-btn" data-view="Month">
+        <button id="myvh-month" class="button myvh-view-btn myvh-detail-btn" data-view="Month" type="button">
             <?php _e('Month', 'my-village-hall'); ?>
         </button>
     </div>

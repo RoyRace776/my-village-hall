@@ -111,6 +111,7 @@ class MYVH_Calendar_Shortcode {
                     b.Description,
                     b.Status,
                     b.Public AS IsPublic,
+                        r.Id    AS RoomId,
                     r.Name  AS RoomName,
                     v.Id    AS VenueId,
                     v.Name  AS VenueName
@@ -141,8 +142,9 @@ class MYVH_Calendar_Shortcode {
                 'start'    => $start_dt,
                 'end'      => $end_dt,
                 'text'     => sanitize_text_field( $text ),
-                'resource' => $row['VenueId'],
+                    'resource' => (int) $row['RoomId'],
                 'tags'     => [
+                        'roomId' => (int) $row['RoomId'],
                     'room'   => $row['RoomName'],
                     'venue'  => $row['VenueName'],
                     'status' => $row['Status'],
@@ -177,6 +179,7 @@ class MYVH_Calendar_Shortcode {
         $unique_id  = 'myvh-cal-' . uniqid();
         $events_url = rest_url( self::REST_NAMESPACE . self::REST_ROUTE );
         $visible_hours = [ 'start' => 8, 'end' => 22 ];
+        $public_rooms = [];
         global $myvh_container;
 
         if ( isset( $myvh_container ) ) {
@@ -188,6 +191,33 @@ class MYVH_Calendar_Shortcode {
                     $visible_hours = [
                         'start' => isset( $service_hours['start'] ) ? (int) $service_hours['start'] : $visible_hours['start'],
                         'end'   => isset( $service_hours['end'] ) ? (int) $service_hours['end'] : $visible_hours['end'],
+                    ];
+                }
+
+                $room_service = $myvh_container->get( MYVH_Room_Service::class );
+                $rooms = $room_service->get_all_with_venues();
+
+                foreach ( (array) $rooms as $room ) {
+                    $room_id = isset( $room['Id'] ) ? (int) $room['Id'] : 0;
+                    $venue_id = isset( $room['VenueId'] ) ? (int) $room['VenueId'] : 0;
+
+                    if ( $room_id <= 0 ) {
+                        continue;
+                    }
+
+                    if ( (int) $atts['venue_id'] > 0 && $venue_id !== (int) $atts['venue_id'] ) {
+                        continue;
+                    }
+
+                    if ( (int) $atts['room_id'] > 0 && $room_id !== (int) $atts['room_id'] ) {
+                        continue;
+                    }
+
+                    $public_rooms[] = [
+                        'id' => $room_id,
+                        'name' => sanitize_text_field( (string) ( $room['Name'] ?? '' ) ),
+                        'venueId' => $venue_id,
+                        'venue' => sanitize_text_field( (string) ( $room['VenueName'] ?? '' ) ),
                     ];
                 }
             } catch ( Throwable $e ) {
@@ -202,7 +232,9 @@ class MYVH_Calendar_Shortcode {
             'roomId'      => (int) $atts['room_id'],
             'view'        => sanitize_key( $atts['view'] ),
             'height'      => (int) $atts['height'],
+            'rooms'       => $public_rooms,
             'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+            'maxBookingDaysAhead' => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
             'visibleStartHour' => (int) $visible_hours['start'],
             'visibleEndHour'   => (int) $visible_hours['end'],
             'nonce'       => wp_create_nonce( 'wp_rest' ),
@@ -244,9 +276,11 @@ class MYVH_Calendar_Shortcode {
                     <span class="myvh-cal-title"></span>
                 </div>
                 <div class="myvh-cal-views">
-                    <button class="myvh-cal-btn myvh-view-btn <?php echo $atts['view'] === 'month' ? 'active' : ''; ?>" data-view="month"><?php esc_html_e( 'Month', 'my-village-hall' ); ?></button>
-                    <button class="myvh-cal-btn myvh-view-btn <?php echo $atts['view'] === 'week'  ? 'active' : ''; ?>" data-view="week"><?php esc_html_e( 'Week', 'my-village-hall' ); ?></button>
-                    <button class="myvh-cal-btn myvh-view-btn <?php echo $atts['view'] === 'day'   ? 'active' : ''; ?>" data-view="day"><?php esc_html_e( 'Day', 'my-village-hall' ); ?></button>
+                    <button class="myvh-cal-btn myvh-mode-btn active" data-mode="calendar"><?php esc_html_e( 'Calendar', 'my-village-hall' ); ?></button>
+                    <button class="myvh-cal-btn myvh-mode-btn" data-mode="scheduler"><?php esc_html_e( 'Scheduler', 'my-village-hall' ); ?></button>
+                    <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'month' ? 'active' : ''; ?>" data-view="month"><?php esc_html_e( 'Month', 'my-village-hall' ); ?></button>
+                    <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'week'  ? 'active' : ''; ?>" data-view="week"><?php esc_html_e( 'Week', 'my-village-hall' ); ?></button>
+                    <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'day'   ? 'active' : ''; ?>" data-view="day"><?php esc_html_e( 'Day', 'my-village-hall' ); ?></button>
                 </div>
             </div>
 

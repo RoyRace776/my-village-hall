@@ -76,7 +76,7 @@ class MYVH_Calendar_Ajax_Controller {
             wp_send_json_error( 'Permission denied', 403 );
         }
 
-        $rooms = $this->room_repository->get_all();
+        $rooms = $this->room_repository->get_all_with_venues();
 
         $columns = [];
 
@@ -85,6 +85,8 @@ class MYVH_Calendar_Ajax_Controller {
             $columns[] = [
                 "name" => $room['Name'],
                 "id"   => $room['Id'],
+                "venue_id" => !empty($room['VenueId']) ? (int) $room['VenueId'] : 0,
+                "venue" => $room['VenueName'] ?? '',
                 "allow_multiday" => !empty($room['AllowMultiDayBookings']) ? 1 : 0
             ];
         }
