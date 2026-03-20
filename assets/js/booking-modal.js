@@ -142,6 +142,7 @@ window.MYVH_BookingModal = (function() {
 
         el.value = value;
         el.disabled = true;
+        el.dataset.locked = "true"; // 👈 mark as intentionally locked
     }
 
     function setValue(field, value) {
@@ -193,9 +194,9 @@ window.MYVH_BookingModal = (function() {
             return;
         }
 
-        setLoading(true);
+        const formData = buildSubmitFormData();
 
-        const formData = new FormData(form);
+        setLoading(true);
         formData.append("action", "myvh_create_event");
         formData.append("nonce", config.nonce);
 
@@ -223,6 +224,20 @@ window.MYVH_BookingModal = (function() {
         });
     }
 
+    function buildSubmitFormData() {
+
+        const formData = new FormData(form);
+
+        // Disabled controls are excluded from FormData, but locked fields are intentional selections.
+        form.querySelectorAll("[name][data-locked=true]").forEach(el => {
+            if (!formData.has(el.name)) {
+                formData.append(el.name, el.value);
+            }
+        });
+
+        return formData;
+    }
+
     // ─────────────────────────────
     // UX helpers
     // ─────────────────────────────
@@ -236,7 +251,10 @@ window.MYVH_BookingModal = (function() {
         }
 
         form.querySelectorAll("input, select").forEach(el => {
-            el.disabled = state || el.disabled;
+            // Only toggle fields that aren't intentionally locked
+            if (!el.dataset.locked) {
+                el.disabled = state;
+            }
         });
     }
 

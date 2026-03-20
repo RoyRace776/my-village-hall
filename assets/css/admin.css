@@ -180,3 +180,50 @@
 .myvh-expand-all-bar button {
     font-size: 12px;
 }
+
+/* Base modal */
+#myvh-booking-modal.hidden {
+    display: none;
+}
+
+/* Modal overlay */
+#myvh-booking-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: rgba(0, 0, 0, 0.5);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+}
+
+/* Modal box */
+#myvh-booking-modal .myvh-modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 6px;
+    min-width: 400px;
+    max-width: 600px;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* Form layout */
+#myvh-booking-modal table {
+    width: 100%;
+}
+
+#myvh-booking-modal td {
+    padding: 6px;
+}
+
+/* Buttons */
+#myvh-booking-modal button {
+    margin-top: 10px;
+}

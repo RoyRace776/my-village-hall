@@ -28,7 +28,6 @@ var MYVH_CalendarAdmin = (function() {
     // AJAX Helpers
     // ─────────────────────────────
     function updateEvent(data) {
-
         return jQuery.post(myvhCal.ajax_url, {
             action: 'myvh_update_event',
             nonce:  myvhCal.nonce,
@@ -37,7 +36,6 @@ var MYVH_CalendarAdmin = (function() {
     }
 
     function createEvent(data) {
-
         return jQuery.post(myvhCal.ajax_url, {
             action: 'myvh_create_event',
             nonce:  myvhCal.nonce,
@@ -49,52 +47,6 @@ var MYVH_CalendarAdmin = (function() {
     // Init
     // ─────────────────────────────
     function init() {
-
-        api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
-
-            context:    "admin",
-            ajax_url:    myvhCal.ajax_url,
-            nonce:      myvhCal.nonce,
-
-            editable:   true,
-            selectable: true,
-            readOnly:   false,
-
-            // ───── Click = open/edit booking
-            onEventClick: function(args) {
-                const id = args.e.id();
-                window.location.href = '/wp-admin/admin.php?page=myvh-bookings&action=edit&id=' + id;
-            },
-
-            // ───── Drag move
-            onEventMoved: function(args) {
-                updateEvent({
-                    id:    args.e.id(),
-                    start: args.newStart.toString(),
-                    end:   args.newEnd.toString()
-                }).fail(function() {
-                    alert('Failed to move event');
-                    api.reload();
-                });
-            },
-
-            // ───── Resize
-            onEventResized: function(args) {
-                updateEvent({
-                    id:    args.e.id(),
-                    start: args.newStart.toString(),
-                    end:   args.newEnd.toString()
-                }).fail(function() {
-                    alert('Failed to resize event');
-                    api.reload();
-                });
-            },
-        });
-
-        bindControls();
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
 
         const modal = MYVH_BookingModal;
 
@@ -117,23 +69,55 @@ var MYVH_CalendarAdmin = (function() {
             onSuccess: () => api.reload()
         });
 
-        api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
+        // IMPORTANT: use initCalendar (alias to init)
+        api = MYVH_CalendarCore.init("myvh-calendar", {
             ajax_url: myvhCal.ajax_url,
             nonce: myvhCal.nonce,
             editable: true,
             selectable: true,
 
-            onTimeRangeSelected: function(args) {
+            onEventClick: function(args) {
+                const id = args.e.id ? args.e.id() : args.e.data.id;
+                window.location.href = '/wp-admin/admin.php?page=myvh-bookings&action=edit&id=' + id;
+            },
 
+            onEventMoved: function(args) {
+                updateEvent({
+                    id:    args.e.id ? args.e.id() : args.e.data.id,
+                    start: args.newStart.toString(),
+                    end:   args.newEnd.toString()
+                }).fail(function() {
+                    alert('Failed to move event');
+                    api.reload();
+                });
+            },
+
+            onEventResized: function(args) {
+                updateEvent({
+                    id:    args.e.id ? args.e.id() : args.e.data.id,
+                    start: args.newStart.toString(),
+                    end:   args.newEnd.toString()
+                }).fail(function() {
+                    alert('Failed to resize event');
+                    api.reload();
+                });
+            },
+
+            onTimeRangeSelected: function(args) {
                 modal.open({
                     start: args.start.toString(),
                     end: args.end.toString()
                 });
 
-                api.calendar.clearSelection();
+                api.calendar && api.calendar.clearSelection?.();
             }
         });
-    });
+
+        bindControls();
+
+        // Optional: expose for debugging
+        window.myvhApi = api;
+    }
 
     return {
         init: init
@@ -141,6 +125,7 @@ var MYVH_CalendarAdmin = (function() {
 
 })();
 
+// SINGLE initialisation
 document.addEventListener("DOMContentLoaded", function() {
     MYVH_CalendarAdmin.init();
 });

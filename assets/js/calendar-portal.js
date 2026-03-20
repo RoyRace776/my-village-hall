@@ -29,7 +29,7 @@ var MYVH_Calendar = (function() {
     // ─────────────────────────────
     function init() {
 
-        api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
+        api = MYVH_CalendarCore.init("myvh-calendar", {
 
             context:    "portal",
             ajax_url:    myvhCal.ajax_url,
@@ -40,7 +40,7 @@ var MYVH_Calendar = (function() {
             readOnly:   false,
 
             onEventClick: function(args) {
-                const id = args.e.id();
+                const id = args.e.id ? args.e.id() : args.e.data.id;
                 window.location.href = '/dashboard/?tab=view-booking&id=' + id;
             }
         });
@@ -76,7 +76,7 @@ var MYVH_Calendar = (function() {
             onSuccess: () => api.reload()
         });
 
-        api = MYVH_CalendarCore.initCalendar("myvh-calendar", {
+        api = MYVH_CalendarCore.init("myvh-calendar", {
             ajax_url: myvhCal.ajax_url,
             nonce: myvhCal.nonce,
             selectable: true,

@@ -45,6 +45,8 @@ class MYVH_Customer_Service {
 
     public function save($data) {
 
+    //TODO: add the customer to the default organisation
+
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Customer name is required', 'my-village-hall'));
         }

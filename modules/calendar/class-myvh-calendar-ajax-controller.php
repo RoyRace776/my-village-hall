@@ -24,12 +24,12 @@ class MYVH_Calendar_Ajax_Controller {
         add_action('wp_ajax_myvh_move_booking', [$this, 'move_booking']);
         add_action('wp_ajax_myvh_create_event', [$this, 'create_event']);
         add_action('wp_ajax_myvh_update_event', [$this, 'update_event']);
-        add_action('wp_ajax_myvh_my_customer', [$this, 'get_customer']);
-        add_action('wp_ajax_myvh_my_organisations', [$this, 'get_organisations']);
+        add_action('wp_ajax_myvh_customers', [$this, 'get_customers']);
+        add_action('wp_ajax_myvh_organisations', [$this, 'get_organisations']);
 
     }
 
-    public function get_customer() {
+    public function get_customers() {
 
         if (!is_user_logged_in()) {
             wp_send_json_error('Not logged in', 401);
@@ -48,7 +48,7 @@ class MYVH_Calendar_Ajax_Controller {
         ]);
     }
 
-    public function geet_organisations() {
+    public function get_organisations() {
 
         $orgs = $this->customer_service->get_organisations_for_user_id(get_current_user_id());
 
@@ -143,10 +143,16 @@ class MYVH_Calendar_Ajax_Controller {
             wp_send_json_error( 'Permission denied', 403 );
         }
 
-        $id = intval($_POST['id']);
-        $start = sanitize_text_field($_POST['start']);
-        $end   = sanitize_text_field($_POST['end']);
-        $room  = intval($_POST['room_id']);
+        $request = $this->get_request_data();
+
+        $id = intval($request['id'] ?? 0);
+        $start = sanitize_text_field($request['start'] ?? '');
+        $end   = sanitize_text_field($request['end'] ?? '');
+        $room  = intval($request['room_id'] ?? 0);
+
+        if (!$id || !$start || !$end) {
+            wp_send_json_error('Missing booking movement data', 400);
+        }
 
         $result = $this->booking_service->move_booking(
             $id,
@@ -170,13 +176,19 @@ class MYVH_Calendar_Ajax_Controller {
             wp_send_json_error('Permission denied', 403);
         }
 
+        $request = $this->get_request_data();
+        [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
+        [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
+
         $data = [
-            'start'           => sanitize_text_field($_POST['start']),
-            'end'             => sanitize_text_field($_POST['end']),
-            'description'     => sanitize_text_field($_POST['text']),
-            'room_id'         => intval($_POST['room_id'] ?? 0),
-            'customer_id'     => intval($_POST['customer_id'] ?? 0),
-            'organisation_id' => intval($_POST['organisation_id'] ?? 0),
+            'start_date'      => $start_date,
+            'start_time'      => $start_time,
+            'end_date'        => $end_date,
+            'end_time'        => $end_time,
+            'description'     => sanitize_text_field($request['text'] ?? ''),
+            'room_id'         => intval($request['room_id'] ?? 0),
+            'customer_id'     => intval($request['customer_id'] ?? 0),
+            'organisation_id' => intval($request['organisation_id'] ?? 0),
         ];
 
         // Basic validation
@@ -186,6 +198,10 @@ class MYVH_Calendar_Ajax_Controller {
 
         if (!$data['customer_id']) {
             wp_send_json_error('Customer is required');
+        }
+
+        if (!$data['organisation_id']) {
+            wp_send_json_error('Organisation is required');
         }
 
         try {
@@ -206,14 +222,20 @@ class MYVH_Calendar_Ajax_Controller {
             wp_send_json_error('Permission denied', 403);
         }
 
+        $request = $this->get_request_data();
+        [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
+        [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
+
         $data = [
-            'booking_id'      => sanitize_text_field($_POST['booking_id']),
-            'start'           => sanitize_text_field($_POST['start']),
-            'end'             => sanitize_text_field($_POST['end']),
-            'description'     => sanitize_text_field($_POST['text']),
-            'room_id'         => intval($_POST['room_id'] ?? 0),
-            'customer_id'     => intval($_POST['customer_id'] ?? 0),
-            'organisation_id' => intval($_POST['organisation_id'] ?? 0),
+            'booking_id'      => sanitize_text_field($request['booking_id'] ?? $request['id'] ?? ''),
+            'start_date'      => $start_date,
+            'start_time'      => $start_time,
+            'end_date'        => $end_date,
+            'end_time'        => $end_time,
+            'description'     => sanitize_text_field($request['text'] ?? ''),
+            'room_id'         => intval($request['room_id'] ?? 0),
+            'customer_id'     => intval($request['customer_id'] ?? 0),
+            'organisation_id' => intval($request['organisation_id'] ?? 0),
         ];
 
         // Basic validation
@@ -246,6 +268,53 @@ class MYVH_Calendar_Ajax_Controller {
         if (!is_user_logged_in()) {
             wp_send_json_error('Login required', 401);
         }
+    }
+
+    private function get_request_data() {
+
+        $data = wp_unslash($_POST);
+
+        if (!empty($data)) {
+            return $data;
+        }
+
+        $raw = file_get_contents('php://input');
+
+        if (!$raw) {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function split_datetime($value, $default_date = '') {
+
+        $raw = trim((string) $value);
+
+        if ($raw === '') {
+            return [sanitize_text_field($default_date), ''];
+        }
+
+        $timestamp = strtotime($raw);
+
+        if ($timestamp !== false) {
+            return [
+                date('Y-m-d', $timestamp),
+                date('H:i:s', $timestamp),
+            ];
+        }
+
+        $parts = preg_split('/[T\s]/', $raw);
+        $date = sanitize_text_field($parts[0] ?? $default_date);
+        $time = sanitize_text_field($parts[1] ?? '');
+
+        if (preg_match('/^\d{2}:\d{2}$/', $time)) {
+            $time .= ':00';
+        }
+
+        return [$date, $time];
     }
 
 

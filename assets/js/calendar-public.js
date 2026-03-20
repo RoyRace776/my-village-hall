@@ -28,7 +28,7 @@ var MYVH_CalendarPublic = (function() {
     // ─────────────────────────────
     function init() {
 
-        api = MYVH_CalendarCore.initCalendar('myvh-calendar', {
+        api = MYVH_CalendarCore.init('myvh-calendar', {
 
             context:    'public',
             ajax_url:    myvhCalConfig.ajax_url,
