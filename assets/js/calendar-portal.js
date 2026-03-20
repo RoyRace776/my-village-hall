@@ -114,6 +114,8 @@ var MYVH_Calendar = (function() {
             ajax_url:   myvhCal.ajax_url,
             nonce:      myvhCal.nonce,
             headerDateFormat: myvhCal.headerDateFormat || null,
+            visibleStartHour: Number(myvhCal.visibleStartHour || 0),
+            visibleEndHour: Number(myvhCal.visibleEndHour || 24),
 
             editable:   false,
             selectable: true,

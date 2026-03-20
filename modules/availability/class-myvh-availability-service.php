@@ -79,6 +79,52 @@ class MYVH_Availability_Service {
         return true;
     }
 
+    public function get_calendar_visible_hours() {
+        $defaults = [
+            'start' => 8,
+            'end' => 22,
+        ];
+
+        $venues = $this->venue_repo->get_all();
+
+        if (empty($venues) || !is_array($venues)) {
+            return $defaults;
+        }
+
+        $start = 24;
+        $end = 0;
+        $found = false;
+
+        foreach ($venues as $venue) {
+            $open_hour = $this->time_to_hour_floor($venue['OpeningTime'] ?? '');
+            $close_hour = $this->time_to_hour_ceil($venue['ClosingTime'] ?? '');
+
+            if ($open_hour === null || $close_hour === null) {
+                continue;
+            }
+
+            $found = true;
+            $start = min($start, $open_hour);
+            $end = max($end, $close_hour);
+        }
+
+        if (!$found) {
+            return $defaults;
+        }
+
+        $start = max(0, min(23, (int) $start));
+        $end = max(1, min(24, (int) $end));
+
+        if ($end <= $start) {
+            $end = min(24, $start + 1);
+        }
+
+        return [
+            'start' => $start,
+            'end' => $end,
+        ];
+    }
+
     private function time_to_seconds($time) {
         $value = trim((string) $time);
 
@@ -95,6 +141,30 @@ class MYVH_Availability_Service {
         return (int) date('G', $timestamp) * 3600
             + (int) date('i', $timestamp) * 60
             + (int) date('s', $timestamp);
+    }
+
+    private function time_to_hour_floor($value) {
+        if (!preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', (string) $value, $m)) {
+            return null;
+        }
+
+        return (int) $m[1];
+    }
+
+    private function time_to_hour_ceil($value) {
+        if (!preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', (string) $value, $m)) {
+            return null;
+        }
+
+        $hour = (int) $m[1];
+        $minute = (int) $m[2];
+        $second = isset($m[3]) ? (int) $m[3] : 0;
+
+        if ($minute > 0 || $second > 0) {
+            $hour++;
+        }
+
+        return $hour;
     }
 
     public function get_time_options($selected = '', $start_hour = 0, $end_hour = 23, $on_hour_only = false) {

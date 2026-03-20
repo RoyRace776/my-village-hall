@@ -4,6 +4,32 @@ window.MYVH_CalendarCore = (function () {
     let scheduler = null;
     let currentView = "Week";
 
+    function formatUsesShortWeekday(format) {
+        return typeof format === "string" && /(^|[^d])ddd([^d]|$)/.test(format);
+    }
+
+    function ensureThreeLetterEnglishWeekdays(format) {
+        if (!formatUsesShortWeekday(format) || !DayPilot || !DayPilot.Locale || !DayPilot.Locale.all) {
+            return;
+        }
+
+        Object.keys(DayPilot.Locale.all).forEach(function(localeId) {
+            if (!/^en($|-)/i.test(localeId)) {
+                return;
+            }
+
+            const locale = DayPilot.Locale.find(localeId);
+
+            if (!locale || !Array.isArray(locale.dayNames) || locale.dayNames.length !== 7) {
+                return;
+            }
+
+            locale.dayNamesShort = locale.dayNames.map(function(dayName) {
+                return String(dayName).slice(0, 3);
+            });
+        });
+    }
+
     function toDayPilotDate(value) {
         return value ? new DayPilot.Date(value) : null;
     }
@@ -71,11 +97,24 @@ window.MYVH_CalendarCore = (function () {
 
         destroy();
 
+        const visibleStartHour = Number.isFinite(Number(opts.visibleStartHour)) ? Number(opts.visibleStartHour) : null;
+        const visibleEndHour = Number.isFinite(Number(opts.visibleEndHour)) ? Number(opts.visibleEndHour) : null;
+
         calendar = new DayPilot.Calendar(containerId);
         calendar.viewType = opts.view;
         calendar.startDate = toDayPilotDate(opts.startDate) || DayPilot.Date.today();
         if (opts.headerDateFormat) {
             calendar.headerDateFormat = opts.headerDateFormat;
+        }
+
+        if (visibleStartHour !== null) {
+            calendar.businessBeginsHour = visibleStartHour;
+            calendar.dayBeginsHour = visibleStartHour;
+        }
+
+        if (visibleEndHour !== null) {
+            calendar.businessEndsHour = visibleEndHour;
+            calendar.dayEndsHour = visibleEndHour;
         }
 
         calendar.eventMoveHandling = opts.editable ? "Update" : "Disabled";
@@ -118,7 +157,7 @@ window.MYVH_CalendarCore = (function () {
             eventResourceField: "resource",
             timeHeaders: [
                 { groupBy: "Month" },
-                { groupBy: "Day", format: "d" }
+                { groupBy: "Day", format: opts.headerDateFormat || "d" }
             ],
             timeRangeSelectedHandling: opts.selectable ? "Enabled" : "Disabled",
             onEventClick: args => opts.onEventClick?.(args),
@@ -150,6 +189,8 @@ window.MYVH_CalendarCore = (function () {
     // PUBLIC API
     // ───────────────────────────────────────────────
     function init(containerId, opts) {
+
+        ensureThreeLetterEnglishWeekdays(opts.headerDateFormat);
 
         const initialState = opts.initialState || null;
         const initialView = initialState?.view || "Week";

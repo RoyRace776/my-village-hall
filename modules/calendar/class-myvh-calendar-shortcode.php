@@ -27,7 +27,6 @@ class MYVH_Calendar_Shortcode {
         add_shortcode( self::TAG, [ $this, 'render' ] );
         add_shortcode( self::TAG_PUBLIC, [ $this, 'render' ] );
         add_action( 'rest_api_init', [ $this, 'register_rest_route' ] );
-        add_action( 'wp_enqueue_scripts', [ $this, 'register_assets' ] );
     }
 
     // ── REST endpoint ─────────────────────────────────────────────────────────
@@ -79,8 +78,12 @@ class MYVH_Calendar_Shortcode {
 
         $prefix = $wpdb->prefix;
 
-        $where  = [ '1=1', "b.Status IN (". BookingStatus::COMPLETED . "," . BookingStatus::PENDING . ")" ];
+        $where  = [ '1=1', 'b.Status IN (%s, %s, %s)' ];
         $params = [];
+
+        $params[] = BookingStatus::CONFIRMED;
+        $params[] = BookingStatus::PENDING;
+        $params[] = BookingStatus::COMPLETED;
 
         // Date range – bookings that overlap the requested window
         $where[]  = 'b.StartDate < %s AND b.EndDate >= %s';
@@ -151,34 +154,6 @@ class MYVH_Calendar_Shortcode {
         return new WP_REST_Response( $events, 200 );
     }
 
-    // ── Assets ────────────────────────────────────────────────────────────────
-
-    public function register_assets() {
-        // DayPilot Lite is loaded from their CDN (free, no API key required)
-        wp_register_script(
-            'daypilot-lite',
-            'https://cdn.jsdelivr.net/npm/daypilot-lite@2024.4.6063/daypilot-all.min.js',
-            [],
-            '2024.4.6063',
-            true
-        );
-
-        wp_register_script(
-            'myvh-public-calendar',
-            MYVH_PLUGIN_URL . 'assets/js/public-calendar.js',
-            [ 'daypilot-lite' ],
-            MYVH_VERSION,
-            true
-        );
-
-        wp_register_style(
-            'myvh-public-calendar',
-            MYVH_PLUGIN_URL . 'assets/css/public-calendar.css',
-            [],
-            MYVH_VERSION
-        );
-    }
-
     // ── Shortcode renderer ────────────────────────────────────────────────────
 
     /**
@@ -194,13 +169,31 @@ class MYVH_Calendar_Shortcode {
         ], $atts, self::TAG );
 
         // Enqueue assets only when the shortcode is actually used
-        wp_enqueue_script( 'daypilot-lite' );
+        wp_enqueue_script( 'daypilot' );
         wp_enqueue_script( 'myvh-public-calendar' );
         wp_enqueue_style( 'myvh-public-calendar' );
 
         // Pass config to JS
         $unique_id  = 'myvh-cal-' . uniqid();
         $events_url = rest_url( self::REST_NAMESPACE . self::REST_ROUTE );
+        $visible_hours = [ 'start' => 8, 'end' => 22 ];
+        global $myvh_container;
+
+        if ( isset( $myvh_container ) ) {
+            try {
+                $availability_service = $myvh_container->get( MYVH_Availability_Service::class );
+                $service_hours = $availability_service->get_calendar_visible_hours();
+
+                if ( is_array( $service_hours ) ) {
+                    $visible_hours = [
+                        'start' => isset( $service_hours['start'] ) ? (int) $service_hours['start'] : $visible_hours['start'],
+                        'end'   => isset( $service_hours['end'] ) ? (int) $service_hours['end'] : $visible_hours['end'],
+                    ];
+                }
+            } catch ( Throwable $e ) {
+                // Keep defaults when services are unavailable.
+            }
+        }
 
         wp_localize_script( 'myvh-public-calendar', 'myvhCalConfig', [
             'containerId' => $unique_id,
@@ -209,6 +202,9 @@ class MYVH_Calendar_Shortcode {
             'roomId'      => (int) $atts['room_id'],
             'view'        => sanitize_key( $atts['view'] ),
             'height'      => (int) $atts['height'],
+            'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+            'visibleStartHour' => (int) $visible_hours['start'],
+            'visibleEndHour'   => (int) $visible_hours['end'],
             'nonce'       => wp_create_nonce( 'wp_rest' ),
             'i18n'        => [
                 'today'    => __( 'Today',    'my-village-hall' ),
@@ -221,18 +217,24 @@ class MYVH_Calendar_Shortcode {
         ] );
 
         $login_url = wp_login_url( get_permalink() ?: home_url('/') );
+        $logout_url = wp_logout_url( get_permalink() ?: home_url('/') );
 
         ob_start();
         ?>
         <div class="myvh-public-calendar-wrap">
-            <?php if ( ! is_user_logged_in() ) : ?>
-                <div class="myvh-cal-login-cta">
+            <div class="myvh-cal-login-cta">
+                <?php if ( is_user_logged_in() ) : ?>
+                    <p><?php esc_html_e( 'You are currently logged in.', 'my-village-hall' ); ?></p>
+                    <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $logout_url ); ?>">
+                        <?php esc_html_e( 'Log out', 'my-village-hall' ); ?>
+                    </a>
+                <?php else : ?>
                     <p><?php esc_html_e( 'Already have an account?', 'my-village-hall' ); ?></p>
                     <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $login_url ); ?>">
                         <?php esc_html_e( 'Log in', 'my-village-hall' ); ?>
                     </a>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
 
             <div class="myvh-cal-toolbar" data-target="<?php echo esc_attr( $unique_id ); ?>">
                 <div class="myvh-cal-nav">

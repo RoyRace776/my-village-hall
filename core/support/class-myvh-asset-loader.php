@@ -2,6 +2,36 @@
 
 class MYVH_Asset_Loader {
 
+    public static function get_calendar_visible_hours(): array {
+
+        $defaults = [
+            'start' => 8,
+            'end' => 22,
+        ];
+
+        global $myvh_container;
+
+        if ( ! isset( $myvh_container ) ) {
+            return $defaults;
+        }
+
+        try {
+            $availability_service = $myvh_container->get( MYVH_Availability_Service::class );
+            $visible_hours = $availability_service->get_calendar_visible_hours();
+        } catch ( Throwable $e ) {
+            return $defaults;
+        }
+
+        if ( empty( $visible_hours ) || ! is_array( $visible_hours ) ) {
+            return $defaults;
+        }
+
+        return [
+            'start' => isset( $visible_hours['start'] ) ? (int) $visible_hours['start'] : $defaults['start'],
+            'end'   => isset( $visible_hours['end'] ) ? (int) $visible_hours['end'] : $defaults['end'],
+        ];
+    }
+
     public static function init() {
         add_action( 'wp_enqueue_scripts',    [ self::class, 'enqueue_frontend' ] );
         add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_admin'    ] );
@@ -11,6 +41,8 @@ class MYVH_Asset_Loader {
 
     public static function enqueue_frontend() {
 
+        self::register_public_calendar_assets();
+
         if ( ! is_singular() ) return;
 
         $content = get_queried_object()->post_content ?? '';
@@ -19,9 +51,42 @@ class MYVH_Asset_Loader {
             self::enqueue_portal();
         }
 
-        if ( has_shortcode( $content, 'myvh_public_calendar' ) ) {
-            self::enqueue_public_calendar();
-        }
+        // Public calendar assets are enqueued directly by MYVH_Calendar_Shortcode::render()
+        // to support per-instance container IDs and REST config.
+    }
+
+    public static function register_public_calendar_assets() {
+
+        // Use the plugin-bundled DayPilot build so public calendar works in local/offline environments.
+        wp_register_script(
+            'daypilot',
+            MYVH_PLUGIN_URL . 'assets/js/daypilot-all.min.js',
+            [],
+            MYVH_VERSION,
+            true
+        );
+
+        wp_register_script(
+            'myvh-public-calendar',
+            MYVH_PLUGIN_URL . 'assets/js/public-calendar.js',
+            [ 'daypilot' ],
+            MYVH_VERSION,
+            true
+        );
+
+        wp_register_style(
+            'myvh-calendar-theme',
+            MYVH_PLUGIN_URL . 'assets/css/calendar.css',
+            [],
+            MYVH_VERSION
+        );
+
+        wp_register_style(
+            'myvh-public-calendar',
+            MYVH_PLUGIN_URL . 'assets/css/public-calendar.css',
+            [ 'myvh-calendar-theme' ],
+            MYVH_VERSION
+        );
     }
 
     // ── Admin ─────────────────────────────────────────────────────────────────
@@ -47,6 +112,8 @@ class MYVH_Asset_Loader {
 
         // Calendar page only
         if ( strpos( $hook, 'myvh-calendar' ) !== false ) {
+
+            $visible_hours = self::get_calendar_visible_hours();
 
             wp_enqueue_script(
                 'daypilot',
@@ -84,6 +151,8 @@ class MYVH_Asset_Loader {
                 'ajax_url'         => admin_url( 'admin-ajax.php' ),
                 'nonce'            => wp_create_nonce( 'myvh_calendar' ),
                 'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+                'visibleStartHour' => $visible_hours['start'],
+                'visibleEndHour'   => $visible_hours['end'],
             ] );
         }
     }
@@ -91,6 +160,8 @@ class MYVH_Asset_Loader {
     // ── Portal (frontend, [myvh_portal] shortcode) ────────────────────────────
 
     public static function enqueue_portal() {
+
+        $visible_hours = self::get_calendar_visible_hours();
 
         $current_customer_id = 0;
         $default_organisation_id = 0;
@@ -200,6 +271,8 @@ class MYVH_Asset_Loader {
             'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
             'currentCustomerId' => $current_customer_id,
             'defaultOrganisationId' => $default_organisation_id,
+            'visibleStartHour' => $visible_hours['start'],
+            'visibleEndHour'   => $visible_hours['end'],
         ] );
     }
 

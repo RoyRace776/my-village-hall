@@ -132,6 +132,8 @@ var MYVH_CalendarAdmin = (function() {
             selectable: true,
             initialState: restoredState,
             headerDateFormat: myvhCal.headerDateFormat || null,
+            visibleStartHour: Number(myvhCal.visibleStartHour || 0),
+            visibleEndHour: Number(myvhCal.visibleEndHour || 24),
 
             onEventClick: function(args) {
                 const id = args.e.id ? args.e.id() : args.e.data.id;

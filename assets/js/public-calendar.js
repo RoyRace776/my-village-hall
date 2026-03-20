@@ -15,6 +15,8 @@
     var cfg     = myvhCalConfig;
     var wrap    = null;   // .myvh-public-calendar-wrap
     var dp      = null;   // active DayPilot control
+    var lastEvents = [];
+    var headerDateFormat = cfg.headerDateFormat || 'd MMM';
     var current = {
         view : cfg.view || 'month',
         date : DayPilot.Date.today(),
@@ -26,10 +28,38 @@
         pending   : '#f0a500',
     };
 
+    function formatUsesShortWeekday(format) {
+        return typeof format === 'string' && /(^|[^d])ddd([^d]|$)/.test(format);
+    }
+
+    function ensureThreeLetterEnglishWeekdays(format) {
+        if (!formatUsesShortWeekday(format) || !DayPilot || !DayPilot.Locale || !DayPilot.Locale.all) {
+            return;
+        }
+
+        Object.keys(DayPilot.Locale.all).forEach(function(localeId) {
+            if (!/^en($|-)/i.test(localeId)) {
+                return;
+            }
+
+            var locale = DayPilot.Locale.find(localeId);
+
+            if (!locale || !Array.isArray(locale.dayNames) || locale.dayNames.length !== 7) {
+                return;
+            }
+
+            locale.dayNamesShort = locale.dayNames.map(function(dayName) {
+                return String(dayName).slice(0, 3);
+            });
+        });
+    }
+
     // ── Initialise on DOM ready ───────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
         var container = document.getElementById(cfg.containerId);
         if (!container) { return; }
+
+        ensureThreeLetterEnglishWeekdays(headerDateFormat);
 
         wrap = container.closest('.myvh-public-calendar-wrap');
 
@@ -39,13 +69,29 @@
 
     // ── Mount / re-mount a DayPilot view ─────────────────────────────────────
     function mountView(view) {
+        var previousView = current.view;
+        var container = document.getElementById(cfg.containerId);
         current.view = view;
+
+        // When moving from month to week/day, jump to the first visible event date
+        // so week/day doesn't appear empty if today's range has no bookings.
+        if (previousView === 'month' && (view === 'week' || view === 'day') && lastEvents.length > 0) {
+            try {
+                current.date = new DayPilot.Date(lastEvents[0].start);
+            } catch (e) { /* keep current date */ }
+        }
+
         updateViewButtons();
 
         // Dispose previous control
         if (dp) {
             try { dp.dispose(); } catch (e) { /* ignore */ }
             dp = null;
+        }
+
+        // Ensure previous view DOM is fully removed before mounting another DayPilot control.
+        if (container) {
+            container.innerHTML = '';
         }
 
         switch (view) {
@@ -81,17 +127,21 @@
 
     // ── DayPilot Calendar (week / day) config ─────────────────────────────────
     function buildWeekConfig(dayView) {
+        var startHour = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 0;
+        var endHour = Number.isFinite(Number(cfg.visibleEndHour)) ? Number(cfg.visibleEndHour) : 24;
+
         return {
             viewType           : dayView ? 'Day' : 'Week',
             startDate          : current.date,
-            locale             : document.documentElement.lang || 'en-us',
+            headerDateFormat   : headerDateFormat,
+            businessBeginsHour : startHour,
+            businessEndsHour   : endHour,
+            dayBeginsHour      : startHour,
+            dayEndsHour        : endHour,
             eventMoveHandling  : 'Disabled',
             eventResizeHandling: 'Disabled',
-            heightSpec         : 'Fixed',
-            height             : cfg.height,
             onEventClick       : handleEventClick,
             onEventHover       : handleEventHover,
-            theme              : 'myvh_cal',
             timeRangeSelectedHandling: 'Disabled',
         };
     }
@@ -113,11 +163,19 @@
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
+            if (!Array.isArray(data)) {
+                throw new Error('Unexpected events response payload');
+            }
+
+            lastEvents = data.slice();
+
             dp.events.list = data.map(function (e) {
+                var normalized = normalizeEventRange(e.start, e.end);
+
                 return {
                     id    : e.id,
-                    start : e.start,
-                    end   : e.end,
+                    start : normalized.start,
+                    end   : normalized.end,
                     text  : e.text,
                     tags  : e.tags,
                     backColor : STATUS_COLOURS[e.tags && e.tags.status] || STATUS_COLOURS.confirmed,
@@ -132,6 +190,31 @@
         });
     }
 
+    function normalizeEventRange(start, end) {
+        var s = new Date(start);
+        var e = new Date(end);
+
+        if (isNaN(s.getTime())) {
+            return { start: start, end: end };
+        }
+
+        if (isNaN(e.getTime()) || e.getTime() <= s.getTime()) {
+            // Ensure week/day views can render even if source event has zero/invalid duration.
+            e = new Date(s.getTime() + (60 * 60 * 1000));
+        }
+
+        return {
+            start: toIsoLocal(s),
+            end: toIsoLocal(e),
+        };
+    }
+
+    function toIsoLocal(d) {
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+            + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
+
     // ── Get visible date range for the active view ────────────────────────────
     function getVisibleRange() {
         if (!dp) {
@@ -140,6 +223,16 @@
             var s   = d.firstDayOfMonth();
             var end = s.addMonths(1);
             return { start: s.toString('yyyy-MM-dd'), end: end.toString('yyyy-MM-dd') };
+        }
+
+        // Day/week views can produce ambiguous visibleEnd values in some DayPilot builds,
+        // so compute deterministic windows from the control startDate.
+        if (current.view === 'week' || current.view === 'day') {
+            var calStart = new DayPilot.Date(dp.startDate || current.date);
+            return {
+                start: calStart.toString('yyyy-MM-dd'),
+                end: calStart.addDays(current.view === 'day' ? 1 : 7).toString('yyyy-MM-dd'),
+            };
         }
 
         try {
@@ -152,11 +245,11 @@
             }
         } catch (e) { /* fall through */ }
 
-        // Calendar week / day
+        // Month fallback
         var sd = new DayPilot.Date(dp.startDate || current.date);
         return {
-            start : sd.toString('yyyy-MM-dd'),
-            end   : sd.addDays(current.view === 'day' ? 1 : 7).toString('yyyy-MM-dd'),
+            start : sd.firstDayOfMonth().toString('yyyy-MM-dd'),
+            end   : sd.firstDayOfMonth().addMonths(1).toString('yyyy-MM-dd'),
         };
     }
 
@@ -202,14 +295,14 @@
 
         switch (current.view) {
             case 'month':
-                out = d.toString('MMMM yyyy');
+                out = d.toString(headerDateFormat);
                 break;
             case 'week':
                 var weekEnd = d.addDays(6);
-                out = d.toString('d MMM') + ' – ' + weekEnd.toString('d MMM yyyy');
+                out = d.toString(headerDateFormat) + ' – ' + weekEnd.toString(headerDateFormat);
                 break;
             case 'day':
-                out = d.toString('dddd, d MMMM yyyy');
+                out = d.toString(headerDateFormat);
                 break;
         }
 
