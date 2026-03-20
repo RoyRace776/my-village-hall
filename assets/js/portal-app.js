@@ -1,17 +1,35 @@
 document.addEventListener("DOMContentLoaded", () => {
 
+    const routeAliases = {
+        'my-bookings': 'bookings',
+        'book-room': 'bookings',
+        'home': 'dashboard'
+    };
+
+    function initPortalPage() {
+        if (document.getElementById('myvh-calendar') && typeof MYVH_Calendar !== 'undefined') {
+            MYVH_Calendar.init();
+        }
+
+        if (document.querySelector('.myvh-bookings-list') && typeof MYVH_Bookings !== 'undefined') {
+            MYVH_Bookings.init();
+        }
+    }
+
     function loadPage(page) {
 
         fetch(myvhPortal.ajax_url + "?action=myvh_portal_page&page=" + page)
             .then(r => r.text())
             .then(html => {
                 document.getElementById("portal-content").innerHTML = html;
+                initPortalPage();
             });
     }
 
     function router() {
 
         let page = location.hash.replace("#", "") || "dashboard";
+        page = routeAliases[page] || page;
 
         loadPage(page);
     }

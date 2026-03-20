@@ -27,7 +27,13 @@ class MYVH_Portal_Controller {
                 break;
 
             default:
-                $bookings = $this->booking_service->get_upcoming_bookings(get_current_user_id());
+                global $myvh_container;
+                $customer_service = $myvh_container->get(MYVH_Customer_Service::class);
+                $customer = $customer_service->get_by_user_id(get_current_user_id());
+                $result = $customer ? $this->booking_service->get_booking_list([
+                    'customer_id' => $customer['Id']
+                ]) : ['groups' => []];
+                $groups = $result['groups'];
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/dashboard.php';
         }
 

@@ -68,7 +68,11 @@ class MYVH_Calendar_Ajax_Controller {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
-        if ( ! current_user_can( 'manage_myvh' ) ) {
+        $context = sanitize_text_field($_GET['context'] ?? $_POST['context'] ?? 'admin');
+
+        if ( $context === 'portal' ) {
+            $this->authorize_user();
+        } elseif ( ! current_user_can( 'manage_myvh' ) ) {
             wp_send_json_error( 'Permission denied', 403 );
         }
 
@@ -111,13 +115,9 @@ class MYVH_Calendar_Ajax_Controller {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
-        if ( ! current_user_can( 'manage_myvh' ) ) {
-            wp_send_json_error( 'Permission denied', 403 );
-        }
-
         $start = sanitize_text_field($_GET['start'] ?? null);
         $end   = sanitize_text_field($_GET['end'] ?? null);
-        $context = sanitize_text_field($_GET['context'] ?? 'admin');
+        $context = sanitize_text_field($_GET['context'] ?? 'public');
 
         $bookings = $this->booking_service->get_between($start, $end, $context);
 
@@ -182,11 +182,15 @@ class MYVH_Calendar_Ajax_Controller {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
-        if (!current_user_can('manage_myvh')) {
+        $request = $this->get_request_data();
+        $context = sanitize_text_field($request['context'] ?? $_GET['context'] ?? $_POST['context'] ?? 'admin');
+
+        if ($context === 'portal') {
+            $this->authorize_user();
+        } elseif (!current_user_can('manage_myvh')) {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $request = $this->get_request_data();
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
 
@@ -224,6 +228,29 @@ class MYVH_Calendar_Ajax_Controller {
             'recurrence_end_date' => sanitize_text_field($request['recurrence_end_date'] ?? ''),
             'max_occurrences' => intval($request['max_occurrences'] ?? 0),
         ];
+
+        if ($context === 'portal') {
+            $customer = $this->customer_service->get_by_user_id(get_current_user_id());
+
+            if (empty($customer['Id'])) {
+                wp_send_json_error('No customer profile found', 400);
+            }
+
+            $allowed_orgs = $this->customer_service->get_organisations_for_user_id(get_current_user_id());
+            $allowed_org_ids = array_map(static function ($org) {
+                return (int) ($org['Id'] ?? 0);
+            }, $allowed_orgs);
+
+            $selected_org_id = (int) $data['organisation_id'];
+
+            if (!empty($allowed_org_ids) && !in_array($selected_org_id, $allowed_org_ids, true)) {
+                $selected_org_id = (int) $allowed_org_ids[0];
+            }
+
+            $data['customer_id'] = (int) $customer['Id'];
+            $data['organisation_id'] = $selected_org_id;
+            $data['status'] = BookingStatus::PENDING;
+        }
 
         // Basic validation
         if (!$data['room_id']) {

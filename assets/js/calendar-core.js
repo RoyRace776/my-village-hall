@@ -39,13 +39,14 @@ window.MYVH_CalendarCore = (function () {
     // ───────────────────────────────────────────────
     // EVENT LOADING (shared)
     // ───────────────────────────────────────────────
-    function loadEvents(ajax_url, nonce) {
+    function loadEvents(ajax_url, nonce, context = "admin") {
 
         if (calendar) {
             const start = calendar.visibleStart();
             const end   = calendar.visibleEnd();
 
             const url = `${ajax_url}?action=myvh_calendar_events&nonce=${nonce}`
+                      + `&context=${encodeURIComponent(context)}`
                       + `&start=${start.toString()}&end=${end.toString()}`;
 
             calendar.events.load(url);
@@ -56,6 +57,7 @@ window.MYVH_CalendarCore = (function () {
             const end   = scheduler.startDate.addDays(scheduler.days);
 
             const url = `${ajax_url}?action=myvh_calendar_events&nonce=${nonce}`
+                      + `&context=${encodeURIComponent(context)}`
                       + `&start=${start.toString()}&end=${end.toString()}`;
 
             scheduler.events.load(url);
@@ -85,10 +87,10 @@ window.MYVH_CalendarCore = (function () {
         calendar.onEventResized = args => opts.onEventResized?.(args);
         calendar.onTimeRangeSelected = args => opts.onTimeRangeSelected?.(args);
 
-        calendar.onViewChange = () => loadEvents(opts.ajax_url, opts.nonce);
+        calendar.onViewChange = () => loadEvents(opts.ajax_url, opts.nonce, opts.context);
 
         calendar.init();
-        loadEvents(opts.ajax_url, opts.nonce);
+        loadEvents(opts.ajax_url, opts.nonce, opts.context);
     }
 
     // ───────────────────────────────────────────────
@@ -137,7 +139,7 @@ window.MYVH_CalendarCore = (function () {
                 scheduler.resources = rooms;
 
                 scheduler.init();
-                loadEvents(opts.ajax_url, opts.nonce);
+                loadEvents(opts.ajax_url, opts.nonce, opts.context);
             })
             .catch(err => {
                 console.error("Failed to load rooms", err);
@@ -213,13 +215,13 @@ window.MYVH_CalendarCore = (function () {
                 if (calendar) {
                     calendar.startDate = start;
                     calendar.update();
-                    loadEvents(opts.ajax_url, opts.nonce);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
 
                 if (scheduler) {
                     scheduler.startDate = view === "Month" ? start.firstDayOfMonth() : start;
                     scheduler.update();
-                    loadEvents(opts.ajax_url, opts.nonce);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
             },
 
@@ -245,7 +247,7 @@ window.MYVH_CalendarCore = (function () {
                         currentView === "Day" ? 1 : 7
                     );
                     calendar.update();
-                    loadEvents(opts.ajax_url, opts.nonce);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
 
                 if (scheduler) {
@@ -253,7 +255,7 @@ window.MYVH_CalendarCore = (function () {
                         currentView === "Month" ? scheduler.startDate.daysInMonth() : 7
                     );
                     scheduler.update();
-                    loadEvents(opts.ajax_url, opts.nonce);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
             },
 
@@ -263,7 +265,7 @@ window.MYVH_CalendarCore = (function () {
                         currentView === "Day" ? -1 : -7
                     );
                     calendar.update();
-                    loadEvents(opts.ajax_url, opts.nonce);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
 
                 if (scheduler) {
@@ -271,7 +273,7 @@ window.MYVH_CalendarCore = (function () {
                         currentView === "Month" ? -scheduler.startDate.daysInMonth() : -7
                     );
                     scheduler.update();
-                    loadEvents(opts.ajax_url, opts.nonce);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
             },
 
@@ -279,18 +281,18 @@ window.MYVH_CalendarCore = (function () {
                 if (calendar) {
                     calendar.startDate = DayPilot.Date.today();
                     calendar.update();
-                    loadEvents(opts.ajax_url, opts.nonce);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
 
                 if (scheduler) {
                     scheduler.startDate = DayPilot.Date.today().firstDayOfMonth();
                     scheduler.update();
-                    loadEvents(opts.ajax_url, opts.nonce);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
                 }
             },
 
             reload() {
-                loadEvents(opts.ajax_url, opts.nonce);
+                loadEvents(opts.ajax_url, opts.nonce, opts.context);
             }
         };
     }

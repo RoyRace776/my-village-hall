@@ -8,6 +8,7 @@ window.MYVH_BookingModal = (function() {
         config = {
             ajax_url: null,
             nonce: null,
+            context: null,
 
             // Data providers (pluggable)
             loadRooms: null,
@@ -451,6 +452,9 @@ window.MYVH_BookingModal = (function() {
         setLoading(true);
         formData.append("action", "myvh_create_event");
         formData.append("nonce", config.nonce);
+        if (config.context) {
+            formData.append("context", config.context);
+        }
 
         fetch(config.ajax_url, {
             method: "POST",

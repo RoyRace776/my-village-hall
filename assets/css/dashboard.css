@@ -461,7 +461,44 @@
 .myvh-small { font-size: 12px; }
 
 /* ==========================================================================
-   14. RESPONSIVE
+   14. BOOKING MODAL (Portal)
+   ========================================================================== */
+
+#myvh-booking-modal.hidden {
+  display: none;
+}
+
+#myvh-booking-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#myvh-booking-modal .myvh-modal-content {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: min(620px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  padding: 20px;
+}
+
+#myvh-booking-modal table {
+  width: 100%;
+}
+
+#myvh-booking-modal td,
+#myvh-booking-modal th {
+  padding: 6px;
+}
+
+/* ==========================================================================
+   15. RESPONSIVE
    ========================================================================== */
 
 @media (max-width: 720px) {

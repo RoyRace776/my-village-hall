@@ -2,6 +2,12 @@ var MYVH_Calendar = (function() {
 
     var api = null;
 
+    function setActiveViewButton(view) {
+        document.querySelectorAll('.myvh-view-btn').forEach(function(button) {
+            button.classList.toggle('active', button.dataset.view === view);
+        });
+    }
+
     // ─────────────────────────────
     // UI Controls (view + nav)
     // ─────────────────────────────
@@ -15,9 +21,20 @@ var MYVH_Calendar = (function() {
         const prevBtn  = document.getElementById('myvh-prev');
         const todayBtn = document.getElementById('myvh-today');
 
-        if (dayBtn)   dayBtn.addEventListener('click', () => api.setView('Day'));
-        if (weekBtn)  weekBtn.addEventListener('click', () => api.setView('Week'));
-        if (monthBtn) monthBtn.addEventListener('click', () => api.setView('Month'));
+        if (dayBtn) dayBtn.addEventListener('click', () => {
+            api.setView('Day');
+            setActiveViewButton('Day');
+        });
+
+        if (weekBtn) weekBtn.addEventListener('click', () => {
+            api.setView('Week');
+            setActiveViewButton('Week');
+        });
+
+        if (monthBtn) monthBtn.addEventListener('click', () => {
+            api.setView('Month');
+            setActiveViewButton('Month');
+        });
 
         if (nextBtn)  nextBtn.addEventListener('click', () => api.next());
         if (prevBtn)  prevBtn.addEventListener('click', () => api.prev());
@@ -29,77 +46,64 @@ var MYVH_Calendar = (function() {
     // ─────────────────────────────
     function init() {
 
-        api = MYVH_CalendarCore.init("myvh-calendar", {
-
-            context:    "portal",
-            ajax_url:    myvhCal.ajax_url,
-            nonce:      myvhCal.nonce,
-            headerDateFormat: myvhCal.headerDateFormat || null,
-
-            editable:   false,
-            selectable: false,
-            readOnly:   false,
-
-            onEventClick: function(args) {
-                const id = args.e.id ? args.e.id() : args.e.data.id;
-                window.location.href = '/dashboard/?tab=view-booking&id=' + id;
-            }
-        });
-
-        bindControls();
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-
         const modal = MYVH_BookingModal;
 
         modal.init({
             ajax_url: myvhCal.ajax_url,
             nonce: myvhCal.nonce,
+            context: 'portal',
 
-            // Restricted loaders
             loadRooms: () =>
-                fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}`)
+                fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}&context=portal`)
                     .then(r => r.json()),
 
             loadCustomers: () =>
-                fetch(`${myvhCal.ajax_url}?action=myvh_my_customer&nonce=${myvhCal.nonce}`)
+                fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
                     .then(r => r.json()),
 
-            loadOrganisations: () =>
-                fetch(`${myvhCal.ajax_url}?action=myvh_my_organisations&nonce=${myvhCal.nonce}`)
+            loadOrganisations: (customerId) =>
+                fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}&customer_id=${encodeURIComponent(customerId || '')}`)
                     .then(r => r.json()),
 
-            // 🔐 Lock fields
             lockCustomer: true,
             lockOrganisation: true,
+            hideCustomer: true,
 
+            onClose: () => api?.clearSelection?.(),
             onSuccess: () => api.reload()
         });
 
         api = MYVH_CalendarCore.init("myvh-calendar", {
-            ajax_url: myvhCal.ajax_url,
-            nonce: myvhCal.nonce,
+
+            context:    "portal",
+            ajax_url:   myvhCal.ajax_url,
+            nonce:      myvhCal.nonce,
             headerDateFormat: myvhCal.headerDateFormat || null,
+
+            editable:   false,
             selectable: true,
-            editable: false,
+            readOnly:   true,
+
+            onEventClick: function(args) {
+                const id = args.e.id ? args.e.id() : args.e.data.id;
+                window.location.href = '/dashboard/?tab=view-booking&id=' + id;
+            },
 
             onTimeRangeSelected: function(args) {
-
                 modal.open({
                     start: args.start.toString(),
                     end: args.end.toString(),
-
-                    // 👇 Passed from backend via wp_localize_script
-                    customer_id: MYVH.currentCustomerId,
-                    organisation_id: MYVH.defaultOrganisationId
+                    customer_id: myvhCal.currentCustomerId || '',
+                    organisation_id: myvhCal.defaultOrganisationId || ''
                 });
 
-                api.clearSelection();
+                api.clearSelection?.();
             }
         });
 
-    });
+        bindControls();
+        setActiveViewButton('Week');
+    }
 
     return {
         init: init

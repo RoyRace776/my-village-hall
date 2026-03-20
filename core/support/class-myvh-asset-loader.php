@@ -92,6 +92,22 @@ class MYVH_Asset_Loader {
 
     public static function enqueue_portal() {
 
+        $current_customer_id = 0;
+        $default_organisation_id = 0;
+
+        if ( is_user_logged_in() ) {
+            global $myvh_container;
+
+            if ( isset( $myvh_container ) ) {
+                $customer_service = $myvh_container->get( MYVH_Customer_Service::class );
+                $customer = $customer_service->get_by_user_id( get_current_user_id() );
+                $organisations = $customer_service->get_organisations_for_user_id( get_current_user_id() );
+
+                $current_customer_id = ! empty( $customer['Id'] ) ? (int) $customer['Id'] : 0;
+                $default_organisation_id = ! empty( $organisations[0]['Id'] ) ? (int) $organisations[0]['Id'] : 0;
+            }
+        }
+
         // Google Fonts (filterable so the theme can suppress the duplicate)
         $fonts_url = apply_filters(
             'myvh_portal_fonts_url',
@@ -182,6 +198,8 @@ class MYVH_Asset_Loader {
             'ajax_url'         => admin_url( 'admin-ajax.php' ),
             'nonce'            => wp_create_nonce( 'myvh_calendar' ),
             'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+            'currentCustomerId' => $current_customer_id,
+            'defaultOrganisationId' => $default_organisation_id,
         ] );
     }
 
