@@ -35,6 +35,23 @@ $organisations  = $org_service->get_all(true);
 $rooms          = $room_service->get_all_with_venues();
 $all_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
 
+$customer_organisations_map = [];
+foreach ($customers as $customer_row) {
+    $customer_id = intval($customer_row['Id'] ?? 0);
+    if ($customer_id <= 0) {
+        continue;
+    }
+
+    $customer_orgs = $customer_service->get_organisations_for_customer($customer_id);
+
+    $customer_organisations_map[$customer_id] = array_map(static function ($org) {
+        return [
+            'Id' => intval($org['Id'] ?? 0),
+            'Name' => sanitize_text_field($org['Name'] ?? ''),
+        ];
+    }, $customer_orgs ?: []);
+}
+
 // Active addons only for the form
 $available_addons = array_filter($all_addons ?? [], fn($a) => !empty($a['IsActive']));
 
@@ -92,6 +109,34 @@ $form_recurrence_day = sanitize_text_field($form_data['recurrence_day'] ?? strto
 $form_recurrence_end_type = sanitize_text_field($form_data['recurrence_end_type'] ?? 'date');
 $form_recurrence_end_date = sanitize_text_field($form_data['recurrence_end_date'] ?? date('Y-m-d', strtotime('+1 year')));
 $form_max_occurrences = max(1, intval($form_data['max_occurrences'] ?? 12));
+
+$selected_customer_organisations = $form_customer_id > 0
+    ? ($customer_organisations_map[$form_customer_id] ?? [])
+    : [];
+
+$room_multiday_map = [];
+foreach ($rooms as $room_row) {
+    $room_id = intval($room_row['Id'] ?? 0);
+    if ($room_id <= 0) {
+        continue;
+    }
+
+    $room_multiday_map[$room_id] = !empty($room_row['AllowMultiDayBookings']);
+}
+
+$selected_room_allows_multiday = !empty($room_multiday_map[$form_room_id]);
+
+$allowed_organisation_ids = array_map(static function ($org) {
+    return intval($org['Id'] ?? 0);
+}, $selected_customer_organisations);
+
+if (!in_array($form_organisation_id, $allowed_organisation_ids, true)) {
+    $form_organisation_id = 0;
+}
+
+if ($form_organisation_id === 0 && count($selected_customer_organisations) === 1) {
+    $form_organisation_id = intval($selected_customer_organisations[0]['Id'] ?? 0);
+}
 
 $status_colors = [
     BookingStatus::PENDING => '#2271b1',
@@ -336,7 +381,7 @@ $status_colors = [
                             <tr>
                                 <th><?php _e('Customer', 'my-village-hall'); ?> *</th>
                                 <td>
-                                    <select name="customer_id" required class="regular-text">
+                                    <select name="customer_id" required class="regular-text" id="customer-select">
                                         <option value=""><?php _e('Select Customer', 'my-village-hall'); ?></option>
                                         <?php foreach ($customers as $customer): ?>
                                             <option value="<?php echo $customer['Id']; ?>"
@@ -357,17 +402,17 @@ $status_colors = [
                             <tr>
                                 <th><?php _e('Organisation', 'my-village-hall'); ?></th>
                                 <td>
-                                    <select name="organisation_id" class="regular-text">
+                                    <select name="organisation_id" class="regular-text" id="organisation-select" <?php disabled($form_customer_id <= 0); ?>>
                                         <option value=""><?php _e('— None —', 'my-village-hall'); ?></option>
-                                        <?php foreach ($organisations as $org): ?>
-                                            <option value="<?php echo $org['Id']; ?>"
-                                                <?php selected($form_organisation_id, $org['Id']); ?>>
+                                        <?php foreach ($selected_customer_organisations as $org): ?>
+                                            <option value="<?php echo intval($org['Id']); ?>"
+                                                <?php selected($form_organisation_id, intval($org['Id'])); ?>>
                                                 <?php echo esc_html($org['Name']); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
                                     <p class="description">
-                                        <?php _e('Optionally associate this booking with an organisation.', 'my-village-hall'); ?>
+                                        <?php _e('Select a customer first, then choose from organisations they belong to.', 'my-village-hall'); ?>
                                         <a href="<?php echo admin_url('admin.php?page=myvh-organisations'); ?>" target="_blank">
                                             <?php _e('Manage organisations', 'my-village-hall'); ?>
                                         </a>
@@ -392,6 +437,7 @@ $status_colors = [
                                             <option value="<?php echo $room['Id']; ?>"
                                                 data-opening="<?php echo esc_attr($room['OpeningTime']); ?>"
                                                 data-closing="<?php echo esc_attr($room['ClosingTime']); ?>"
+                                                data-allow-multiday="<?php echo !empty($room['AllowMultiDayBookings']) ? '1' : '0'; ?>"
                                                 <?php selected($form_room_id, $room['Id']); ?>>
                                                 <?php echo esc_html($room['Name']); ?>
                                                 <?php if ($room['Capacity']): ?>
@@ -415,11 +461,12 @@ $status_colors = [
                                 </td>
                             </tr>
 
-                            <tr>
+                            <tr id="end-date-row" style="display: <?php echo $selected_room_allows_multiday ? '' : 'none'; ?>;">
                                 <th><?php _e('End Date', 'my-village-hall'); ?></th>
                                 <td>
                                     <input type="date" name="end_date" class="regular-text" id='end-date'
-                                        value="<?php echo esc_attr($form_end_date); ?>">
+                                        value="<?php echo esc_attr($form_end_date); ?>"
+                                        <?php echo !$selected_room_allows_multiday ? 'disabled' : ''; ?>>
                                     <p class="description"><?php _e('Leave blank for same-day booking', 'my-village-hall'); ?></p>
                                 </td>
                             </tr>
@@ -685,6 +732,63 @@ $status_colors = [
 
         <script>
         jQuery(document).ready(function($) {
+            const customerOrganisations = <?php echo wp_json_encode($customer_organisations_map); ?>;
+            const initialOrganisationId = '<?php echo esc_js((string) $form_organisation_id); ?>';
+
+            function roomAllowsMultiday() {
+                const selected = $('#room-select').find(':selected');
+                return String(selected.data('allow-multiday') || '0') === '1';
+            }
+
+            function syncEndDateVisibility() {
+                const allowsMultiday = roomAllowsMultiday();
+                const $endDateRow = $('#end-date-row');
+                const $endDateInput = $('#end-date');
+
+                $endDateRow.toggle(allowsMultiday);
+                $endDateInput.prop('disabled', !allowsMultiday);
+
+                if (!allowsMultiday) {
+                    $endDateInput.val('');
+                }
+
+                updateDuration();
+            }
+
+            function refreshOrganisationOptions(preferredOrgId) {
+                const customerId = String($('#customer-select').val() || '');
+                const organisations = customerOrganisations[customerId] || [];
+                const $organisationSelect = $('#organisation-select');
+
+                $organisationSelect.prop('disabled', customerId === '');
+                $organisationSelect.empty();
+                $organisationSelect.append($('<option>', {
+                    value: '',
+                    text: '<?php echo esc_js(__('— None —', 'my-village-hall')); ?>'
+                }));
+
+                organisations.forEach(function(org) {
+                    $organisationSelect.append($('<option>', {
+                        value: String(org.Id),
+                        text: org.Name
+                    }));
+                });
+
+                if (preferredOrgId && organisations.some(function(org) { return String(org.Id) === String(preferredOrgId); })) {
+                    $organisationSelect.val(String(preferredOrgId));
+                } else if (organisations.length === 1) {
+                    $organisationSelect.val(String(organisations[0].Id));
+                } else {
+                    $organisationSelect.val('');
+                }
+            }
+
+            $('#customer-select').on('change', function() {
+                refreshOrganisationOptions('');
+            });
+
+            refreshOrganisationOptions(initialOrganisationId);
+
             // ── Add-ons panel ────────────────────────────────────────────
             function recalcAddonRow($row) {
                 var price = parseFloat($row.find('.myvh-addon-price').val()) || 0;
@@ -805,15 +909,12 @@ $status_colors = [
                 if (closing && !$('#end-time').val()) {
                     $('#end-time').val(closing);
                 }
+
+                syncEndDateVisibility();
                 updateDuration();
             });
 
-            // Auto-set end date to start date if empty
-            $('input[name="start_date"]').on('change', function() {
-                if (!$('input[name="end_date"]').val()) {
-                    $('input[name="end_date"]').val($(this).val());
-                }
-            });
+            syncEndDateVisibility();
 
             // Form validation
             $('#booking-form').on('submit', function(e) {

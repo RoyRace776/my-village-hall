@@ -13,6 +13,7 @@ window.MYVH_BookingModal = (function() {
             loadRooms: null,
             loadCustomers: null,
             loadOrganisations: null,
+            customerOrganisations: {},
 
             // Behaviour flags
             lockCustomer: false,
@@ -61,6 +62,7 @@ window.MYVH_BookingModal = (function() {
 
         bindRecurringControls();
         bindAddonControls();
+        bindDependentControls();
     }
 
     // ─────────────────────────────
@@ -73,6 +75,7 @@ window.MYVH_BookingModal = (function() {
         setValue("start", data.start);
         setValue("end", data.end);
         setValue("text", data.text || "");
+        setDisplayedDateTimes(data.start, data.end);
 
         setLoading(true);
 
@@ -81,6 +84,10 @@ window.MYVH_BookingModal = (function() {
 
                 applyContext(data);
                 applyVisibility();
+                return refreshOrganisations(data.organisation_id || "");
+            })
+            .then(() => {
+                syncEndDateVisibility();
 
                 modal.classList.remove("hidden");
                 config.onOpen(data);
@@ -128,6 +135,29 @@ window.MYVH_BookingModal = (function() {
         form.querySelectorAll(".myvh-modal-addon-row").forEach(row => {
             toggleAddonRow(row, false);
         });
+
+        const orgSelect = form.querySelector("[name=organisation_id]");
+        if (orgSelect) {
+            orgSelect.innerHTML = '<option value="">Select...</option>';
+            orgSelect.disabled = true;
+        }
+
+        syncEndDateVisibility();
+    }
+
+    function bindDependentControls() {
+        const customer = form.querySelector("[name=customer_id]");
+        const room = form.querySelector("[name=room_id]");
+
+        if (customer) {
+            customer.addEventListener("change", () => {
+                refreshOrganisations("");
+            });
+        }
+
+        if (room) {
+            room.addEventListener("change", syncEndDateVisibility);
+        }
     }
 
     function bindRecurringControls() {
@@ -264,6 +294,50 @@ window.MYVH_BookingModal = (function() {
         }
     }
 
+    function setDisplayedDateTimes(start, end) {
+        const s = parseDateTime(start);
+        const e = parseDateTime(end);
+
+        const startDate = form.querySelector("#myvh-modal-start-date");
+        const endDate = form.querySelector("#myvh-modal-end-date");
+        const startTime = form.querySelector("#myvh-modal-start-time");
+        const endTime = form.querySelector("#myvh-modal-end-time");
+
+        if (startDate) startDate.value = s.date;
+        if (endDate) endDate.value = e.date;
+        if (startTime) startTime.value = s.time;
+        if (endTime) endTime.value = e.time;
+    }
+
+    function parseDateTime(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return { date: "", time: "" };
+
+        const normalized = raw.replace(" ", "T");
+        const parts = normalized.split("T");
+        const date = parts[0] || "";
+        const time = (parts[1] || "").slice(0, 5);
+
+        return { date, time };
+    }
+
+    function roomAllowsMultiday() {
+        const roomSelect = form.querySelector("[name=room_id]");
+        if (!roomSelect) return false;
+
+        const selected = roomSelect.options[roomSelect.selectedIndex];
+        if (!selected) return false;
+
+        return String(selected.dataset.allowMultiday || "0") === "1";
+    }
+
+    function syncEndDateVisibility() {
+        const row = form.querySelector("#myvh-modal-end-date-row");
+        if (!row) return;
+
+        row.style.display = roomAllowsMultiday() ? "" : "none";
+    }
+
     function setAndLock(field, value) {
         const el = form.querySelector(`[name=${field}]`);
         if (!el) return;
@@ -297,6 +371,10 @@ window.MYVH_BookingModal = (function() {
                 const opt = document.createElement("option");
                 opt.value = item.id || item.Id;
                 opt.text  = item.name || item.Name;
+                const allowMultiday = item.allow_multiday ?? item.AllowMultiDayBookings;
+                if (allowMultiday !== undefined) {
+                    opt.dataset.allowMultiday = String(allowMultiday);
+                }
                 select.appendChild(opt);
             });
         });
@@ -306,9 +384,55 @@ window.MYVH_BookingModal = (function() {
 
         return Promise.all([
             populateDropdown(form.querySelector("[name=room_id]"), config.loadRooms),
-            populateDropdown(form.querySelector("[name=customer_id]"), config.loadCustomers),
-            populateDropdown(form.querySelector("[name=organisation_id]"), config.loadOrganisations)
+            populateDropdown(form.querySelector("[name=customer_id]"), config.loadCustomers)
         ]);
+    }
+
+    function refreshOrganisations(preferredOrgId) {
+        const customerSelect = form.querySelector("[name=customer_id]");
+        const organisationSelect = form.querySelector("[name=organisation_id]");
+
+        if (!organisationSelect) {
+            return Promise.resolve();
+        }
+
+        const customerId = customerSelect ? customerSelect.value : "";
+
+        if (!customerId) {
+            organisationSelect.innerHTML = '<option value="">Select...</option>';
+            organisationSelect.disabled = true;
+            return Promise.resolve();
+        }
+
+        organisationSelect.disabled = true;
+        organisationSelect.innerHTML = '<option value="">Loading...</option>';
+
+        return Promise.resolve(config.loadOrganisations ? config.loadOrganisations(customerId) : [])
+            .then(data => {
+                const organisations = Array.isArray(data) ? data : [];
+                organisationSelect.innerHTML = '<option value="">Select...</option>';
+
+                organisations.forEach(item => {
+                    const opt = document.createElement("option");
+                    opt.value = item.id || item.Id;
+                    opt.text = item.name || item.Name;
+                    organisationSelect.appendChild(opt);
+                });
+
+                if (preferredOrgId && organisations.some(item => String(item.id || item.Id) === String(preferredOrgId))) {
+                    organisationSelect.value = String(preferredOrgId);
+                } else if (organisations.length === 1) {
+                    organisationSelect.value = String(organisations[0].id || organisations[0].Id);
+                } else {
+                    organisationSelect.value = "";
+                }
+
+                organisationSelect.disabled = false;
+            })
+            .catch(() => {
+                organisationSelect.innerHTML = '<option value="">Select...</option>';
+                organisationSelect.disabled = false;
+            });
     }
 
     // ─────────────────────────────

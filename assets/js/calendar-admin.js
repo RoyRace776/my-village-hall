@@ -62,8 +62,8 @@ var MYVH_CalendarAdmin = (function() {
                 fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
                     .then(r => r.json()),
 
-            loadOrganisations: () =>
-                fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}`)
+            loadOrganisations: (customerId) =>
+                fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}&customer_id=${encodeURIComponent(customerId || '')}`)
                     .then(r => r.json()),
 
             onSuccess: () => api.reload()

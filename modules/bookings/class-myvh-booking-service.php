@@ -59,6 +59,23 @@ class MYVH_Booking_Service {
             return new WP_Error('validation', __('Start and end times are required', 'my-village-hall'));
         }
 
+        $customer_id = intval($data['customer_id']);
+        $organisation_id = !empty($data['organisation_id']) ? intval($data['organisation_id']) : 0;
+
+        if ($organisation_id > 0) {
+            $customer_organisations = $this->customer_repo->get_organisations_for_customer($customer_id);
+            $allowed_organisation_ids = array_map(static function ($org) {
+                return intval($org['Id'] ?? 0);
+            }, $customer_organisations ?: []);
+
+            if (!in_array($organisation_id, $allowed_organisation_ids, true)) {
+                return new WP_Error(
+                    'validation',
+                    __('Selected organisation is not linked to this customer.', 'my-village-hall')
+                );
+            }
+        }
+
         // Validate time
         $room = $this->room_service->get($data['room_id']);
         if (!$room) {
@@ -133,8 +150,8 @@ class MYVH_Booking_Service {
         }
 
         $record = [
-            'CustomerId'        => intval($data['customer_id']),
-            'OrganisationId'    => !empty($data['organisation_id']) ? intval($data['organisation_id']) : null,
+            'CustomerId'        => $customer_id,
+            'OrganisationId'    => $organisation_id > 0 ? $organisation_id : null,
             'RoomId'            => intval($data['room_id']),
             'Status'            => sanitize_text_field($data['status'] ?? BookingStatus::PENDING),
             'StartDate'         => $start_date,

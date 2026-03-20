@@ -60,6 +60,22 @@ add_action('admin_footer', function() use ($available_addons) {
 
                 <table class="form-table">
                     <tr>
+                        <th>Start Date</th>
+                        <td><input type="date" id="myvh-modal-start-date" readonly></td>
+                    </tr>
+                    <tr id="myvh-modal-end-date-row" style="display:none;">
+                        <th>End Date</th>
+                        <td><input type="date" id="myvh-modal-end-date" readonly></td>
+                    </tr>
+                    <tr>
+                        <th>Start Time</th>
+                        <td><input type="time" id="myvh-modal-start-time" readonly></td>
+                    </tr>
+                    <tr>
+                        <th>End Time</th>
+                        <td><input type="time" id="myvh-modal-end-time" readonly></td>
+                    </tr>
+                    <tr>
                         <th>Room</th>
                         <td><select name="room_id"></select></td>
                     </tr>

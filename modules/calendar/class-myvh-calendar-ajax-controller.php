@@ -50,6 +50,15 @@ class MYVH_Calendar_Ajax_Controller {
 
     public function get_organisations() {
 
+        if (current_user_can('manage_myvh')) {
+            $customer_id = intval($_GET['customer_id'] ?? $_POST['customer_id'] ?? 0);
+
+            if ($customer_id > 0) {
+                $orgs = $this->customer_service->get_organisations_for_customer($customer_id);
+                wp_send_json($orgs ?: []);
+            }
+        }
+
         $orgs = $this->customer_service->get_organisations_for_user_id(get_current_user_id());
 
         wp_send_json($orgs);
@@ -71,7 +80,8 @@ class MYVH_Calendar_Ajax_Controller {
 
             $columns[] = [
                 "name" => $room['Name'],
-                "id"   => $room['Id']
+                "id"   => $room['Id'],
+                "allow_multiday" => !empty($room['AllowMultiDayBookings']) ? 1 : 0
             ];
         }
 
