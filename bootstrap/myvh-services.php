@@ -27,6 +27,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-service.php';
 
 // ── 2. Customers  ─────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-user-sync.php';
 
 // ── 3. Organisations ──────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-service.php';

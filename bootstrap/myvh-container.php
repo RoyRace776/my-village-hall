@@ -99,4 +99,7 @@ $portal_shortcode->register();
 $portal_controller = $myvh_container->get(MYVH_Portal_Controller::class);
 $portal_controller->register();
 
+$customer_user_sync = $myvh_container->get(MYVH_Customer_User_Sync::class);
+$customer_user_sync->register();
+
 return $myvh_container;

@@ -21,6 +21,7 @@ window.MYVH_BookingModal = (function() {
             lockOrganisation: false,
             hideCustomer: false,
             hideOrganisation: false,
+            requireOrganisation: false,
 
             // Hooks
             onSuccess: () => {},
@@ -392,6 +393,8 @@ window.MYVH_BookingModal = (function() {
     function refreshOrganisations(preferredOrgId) {
         const customerSelect = form.querySelector("[name=customer_id]");
         const organisationSelect = form.querySelector("[name=organisation_id]");
+        const lockOrganisation = config.lockOrganisation || organisationSelect?.dataset.locked === "true";
+        const requireOrganisation = config.requireOrganisation || lockOrganisation;
 
         if (!organisationSelect) {
             return Promise.resolve();
@@ -400,7 +403,9 @@ window.MYVH_BookingModal = (function() {
         const customerId = customerSelect ? customerSelect.value : "";
 
         if (!customerId) {
-            organisationSelect.innerHTML = '<option value="">Select...</option>';
+            organisationSelect.innerHTML = requireOrganisation
+                ? '<option value="">No organisations available</option>'
+                : '<option value="">Select...</option>';
             organisationSelect.disabled = true;
             return Promise.resolve();
         }
@@ -411,7 +416,9 @@ window.MYVH_BookingModal = (function() {
         return Promise.resolve(config.loadOrganisations ? config.loadOrganisations(customerId) : [])
             .then(data => {
                 const organisations = Array.isArray(data) ? data : [];
-                organisationSelect.innerHTML = '<option value="">Select...</option>';
+                organisationSelect.innerHTML = requireOrganisation
+                    ? ''
+                    : '<option value="">Select...</option>';
 
                 organisations.forEach(item => {
                     const opt = document.createElement("option");
@@ -422,17 +429,21 @@ window.MYVH_BookingModal = (function() {
 
                 if (preferredOrgId && organisations.some(item => String(item.id || item.Id) === String(preferredOrgId))) {
                     organisationSelect.value = String(preferredOrgId);
+                } else if (organisations.length >= 1 && requireOrganisation) {
+                    organisationSelect.value = String(organisations[0].id || organisations[0].Id);
                 } else if (organisations.length === 1) {
                     organisationSelect.value = String(organisations[0].id || organisations[0].Id);
                 } else {
                     organisationSelect.value = "";
                 }
 
-                organisationSelect.disabled = false;
+                organisationSelect.disabled = lockOrganisation || organisations.length === 0;
             })
             .catch(() => {
-                organisationSelect.innerHTML = '<option value="">Select...</option>';
-                organisationSelect.disabled = false;
+                organisationSelect.innerHTML = requireOrganisation
+                    ? '<option value="">No organisations available</option>'
+                    : '<option value="">Select...</option>';
+                organisationSelect.disabled = true;
             });
     }
 

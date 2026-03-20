@@ -78,9 +78,9 @@ class MYVH_Customer_Service {
             'EmailVerified'  => isset($data['email_verified']) ? 1 : 0,
         ];
 
-        // Link to WordPress user if CustomerId is provided
+        // Link to WordPress user when provided
         if (!empty($data['user_id'])) {
-            $record['CustomerId'] = intval($data['user_id']);
+            $record['WPUserId'] = intval($data['user_id']);
         }
 
         if (!empty($data['customer_id'])) {
@@ -88,6 +88,15 @@ class MYVH_Customer_Service {
             if ($result === false) {
                 return new WP_Error('database', __('Failed to update customer', 'my-village-hall'));
             }
+
+            if (!empty($record['WPUserId'])) {
+                wp_update_user([
+                    'ID' => (int) $record['WPUserId'],
+                    'display_name' => $record['Name'],
+                    'user_email' => $record['Email'],
+                ]);
+            }
+
             return intval($data['customer_id']);
         }
 

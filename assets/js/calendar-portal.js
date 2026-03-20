@@ -1,6 +1,38 @@
 var MYVH_Calendar = (function() {
 
     var api = null;
+    var modal = null;
+
+    function openSelectionModal(args) {
+        if (!modal || !args) {
+            return;
+        }
+
+        modal.open({
+            start: args.start.toString(),
+            end: args.end.toString(),
+            customer_id: myvhCal.currentCustomerId || '',
+            organisation_id: myvhCal.defaultOrganisationId || ''
+        });
+
+        api?.clearSelection?.();
+    }
+
+    function ensureSelectableRangeHandlers() {
+        const cal = api?.calendar;
+        if (cal) {
+            cal.timeRangeSelectedHandling = 'Enabled';
+            cal.onTimeRangeSelected = openSelectionModal;
+            cal.update();
+        }
+
+        const sched = api?.scheduler;
+        if (sched) {
+            sched.timeRangeSelectedHandling = 'Enabled';
+            sched.onTimeRangeSelected = openSelectionModal;
+            sched.update();
+        }
+    }
 
     function setActiveViewButton(view) {
         document.querySelectorAll('.myvh-view-btn').forEach(function(button) {
@@ -24,16 +56,19 @@ var MYVH_Calendar = (function() {
         if (dayBtn) dayBtn.addEventListener('click', () => {
             api.setView('Day');
             setActiveViewButton('Day');
+            ensureSelectableRangeHandlers();
         });
 
         if (weekBtn) weekBtn.addEventListener('click', () => {
             api.setView('Week');
             setActiveViewButton('Week');
+            ensureSelectableRangeHandlers();
         });
 
         if (monthBtn) monthBtn.addEventListener('click', () => {
             api.setView('Month');
             setActiveViewButton('Month');
+            ensureSelectableRangeHandlers();
         });
 
         if (nextBtn)  nextBtn.addEventListener('click', () => api.next());
@@ -46,7 +81,7 @@ var MYVH_Calendar = (function() {
     // ─────────────────────────────
     function init() {
 
-        const modal = MYVH_BookingModal;
+        modal = MYVH_BookingModal;
 
         modal.init({
             ajax_url: myvhCal.ajax_url,
@@ -89,20 +124,12 @@ var MYVH_Calendar = (function() {
                 window.location.href = '/dashboard/?tab=view-booking&id=' + id;
             },
 
-            onTimeRangeSelected: function(args) {
-                modal.open({
-                    start: args.start.toString(),
-                    end: args.end.toString(),
-                    customer_id: myvhCal.currentCustomerId || '',
-                    organisation_id: myvhCal.defaultOrganisationId || ''
-                });
-
-                api.clearSelection?.();
-            }
+            onTimeRangeSelected: openSelectionModal
         });
 
         bindControls();
         setActiveViewButton('Week');
+        ensureSelectableRangeHandlers();
     }
 
     return {
