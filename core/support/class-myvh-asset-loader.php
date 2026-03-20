@@ -81,8 +81,9 @@ class MYVH_Asset_Loader {
             );
 
             wp_localize_script( 'myvh-calendar-admin', 'myvhCal', [
-                'ajax_url' => admin_url( 'admin-ajax.php' ),
-                'nonce'    => wp_create_nonce( 'myvh_calendar' )
+                'ajax_url'         => admin_url( 'admin-ajax.php' ),
+                'nonce'            => wp_create_nonce( 'myvh_calendar' ),
+                'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
             ] );
         }
     }
@@ -178,8 +179,9 @@ class MYVH_Asset_Loader {
 
         // myvhCal used by calendar-core.js via calendar-portal.js
         wp_localize_script( 'myvh-calendar-portal', 'myvhCal', [
-            'ajax_url' => admin_url( 'admin-ajax.php' ),
-            'nonce'    => wp_create_nonce( 'myvh_calendar' ),
+            'ajax_url'         => admin_url( 'admin-ajax.php' ),
+            'nonce'            => wp_create_nonce( 'myvh_calendar' ),
+            'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
         ] );
     }
 

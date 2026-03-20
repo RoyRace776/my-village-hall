@@ -153,7 +153,7 @@ class MYVH_Booking_Service {
             'CustomerId'        => $customer_id,
             'OrganisationId'    => $organisation_id > 0 ? $organisation_id : null,
             'RoomId'            => intval($data['room_id']),
-            'Status'            => sanitize_text_field($data['status'] ?? BookingStatus::PENDING),
+            'Status'            => sanitize_text_field($data['status'] ?? (myvh_setting('booking.require_approval', true) ? BookingStatus::PENDING : BookingStatus::CONFIRMED)),
             'StartDate'         => $start_date,
             'EndDate'           => $end_date,
             'StartTime'         => $start_time,

@@ -55,6 +55,22 @@ class MYVH_General_Settings extends MYVH_Settings_Base {
                     'description' => 'WARNING: When set, ALL data will be removed when the plugin is deactivated. USE WITH CARE'
                 ],
 
+                'calendar_date_format' => [
+                    'type'     => 'select',
+                    'label'    => 'Calendar Date Format',
+                    'default'  => 'd MMM',
+                    'sanitize' => 'sanitize_text_field',
+                    'options'  => [
+                        'd MMM'      => '15 Jan',
+                        'ddd d MMM'  => 'Mon 15 Jan',
+                        'd MMMM'     => '15 January',
+                        'ddd d MMMM' => 'Mon 15 January',
+                        'd/M/yyyy'   => '15/1/2024',
+                        'M/d/yyyy'   => '1/15/2024',
+                        'yyyy-MM-dd' => '2024-01-15',
+                    ],
+                ],
+
             ]
 
         ]

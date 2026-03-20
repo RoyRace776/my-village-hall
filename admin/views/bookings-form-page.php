@@ -29,6 +29,7 @@ if (!empty($form_data)) {
 
 $edit_booking = $booking_id ? $booking_service->get_by_id($booking_id) : null;
 $is_view_mode = $view_id > 0;
+$return_to = isset($_GET['return_to']) ? wp_validate_redirect(wp_unslash($_GET['return_to']), '') : '';
 
 $customers      = $customer_service->get_all();
 $organisations  = $org_service->get_all(true);
@@ -98,7 +99,8 @@ $form_end_date = isset($form_data['end_date']) ? sanitize_text_field($form_data[
 $form_start_time = isset($form_data['start_time']) ? sanitize_text_field($form_data['start_time']) : ($edit_booking['StartTime'] ?? '09:00');
 $form_end_time = isset($form_data['end_time']) ? sanitize_text_field($form_data['end_time']) : ($edit_booking['EndTime'] ?? '17:00');
 $form_description = isset($form_data['description']) ? sanitize_textarea_field($form_data['description']) : ($edit_booking['Description'] ?? '');
-$form_status = isset($form_data['status']) ? sanitize_text_field($form_data['status']) : ($edit_booking['Status'] ?? BookingStatus::CONFIRMED);
+$default_status = myvh_setting('booking.require_approval', true) ? BookingStatus::PENDING : BookingStatus::CONFIRMED;
+$form_status = isset($form_data['status']) ? sanitize_text_field($form_data['status']) : ($edit_booking['Status'] ?? $default_status);
 $form_public = $has_form_data ? !empty($form_data['public']) : (!empty($edit_booking['Public']) || !$edit_booking);
 $form_is_recurring = !empty($form_data['is_recurring']);
 $form_recurrence_type = sanitize_text_field($form_data['recurrence_type'] ?? 'weekly');
@@ -282,11 +284,11 @@ $status_colors = [
                     </table>
 
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=my-village-hall&edit=' . $booking_id); ?>" class="button button-primary">
+                        <a href="<?php echo esc_url(add_query_arg($return_to ? ['return_to' => $return_to] : [], admin_url('admin.php?page=my-village-hall&edit=' . $booking_id))); ?>" class="button button-primary">
                             <?php _e('Edit Booking', 'my-village-hall'); ?>
                         </a>
-                        <a href="<?php echo admin_url('admin.php?page=my-village-hall'); ?>" class="button">
-                            <?php _e('Back to All Bookings', 'my-village-hall'); ?>
+                        <a href="<?php echo esc_url($return_to ?: admin_url('admin.php?page=my-village-hall')); ?>" class="button">
+                            <?php echo esc_html($return_to ? __('Back to Calendar', 'my-village-hall') : __('Back to All Bookings', 'my-village-hall')); ?>
                         </a>
                         <?php if ($edit_booking['Status'] !== BookingStatus::CANCELLED): ?>
                             <a href="<?php echo wp_nonce_url(
@@ -368,6 +370,9 @@ $status_colors = [
             <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" id="booking-form">
                 <input type="hidden" name="action" value="myvh_save_booking">
                 <?php wp_nonce_field('myvh_save_booking'); ?>
+                <?php if ($return_to): ?>
+                    <input type="hidden" name="return_to" value="<?php echo esc_attr($return_to); ?>">
+                <?php endif; ?>
                 <?php if ($edit_booking): ?>
                     <input type="hidden" name="booking_id" value="<?php echo $edit_booking['Id']; ?>">
                 <?php endif; ?>
@@ -722,8 +727,8 @@ $status_colors = [
                     <button type="submit" class="button button-primary button-large">
                         <?php echo $edit_booking ? __('Update Booking', 'my-village-hall') : __('Create Booking', 'my-village-hall'); ?>
                     </button>
-                    <a href="<?php echo admin_url('admin.php?page=my-village-hall'); ?>" class="button button-large">
-                        <?php _e('Cancel', 'my-village-hall'); ?>
+                    <a href="<?php echo esc_url($return_to ?: admin_url('admin.php?page=my-village-hall')); ?>" class="button button-large">
+                        <?php echo esc_html($return_to ? __('Back to Calendar', 'my-village-hall') : __('Cancel', 'my-village-hall')); ?>
                     </a>
                 </p>
 

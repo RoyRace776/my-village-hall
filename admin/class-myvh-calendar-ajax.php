@@ -243,7 +243,7 @@ class MYVH_Calendar_Ajax {
             'end_date'    => sanitize_text_field( $_POST['end_date']    ?? '' ),
             'start_time'  => sanitize_text_field( $_POST['start_time']  ?? '' ),
             'end_time'    => sanitize_text_field( $_POST['end_time']    ?? '' ),
-            'status'      => sanitize_text_field( $_POST['status']      ?? BookingStatus::PENDING ),
+            'status'      => sanitize_text_field( $_POST['status']      ?? (myvh_setting('booking.require_approval', true) ? BookingStatus::PENDING : BookingStatus::CONFIRMED) ),
             'description' => sanitize_textarea_field( $_POST['description'] ?? '' ),
             'public'      => isset( $_POST['public'] ) ? 1 : 0,
             'addons'      => [],

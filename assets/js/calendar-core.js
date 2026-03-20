@@ -4,6 +4,20 @@ window.MYVH_CalendarCore = (function () {
     let scheduler = null;
     let currentView = "Week";
 
+    function toDayPilotDate(value) {
+        return value ? new DayPilot.Date(value) : null;
+    }
+
+    function getSchedulerStartDate(mode, value) {
+        const date = toDayPilotDate(value) || DayPilot.Date.today();
+
+        if (mode === "Month") {
+            return date.firstDayOfMonth();
+        }
+
+        return date;
+    }
+
     function destroy() {
         if (calendar) {
             calendar.dispose();
@@ -57,7 +71,10 @@ window.MYVH_CalendarCore = (function () {
 
         calendar = new DayPilot.Calendar(containerId);
         calendar.viewType = opts.view;
-        calendar.startDate = DayPilot.Date.today();
+        calendar.startDate = toDayPilotDate(opts.startDate) || DayPilot.Date.today();
+        if (opts.headerDateFormat) {
+            calendar.headerDateFormat = opts.headerDateFormat;
+        }
 
         calendar.eventMoveHandling = opts.editable ? "Update" : "Disabled";
         calendar.eventResizeHandling = opts.editable ? "Update" : "Disabled";
@@ -81,15 +98,14 @@ window.MYVH_CalendarCore = (function () {
 
         destroy();
 
-        const today = DayPilot.Date.today();
         let startDate, days;
 
         if (mode === "Month") {
-            startDate = today.firstDayOfMonth();
+            startDate = getSchedulerStartDate(mode, opts.startDate);
             days = startDate.daysInMonth();
         } else {
             // Rooms view = week grid
-            startDate = today.firstDayOfWeek();
+            startDate = getSchedulerStartDate(mode, opts.startDate);
             days = 7;
         }
 
@@ -133,24 +149,93 @@ window.MYVH_CalendarCore = (function () {
     // ───────────────────────────────────────────────
     function init(containerId, opts) {
 
-        // default view
-        createCalendar(containerId, { ...opts, view: "Week" });
+        const initialState = opts.initialState || null;
+        const initialView = initialState?.view || "Week";
+        const initialStart = initialState?.start || null;
+
+        currentView = initialView;
+
+        if (initialView === "Day" || initialView === "Week") {
+            createCalendar(containerId, { ...opts, view: initialView, startDate: initialStart });
+        }
+
+        if (initialView === "Rooms") {
+            createScheduler(containerId, { ...opts, startDate: initialStart }, "Rooms");
+        }
+
+        if (initialView === "Month") {
+            createScheduler(containerId, { ...opts, startDate: initialStart }, "Month");
+        }
 
         return {
 
-            setView(view) {
+            clearSelection() {
+                calendar?.clearSelection?.();
+                scheduler?.clearSelection?.();
+            },
+
+            get calendar() {
+                return calendar;
+            },
+
+            get scheduler() {
+                return scheduler;
+            },
+
+            getState() {
+                return {
+                    view: currentView,
+                    start: calendar
+                        ? calendar.startDate.toString()
+                        : scheduler
+                            ? scheduler.startDate.toString()
+                            : ""
+                };
+            },
+
+            restoreState(state) {
+                if (!state) {
+                    return;
+                }
+
+                const view = state.view || currentView;
+                const start = state.start ? new DayPilot.Date(state.start) : null;
+
+                if (view !== currentView) {
+                    this.setView(view, start);
+                    return;
+                }
+
+                if (!start) {
+                    return;
+                }
+
+                if (calendar) {
+                    calendar.startDate = start;
+                    calendar.update();
+                    loadEvents(opts.ajax_url, opts.nonce);
+                }
+
+                if (scheduler) {
+                    scheduler.startDate = view === "Month" ? start.firstDayOfMonth() : start;
+                    scheduler.update();
+                    loadEvents(opts.ajax_url, opts.nonce);
+                }
+            },
+
+            setView(view, startDate = null) {
                 currentView = view;
 
                 if (view === "Day" || view === "Week") {
-                    createCalendar(containerId, { ...opts, view });
+                    createCalendar(containerId, { ...opts, view, startDate });
                 }
 
                 if (view === "Rooms") {
-                    createScheduler(containerId, opts, "Rooms");
+                    createScheduler(containerId, { ...opts, startDate }, "Rooms");
                 }
 
                 if (view === "Month") {
-                    createScheduler(containerId, opts, "Month");
+                    createScheduler(containerId, { ...opts, startDate }, "Month");
                 }
             },
 

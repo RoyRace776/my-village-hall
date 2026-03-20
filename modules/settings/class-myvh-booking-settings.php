@@ -34,7 +34,7 @@ class MYVH_Booking_Settings extends MYVH_Settings_Base {
 
                 'require_approval' => [
                     'label' => 'Require approval',
-                    'type' => 'checkbox',
+                    'type' => 'boolean',
                     'default' => true,
                     'sanitize' => 'boolval'
                 ],
@@ -49,7 +49,7 @@ class MYVH_Booking_Settings extends MYVH_Settings_Base {
 
                 'allow_weekend_bookings' => [
                     'label' => 'Allow weekend bookings',
-                    'type' => 'checkbox',
+                    'type' => 'boolean',
                     'default' => true,
                     'sanitize' => 'boolval'
                 ],

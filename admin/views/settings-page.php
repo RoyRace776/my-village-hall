@@ -145,6 +145,39 @@ class MYVH_Settings_Page {
 
         </form>
 
+        <script>
+        (function () {
+            var form    = document.querySelector('.wrap form');
+            var btn     = document.getElementById('submit');
+            var isDirty = false;
+
+            if (!form || !btn) return;
+
+            btn.disabled = true;
+
+            function markDirty() {
+                if (!isDirty) {
+                    isDirty = true;
+                    btn.disabled = false;
+                }
+            }
+
+            form.addEventListener('change', markDirty);
+            form.addEventListener('input',  markDirty);
+
+            form.addEventListener('submit', function () {
+                isDirty = false;
+            });
+
+            window.addEventListener('beforeunload', function (e) {
+                if (isDirty) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+        })();
+        </script>
+
         <?php
 
     }

@@ -34,6 +34,7 @@ var MYVH_Calendar = (function() {
             context:    "portal",
             ajax_url:    myvhCal.ajax_url,
             nonce:      myvhCal.nonce,
+            headerDateFormat: myvhCal.headerDateFormat || null,
 
             editable:   false,
             selectable: false,
@@ -79,6 +80,7 @@ var MYVH_Calendar = (function() {
         api = MYVH_CalendarCore.init("myvh-calendar", {
             ajax_url: myvhCal.ajax_url,
             nonce: myvhCal.nonce,
+            headerDateFormat: myvhCal.headerDateFormat || null,
             selectable: true,
             editable: false,
 
@@ -93,7 +95,7 @@ var MYVH_Calendar = (function() {
                     organisation_id: MYVH.defaultOrganisationId
                 });
 
-                api.calendar.clearSelection();
+                api.clearSelection();
             }
         });
 

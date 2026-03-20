@@ -73,6 +73,8 @@
     gap: 4px;
 }
 
+.myvh-view-btn.active,
+.myvh-view-btn:focus,
 .vbc-view-btn.active,
 .vbc-view-btn:focus {
     background: #2271b1;

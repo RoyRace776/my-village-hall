@@ -40,7 +40,7 @@ class MYVH_Booking_Controller {
 
         delete_transient($this->get_form_transient_key());
 
-        wp_redirect(admin_url('admin.php?page=my-village-hall&updated=1'));
+        wp_redirect($this->get_success_redirect_url($data));
         exit;
     }
 
@@ -60,7 +60,23 @@ class MYVH_Booking_Controller {
             $query_args['add'] = 1;
         }
 
+        if (!empty($data['return_to'])) {
+            $query_args['return_to'] = wp_validate_redirect($data['return_to'], '');
+        }
+
         return add_query_arg($query_args, admin_url('admin.php'));
+    }
+
+    private function get_success_redirect_url($data) {
+        $return_to = !empty($data['return_to'])
+            ? wp_validate_redirect($data['return_to'], '')
+            : '';
+
+        if ($return_to) {
+            return $return_to;
+        }
+
+        return admin_url('admin.php?page=my-village-hall&updated=1');
     }
 
     public function cancel() {
