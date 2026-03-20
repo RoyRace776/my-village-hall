@@ -180,15 +180,39 @@ class MYVH_Calendar_Ajax_Controller {
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
 
+        $addons = $this->normalize_addons($request['addons'] ?? []);
+
+        $is_recurring = !empty($request['is_recurring']);
+
+        $recurrence_type = sanitize_text_field($request['recurrence_type'] ?? 'weekly');
+        $recurrence_interval = intval($request['recurrence_interval'] ?? 1);
+        $recurrence_interval_md = intval($request['recurrence_interval_md'] ?? 1);
+
+        if ($recurrence_type === 'monthly_day') {
+            $recurrence_interval = max(1, $recurrence_interval_md);
+        }
+
+        $recurrence_end_type = sanitize_text_field($request['recurrence_end_type'] ?? 'date');
+
         $data = [
             'start_date'      => $start_date,
             'start_time'      => $start_time,
             'end_date'        => $end_date,
             'end_time'        => $end_time,
             'description'     => sanitize_text_field($request['text'] ?? ''),
+            'status'          => sanitize_text_field($request['status'] ?? BookingStatus::PENDING),
             'room_id'         => intval($request['room_id'] ?? 0),
             'customer_id'     => intval($request['customer_id'] ?? 0),
             'organisation_id' => intval($request['organisation_id'] ?? 0),
+            'addons'          => $addons,
+            'is_recurring'    => $is_recurring ? 1 : 0,
+            'recurrence_type' => $recurrence_type,
+            'recurrence_interval' => max(1, $recurrence_interval),
+            'recurrence_week' => sanitize_text_field($request['recurrence_week'] ?? ''),
+            'recurrence_day'  => sanitize_text_field($request['recurrence_day'] ?? ''),
+            'recurrence_end_type' => $recurrence_end_type,
+            'recurrence_end_date' => sanitize_text_field($request['recurrence_end_date'] ?? ''),
+            'max_occurrences' => intval($request['max_occurrences'] ?? 0),
         ];
 
         // Basic validation
@@ -202,6 +226,20 @@ class MYVH_Calendar_Ajax_Controller {
 
         if (!$data['organisation_id']) {
             wp_send_json_error('Organisation is required');
+        }
+
+        if ($data['is_recurring']) {
+            if (empty($data['recurrence_type'])) {
+                wp_send_json_error('Recurrence type is required');
+            }
+
+            if ($data['recurrence_end_type'] === 'count' && $data['max_occurrences'] < 1) {
+                wp_send_json_error('Max occurrences must be at least 1');
+            }
+
+            if ($data['recurrence_end_type'] !== 'count' && empty($data['recurrence_end_date'])) {
+                wp_send_json_error('Recurrence end date is required');
+            }
         }
 
         try {
@@ -315,6 +353,48 @@ class MYVH_Calendar_Ajax_Controller {
         }
 
         return [$date, $time];
+    }
+
+    private function normalize_addons($raw_addons) {
+
+        if (!is_array($raw_addons)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($raw_addons as $addon) {
+            if (!is_array($addon)) {
+                continue;
+            }
+
+            $addon_id = intval($addon['addon_id'] ?? 0);
+            if ($addon_id <= 0) {
+                continue;
+            }
+
+            $enabled_raw = strtolower(trim((string) ($addon['enabled'] ?? '')));
+            $enabled = in_array($enabled_raw, ['1', 'true', 'on', 'yes'], true);
+
+            // Some clients may omit an explicit enabled flag; keep rows with valid values.
+            if (!$enabled && array_key_exists('enabled', $addon)) {
+                continue;
+            }
+
+            $quantity = floatval($addon['quantity'] ?? 1);
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            $normalized[] = [
+                'addon_id' => $addon_id,
+                'quantity' => $quantity,
+                'unit_price' => floatval($addon['unit_price'] ?? 0),
+                'description' => sanitize_text_field($addon['description'] ?? ''),
+            ];
+        }
+
+        return $normalized;
     }
 
 

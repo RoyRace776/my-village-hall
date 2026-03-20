@@ -41,6 +41,7 @@ $org_types = $type_service->get_all();
                     <thead>
                         <tr>
                             <th><?php _e('Name', 'my-village-hall'); ?></th>
+                            <th><?php _e('Default', 'my-village-hall'); ?></th>
                             <th><?php _e('Type', 'my-village-hall'); ?></th>
                             <th><?php _e('Email', 'my-village-hall'); ?></th>
                             <th><?php _e('Phone', 'my-village-hall'); ?></th>
@@ -50,11 +51,12 @@ $org_types = $type_service->get_all();
                     </thead>
                     <tbody>
                         <?php if (empty($orgs)): ?>
-                            <tr><td colspan="6"><?php _e('No organisations found.', 'my-village-hall'); ?></td></tr>
+                            <tr><td colspan="7"><?php _e('No organisations found.', 'my-village-hall'); ?></td></tr>
                         <?php else: ?>
                             <?php foreach ($orgs as $org): ?>
                                 <tr>
                                     <td><strong><?php echo esc_html($org['Name']); ?></strong></td>
+                                    <td><?php echo !empty($org['IsDefault']) ? __('Yes', 'my-village-hall') : '—'; ?></td>
                                     <td><?php echo esc_html($org['OrganisationTypeName'] ?? '—'); ?></td>
                                     <td><?php echo esc_html($org['ContactEmail'] ?? '—'); ?></td>
                                     <td><?php echo esc_html($org['ContactPhone'] ?? '—'); ?></td>
@@ -148,6 +150,18 @@ $org_types = $type_service->get_all();
                                         <?php checked(!$edit_org || $edit_org['IsActive']); ?>>
                                     <?php _e('Active', 'my-village-hall'); ?>
                                 </label>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Default Organisation', 'my-village-hall'); ?></th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" name="is_default" value="1"
+                                        <?php checked(!empty($edit_org['IsDefault'])); ?>>
+                                    <?php _e('Use as the default organisation', 'my-village-hall'); ?>
+                                </label>
+                                <p class="description"><?php _e('Only one organisation can be default at a time.', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
                     </table>

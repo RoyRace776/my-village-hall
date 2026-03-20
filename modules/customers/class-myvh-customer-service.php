@@ -5,11 +5,17 @@ class MYVH_Customer_Service {
 
     private $repo;
     private $booking_repo;
+    private $organisation_repo;
+    private $organisation_member_repo;
 
     public function __construct(MYVH_Customer_Repository $repo,
-                                MYVH_Booking_Repository $booking_repo) {
+                                MYVH_Booking_Repository $booking_repo,
+                                MYVH_Organisation_Repository $organisation_repo,
+                                MYVH_Organisation_Member_Repository $organisation_member_repo) {
         $this->repo         = $repo;
         $this->booking_repo = $booking_repo;
+        $this->organisation_repo = $organisation_repo;
+        $this->organisation_member_repo = $organisation_member_repo;
     }
 
     public function get_all($args = []) {
@@ -44,8 +50,6 @@ class MYVH_Customer_Service {
     }
 
     public function save($data) {
-
-    //TODO: add the customer to the default organisation
 
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Customer name is required', 'my-village-hall'));
@@ -135,6 +139,12 @@ class MYVH_Customer_Service {
 
             $customer_id = $this->repo->create($data);
 
+            if (!$customer_id) {
+                throw new Exception(__('Failed to create customer', 'my-village-hall'));
+            }
+
+            $this->add_customer_to_default_organisation($customer_id);
+
             return $customer_id;
 
         } catch (Exception $e) {
@@ -144,6 +154,30 @@ class MYVH_Customer_Service {
             }
 
             throw $e;
+        }
+    }
+
+    private function add_customer_to_default_organisation(int $customer_id): void
+    {
+        $default_organisation = $this->organisation_repo->get_default();
+
+        if (empty($default_organisation['Id'])) {
+            return;
+        }
+
+        $organisation_id = intval($default_organisation['Id']);
+
+        if ($this->organisation_member_repo->exists($organisation_id, $customer_id)) {
+            return;
+        }
+
+        $result = $this->organisation_member_repo->create([
+            'OrganisationId' => $organisation_id,
+            'CustomerId' => $customer_id,
+        ]);
+
+        if ($result === false) {
+            throw new Exception(__('Failed to add customer to the default organisation', 'my-village-hall'));
         }
     }
 

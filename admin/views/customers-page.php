@@ -13,6 +13,7 @@ global $myvh_container;
 $edit_id          = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $customer_service = $myvh_container->get(MYVH_Customer_Service::class);
 $org_service      = $myvh_container->get(MYVH_Organisation_Service::class);
+$default_org      = $org_service->get_default();
 $edit_customer    = $edit_id ? $customer_service->get($edit_id) : null;
 $customers        = $customer_service->get_with_organisations();
 
@@ -120,6 +121,19 @@ if ($edit_customer) {
                 <h2><?php echo $edit_customer
                     ? __('Edit Customer', 'my-village-hall')
                     : __('Add Customer', 'my-village-hall'); ?></h2>
+
+                <?php if (!$edit_customer && !empty($default_org['Name'])): ?>
+                    <div class="notice notice-info inline">
+                        <p>
+                            <?php
+                            printf(
+                                __('New customers will automatically be added to the default organisation: %s', 'my-village-hall'),
+                                '<strong>' . esc_html($default_org['Name']) . '</strong>'
+                            );
+                            ?>
+                        </p>
+                    </div>
+                <?php endif; ?>
 
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                     <input type="hidden" name="action" value="myvh_save_customer">

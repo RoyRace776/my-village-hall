@@ -17,7 +17,12 @@ class MYVH_Customer_Controller {
 
         check_admin_referer('myvh_save_customer');
 
-        $this->service->save($_POST);
+        $result = $this->service->save($_POST);
+
+        if (is_wp_error($result)) {
+            wp_redirect(admin_url('admin.php?page=myvh-customers&error=' . urlencode($result->get_error_message())));
+            exit;
+        }
 
         wp_redirect(admin_url('admin.php?page=myvh-customers&updated=1'));
         exit;

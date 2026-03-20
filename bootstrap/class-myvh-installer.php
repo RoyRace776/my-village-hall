@@ -94,9 +94,11 @@ class MYVH_Installer {
             ContactEmail       VARCHAR(100),
             ContactPhone       VARCHAR(100),
             IsActive           TINYINT(1)    DEFAULT 1,
+            IsDefault          TINYINT(1)    DEFAULT 0,
             Created            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_name    (Name),
-            INDEX      idx_active  (IsActive)
+            INDEX      idx_active  (IsActive),
+            INDEX      idx_default (IsDefault)
         ) {$collate};" );
 
         // ── Organisation Types ───────────────────────────────────────────────────
@@ -609,7 +611,8 @@ class MYVH_Installer {
             $insert_id = $wpdb->insert_id;
             $table_name = $wpdb->prefix . 'myvh_organisations';
             $data = ['Name'             => 'Personal booking',
-                     'OrganisationTypeId' => $insert_id];
+                     'OrganisationTypeId' => $insert_id,
+                     'IsDefault'          => 1];
 
             $wpdb->insert($table_name,$data);
         }

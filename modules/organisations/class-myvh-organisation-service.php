@@ -36,9 +36,20 @@ class MYVH_Organisation_Service {
         return $this->repo->get_by_id( $id );
     }
 
+    public function get_default() {
+        return $this->repo->get_default();
+    }
+
     public function save( array $data ) {
         if ( empty( $data['name'] ) ) {
             return new WP_Error( 'validation', __( 'Organisation name is required', 'my-village-hall' ) );
+        }
+
+        $is_new = empty( $data['organisation_id'] );
+        $requested_default = isset( $data['is_default'] ) ? 1 : 0;
+
+        if ( $is_new && ( $this->repo->count_all() === 0 || !$this->repo->has_default() ) ) {
+            $requested_default = 1;
         }
 
         $record = [
@@ -47,13 +58,38 @@ class MYVH_Organisation_Service {
             'ContactEmail'       => sanitize_email( $data['contact_email'] ?? '' ) ?: null,
             'ContactPhone'       => sanitize_text_field( $data['contact_phone'] ?? '' ) ?: null,
             'IsActive'           => isset( $data['is_active'] ) ? 1 : 0,
+            'IsDefault'          => $requested_default,
         ];
 
         if ( !empty( $data['organisation_id'] ) ) {
-            return $this->repo->update( $record, [ 'Id' => intval( $data['organisation_id'] ) ] );
+            $organisation_id = intval( $data['organisation_id'] );
+
+            $updated = $this->repo->update( $record, [ 'Id' => $organisation_id ] );
+
+            if ( !$updated ) {
+                return false;
+            }
+
+            if ( $requested_default ) {
+                $this->repo->clear_default_except( $organisation_id );
+            } elseif ( !$this->repo->has_default() ) {
+                $this->repo->update( [ 'IsDefault' => 1 ], [ 'Id' => $organisation_id ] );
+            }
+
+            return true;
         }
 
-        return $this->repo->create( $record );
+        $organisation_id = $this->repo->create( $record );
+
+        if ( !$organisation_id ) {
+            return false;
+        }
+
+        if ( $requested_default ) {
+            $this->repo->clear_default_except( intval( $organisation_id ) );
+        }
+
+        return $organisation_id;
     }
 
     public function delete( int $id ) {

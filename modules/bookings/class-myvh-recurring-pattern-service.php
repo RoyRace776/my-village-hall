@@ -195,7 +195,7 @@ class MYVH_Recurring_Pattern_Service {
             $booking_data = [
                 'CustomerId'         => $parent_booking['CustomerId'],
                 'RoomId'             => $parent_booking['RoomId'],
-                'Status'             => BookingStatus::CONFIRMED,
+                'Status'             => $parent_booking['Status'],
                 'StartDate'          => $date,
                 'EndDate'            => $date,
                 'StartTime'          => $parent_booking['StartTime'],

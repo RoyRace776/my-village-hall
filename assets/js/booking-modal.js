@@ -58,6 +58,9 @@ window.MYVH_BookingModal = (function() {
                 close();
             }
         });
+
+        bindRecurringControls();
+        bindAddonControls();
     }
 
     // ─────────────────────────────
@@ -103,6 +106,131 @@ window.MYVH_BookingModal = (function() {
         form.querySelectorAll("select, input").forEach(el => {
             el.disabled = false;
         });
+
+        const recurringOptions = form.querySelector("#myvh-modal-recurring-options");
+        if (recurringOptions) {
+            recurringOptions.style.display = "none";
+        }
+
+        const maxOccurrences = form.querySelector("[name=max_occurrences]");
+        const recurrenceEndDate = form.querySelector("[name=recurrence_end_date]");
+
+        if (maxOccurrences) {
+            maxOccurrences.disabled = true;
+        }
+
+        if (recurrenceEndDate) {
+            recurrenceEndDate.disabled = false;
+        }
+
+        syncRecurringType();
+
+        form.querySelectorAll(".myvh-modal-addon-row").forEach(row => {
+            toggleAddonRow(row, false);
+        });
+    }
+
+    function bindRecurringControls() {
+        const recurringToggle = form.querySelector("#myvh-modal-is-recurring");
+        const recurringOptions = form.querySelector("#myvh-modal-recurring-options");
+        const recurrenceType = form.querySelector("#myvh-modal-rec-type");
+
+        if (recurringToggle && recurringOptions) {
+            recurringToggle.addEventListener("change", () => {
+                recurringOptions.style.display = recurringToggle.checked ? "block" : "none";
+            });
+        }
+
+        if (recurrenceType) {
+            recurrenceType.addEventListener("change", syncRecurringType);
+        }
+
+        form.querySelectorAll("input[name=recurrence_end_type]").forEach(radio => {
+            radio.addEventListener("change", syncRecurrenceEndMode);
+        });
+
+        const intervalMd = form.querySelector("[name=recurrence_interval_md]");
+        if (intervalMd) {
+            intervalMd.addEventListener("input", () => {
+                if ((recurrenceType?.value || "") === "monthly_day") {
+                    const interval = form.querySelector("[name=recurrence_interval]");
+                    if (interval) {
+                        interval.value = intervalMd.value;
+                    }
+                }
+            });
+        }
+
+        syncRecurringType();
+        syncRecurrenceEndMode();
+    }
+
+    function syncRecurringType() {
+        const recurrenceType = form.querySelector("#myvh-modal-rec-type");
+        const intervalRow = form.querySelector("#myvh-modal-interval-row");
+        const monthlyDayRow = form.querySelector("#myvh-modal-monthly-day-row");
+        const intervalLabel = form.querySelector("#myvh-modal-interval-label");
+        const interval = form.querySelector("[name=recurrence_interval]");
+        const intervalMd = form.querySelector("[name=recurrence_interval_md]");
+
+        if (!recurrenceType) return;
+
+        const labels = {
+            daily: "day(s)",
+            weekly: "week(s)",
+            monthly: "month(s)",
+            yearly: "year(s)"
+        };
+
+        const isMonthlyDay = recurrenceType.value === "monthly_day";
+
+        if (intervalRow) intervalRow.style.display = isMonthlyDay ? "none" : "";
+        if (monthlyDayRow) monthlyDayRow.style.display = isMonthlyDay ? "" : "none";
+        if (intervalLabel) intervalLabel.textContent = labels[recurrenceType.value] || "";
+
+        if (isMonthlyDay && interval && intervalMd) {
+            interval.value = intervalMd.value;
+        }
+    }
+
+    function syncRecurrenceEndMode() {
+        const endType = form.querySelector("input[name=recurrence_end_type]:checked")?.value || "date";
+        const maxOccurrences = form.querySelector("[name=max_occurrences]");
+        const recurrenceEndDate = form.querySelector("[name=recurrence_end_date]");
+
+        if (maxOccurrences) {
+            maxOccurrences.disabled = endType !== "count";
+        }
+
+        if (recurrenceEndDate) {
+            recurrenceEndDate.disabled = endType !== "date";
+        }
+    }
+
+    function bindAddonControls() {
+        form.querySelectorAll(".myvh-modal-addon-checkbox").forEach(checkbox => {
+            checkbox.addEventListener("change", () => {
+                const row = checkbox.closest(".myvh-modal-addon-row");
+                if (!row) return;
+                toggleAddonRow(row, checkbox.checked);
+            });
+        });
+    }
+
+    function toggleAddonRow(row, enabled) {
+        const enabledField = row.querySelector(".myvh-modal-addon-enabled");
+        if (enabledField) {
+            enabledField.value = enabled ? "1" : "0";
+        }
+
+        row.querySelectorAll(".myvh-modal-addon-price, .myvh-modal-addon-qty").forEach(input => {
+            input.disabled = !enabled;
+        });
+
+        const checkbox = row.querySelector(".myvh-modal-addon-checkbox");
+        if (checkbox) {
+            checkbox.checked = enabled;
+        }
     }
 
     // ─────────────────────────────
