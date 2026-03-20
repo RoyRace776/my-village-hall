@@ -71,6 +71,14 @@ class MYVH_General_Settings extends MYVH_Settings_Base {
                     ],
                 ],
 
+                'public_calendar_booking_label' => [
+                    'type' => 'text',
+                    'label' => 'Public Calendar Private Label',
+                    'default' => 'Private booking',
+                    'sanitize' => 'sanitize_text_field',
+                    'description' => 'Label shown for bookings that are not marked public.',
+                ],
+
             ]
 
         ]

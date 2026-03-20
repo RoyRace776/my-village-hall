@@ -17,6 +17,7 @@ class MYVH_Calendar_Shortcode {
 
     /** Shortcode tag */
     const TAG = 'myvh_calendar';
+    const TAG_PUBLIC = 'myvh_public_calendar';
 
     /** REST namespace / route */
     const REST_NAMESPACE = 'myvh/v1';
@@ -24,6 +25,7 @@ class MYVH_Calendar_Shortcode {
 
     public function init() {
         add_shortcode( self::TAG, [ $this, 'render' ] );
+        add_shortcode( self::TAG_PUBLIC, [ $this, 'render' ] );
         add_action( 'rest_api_init', [ $this, 'register_rest_route' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'register_assets' ] );
     }
@@ -55,6 +57,16 @@ class MYVH_Calendar_Shortcode {
     public function get_events( WP_REST_Request $request ): WP_REST_Response {
         global $wpdb;
 
+        $default_label = myvh_setting(
+            'general.public_calendar_booking_label',
+            __( 'Private booking', 'my-village-hall' )
+        );
+        $default_label = apply_filters( 'myvh_public_calendar_booking_label', $default_label );
+        $default_label = sanitize_text_field( (string) $default_label );
+        if ( $default_label === '' ) {
+            $default_label = __( 'Private booking', 'my-village-hall' );
+        }
+
         $start    = $request->get_param( 'start' );
         $end      = $request->get_param( 'end' );
         $venue_id = (int) $request->get_param( 'venue_id' );
@@ -67,7 +79,7 @@ class MYVH_Calendar_Shortcode {
 
         $prefix = $wpdb->prefix;
 
-        $where  = [ '1=1', "b.Public = 1", "b.Status IN (". BookingStatus::COMPLETED . "," . BookingStatus::PENDING . ")" ];
+        $where  = [ '1=1', "b.Status IN (". BookingStatus::COMPLETED . "," . BookingStatus::PENDING . ")" ];
         $params = [];
 
         // Date range – bookings that overlap the requested window
@@ -95,6 +107,7 @@ class MYVH_Calendar_Shortcode {
                     b.EndTime,
                     b.Description,
                     b.Status,
+                    b.Public AS IsPublic,
                     r.Name  AS RoomName,
                     v.Id    AS VenueId,
                     v.Name  AS VenueName
@@ -113,21 +126,24 @@ class MYVH_Calendar_Shortcode {
             $start_dt = $row['StartDate'] . 'T' . $row['StartTime'];
             $end_dt   = $row['EndDate']   . 'T' . $row['EndTime'];
 
-            $text = esc_html( $row['RoomName'] );
-            if ( ! empty( $row['Description'] ) ) {
-                $text .= ' – ' . esc_html( $row['Description'] );
+            $is_public = !empty($row['IsPublic']) || !empty($row['Public']);
+
+            $text = $default_label;
+            if ($is_public) {
+                $text = !empty($row['Description']) ? (string) $row['Description'] : (string) $row['RoomName'];
             }
 
             $events[] = [
                 'id'       => (int) $row['Id'],
                 'start'    => $start_dt,
                 'end'      => $end_dt,
-                'text'     => $text,
+                'text'     => sanitize_text_field( $text ),
                 'resource' => $row['VenueId'],
                 'tags'     => [
                     'room'   => $row['RoomName'],
                     'venue'  => $row['VenueName'],
                     'status' => $row['Status'],
+                    'isPublic' => $is_public,
                 ],
             ];
         }
@@ -204,9 +220,20 @@ class MYVH_Calendar_Shortcode {
             ],
         ] );
 
+        $login_url = wp_login_url( get_permalink() ?: home_url('/') );
+
         ob_start();
         ?>
         <div class="myvh-public-calendar-wrap">
+            <?php if ( ! is_user_logged_in() ) : ?>
+                <div class="myvh-cal-login-cta">
+                    <p><?php esc_html_e( 'Already have an account?', 'my-village-hall' ); ?></p>
+                    <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $login_url ); ?>">
+                        <?php esc_html_e( 'Log in', 'my-village-hall' ); ?>
+                    </a>
+                </div>
+            <?php endif; ?>
+
             <div class="myvh-cal-toolbar" data-target="<?php echo esc_attr( $unique_id ); ?>">
                 <div class="myvh-cal-nav">
                     <button class="myvh-cal-btn myvh-cal-prev" aria-label="<?php esc_attr_e( 'Previous', 'my-village-hall' ); ?>">&#8249;</button>

@@ -461,7 +461,121 @@
 .myvh-small { font-size: 12px; }
 
 /* ==========================================================================
-   14. BOOKING MODAL (Portal)
+   14. ACCOUNT PAGE
+   ========================================================================== */
+
+.myvh-account-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.myvh-account-header h2 {
+  margin: 0;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.45rem;
+  color: var(--ink);
+}
+
+.myvh-account-header p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+
+.myvh-account-chip {
+  border: 1px solid var(--warm);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  padding: 6px 12px;
+  font-size: .82rem;
+  white-space: nowrap;
+}
+
+.myvh-account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.myvh-account-card {
+  padding: 20px;
+}
+
+.myvh-account-card-head {
+  margin-bottom: 14px;
+}
+
+.myvh-account-card-head h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.myvh-account-card-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.myvh-account-form {
+  display: grid;
+  gap: 12px;
+}
+
+.myvh-account-field {
+  display: grid;
+  gap: 5px;
+}
+
+.myvh-account-field span {
+  color: var(--ink);
+  font-size: .82rem;
+  font-weight: 500;
+}
+
+.myvh-account-field input {
+  width: 100%;
+  border: 1px solid #d9d2c8;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  padding: 10px 12px;
+  font-size: .92rem;
+  transition: border-color .12s, box-shadow .12s;
+}
+
+.myvh-account-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(181, 69, 27, .12);
+}
+
+.myvh-account-actions {
+  margin-top: 6px;
+  display: grid;
+  gap: 8px;
+  align-items: center;
+}
+
+.myvh-account-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+#myvh-account-details-message,
+#myvh-account-password-message {
+  min-height: 18px;
+  font-size: .85rem;
+}
+
+/* ==========================================================================
+   15. BOOKING MODAL (Portal)
    ========================================================================== */
 
 #myvh-booking-modal.hidden {
@@ -498,7 +612,7 @@
 }
 
 /* ==========================================================================
-   15. RESPONSIVE
+  16. RESPONSIVE
    ========================================================================== */
 
 @media (max-width: 720px) {
@@ -508,6 +622,9 @@
 }
 
 @media (max-width: 768px) {
+  .myvh-account-grid    { grid-template-columns: 1fr; }
+  .myvh-account-header  { flex-direction: column; }
+  .myvh-account-chip    { align-self: flex-start; }
   .myvh-booking-main    { flex-direction: column; gap: 10px; }
   .myvh-booking-status  { text-align: left; }
   .myvh-group-header    { flex-direction: column; align-items: flex-start; }
