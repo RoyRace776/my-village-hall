@@ -12,6 +12,7 @@ class MYVH_Recurring_Pattern_Service {
 
     private $repo;
     private $booking_repo;
+    private $last_booking_results = null;
 
     public function __construct(MYVH_Recurring_Pattern_Repository $repo,
                                 MYVH_Booking_Repository $booking_repo) {
@@ -47,6 +48,7 @@ class MYVH_Recurring_Pattern_Service {
      * Save a recurring pattern and immediately create all future bookings
      */
     public function save($data) {
+        $this->last_booking_results = null;
 
         if (empty($data['parent_booking_id'])) {
             return new WP_Error('validation', __('Parent booking is required', 'my-village-hall'));
@@ -127,7 +129,13 @@ class MYVH_Recurring_Pattern_Service {
             return $booking_results;
         }
 
+        $this->last_booking_results = $booking_results;
+
         return $pattern_id;
+    }
+
+    public function get_last_booking_results() {
+        return $this->last_booking_results;
     }
 
     /**
@@ -169,10 +177,14 @@ class MYVH_Recurring_Pattern_Service {
             'errors' => []
         ];
 
+        $duration_days = max(0, (int) ((strtotime($parent_booking['EndDate']) - strtotime($parent_booking['StartDate'])) / DAY_IN_SECONDS));
+
         // Create bookings for each date
         foreach ($dates as $date) {
+            $child_end_date = date('Y-m-d', strtotime($date . ' +' . $duration_days . ' day'));
+
             // Don't recreate the parent booking
-            if ( $parent_booking['StartDate'] == $date) {
+            if ($parent_booking['StartDate'] == $date && $parent_booking['EndDate'] == $child_end_date) {
                 $results['created']++;
                 continue;
             }
@@ -182,12 +194,15 @@ class MYVH_Recurring_Pattern_Service {
                 $date,
                 $parent_booking['StartTime'],
                 $parent_booking['EndTime'],
-                $parent_booking['Id']
+                $parent_booking['Id'],
+                $child_end_date
             );
 
             if ($conflict) {
                 $results['skipped']++;
-                $results['conflicts'][] = $date;
+                $results['conflicts'][] = $duration_days > 0
+                    ? ($date . ' to ' . $child_end_date)
+                    : $date;
                 continue;
             }
 
@@ -197,7 +212,7 @@ class MYVH_Recurring_Pattern_Service {
                 'RoomId'             => $parent_booking['RoomId'],
                 'Status'             => $parent_booking['Status'],
                 'StartDate'          => $date,
-                'EndDate'            => $date,
+                'EndDate'            => $child_end_date,
                 'StartTime'          => $parent_booking['StartTime'],
                 'EndTime'            => $parent_booking['EndTime'],
                 'Public'             => $parent_booking['Public'],
@@ -213,7 +228,7 @@ class MYVH_Recurring_Pattern_Service {
             } else {
                 $results['errors'][] = sprintf(
                     __('Failed to create booking for %s', 'my-village-hall'),
-                    $date
+                    $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
                 );
             }
         }
@@ -366,8 +381,8 @@ class MYVH_Recurring_Pattern_Service {
      * Check if a booking conflicts with existing bookings.
      * Delegated to the booking repository.
      */
-    private function check_booking_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null): bool {
-        return $this->get_booking_repo()->has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id);
+    private function check_booking_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null, $end_date = null): bool {
+        return $this->get_booking_repo()->has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id, $end_date);
     }
 
     public function delete($id) {

@@ -27,6 +27,14 @@ class MYVH_Recurring_Pattern_Controller {
             ? __('Recurring pattern updated and bookings regenerated.', 'my-village-hall')
             : __('Recurring pattern created and bookings scheduled.', 'my-village-hall');
 
+        $results = $this->service->get_last_booking_results();
+        if (is_array($results) && !empty($results['conflicts'])) {
+            $message .= ' ' . sprintf(
+                __('Conflicting child bookings skipped: %s', 'my-village-hall'),
+                implode(', ', $results['conflicts'])
+            );
+        }
+
         wp_redirect(admin_url('admin.php?page=myvh-recurring&updated=1&message=' . urlencode($message)));
         exit;
     }

@@ -16,6 +16,7 @@ class MYVH_Booking_Service {
     private $pricing;
     private $customer_repo;
     private $recurring_pattern_service = null;
+    private $last_warnings = [];
 
     public function __construct(
         MYVH_Room_Service $room_service,
@@ -40,6 +41,8 @@ class MYVH_Booking_Service {
     }
 
     public function save($data) {
+        $this->last_warnings = [];
+
         if (empty($data['customer_id'])) {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
         }
@@ -58,6 +61,10 @@ class MYVH_Booking_Service {
 
         // Validate time
         $room = $this->room_service->get($data['room_id']);
+        if (!$room) {
+            return new WP_Error('validation', __('Room is required', 'my-village-hall'));
+        }
+
         $start_date = sanitize_text_field($data['start_date']);
         $end_date = !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : $start_date;
         if ($start_date <> $end_date) {
@@ -74,6 +81,43 @@ class MYVH_Booking_Service {
 
         $start_time = sanitize_text_field($data['start_time']);
         $end_time = sanitize_text_field($data['end_time']);
+
+        $within_opening_hours = $this->availability->booking_within_opening_hours(
+            intval($data['room_id']),
+            $start_time,
+            $end_time
+        );
+
+        if (is_wp_error($within_opening_hours)) {
+            return $within_opening_hours;
+        }
+
+        if (!$within_opening_hours) {
+            return new WP_Error(
+                'validation',
+                sprintf(
+                    __('Booking times must be within the room opening hours of %1$s to %2$s.', 'my-village-hall'),
+                    substr((string) $room['OpeningTime'], 0, 5),
+                    substr((string) $room['ClosingTime'], 0, 5)
+                )
+            );
+        }
+
+        $is_available = $this->availability->room_is_available(
+            intval($data['room_id']),
+            $start_date,
+            $start_time,
+            $end_time,
+            $end_date,
+            !empty($data['booking_id']) ? intval($data['booking_id']) : null
+        );
+
+        if (!$is_available) {
+            return new WP_Error(
+                'validation',
+                __('This room is already booked for part or all of the selected time.', 'my-village-hall')
+            );
+        }
 
         if (!isset($data['chargeable_hours'])) {
 
@@ -187,10 +231,32 @@ class MYVH_Booking_Service {
                 $pattern_data['max_occurrences'] = intval($data['max_occurrences']);
             }
 
-            $this->recurring_pattern_service->save($pattern_data);
+            $pattern_result = $this->recurring_pattern_service->save($pattern_data);
+
+            if (is_wp_error($pattern_result)) {
+                return $pattern_result;
+            }
+
+            $booking_results = $this->recurring_pattern_service->get_last_booking_results();
+            if (is_array($booking_results)) {
+                if (!empty($booking_results['conflicts'])) {
+                    $this->last_warnings[] = sprintf(
+                        __('Some recurring bookings were not created due to conflicts: %s', 'my-village-hall'),
+                        implode(', ', $booking_results['conflicts'])
+                    );
+                }
+
+                if (!empty($booking_results['errors'])) {
+                    $this->last_warnings[] = implode(' ', $booking_results['errors']);
+                }
+            }
         }
 
         return $booking_id;
+    }
+
+    public function get_last_warnings() {
+        return $this->last_warnings;
     }
 
     /**
@@ -288,6 +354,58 @@ class MYVH_Booking_Service {
     }
 
     public function move_booking($id, $start, $end, $room) {
+        $room_id = intval($room);
+
+        [$start_date, $start_time] = $this->split_datetime($start);
+        [$end_date, $end_time] = $this->split_datetime($end, $start_date);
+
+        if (!$room_id || !$start_date || !$start_time || !$end_date || !$end_time) {
+            return new WP_Error('validation', __('Invalid booking movement data', 'my-village-hall'));
+        }
+
+        $room_record = $this->room_service->get($room_id);
+        if (!$room_record) {
+            return new WP_Error('validation', __('Room is required', 'my-village-hall'));
+        }
+
+        if ($start_date !== $end_date && empty($room_record['AllowMultiDayBookings'])) {
+            return new WP_Error('validation', __('Multi day bookings are not allowed for this room', 'my-village-hall'));
+        }
+
+        $within_opening_hours = $this->availability->booking_within_opening_hours(
+            $room_id,
+            $start_time,
+            $end_time
+        );
+
+        if (is_wp_error($within_opening_hours)) {
+            return $within_opening_hours;
+        }
+
+        if (!$within_opening_hours) {
+            return new WP_Error(
+                'validation',
+                sprintf(
+                    __('Booking times must be within the room opening hours of %1$s to %2$s.', 'my-village-hall'),
+                    substr((string) $room_record['OpeningTime'], 0, 5),
+                    substr((string) $room_record['ClosingTime'], 0, 5)
+                )
+            );
+        }
+
+        $is_available = $this->availability->room_is_available(
+            $room_id,
+            $start_date,
+            $start_time,
+            $end_time,
+            $end_date,
+            intval($id)
+        );
+
+        if (!$is_available) {
+            return new WP_Error('validation', __('This room is not available for the selected time.', 'my-village-hall'));
+        }
+
         $return =  $this->booking_repo->move_booking($id, $start, $end, $room);
 
         if ($return <> 1) {
@@ -295,6 +413,33 @@ class MYVH_Booking_Service {
         }
 
         return $return;
+    }
+
+    private function split_datetime($value, $default_date = '') {
+        $raw = trim((string) $value);
+
+        if ($raw === '') {
+            return [sanitize_text_field($default_date), ''];
+        }
+
+        $timestamp = strtotime($raw);
+
+        if ($timestamp !== false) {
+            return [
+                date('Y-m-d', $timestamp),
+                date('H:i:s', $timestamp),
+            ];
+        }
+
+        $parts = preg_split('/[T\s]/', $raw);
+        $date = sanitize_text_field($parts[0] ?? $default_date);
+        $time = sanitize_text_field($parts[1] ?? '');
+
+        if (preg_match('/^\d{2}:\d{2}$/', $time)) {
+            $time .= ':00';
+        }
+
+        return [$date, $time];
     }
 
     public function get_upcoming_bookings($wp_user) {

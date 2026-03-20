@@ -245,7 +245,17 @@ class MYVH_Calendar_Ajax_Controller {
         try {
             $id = $this->booking_service->save($data);
 
-            wp_send_json_success(['id' => $id]);
+            if (is_wp_error($id)) {
+                wp_send_json_error($id->get_error_message());
+            }
+
+            $response = ['id' => $id];
+            $warnings = $this->booking_service->get_last_warnings();
+            if (!empty($warnings)) {
+                $response['warning'] = implode(' ', $warnings);
+            }
+
+            wp_send_json_success($response);
 
         } catch (Exception $e) {
             wp_send_json_error($e->getMessage());
@@ -287,6 +297,10 @@ class MYVH_Calendar_Ajax_Controller {
 
         try {
             $id = $this->booking_service->save($data);
+
+            if (is_wp_error($id)) {
+                wp_send_json_error($id->get_error_message());
+            }
 
             wp_send_json_success(['id' => $id]);
 

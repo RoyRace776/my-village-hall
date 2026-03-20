@@ -39,6 +39,24 @@ class MYVH_Availability_Service {
         return true;
     }
 
+    public function booking_within_opening_hours($room_id, $start_time, $end_time) {
+        $room = $this->room_repo->get_by_id($room_id);
+        if (!$room) {
+            return new WP_Error('Availability', __('Unknown room passed to availability service', 'my-village-hall'));
+        }
+
+        $start_ts = $this->time_to_seconds($start_time);
+        $end_ts = $this->time_to_seconds($end_time);
+        $open_ts = $this->time_to_seconds($room['OpeningTime']);
+        $close_ts = $this->time_to_seconds($room['ClosingTime']);
+
+        if ($start_ts === null || $end_ts === null || $open_ts === null || $close_ts === null) {
+            return new WP_Error('Availability', __('Invalid booking or room opening time supplied', 'my-village-hall'));
+        }
+
+        return $start_ts >= $open_ts && $end_ts <= $close_ts;
+    }
+
     public function room_opening_hours_allowed($room_open, $room_close, $venue_id) {
         $venue = $this->venue_repo->get_by_id($venue_id);
         if (!$venue) {

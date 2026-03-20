@@ -20,6 +20,13 @@ $room_service              = $myvh_container->get(MYVH_Room_Service::class);
 $addon_service             = $myvh_container->get(MYVH_Addon_Service::class);
 $recurring_pattern_service = $myvh_container->get(MYVH_Recurring_Pattern_Service::class);
 
+$form_transient_key = 'myvh_booking_form_' . get_current_user_id();
+$form_data = get_transient($form_transient_key) ?: [];
+$has_form_data = !empty($form_data);
+if (!empty($form_data)) {
+    delete_transient($form_transient_key);
+}
+
 $edit_booking = $booking_id ? $booking_service->get_by_id($booking_id) : null;
 $is_view_mode = $view_id > 0;
 
@@ -32,14 +39,27 @@ $all_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => '
 $available_addons = array_filter($all_addons ?? [], fn($a) => !empty($a['IsActive']));
 
 // Existing booking addons (for edit/view mode)
-$booking_addons = $booking_id
-    ? $booking_service->get_addons_for_booking($booking_id)
-    : [];
+$booking_addons = [];
+if (!empty($form_data['addons']) && is_array($form_data['addons'])) {
+    $booking_addons = $form_data['addons'];
+} elseif ($booking_id) {
+    $booking_addons = $booking_service->get_addons_for_booking($booking_id);
+}
 
 // Index existing addons by AddonId for easy lookup in the form
 $selected_addon_map = [];
 foreach ($booking_addons as $ba) {
-    $selected_addon_map[$ba['AddonId']] = $ba;
+    $addon_id = intval($ba['AddonId'] ?? $ba['addon_id'] ?? 0);
+    if ($addon_id <= 0) {
+        continue;
+    }
+
+    $selected_addon_map[$addon_id] = [
+        'AddonId' => $addon_id,
+        'Quantity' => $ba['Quantity'] ?? $ba['quantity'] ?? 1,
+        'UnitPrice' => $ba['UnitPrice'] ?? $ba['unit_price'] ?? 0,
+        'Description' => $ba['Description'] ?? $ba['description'] ?? '',
+    ];
 }
 
 // Get recurring pattern if exists
@@ -52,6 +72,26 @@ if ($edit_booking) {
     $customer = $customer_service->get($edit_booking['CustomerId']);
     $room = $room_service->get($edit_booking['RoomId']);
 }
+
+$form_customer_id = isset($form_data['customer_id']) ? intval($form_data['customer_id']) : intval($edit_booking['CustomerId'] ?? 0);
+$form_organisation_id = isset($form_data['organisation_id']) ? intval($form_data['organisation_id']) : intval($edit_booking['OrganisationId'] ?? 0);
+$form_room_id = isset($form_data['room_id']) ? intval($form_data['room_id']) : intval($edit_booking['RoomId'] ?? 0);
+$form_start_date = isset($form_data['start_date']) ? sanitize_text_field($form_data['start_date']) : ($edit_booking['StartDate'] ?? date('Y-m-d'));
+$form_end_date = isset($form_data['end_date']) ? sanitize_text_field($form_data['end_date']) : ($edit_booking['EndDate'] ?? '');
+$form_start_time = isset($form_data['start_time']) ? sanitize_text_field($form_data['start_time']) : ($edit_booking['StartTime'] ?? '09:00');
+$form_end_time = isset($form_data['end_time']) ? sanitize_text_field($form_data['end_time']) : ($edit_booking['EndTime'] ?? '17:00');
+$form_description = isset($form_data['description']) ? sanitize_textarea_field($form_data['description']) : ($edit_booking['Description'] ?? '');
+$form_status = isset($form_data['status']) ? sanitize_text_field($form_data['status']) : ($edit_booking['Status'] ?? BookingStatus::CONFIRMED);
+$form_public = $has_form_data ? !empty($form_data['public']) : (!empty($edit_booking['Public']) || !$edit_booking);
+$form_is_recurring = !empty($form_data['is_recurring']);
+$form_recurrence_type = sanitize_text_field($form_data['recurrence_type'] ?? 'weekly');
+$form_recurrence_interval = max(1, intval($form_data['recurrence_interval'] ?? 1));
+$form_recurrence_interval_md = max(1, intval($form_data['recurrence_interval_md'] ?? 1));
+$form_recurrence_week = sanitize_text_field($form_data['recurrence_week'] ?? '1');
+$form_recurrence_day = sanitize_text_field($form_data['recurrence_day'] ?? strtolower(date('l', strtotime($form_start_date ?: 'today'))));
+$form_recurrence_end_type = sanitize_text_field($form_data['recurrence_end_type'] ?? 'date');
+$form_recurrence_end_date = sanitize_text_field($form_data['recurrence_end_date'] ?? date('Y-m-d', strtotime('+1 year')));
+$form_max_occurrences = max(1, intval($form_data['max_occurrences'] ?? 12));
 
 $status_colors = [
     BookingStatus::PENDING => '#2271b1',
@@ -300,7 +340,7 @@ $status_colors = [
                                         <option value=""><?php _e('Select Customer', 'my-village-hall'); ?></option>
                                         <?php foreach ($customers as $customer): ?>
                                             <option value="<?php echo $customer['Id']; ?>"
-                                                <?php selected($edit_booking && $edit_booking['CustomerId'] == $customer['Id']); ?>>
+                                                <?php selected($form_customer_id, $customer['Id']); ?>>
                                                 <?php echo esc_html($customer['Name'] . ' (' . $customer['Email'] . ')'); ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -321,7 +361,7 @@ $status_colors = [
                                         <option value=""><?php _e('— None —', 'my-village-hall'); ?></option>
                                         <?php foreach ($organisations as $org): ?>
                                             <option value="<?php echo $org['Id']; ?>"
-                                                <?php selected($edit_booking && $edit_booking['OrganisationId'] == $org['Id']); ?>>
+                                                <?php selected($form_organisation_id, $org['Id']); ?>>
                                                 <?php echo esc_html($org['Name']); ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -352,7 +392,7 @@ $status_colors = [
                                             <option value="<?php echo $room['Id']; ?>"
                                                 data-opening="<?php echo esc_attr($room['OpeningTime']); ?>"
                                                 data-closing="<?php echo esc_attr($room['ClosingTime']); ?>"
-                                                <?php selected($edit_booking && $edit_booking['RoomId'] == $room['Id']); ?>>
+                                                <?php selected($form_room_id, $room['Id']); ?>>
                                                 <?php echo esc_html($room['Name']); ?>
                                                 <?php if ($room['Capacity']): ?>
                                                     (<?php echo $room['Capacity']; ?> people)
@@ -370,7 +410,7 @@ $status_colors = [
                                 <th><?php _e('Start Date', 'my-village-hall'); ?> *</th>
                                 <td>
                                     <input type="date" name="start_date" required class="regular-text" id='start-date'
-                                        value="<?php echo $edit_booking ? esc_attr($edit_booking['StartDate']) : date('Y-m-d'); ?>"
+                                        value="<?php echo esc_attr($form_start_date); ?>"
                                         min="<?php echo date('Y-m-d'); ?>">
                                 </td>
                             </tr>
@@ -379,7 +419,7 @@ $status_colors = [
                                 <th><?php _e('End Date', 'my-village-hall'); ?></th>
                                 <td>
                                     <input type="date" name="end_date" class="regular-text" id='end-date'
-                                        value="<?php echo $edit_booking ? esc_attr($edit_booking['EndDate']) : ''; ?>">
+                                        value="<?php echo esc_attr($form_end_date); ?>">
                                     <p class="description"><?php _e('Leave blank for same-day booking', 'my-village-hall'); ?></p>
                                 </td>
                             </tr>
@@ -388,7 +428,7 @@ $status_colors = [
                                 <th><?php _e('Start Time', 'my-village-hall'); ?> *</th>
                                 <td>
                                     <input type="time" name="start_time" required class="regular-text" id="start-time"
-                                        value="<?php echo $edit_booking ? esc_attr($edit_booking['StartTime']) : '09:00'; ?>">
+                                        value="<?php echo esc_attr(substr($form_start_time, 0, 5)); ?>">
                                 </td>
                             </tr>
 
@@ -396,7 +436,7 @@ $status_colors = [
                                 <th><?php _e('End Time', 'my-village-hall'); ?> *</th>
                                 <td>
                                     <input type="time" name="end_time" required class="regular-text" id="end-time"
-                                        value="<?php echo $edit_booking ? esc_attr($edit_booking['EndTime']) : '17:00'; ?>">
+                                        value="<?php echo esc_attr(substr($form_end_time, 0, 5)); ?>">
                                     <p class="description" id="duration-display"></p>
                                 </td>
                             </tr>
@@ -405,7 +445,7 @@ $status_colors = [
                                 <th><?php _e('Description', 'my-village-hall'); ?></th>
                                 <td>
                                     <textarea name="description" class="large-text" rows="3"
-                                        placeholder="<?php _e('Purpose of the booking, event details, etc.', 'my-village-hall'); ?>"><?php echo $edit_booking ? esc_textarea($edit_booking['Description']) : ''; ?></textarea>
+                                        placeholder="<?php _e('Purpose of the booking, event details, etc.', 'my-village-hall'); ?>"><?php echo esc_textarea($form_description); ?></textarea>
                                 </td>
                             </tr>
                         </table>
@@ -420,16 +460,16 @@ $status_colors = [
                                 <th><?php _e('Status', 'my-village-hall'); ?></th>
                                 <td>
                                     <select name="status" class="regular-text">
-                                        <option value="pending" <?php selected($edit_booking && $edit_booking['Status'] == BookingStatus::PENDING); ?>>
+                                        <option value="pending" <?php selected($form_status, BookingStatus::PENDING); ?>>
                                             <?php _e('Pending', 'my-village-hall'); ?>
                                         </option>
-                                        <option value="confirmed" <?php selected(!$edit_booking || $edit_booking['Status'] == BookingStatus::CONFIRMED); ?>>
+                                        <option value="confirmed" <?php selected($form_status, BookingStatus::CONFIRMED); ?>>
                                             <?php _e('Confirmed', 'my-village-hall'); ?>
                                         </option>
-                                        <option value="cancelled" <?php selected($edit_booking && $edit_booking['Status'] == BookingStatus::CANCELLED); ?>>
+                                        <option value="cancelled" <?php selected($form_status, BookingStatus::CANCELLED); ?>>
                                             <?php _e('Cancelled', 'my-village-hall'); ?>
                                         </option>
-                                        <option value="completed" <?php selected($edit_booking && $edit_booking['Status'] == BookingStatus::COMPLETED); ?>>
+                                        <option value="completed" <?php selected($form_status, BookingStatus::COMPLETED); ?>>
                                             <?php _e('Completed', 'my-village-hall'); ?>
                                         </option>
                                     </select>
@@ -441,7 +481,7 @@ $status_colors = [
                                 <td>
                                     <label>
                                         <input type="checkbox" name="public" value="1"
-                                            <?php checked(!$edit_booking || $edit_booking['Public']); ?>>
+                                            <?php checked($form_public); ?>>
                                         <?php _e('Show on public calendar', 'my-village-hall'); ?>
                                     </label>
                                     <p class="description"><?php _e('Uncheck to hide from public view', 'my-village-hall'); ?></p>
@@ -453,14 +493,14 @@ $status_colors = [
                                 <th><?php _e('Recurring', 'my-village-hall'); ?></th>
                                 <td>
                                     <label>
-                                        <input type="checkbox" name="is_recurring" value="1" id="is-recurring">
+                                        <input type="checkbox" name="is_recurring" value="1" id="is-recurring" <?php checked($form_is_recurring); ?>>
                                         <?php _e('Make this a recurring booking', 'my-village-hall'); ?>
                                     </label>
                                 </td>
                             </tr>
                             </table>
 
-                            <div id="recurring-options" style="display: none; margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px;">
+                            <div id="recurring-options" style="display: <?php echo $form_is_recurring ? 'block' : 'none'; ?>; margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px;">
                                 <h3><?php _e('Recurring Pattern', 'my-village-hall'); ?></h3>
 
                                 <table class="form-table">
@@ -468,11 +508,11 @@ $status_colors = [
                                         <th><?php _e('Repeat', 'my-village-hall'); ?></th>
                                         <td>
                                             <select name="recurrence_type" class="regular-text" id="bf-rec-type">
-                                                <option value="daily"><?php _e('Daily', 'my-village-hall'); ?></option>
-                                                <option value="weekly" selected><?php _e('Weekly', 'my-village-hall'); ?></option>
-                                                <option value="monthly"><?php _e('Monthly (same date)', 'my-village-hall'); ?></option>
-                                                <option value="monthly_day"><?php _e('Monthly (specific weekday)', 'my-village-hall'); ?></option>
-                                                <option value="yearly"><?php _e('Yearly', 'my-village-hall'); ?></option>
+                                                <option value="daily" <?php selected($form_recurrence_type, 'daily'); ?>><?php _e('Daily', 'my-village-hall'); ?></option>
+                                                <option value="weekly" <?php selected($form_recurrence_type, 'weekly'); ?>><?php _e('Weekly', 'my-village-hall'); ?></option>
+                                                <option value="monthly" <?php selected($form_recurrence_type, 'monthly'); ?>><?php _e('Monthly (same date)', 'my-village-hall'); ?></option>
+                                                <option value="monthly_day" <?php selected($form_recurrence_type, 'monthly_day'); ?>><?php _e('Monthly (specific weekday)', 'my-village-hall'); ?></option>
+                                                <option value="yearly" <?php selected($form_recurrence_type, 'yearly'); ?>><?php _e('Yearly', 'my-village-hall'); ?></option>
                                             </select>
                                         </td>
                                     </tr>
@@ -480,20 +520,20 @@ $status_colors = [
                                     <tr id="bf-interval-row">
                                         <th><?php _e('Every', 'my-village-hall'); ?></th>
                                         <td>
-                                            <input type="number" name="recurrence_interval" value="1" min="1" max="52" class="small-text">
+                                            <input type="number" name="recurrence_interval" value="<?php echo esc_attr($form_recurrence_interval); ?>" min="1" max="52" class="small-text">
                                             <span id="interval-label"><?php _e('week(s)', 'my-village-hall'); ?></span>
                                         </td>
                                     </tr>
 
-                                    <tr id="bf-monthly-day-row" style="display:none;">
+                                    <tr id="bf-monthly-day-row" style="display:<?php echo $form_recurrence_type === 'monthly_day' ? '' : 'none'; ?>;">
                                         <th><?php _e('On the…', 'my-village-hall'); ?></th>
                                         <td>
                                             <select name="recurrence_week">
-                                                <option value="1"><?php _e('1st', 'my-village-hall'); ?></option>
-                                                <option value="2"><?php _e('2nd', 'my-village-hall'); ?></option>
-                                                <option value="3"><?php _e('3rd', 'my-village-hall'); ?></option>
-                                                <option value="4"><?php _e('4th', 'my-village-hall'); ?></option>
-                                                <option value="last"><?php _e('Last', 'my-village-hall'); ?></option>
+                                                <option value="1" <?php selected($form_recurrence_week, '1'); ?>><?php _e('1st', 'my-village-hall'); ?></option>
+                                                <option value="2" <?php selected($form_recurrence_week, '2'); ?>><?php _e('2nd', 'my-village-hall'); ?></option>
+                                                <option value="3" <?php selected($form_recurrence_week, '3'); ?>><?php _e('3rd', 'my-village-hall'); ?></option>
+                                                <option value="4" <?php selected($form_recurrence_week, '4'); ?>><?php _e('4th', 'my-village-hall'); ?></option>
+                                                <option value="last" <?php selected($form_recurrence_week, 'last'); ?>><?php _e('Last', 'my-village-hall'); ?></option>
                                             </select>
                                             <select name="recurrence_day">
                                                 <?php
@@ -502,11 +542,11 @@ $status_colors = [
                                                 // Pre-select the weekday matching the booking's start date
                                                 $booking_dow = strtolower(date('l', strtotime($edit_booking ? $edit_booking['StartDate'] : 'today')));
                                                 foreach ($days as $v => $l): ?>
-                                                    <option value="<?php echo $v; ?>" <?php selected($booking_dow, $v); ?>><?php echo esc_html($l); ?></option>
+                                                    <option value="<?php echo $v; ?>" <?php selected($form_recurrence_day, $v); ?>><?php echo esc_html($l); ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                             <span><?php _e('of every', 'my-village-hall'); ?></span>
-                                            <input type="number" name="recurrence_interval_md" value="1" min="1" max="24" class="small-text">
+                                            <input type="number" name="recurrence_interval_md" value="<?php echo esc_attr($form_recurrence_interval_md); ?>" min="1" max="24" class="small-text">
                                             <span><?php _e('month(s)', 'my-village-hall'); ?></span>
                                             <p class="description" id="bf-rec-preview" style="color:#2271b1;font-style:italic;"></p>
                                         </td>
@@ -516,16 +556,16 @@ $status_colors = [
                                         <th><?php _e('Ends', 'my-village-hall'); ?></th>
                                         <td>
                                             <label>
-                                                <input type="radio" name="recurrence_end_type" value="date" checked>
+                                                <input type="radio" name="recurrence_end_type" value="date" <?php checked($form_recurrence_end_type, 'date'); ?>>
                                                 <?php _e('On', 'my-village-hall'); ?>
                                                 <input type="date" name="recurrence_end_date" class="regular-text"
-                                                    value="<?php echo date('Y-m-d', strtotime('+1 year')); ?>">
+                                                    value="<?php echo esc_attr($form_recurrence_end_date); ?>">
                                             </label>
                                             <br>
                                             <label>
-                                                <input type="radio" name="recurrence_end_type" value="count">
+                                                <input type="radio" name="recurrence_end_type" value="count" <?php checked($form_recurrence_end_type, 'count'); ?>>
                                                 <?php _e('After', 'my-village-hall'); ?>
-                                                <input type="number" name="max_occurrences" value="12" min="1" max="365" class="small-text">
+                                                <input type="number" name="max_occurrences" value="<?php echo esc_attr($form_max_occurrences); ?>" min="1" max="365" class="small-text">
                                                 <?php _e('occurrences', 'my-village-hall'); ?>
                                             </label>
                                         </td>
