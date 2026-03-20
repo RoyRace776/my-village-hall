@@ -25,18 +25,30 @@ class MYVH_Room_Controller {
 
         if (is_wp_error($result)) {
 
+            set_transient($this->get_form_transient_key(), $data, 120);
+
             foreach ($result->get_error_messages() as $msg) {
                 MYVH_Admin_Notices::error($msg);
             }
 
-            wp_redirect(admin_url('admin.php?page=myvh-rooms'));
+            $redirect = !empty($data['room_id'])
+                ? admin_url('admin.php?page=myvh-rooms&edit=' . intval($data['room_id']))
+                : admin_url('admin.php?page=myvh-rooms&add=1');
+
+            wp_redirect($redirect);
             exit;
         }
+
+        delete_transient($this->get_form_transient_key());
 
         MYVH_Admin_Notices::success(__('Room saved successfully', 'my-village-hall'));
 
         wp_redirect(admin_url('admin.php?page=myvh-rooms&updated=1'));
         exit;
+    }
+
+    private function get_form_transient_key() {
+        return 'myvh_room_form_' . get_current_user_id();
     }
 
     public function delete() {

@@ -17,6 +17,22 @@ $availability_service = $myvh_container->get(MYVH_Availability_Service::class);
 $edit_room = $edit_id ? $room_service->get($edit_id) : null;
 $rooms     = $room_service->get_all_with_venues();
 $venues    = $venue_service->get_all();
+
+$form_data = get_transient('myvh_room_form_' . get_current_user_id());
+if (!is_array($form_data)) {
+    $form_data = [];
+} else {
+    delete_transient('myvh_room_form_' . get_current_user_id());
+}
+
+$form_name = $form_data['name'] ?? ($edit_room['Name'] ?? '');
+$form_venue_id = isset($form_data['venue_id']) ? intval($form_data['venue_id']) : intval($edit_room['VenueId'] ?? 0);
+$form_capacity = $form_data['capacity'] ?? ($edit_room['Capacity'] ?? '');
+$form_description = $form_data['description'] ?? ($edit_room['Description'] ?? '');
+$form_opening_time = $form_data['opening_time'] ?? ($edit_room['OpeningTime'] ?? '09:00');
+$form_closing_time = $form_data['closing_time'] ?? ($edit_room['ClosingTime'] ?? '17:00');
+$form_allow_multi_day = isset($form_data['allow-multi-day-bookings']) ? 1 : intval($edit_room['AllowMultiDayBookings'] ?? 0);
+$form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($edit_room['CalcClosedHours'] ?? 0);
 ?>
 
 <div class="wrap">
@@ -25,18 +41,6 @@ $venues    = $venue_service->get_all();
         <?php _e('Add New', 'my-village-hall'); ?>
     </a>
     <hr class="wp-header-end">
-
-    <?php if (isset($_GET['updated'])): ?>
-        <div class="notice notice-success is-dismissible">
-            <p><?php _e('Room saved successfully', 'my-village-hall'); ?></p>
-        </div>
-    <?php endif; ?>
-
-    <?php if (isset($_GET['deleted'])): ?>
-        <div class="notice notice-success is-dismissible">
-            <p><?php _e('Room deleted successfully', 'my-village-hall'); ?></p>
-        </div>
-    <?php endif; ?>
 
     <?php if (isset($_GET['error'])): ?>
         <div class="notice notice-error is-dismissible">
@@ -147,7 +151,7 @@ $venues    = $venue_service->get_all();
                             <th><?php _e('Room Name', 'my-village-hall'); ?> *</th>
                             <td>
                                 <input type="text" name="name" required class="regular-text"
-                                    value="<?php echo $edit_room ? esc_attr($edit_room['Name']) : ''; ?>"
+                                    value="<?php echo esc_attr($form_name); ?>"
                                     placeholder="<?php _e('e.g., Main Hall, Meeting Room 1', 'my-village-hall'); ?>">
                             </td>
                         </tr>
@@ -159,7 +163,7 @@ $venues    = $venue_service->get_all();
                                     <option value=""><?php _e('Select Venue', 'my-village-hall'); ?></option>
                                     <?php foreach ($venues as $venue): ?>
                                         <option value="<?php echo $venue['Id']; ?>"
-                                            <?php selected($edit_room && $edit_room['VenueId'] == $venue['Id']); ?>>
+                                            <?php selected($form_venue_id, intval($venue['Id'])); ?>>
                                             <?php echo esc_html($venue['Name']); ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -171,7 +175,7 @@ $venues    = $venue_service->get_all();
                             <th><?php _e('Capacity', 'my-village-hall'); ?></th>
                             <td>
                                 <input type="number" name="capacity" min="0" class="small-text"
-                                    value="<?php echo $edit_room ? esc_attr($edit_room['Capacity']) : ''; ?>">
+                                    value="<?php echo esc_attr($form_capacity); ?>">
                                 <span class="description"><?php _e('people', 'my-village-hall'); ?></span>
                             </td>
                         </tr>
@@ -180,7 +184,7 @@ $venues    = $venue_service->get_all();
                             <th><?php _e('Description', 'my-village-hall'); ?></th>
                             <td>
                                 <textarea name="description" class="large-text" rows="3"
-                                    placeholder="<?php _e('Optional description or notes about this room', 'my-village-hall'); ?>"><?php echo $edit_room ? esc_textarea($edit_room['Description']) : ''; ?></textarea>
+                                    placeholder="<?php _e('Optional description or notes about this room', 'my-village-hall'); ?>"><?php echo esc_textarea($form_description); ?></textarea>
                             </td>
                         </tr>
 
@@ -188,7 +192,7 @@ $venues    = $venue_service->get_all();
                             <th><label><?php _e('Opening Time', 'my-village-hall'); ?></label></th>
                             <td>
                                 <select name="opening_time">
-                                    <?php echo $availability_service->get_time_options($room ? $room['OpeningTime'] : '09:00', 0, 23,true); ?>
+                                    <?php echo $availability_service->get_time_options($form_opening_time, 0, 23,true); ?>
                                 </select>
                             </td>
                         </tr>
@@ -197,7 +201,7 @@ $venues    = $venue_service->get_all();
                             <th><label><?php _e('Closing Time', 'my-village-hall'); ?></label></th>
                             <td>
                                 <select name="closing_time">
-                                    <?php echo $availability_service->get_time_options($edit_room ? $edit_room['ClosingTime'] : '17:00', 0, 23,true); ?>
+                                    <?php echo $availability_service->get_time_options($form_closing_time, 0, 23,true); ?>
                                     </select>
                             </td>
                         </tr>
@@ -205,11 +209,11 @@ $venues    = $venue_service->get_all();
                             <th><?php _e('Options', 'my-village-hall'); ?></th>
                             <td>
                                 <label><input type="checkbox" name="allow-multi-day-bookings" value="1"
-                                    <?php checked($edit_room && $edit_room['AllowMultiDayBookings']); ?>>
+                                    <?php checked($form_allow_multi_day, 1); ?>>
                                     <?php _e('Allow multi-day bookings', 'my-village-hall'); ?></label><br>
 
                                 <label><input type="checkbox" name="calc-closed-hours" value="1"
-                                    <?php checked($edit_room && $edit_room['CalcClosedHours']); ?>>
+                                    <?php checked($form_calc_closed_hours, 1); ?>>
                                     <?php _e('Include closed hours when calculating booking duration', 'my-village-hall'); ?></label>
                             </td>
                         </tr>

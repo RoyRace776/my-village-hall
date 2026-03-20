@@ -262,30 +262,43 @@ class MYVH_Booking_Repository {
     }
 
     /**
-     * Check whether a booking would conflict with any existing confirmed/pending booking.
+     * Check whether a proposed booking overlaps an existing non-cancelled booking.
      *
-     * @param int      $room_id             Room to check.
-     * @param string   $date                Date (Y-m-d).
-     * @param string   $start_time          Start time (H:i:s).
-     * @param string   $end_time            End time (H:i:s).
-     * @param int|null $exclude_booking_id  Booking ID to ignore (e.g. the parent booking).
+     * Overlap rule: existing_start < new_end AND existing_end > new_start
+     *
+     * @param int         $room_id             Room to check.
+     * @param string      $date                Start date (Y-m-d).
+     * @param string      $start_time          Start time (H:i or H:i:s).
+     * @param string      $end_time            End time (H:i or H:i:s).
+     * @param int|null    $exclude_booking_id  Booking ID to ignore (e.g. when updating).
+     * @param string|null $end_date            Optional end date (Y-m-d), defaults to $date.
      * @return bool True if a conflict exists.
      */
-    public function has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null): bool {
+    public function has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null, $end_date = null): bool {
+
+        $start_date = sanitize_text_field($date);
+        $resolved_end_date = sanitize_text_field($end_date ?: $start_date);
+
+        $normalized_start_time = $this->normalize_time($start_time);
+        $normalized_end_time = $this->normalize_time($end_time);
+
+        $new_start = $start_date . ' ' . $normalized_start_time;
+        $new_end = $resolved_end_date . ' ' . $normalized_end_time;
+
+        if (strtotime($new_end) <= strtotime($new_start)) {
+            return true;
+        }
+
         $sql = $this->wpdb->prepare(
             "SELECT COUNT(*) FROM {$this->table_name}
              WHERE RoomId = %d
-             AND StartDate = %s
              AND Status != %s
-             AND (
-                 (StartTime < %s AND EndTime > %s) OR
-                 (StartTime >= %s AND EndTime <= %s)
-             )",
+             AND CONCAT(StartDate, ' ', StartTime) < %s
+             AND CONCAT(EndDate, ' ', EndTime) > %s",
             $room_id,
-            $date,
             BookingStatus::CANCELLED,
-            $end_time, $start_time,
-            $start_time, $end_time
+            $new_end,
+            $new_start
         );
 
         if ($exclude_booking_id) {
@@ -293,6 +306,30 @@ class MYVH_Booking_Repository {
         }
 
         return (int) $this->wpdb->get_var($sql) > 0;
+    }
+
+    private function normalize_time($time) {
+        $value = sanitize_text_field((string) $time);
+
+        if (preg_match('/^\d{2}:\d{2}$/', $value)) {
+            return $value . ':00';
+        }
+
+        return $value;
+    }
+
+    private function normalize_datetime($value) {
+        $raw = sanitize_text_field((string) $value);
+        if ($raw === '') {
+            return '';
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
     }
 
     /**
@@ -311,15 +348,24 @@ class MYVH_Booking_Repository {
     }
 
     public function get_conflicts($room_id, $start, $end) {
+        $new_start = $this->normalize_datetime($start);
+        $new_end = $this->normalize_datetime($end);
+
+        if (!$new_start || !$new_end || strtotime($new_end) <= strtotime($new_start)) {
+            return [];
+        }
+
         $sql = $this->wpdb->prepare(
             "SELECT Id FROM {$this->table_name}
             WHERE RoomId = %d
-            AND StartTime < %s
-            AND EndTime > %s
+            AND Status != %s
+            AND CONCAT(StartDate, ' ', StartTime) < %s
+            AND CONCAT(EndDate, ' ', EndTime) > %s
             LIMIT 1",
             $room_id,
-            $end,
-            $start
+            BookingStatus::CANCELLED,
+            $new_end,
+            $new_start
         );
 
         return $this->wpdb->get_results($sql, ARRAY_A);

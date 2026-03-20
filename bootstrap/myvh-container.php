@@ -34,7 +34,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/customers/class-customer-service-provide
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-pricing-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/addons/class-addon-service-provider.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-service-provider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/availability/class-availability-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-invoice-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/payments/class-payment-service-provider.php';

@@ -72,10 +72,18 @@ class MYVH_Booking_Service {
             return new WP_Error('validation', __('End time must be after start time', 'my-village-hall'));
         }
 
+        $start_time = sanitize_text_field($data['start_time']);
+        $end_time = sanitize_text_field($data['end_time']);
+
         if (!isset($data['chargeable_hours'])) {
-            $chargeable_hours = $this->calculate_chargeable_hours($data['start_date'], $data['start_time'],
-                                                                  $end_date, $data['end_time'],
-                                                                  $room );
+
+            $chargeable_hours = $this->calculate_chargeable_hours(
+                $start_date,
+                $start_time,
+                $end_date,
+                $end_time,
+                $room
+            );
         } else {
             $chargeable_hours = $data['chargeable_hours'];
         }
@@ -87,8 +95,8 @@ class MYVH_Booking_Service {
             'Status'            => sanitize_text_field($data['status'] ?? BookingStatus::PENDING),
             'StartDate'         => $start_date,
             'EndDate'           => $end_date,
-            'StartTime'         => sanitize_text_field($data['start_time']),
-            'EndTime'           => sanitize_text_field($data['end_time']),
+            'StartTime'         => $start_time,
+            'EndTime'           => $end_time,
             'Description'       => sanitize_textarea_field($data['description'] ?? ''),
             'Public'            => isset($data['public']) ? 1 : 0,
             'ChargeableHours'   => $chargeable_hours
@@ -120,10 +128,6 @@ class MYVH_Booking_Service {
         //TODO: Add in the row to the booking charges table to fix the charges, but only if
         //      the booking is still pending
 
-
-        // TODO: This is the total price (room + add ons).  We don't nned it really
-        $estimated_price = $this->pricing->calculate_price(intval($data['booking_id']));
-
         $this->dispatch_update_event($data, $current_record['Status'] ?? null);
 
         return intval($data['booking_id']);
@@ -138,11 +142,6 @@ class MYVH_Booking_Service {
 
         //TODO: Add in the row to the booking charges table to fix the charges, but only if
         //      the booking is still pending
-
-
-        // TODO: This is the total price (room + add ons).  We don't nned it really
-
-        $estimated_price = $this->pricing->calculate_price($booking_id);
 
         MYVH_Event_Dispatcher::dispatch(
             MYVH_Booking_Events::CREATED,
@@ -439,16 +438,6 @@ class MYVH_Booking_Service {
     private function calculate_chargeable_hours($startdate, $start_time, $enddate, $end_time, $room) {
         $start = new DateTime($startdate . ' ' . $start_time);
         $end   = new DateTime($enddate . ' ' . $end_time);
-
-        $closed_hours = 0;
-
-        if (!$room['CalcClosedHours']) {
-            $room_open = strtotime($room['OpeningTime']);
-            $room_close = strtotime($room['ClosingTime']);
-            $closed_hours = 24 - ($room_close-$room_open)/60/60;
-        }
-
-
         $interval = $start->diff($end);
 
         $hours =
@@ -456,7 +445,29 @@ class MYVH_Booking_Service {
             $interval->h +
             ($interval->i / 60);
 
-        return $hours - $closed_hours;
+        if (!$room['CalcClosedHours']) {
+            $room_open = strtotime($room['OpeningTime']);
+            $room_close = strtotime($room['ClosingTime']);
+
+            if ($room_open !== false && $room_close !== false) {
+                $open_hours = ($room_close - $room_open) / 3600;
+
+                // Handle schedules that wrap past midnight (e.g. 20:00 to 02:00).
+                if ($open_hours <= 0) {
+                    $open_hours += 24;
+                }
+
+                $closed_hours_per_day = max(0, 24 - $open_hours);
+
+                $start_day = (clone $start)->setTime(0, 0, 0);
+                $end_day = (clone $end)->setTime(0, 0, 0);
+                $days_crossed = $start_day->diff($end_day)->days;
+
+                $hours -= ($closed_hours_per_day * $days_crossed);
+            }
+        }
+
+        return max(0, $hours);
     }
 
 }

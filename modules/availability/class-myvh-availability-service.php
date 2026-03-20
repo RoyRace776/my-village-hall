@@ -11,10 +11,11 @@ class MYVH_Availability_Service {
                                 MYVH_Venue_Repository $venue_repo) {
         $this->booking_repo = $booking_repo;
         $this->room_repo = $room_repo;
+        $this->venue_repo = $venue_repo;
     }
 
-    public function room_is_available($room_id, $date, $start, $end) {
-        return !$this->booking_repo->has_conflict($room_id, $date, $start, $end);
+    public function room_is_available($room_id, $date, $start, $end, $end_date = null, $exclude_booking_id = null) {
+        return !$this->booking_repo->has_conflict($room_id, $date, $start, $end, $exclude_booking_id, $end_date);
     }
 
     public function is_room_open($room_id, $when) {
@@ -23,7 +24,15 @@ class MYVH_Availability_Service {
             return new WP_Error('Availability', __('Unknown room passed to availability service', 'my-village-hall'));;
         }
 
-        if ( $when < $room['OpeningTime'] or $when > $room['ClosingTime']) {
+        $when_ts = $this->time_to_seconds($when);
+        $open_ts = $this->time_to_seconds($room['OpeningTime']);
+        $close_ts = $this->time_to_seconds($room['ClosingTime']);
+
+        if ($when_ts === null || $open_ts === null || $close_ts === null) {
+            return new WP_Error('Availability', __('Invalid time value passed to availability service', 'my-village-hall'));
+        }
+
+        if ($when_ts < $open_ts || $when_ts > $close_ts) {
             return false;
         }
 
@@ -36,11 +45,38 @@ class MYVH_Availability_Service {
             return new WP_Error('Availability', __('Unknown venue passed to availability service', 'my-village-hall'));;
         }
 
-        if ($room_open < $venue['OpeningTime'] or $room_close > $venue['ClosingTime']) {
+        $room_open_ts = $this->time_to_seconds($room_open);
+        $room_close_ts = $this->time_to_seconds($room_close);
+        $venue_open_ts = $this->time_to_seconds($venue['OpeningTime']);
+        $venue_close_ts = $this->time_to_seconds($venue['ClosingTime']);
+
+        if ($room_open_ts === null || $room_close_ts === null || $venue_open_ts === null || $venue_close_ts === null) {
+            return new WP_Error('Availability', __('Invalid opening or closing time supplied', 'my-village-hall'));
+        }
+
+        if ($room_open_ts < $venue_open_ts || $room_close_ts > $venue_close_ts) {
             return false;
         }
 
         return true;
+    }
+
+    private function time_to_seconds($time) {
+        $value = trim((string) $time);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $timestamp = strtotime('1970-01-01 ' . $value);
+
+        if ($timestamp === false) {
+            return null;
+        }
+
+        return (int) date('G', $timestamp) * 3600
+            + (int) date('i', $timestamp) * 60
+            + (int) date('s', $timestamp);
     }
 
     public function get_time_options($selected = '', $start_hour = 0, $end_hour = 23, $on_hour_only = false) {

@@ -1,9 +1,9 @@
 <?php
 
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-addon-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-discount-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-booking-charge-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-addon-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-discount-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-charge-repository.php';
 
 require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-validator.php';

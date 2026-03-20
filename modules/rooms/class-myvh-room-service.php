@@ -4,9 +4,14 @@ if (!defined('ABSPATH')) exit;
 class MYVH_Room_Service {
 
     private $repo;
+    private $availability;
 
-    public function __construct(MYVH_Room_Repository $repo) {
+    public function __construct(
+        MYVH_Room_Repository $repo,
+        MYVH_Availability_Service $availability
+    ) {
         $this->repo = $repo;
+        $this->availability = $availability;
     }
 
     public function get_all($args = []) {
@@ -31,13 +36,34 @@ class MYVH_Room_Service {
             return new WP_Error('validation', __('Venue is required', 'my-village-hall'));
         }
 
+        $venue_id = intval($data['venue_id']);
+        $opening_time = sanitize_text_field($data['opening_time']);
+        $closing_time = sanitize_text_field($data['closing_time']);
+
+        $hours_allowed = $this->availability->room_opening_hours_allowed(
+            $opening_time,
+            $closing_time,
+            $venue_id
+        );
+
+        if (is_wp_error($hours_allowed)) {
+            return $hours_allowed;
+        }
+
+        if (!$hours_allowed) {
+            return new WP_Error(
+                'validation',
+                __('Room opening/closing hours must be within the venue opening hours', 'my-village-hall')
+            );
+        }
+
         $record = [
             'Name'         => sanitize_text_field($data['name']),
-            'VenueId'      => intval($data['venue_id']),
+            'VenueId'      => $venue_id,
             'Capacity'     => intval($data['capacity']),
             'Description'  => sanitize_textarea_field($data['description']),
-            'OpeningTime'  => sanitize_text_field($data['opening_time']),
-            'ClosingTime'  => sanitize_text_field($data['closing_time']),
+            'OpeningTime'  => $opening_time,
+            'ClosingTime'  => $closing_time,
             'AllowMultiDayBookings' => isset($data['allow-multi-day-bookings']) ? 1 : 0,
             'CalcClosedHours' => isset($data['calc-closed-hours']) ? 1 : 0
         ];
