@@ -12,7 +12,6 @@ if (!defined('ABSPATH')) {
 class MYVH_Organisation_Service_Provider {
 
     public function register($container): void {
-        global $wpdb;
 
         // ── Repositories ──────────────────────────────────────────────────────
         $container->singleton( MYVH_Organisation_Repository::class );

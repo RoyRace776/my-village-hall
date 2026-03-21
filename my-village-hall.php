@@ -69,7 +69,6 @@ require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-bootstrap.php';
 
 // Feature modules
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-shortcode.php';
-require_once MYVH_PLUGIN_DIR . 'admin/class-myvh-calendar-ajax.php';
 
 // Multisite network dashboard
 require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-dashboard.php';
@@ -519,9 +518,6 @@ function myvh_init(): My_Village_Hall {
 
     // Frontend calendar shortcode + REST endpoint
     ( new MYVH_Calendar_Shortcode() )->init();
-
-    // Admin calendar AJAX handlers
-    ( new MYVH_Calendar_Ajax() )->register();
 
     // Network dashboard (multisite network-admin only)
     if ( is_multisite() && is_network_admin() ) {

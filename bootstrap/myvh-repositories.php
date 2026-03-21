@@ -22,31 +22,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ── 1. Venues & Rooms ─────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/venues/class-venue-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-room-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-repository.php';
 
 // ── 2. Customers ─────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/customers/class-customer-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-repository.php';
 
 // ── 3. Organisations ──────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-type-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-member-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-member-request-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-type-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-member-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-member-request-repository.php';
 
 // ── 3. Bookings ───────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-recurring-pattern-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-addon-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-charge-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-discount-repository.php';
 
 // ── 4. Pricing ────────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-room-rate-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/addons/class-addon-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-discount-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-discount-repository.php';
 
 // ── 5. Invoices & Payments ────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-invoice-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-invoice-item-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/payments/class-payment-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-item-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/payments/class-myvh-payment-repository.php';
