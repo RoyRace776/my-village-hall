@@ -1,7 +1,7 @@
 <?php
 class MYVH_Room_Rules_Service {
 
-    public function within_opening_hours($room, $start, $end) {
+    public function within_opening_hours($room, $start, $end): bool {
         $room_open  = strtotime($room['OpeningTime']);
         $room_close = strtotime($room['ClosingTime']);
 

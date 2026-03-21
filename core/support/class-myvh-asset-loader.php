@@ -45,14 +45,14 @@ class MYVH_Asset_Loader {
         ];
     }
 
-    public static function init() {
+    public static function init(): void {
         add_action( 'wp_enqueue_scripts',    [ self::class, 'enqueue_frontend' ] );
         add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_admin'    ] );
     }
 
     // ── Frontend ──────────────────────────────────────────────────────────────
 
-    public static function enqueue_frontend() {
+    public static function enqueue_frontend(): void {
 
         self::register_public_calendar_assets();
 
@@ -68,7 +68,7 @@ class MYVH_Asset_Loader {
         // to support per-instance container IDs and REST config.
     }
 
-    public static function register_public_calendar_assets() {
+    public static function register_public_calendar_assets(): void {
 
         // Use the plugin-bundled DayPilot build so public calendar works in local/offline environments.
         wp_register_script(
@@ -104,7 +104,7 @@ class MYVH_Asset_Loader {
 
     // ── Admin ─────────────────────────────────────────────────────────────────
 
-    public static function enqueue_admin( $hook ) {
+    public static function enqueue_admin( $hook ): void {
 
         if ( strpos( $hook, 'myvh' ) === false && strpos( $hook, 'my-village-hall' ) === false ) return;
 
@@ -181,7 +181,7 @@ class MYVH_Asset_Loader {
 
     // ── Portal (frontend, [myvh_portal] shortcode) ────────────────────────────
 
-    public static function enqueue_portal() {
+    public static function enqueue_portal(): void {
 
         $visible_hours = self::get_calendar_visible_hours();
 
@@ -304,7 +304,7 @@ class MYVH_Asset_Loader {
 
     // ── Public calendar ([myvh_public_calendar] shortcode) ────────────────────
 
-    public static function enqueue_public_calendar() {
+    public static function enqueue_public_calendar(): void {
 
         wp_enqueue_script(
             'daypilot',

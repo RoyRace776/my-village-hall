@@ -2,7 +2,7 @@
 
 class MYVH_Booking_Listener {
 
-    public function register() {
+    public function register(): void {
         add_action(
             'myvh_event_booking.created',
             [$this, 'handle_booking_created']
@@ -24,28 +24,28 @@ class MYVH_Booking_Listener {
         );
     }
 
-    public function handle_booking_created($payload) {
+    public function handle_booking_created($payload): void {
 
         $booking_id = $payload['booking_id'];
 
         // Processing here
     }
 
-    public function handle_booking_confirmed($payload) {
+    public function handle_booking_confirmed($payload): void {
 
         $booking_id = $payload['booking_id'];
 
         // Processing here
     }
 
-    public function handle_booking_cancelled($payload) {
+    public function handle_booking_cancelled($payload): void {
 
         $booking_id = $payload['booking_id'];
 
         // Processing here
     }
 
-    public function handle_booking_updated($payload) {
+    public function handle_booking_updated($payload): void {
 
         $booking_id = $payload['booking_id'];
 

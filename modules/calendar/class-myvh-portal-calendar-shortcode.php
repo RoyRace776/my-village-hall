@@ -2,11 +2,11 @@
 
 class MYVH_Portal_Calendar_Shortcode {
 
-    public function register() {
+    public function register(): void {
         add_shortcode('myvh_portal_calendar', [$this, 'render']);
     }
 
-    public function render($atts = []) {
+    public function render($atts = []): string {
 
         if (!is_user_logged_in()) {
             return '<p>Please log in to view the calendar.</p>';

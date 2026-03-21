@@ -8,7 +8,7 @@ class MYVH_Portal_Calendar_Controller {
         $this->calendar_service = $calendar_service;
     }
 
-    public function get_events() {
+    public function get_events(): void {
 
         if (!is_user_logged_in()) {
             wp_die('Unauthorized');

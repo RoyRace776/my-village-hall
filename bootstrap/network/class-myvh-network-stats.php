@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) exit;
 
 class MYVH_Network_Stats {
 
-    public function get_overview() {
+    public function get_overview(): array {
 
         $sites = get_sites();
         $total = 0;
@@ -35,7 +35,7 @@ class MYVH_Network_Stats {
         ];
     }
 
-    public function bookings_per_day($days = 30) {
+    public function bookings_per_day($days = 30): array {
 
         $days = max(1, (int) $days);
 

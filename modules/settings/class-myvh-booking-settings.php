@@ -4,7 +4,7 @@ class MYVH_Booking_Settings extends MYVH_Settings_Base {
 
     protected $option_name = 'myvh_booking_settings';
 
-    public function tab() {
+    public function tab(): array {
         return
             ['key' => 'booking',
             'label' => 'Booking'];

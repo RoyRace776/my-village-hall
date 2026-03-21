@@ -2,8 +2,7 @@
 
 class MYVH_Venue_Service_Provider
 {
-    public function register($container)
-    {
+    public function register($container): void {
         $container->singleton(MYVH_Venue_Repository::class);
         $container->singleton(MYVH_Venue_Service::class);
         $container->singleton(MYVH_Venue_Controller::class);

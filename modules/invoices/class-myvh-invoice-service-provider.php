@@ -2,8 +2,7 @@
 
 class MYVH_Invoice_Service_Provider
 {
-    public function register($container)
-    {
+    public function register($container): void {
         $container->singleton(MYVH_Invoice_Repository::class);
         $container->singleton(MYVH_Invoice_Item_Repository::class);
         $container->singleton(MYVH_Invoice_Service::class);

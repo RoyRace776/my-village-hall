@@ -15,7 +15,7 @@ abstract class MYVH_Settings_Base {
     /**
      * Return schema
      */
-    public function schema() {
+    public function schema(): array {
         return $this->schema;
     }
 
@@ -23,7 +23,7 @@ abstract class MYVH_Settings_Base {
     /**
      * Load settings from database
      */
-    protected function load() {
+    protected function load(): void {
 
         if ($this->settings !== null) {
             return;
@@ -49,7 +49,7 @@ abstract class MYVH_Settings_Base {
     /**
      * Apply schema defaults
      */
-    protected function apply_defaults($settings) {
+    protected function apply_defaults($settings): array {
 
         foreach ($this->schema as $section) {
 
@@ -91,7 +91,7 @@ abstract class MYVH_Settings_Base {
     /**
      * Get all settings
      */
-    public function all() {
+    public function all(): array {
 
         $this->load();
 
@@ -102,7 +102,7 @@ abstract class MYVH_Settings_Base {
     /**
      * Save settings
      */
-    public function save($input) {
+    public function save($input): void {
 
         $clean = [];
 
@@ -143,7 +143,7 @@ abstract class MYVH_Settings_Base {
         $this->settings = $clean;
     }
 
-    protected function get_multisite_scope() {
+    protected function get_multisite_scope(): string {
         $scope = $this->multisite_scope;
 
         if (is_multisite()) {
@@ -181,7 +181,7 @@ abstract class MYVH_Settings_Base {
     }
 
 
-    protected function update_option( $value ) {
+    protected function update_option( $value ): bool {
         if ( $this->get_multisite_scope() === 'network' && is_multisite() ) {
             return update_site_option( $this->option_name, $value );
         }

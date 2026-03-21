@@ -34,12 +34,12 @@ class MYVH_Login_Handler {
         return null;
     }
 
-    public function init() {
+    public function init(): void {
         add_action('init', [$this, 'handle_login']);
         add_action('init', [$this, 'handle_registration']);
     }
 
-    public function handle_login() {
+    public function handle_login(): void {
 
         if (!isset($_POST['myvh_login_nonce'])) {
             return;
@@ -69,7 +69,7 @@ class MYVH_Login_Handler {
         exit;
     }
 
-    public function handle_registration() {
+    public function handle_registration(): void {
 
         if (!isset($_POST['myvh_register_nonce'])) {
             return;

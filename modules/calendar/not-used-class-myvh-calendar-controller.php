@@ -11,7 +11,7 @@ class MYVH_Calendar_Controller {
         $this->booking_service = $booking_service;
     }
 
-    public function get_events() {
+    public function get_events(): void {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
@@ -41,7 +41,7 @@ class MYVH_Calendar_Controller {
         wp_send_json($events);
     }
 
-    public function create_event() {
+    public function create_event(): void {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
@@ -77,13 +77,13 @@ class MYVH_Calendar_Controller {
         }
     }
 
-    private function authorize_admin() {
+    private function authorize_admin(): void {
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized', 403);
         }
     }
 
-    private function authorize_user() {
+    private function authorize_user(): void {
         if (!is_user_logged_in()) {
             wp_send_json_error('Login required', 401);
         }

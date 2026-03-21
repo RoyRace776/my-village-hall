@@ -4,7 +4,7 @@ class MYVH_General_Settings extends MYVH_Settings_Base {
 
     protected $option_name = 'myvh_general_settings';
 
-    public function tab() {
+    public function tab(): array {
         return [
             'key' => 'general',
             'label' => 'General'

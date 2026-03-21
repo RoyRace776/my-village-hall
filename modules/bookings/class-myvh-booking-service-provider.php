@@ -14,8 +14,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-controller.p
 
 class MYVH_Booking_Service_Provider
 {
-    public function register($container)
-    {
+    public function register($container): void {
         $container->singleton(MYVH_Booking_Repository::class);
         $container->singleton(MYVH_Booking_Addon_Repository::class);
         $container->singleton(MYVH_Booking_Discount_Repository::class);

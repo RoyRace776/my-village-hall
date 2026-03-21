@@ -2,7 +2,7 @@
 
 class MYVH_Event_Dispatcher {
 
-    public static function dispatch($event_name, $payload = []) {
+    public static function dispatch($event_name, $payload = []): void {
 
         /**
          * Domain events go through here

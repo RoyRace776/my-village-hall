@@ -8,7 +8,7 @@ class MYVH_Public_Calendar_Controller {
         $this->calendar_service = $calendar_service;
     }
 
-    public function get_events() {
+    public function get_events(): void {
 
         $start = $_GET['start'];
         $end   = $_GET['end'];

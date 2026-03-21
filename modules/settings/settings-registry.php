@@ -5,7 +5,7 @@ class MYVH_Settings_Registry {
     private static $groups = [];
 
 
-    public static function register($key, $label, $class) {
+    public static function register($key, $label, $class): void {
 
         self::$groups[$key] = [
             'label' => $label,
@@ -15,12 +15,12 @@ class MYVH_Settings_Registry {
     }
 
 
-    public static function groups() {
+    public static function groups(): array {
         return self::$groups;
     }
 
 
-    public static function get($key) {
+    public static function get($key): ?MYVH_Settings_Base {
 
         if (!isset(self::$groups[$key])) {
             return null;
@@ -36,7 +36,7 @@ class MYVH_Settings_Registry {
     /**
      * Automatically load settings classes
      */
-    public static function auto_register($settings_dir) {
+    public static function auto_register($settings_dir): void {
 
         $files = glob($settings_dir . '/*.php');
 

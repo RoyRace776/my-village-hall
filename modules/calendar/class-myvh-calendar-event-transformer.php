@@ -2,7 +2,7 @@
 
 class MYVH_Calendar_Event_Transformer {
 
-    public static function for_portal($bookings) {
+    public static function for_portal($bookings): array {
 
         return array_map(function($b) {
             return [
@@ -17,7 +17,7 @@ class MYVH_Calendar_Event_Transformer {
         }, $bookings);
     }
 
-    public static function for_public($bookings) {
+    public static function for_public($bookings): array {
 
         return array_map(function($b) {
             return [
@@ -28,7 +28,7 @@ class MYVH_Calendar_Event_Transformer {
         }, $bookings);
     }
 
-    public static function for_admin($bookings) {
+    public static function for_admin($bookings): array {
 
         return array_map(function($b) {
             return [

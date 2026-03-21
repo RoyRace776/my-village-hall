@@ -10,12 +10,12 @@ class MYVH_Customer_User_Sync {
         $this->customer_repo = $customer_repo;
     }
 
-    public function register() {
+    public function register(): void {
         add_action('profile_update', [$this, 'sync_customer_from_user'], 10, 2);
         add_action('user_register', [$this, 'link_or_sync_customer_from_user'], 10, 1);
     }
 
-    public function sync_customer_from_user($user_id, $old_user_data = null) {
+    public function sync_customer_from_user($user_id, $old_user_data = null): void {
         if ($this->syncing) {
             return;
         }
@@ -44,7 +44,7 @@ class MYVH_Customer_User_Sync {
         $this->syncing = false;
     }
 
-    public function link_or_sync_customer_from_user($user_id) {
+    public function link_or_sync_customer_from_user($user_id): void {
 
         $user = get_userdata((int) $user_id);
 

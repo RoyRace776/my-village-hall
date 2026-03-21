@@ -3,11 +3,11 @@ if (!defined('ABSPATH')) exit;
 
 class MYVH_Network_Dashboard {
 
-    public function init() {
+    public function init(): void {
         add_action('network_admin_menu', [$this, 'add_menu']);
     }
 
-    public function add_menu() {
+    public function add_menu(): void {
         add_menu_page(
             'Village Hall Network',
             'Village Halls',
@@ -19,7 +19,7 @@ class MYVH_Network_Dashboard {
         );
     }
 
-    public function render_dashboard() {
+    public function render_dashboard(): void {
         echo '<div class="wrap"><h1>Village Hall Network Dashboard</h1>';
 
         $sites = get_sites(['number' => 0]);

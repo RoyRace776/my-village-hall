@@ -7,7 +7,7 @@ if (!class_exists('WP_List_Table')) {
 
 class MYVH_Network_Sites_Table extends WP_List_Table {
 
-    public function get_columns() {
+    public function get_columns(): array {
         return [
             'site' => 'Site',
             'domain' => 'Domain',
@@ -16,7 +16,7 @@ class MYVH_Network_Sites_Table extends WP_List_Table {
         ];
     }
 
-    public function prepare_items() {
+    public function prepare_items(): void {
 
         $sites = get_sites();
         $data = [];
@@ -49,7 +49,7 @@ class MYVH_Network_Sites_Table extends WP_List_Table {
         $this->items = $data;
     }
 
-    private function action_links($blog_id) {
+    private function action_links($blog_id): string {
 
         $url = get_admin_url($blog_id);
 

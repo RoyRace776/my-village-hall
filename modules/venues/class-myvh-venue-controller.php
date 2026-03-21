@@ -10,7 +10,7 @@ class MYVH_Venue_Controller {
         $this->service = $service;
     }
 
-    public function save() {
+    public function save(): void {
 
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
@@ -24,7 +24,7 @@ class MYVH_Venue_Controller {
         exit;
     }
 
-    public function delete() {
+    public function delete(): void {
 
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));

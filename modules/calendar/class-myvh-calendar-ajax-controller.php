@@ -20,7 +20,7 @@ class MYVH_Calendar_Ajax_Controller {
         $this->customer_service = $customer_service;
     }
 
-    public function register_routes() {
+    public function register_routes(): void {
 
         add_action('wp_ajax_myvh_calendar_rooms', [$this, 'get_rooms']);
         add_action('wp_ajax_myvh_calendar_events', [$this, 'get_events']);
@@ -32,7 +32,7 @@ class MYVH_Calendar_Ajax_Controller {
 
     }
 
-    public function get_customers() {
+    public function get_customers(): void {
 
         if (!is_user_logged_in()) {
             wp_send_json_error('Not logged in', 401);
@@ -51,7 +51,7 @@ class MYVH_Calendar_Ajax_Controller {
         ]);
     }
 
-    public function get_organisations() {
+    public function get_organisations(): void {
 
         if (current_user_can('manage_myvh')) {
             $customer_id = intval($_GET['customer_id'] ?? $_POST['customer_id'] ?? 0);
@@ -67,7 +67,7 @@ class MYVH_Calendar_Ajax_Controller {
         wp_send_json($orgs);
     }
 
-    public function get_rooms() {
+    public function get_rooms(): void {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
@@ -97,7 +97,7 @@ class MYVH_Calendar_Ajax_Controller {
         wp_send_json($columns);
     }
 
-    public function get_events() {
+    public function get_events(): void {
         $context = $_GET['context'] ?? 'public';
 
         switch ($context) {
@@ -126,7 +126,7 @@ class MYVH_Calendar_Ajax_Controller {
         wp_send_json($events);
     }
 
-    public function move_booking() {
+    public function move_booking(): void {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
@@ -159,7 +159,7 @@ class MYVH_Calendar_Ajax_Controller {
         wp_send_json_success();
     }
 
-    public function create_event() {
+    public function create_event(): void {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
@@ -186,7 +186,7 @@ class MYVH_Calendar_Ajax_Controller {
         }
     }
 
-    public function update_event() {
+    public function update_event(): void {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
@@ -210,19 +210,19 @@ class MYVH_Calendar_Ajax_Controller {
 }
 
 
-    private function authorize_admin() {
+    private function authorize_admin(): void {
         if (!current_user_can('manage_myvh')) {
             wp_send_json_error('Unauthorized', 403);
         }
     }
 
-    private function authorize_user() {
+    private function authorize_user(): void {
         if (!is_user_logged_in()) {
             wp_send_json_error('Login required', 401);
         }
     }
 
-    private function get_request_data() {
+    private function get_request_data(): array {
 
         $data = wp_unslash($_POST);
 
