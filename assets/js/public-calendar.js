@@ -267,6 +267,11 @@
         var previousDetail = current.detail;
         var previousMode = current.mode;
         var container = document.getElementById(cfg.containerId);
+
+        if (mode === 'scheduler' && cfg.schedulerOrientation === 'vertical' && detail !== 'day') {
+            detail = 'day';
+        }
+
         current.detail = detail;
         current.mode = mode;
 
@@ -294,8 +299,12 @@
         }
 
         if (mode === 'scheduler') {
-            dp = new DayPilot.Scheduler(cfg.containerId, buildSchedulerConfig(detail));
-            dp.resources = buildSchedulerResources(lastEvents);
+            if (cfg.schedulerOrientation === 'vertical' && detail === 'day') {
+                dp = buildVerticalTimetableDp(container);
+            } else {
+                dp = new DayPilot.Scheduler(cfg.containerId, buildSchedulerConfig(detail));
+                dp.resources = buildSchedulerResources(lastEvents);
+            }
         } else {
             switch (detail) {
                 case 'week':
@@ -313,6 +322,145 @@
         dp.init();
         loadEvents();
         updateTitle();
+    }
+
+    // ── Vertical timetable (rooms as columns, time slots as rows) ─────────────
+    function escHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function buildVerticalTimetableDp(container) {
+        var startHour  = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 8;
+        var endHour    = Number.isFinite(Number(cfg.visibleEndHour))   ? Number(cfg.visibleEndHour)   : 22;
+        var totalSlots = Math.max(1, endHour - startHour);
+        var rooms      = Array.isArray(cfg.rooms) ? cfg.rooms : [];
+
+        function renderTimetable(vtDp) {
+            var dayStr = new DayPilot.Date(vtDp.startDate).toString('yyyy-MM-dd');
+
+            // Filter events overlapping the current day
+            var dayEvents = vtDp.events.list.filter(function(event) {
+                var evS = event.start ? String(event.start).substring(0, 10) : '';
+                var evE = event.end   ? String(event.end).substring(0, 10)   : '';
+                return evS <= dayStr && evE >= dayStr;
+            });
+
+            // Index by room id
+            var eventsByRoom = {};
+            rooms.forEach(function(room) { eventsByRoom[String(room.id)] = []; });
+            dayEvents.forEach(function(event) {
+                var rid = String(event.resource || (event.tags && event.tags.roomId) || '');
+                if (rid && eventsByRoom[rid] !== undefined) {
+                    eventsByRoom[rid].push(event);
+                }
+            });
+
+            // Build grid[slot][col] = null | { event, span } | 'occupied'
+            var grid = [];
+            for (var i = 0; i < totalSlots; i++) {
+                var row = [];
+                for (var c = 0; c < rooms.length; c++) { row.push(null); }
+                grid.push(row);
+            }
+
+            rooms.forEach(function(room, col) {
+                (eventsByRoom[String(room.id)] || []).forEach(function(event) {
+                    var evStart = new Date(event.start);
+                    var evEnd   = new Date(event.end);
+                    var sh = evStart.getHours() + evStart.getMinutes() / 60;
+                    var eh = evEnd.getHours()   + evEnd.getMinutes()   / 60;
+                    var startSlot = Math.max(0, Math.floor(sh) - startHour);
+                    var endSlot   = Math.min(totalSlots, Math.ceil(eh) - startHour);
+                    var span = Math.max(1, endSlot - startSlot);
+
+                    if (startSlot < totalSlots && grid[startSlot][col] === null) {
+                        grid[startSlot][col] = { event: event, span: span };
+                        for (var s = startSlot + 1; s < startSlot + span && s < totalSlots; s++) {
+                            grid[s][col] = 'occupied';
+                        }
+                    }
+                });
+            });
+
+            // Build HTML
+            var dateLabel = new DayPilot.Date(vtDp.startDate).toString('dddd d MMMM yyyy');
+            var html = '<table class="myvh-timetable" role="grid">';
+            html += '<thead><tr>';
+            html += '<th class="myvh-tt-corner">' + escHtml(dateLabel) + '</th>';
+            rooms.forEach(function(room) {
+                html += '<th class="myvh-tt-room-header" scope="col">' + escHtml(room.name || '') + '</th>';
+            });
+            html += '</tr></thead><tbody>';
+
+            for (var slot = 0; slot < totalSlots; slot++) {
+                var hour = startHour + slot;
+                var hourStr = (hour < 10 ? '0' : '') + hour + ':00';
+                html += '<tr><th class="myvh-tt-time-cell" scope="row">' + escHtml(hourStr) + '</th>';
+
+                for (var col = 0; col < rooms.length; col++) {
+                    var cell = grid[slot][col];
+                    if (cell === 'occupied') continue;
+
+                    if (cell === null) {
+                        html += '<td class="myvh-tt-empty-cell"></td>';
+                    } else {
+                        var event   = cell.event;
+                        var span    = cell.span;
+                        var color     = event.backColor || '#2271b1';
+                        var textColor = event.fontColor || '#fff';
+                        var title     = event.text || 'Booking';
+                        var tooltip   = event.toolTip ? String(event.toolTip).replace(/\n/g, '&#10;') : '';
+                        var startT    = formatTimeFromISO(event.start);
+                        var endT      = formatTimeFromISO(event.end);
+                        var timeStr   = (startT && endT) ? (startT + '\u2013' + endT) : '';
+
+                        html += '<td class="myvh-tt-event-cell"'
+                              + ' rowspan="' + span + '"'
+                              + ' style="background:' + escHtml(color) + ';color:' + escHtml(textColor) + ';"'
+                              + ' data-event-id="' + escHtml(String(event.id || '')) + '"'
+                              + ' title="' + escHtml(tooltip) + '">';
+                        html += '<div class="myvh-tt-event-inner">'
+                              + '<span class="myvh-tt-event-title">' + escHtml(title) + '</span>';
+                        if (timeStr) {
+                            html += '<span class="myvh-tt-event-time">' + escHtml(timeStr) + '</span>';
+                        }
+                        html += '</div></td>';
+                    }
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+
+            container.innerHTML = html;
+
+            // Bind click handlers
+            var evList = vtDp.events.list;
+            container.querySelectorAll('.myvh-tt-event-cell[data-event-id]').forEach(function(cell) {
+                var evId = cell.dataset.eventId;
+                var found = null;
+                for (var i = 0; i < evList.length; i++) {
+                    if (String(evList[i].id) === evId) { found = evList[i]; break; }
+                }
+                if (found) {
+                    cell.style.cursor = 'pointer';
+                    (function(ev) {
+                        cell.addEventListener('click', function() { handleEventClick({ e: { data: function() { return ev; } } }); });
+                    }(found));
+                }
+            });
+        }
+
+        return {
+            startDate: new DayPilot.Date(current.date).getDatePart(),
+            events: { list: [] },
+            init:    function() {},
+            update:  function() { renderTimetable(this); },
+            dispose: function() {},
+        };
     }
 
     function buildSchedulerConfig(detail) {

@@ -201,6 +201,7 @@ var MYVH_Calendar = (function() {
             headerDateFormat: myvhCal.headerDateFormat || null,
             visibleStartHour: Number(myvhCal.visibleStartHour || 0),
             visibleEndHour: Number(myvhCal.visibleEndHour || 24),
+            schedulerOrientation: String(myvhCal.schedulerOrientation || 'horizontal').toLowerCase(),
 
             editable:   false,
             selectable: true,

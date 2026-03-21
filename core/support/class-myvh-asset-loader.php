@@ -155,12 +155,13 @@ class MYVH_Asset_Loader {
             );
 
             wp_localize_script( 'myvh-calendar-admin', 'myvhCal', [
-                'ajax_url'         => admin_url( 'admin-ajax.php' ),
-                'nonce'            => wp_create_nonce( 'myvh_calendar' ),
-                'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
-                'maxBookingDaysAhead' => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
-                'visibleStartHour' => $visible_hours['start'],
-                'visibleEndHour'   => $visible_hours['end'],
+                'ajax_url'              => admin_url( 'admin-ajax.php' ),
+                'nonce'                 => wp_create_nonce( 'myvh_calendar' ),
+                'headerDateFormat'      => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+                'maxBookingDaysAhead'   => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
+                'visibleStartHour'      => $visible_hours['start'],
+                'visibleEndHour'        => $visible_hours['end'],
+                'schedulerOrientation'  => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
             ] );
         }
     }
@@ -276,14 +277,15 @@ class MYVH_Asset_Loader {
 
         // myvhCal used by calendar-core.js via calendar-portal.js
         wp_localize_script( 'myvh-calendar-portal', 'myvhCal', [
-            'ajax_url'         => admin_url( 'admin-ajax.php' ),
-            'nonce'            => wp_create_nonce( 'myvh_calendar' ),
-            'headerDateFormat' => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
-            'maxBookingDaysAhead' => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
-            'currentCustomerId' => $current_customer_id,
+            'ajax_url'              => admin_url( 'admin-ajax.php' ),
+            'nonce'                 => wp_create_nonce( 'myvh_calendar' ),
+            'headerDateFormat'      => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+            'maxBookingDaysAhead'   => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
+            'currentCustomerId'     => $current_customer_id,
             'defaultOrganisationId' => $default_organisation_id,
-            'visibleStartHour' => $visible_hours['start'],
-            'visibleEndHour'   => $visible_hours['end'],
+            'visibleStartHour'      => $visible_hours['start'],
+            'visibleEndHour'        => $visible_hours['end'],
+            'schedulerOrientation'  => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
         ] );
     }
 

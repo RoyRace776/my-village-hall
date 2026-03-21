@@ -315,7 +315,160 @@ window.MYVH_CalendarCore = (function () {
         return flatResources;
     }
 
+    function escHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // ───────────────────────────────────────────────
+    // VERTICAL TIMETABLE (Scheduler Day, orientation=vertical)
+    // Rooms as columns, hourly time-slots as rows.
+    // ───────────────────────────────────────────────
+    function createVerticalTimetable(containerId, opts) {
+        destroy();
+
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const startHour = Number.isFinite(Number(opts.visibleStartHour)) ? Number(opts.visibleStartHour) : 8;
+        const endHour   = Number.isFinite(Number(opts.visibleEndHour))   ? Number(opts.visibleEndHour)   : 22;
+        const totalSlots = Math.max(1, endHour - startHour);
+        let flatRooms = [];
+
+        function renderTimetable() {
+            const startDate = scheduler.startDate;
+            const dayStr = startDate.toString('yyyy-MM-dd');
+
+            // Filter events that overlap the current day
+            const dayEvents = scheduler.events.list.filter(event => {
+                const evS = event.start ? String(event.start).substring(0, 10) : '';
+                const evE = event.end   ? String(event.end).substring(0, 10)   : '';
+                return evS <= dayStr && evE >= dayStr;
+            });
+
+            // Index by room id
+            const eventsByRoom = {};
+            flatRooms.forEach(r => { eventsByRoom[String(r.id)] = []; });
+            dayEvents.forEach(event => {
+                const rid = String(event.resource || (event.tags && event.tags.roomId) || '');
+                if (rid && eventsByRoom[rid] !== undefined) {
+                    eventsByRoom[rid].push(event);
+                }
+            });
+
+            // Build grid[slot][col] = null | { event, span } | 'occupied'
+            const grid = Array.from({ length: totalSlots }, () => new Array(flatRooms.length).fill(null));
+
+            flatRooms.forEach((room, col) => {
+                (eventsByRoom[String(room.id)] || []).forEach(event => {
+                    const evStart = new Date(event.start);
+                    const evEnd   = new Date(event.end);
+                    const sh = evStart.getHours() + evStart.getMinutes() / 60;
+                    const eh = evEnd.getHours()   + evEnd.getMinutes()   / 60;
+                    const startSlot = Math.max(0, Math.floor(sh) - startHour);
+                    const endSlot   = Math.min(totalSlots, Math.ceil(eh) - startHour);
+                    const span = Math.max(1, endSlot - startSlot);
+
+                    if (startSlot < totalSlots && grid[startSlot][col] === null) {
+                        grid[startSlot][col] = { event, span };
+                        for (let s = startSlot + 1; s < startSlot + span && s < totalSlots; s++) {
+                            grid[s][col] = 'occupied';
+                        }
+                    }
+                });
+            });
+
+            // Render
+            const dateLabel = startDate.toString('dddd, d MMMM yyyy');
+            let html = `<table class="myvh-timetable" role="grid" aria-label="${escHtml(dateLabel)}">`;
+            html += '<thead><tr>';
+            html += `<th class="myvh-tt-corner">${escHtml(dateLabel)}</th>`;
+            flatRooms.forEach(room => {
+                html += `<th class="myvh-tt-room-header" scope="col">${escHtml(room.name || '')}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            for (let slot = 0; slot < totalSlots; slot++) {
+                const hour = startHour + slot;
+                const hourStr = String(hour).padStart(2, '0') + ':00';
+                html += `<tr><th class="myvh-tt-time-cell" scope="row">${escHtml(hourStr)}</th>`;
+
+                for (let col = 0; col < flatRooms.length; col++) {
+                    const cell = grid[slot][col];
+                    if (cell === 'occupied') continue;
+
+                    if (cell === null) {
+                        html += '<td class="myvh-tt-empty-cell"></td>';
+                    } else {
+                        const { event, span } = cell;
+                        const color     = event.backColor || '#2271b1';
+                        const textColor = event.fontColor || '#fff';
+                        const title     = event.text || 'Booking';
+                        const tooltip   = event.toolTip ? String(event.toolTip).replace(/\n/g, '&#10;') : '';
+                        const startT    = formatTimeFromISO(event.start);
+                        const endT      = formatTimeFromISO(event.end);
+                        const timeStr   = (startT && endT) ? `${startT}–${endT}` : '';
+
+                        html += `<td class="myvh-tt-event-cell" rowspan="${span}"`
+                              + ` style="background:${escHtml(color)};color:${escHtml(textColor)};"`
+                              + ` data-event-id="${escHtml(String(event.id || ''))}"`
+                              + ` title="${escHtml(tooltip)}">`;
+                        html += `<div class="myvh-tt-event-inner"><span class="myvh-tt-event-title">${escHtml(title)}</span>`;
+                        if (timeStr) html += `<span class="myvh-tt-event-time">${escHtml(timeStr)}</span>`;
+                        html += '</div></td>';
+                    }
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+
+            container.innerHTML = html;
+
+            if (typeof opts.onEventClick === 'function') {
+                container.querySelectorAll('.myvh-tt-event-cell[data-event-id]').forEach(cell => {
+                    const evId = cell.dataset.eventId;
+                    const ev = scheduler.events.list.find(e => String(e.id) === evId);
+                    if (ev) {
+                        cell.style.cursor = 'pointer';
+                        cell.addEventListener('click', () => opts.onEventClick({ e: { data: () => ev } }));
+                    }
+                });
+            }
+        }
+
+        const startDate = (opts.startDate ? new DayPilot.Date(opts.startDate) : DayPilot.Date.today()).getDatePart();
+
+        scheduler = {
+            startDate,
+            days: 1,
+            events: { list: [] },
+            update() { renderTimetable(); },
+            dispose() {},
+        };
+
+        // Fetch rooms, then trigger event load
+        const roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || 'admin')}`;
+
+        fetch(roomsUrl)
+            .then(r => r.json())
+            .then(res => {
+                const rooms = Array.isArray(res?.data) ? res.data : Object.values(res?.data || res || {});
+                flatRooms = buildGroupedSchedulerResources(rooms).filter(r => !r.tags || r.tags.type !== 'venue');
+                loadEvents(opts.ajax_url, opts.nonce, opts.context);
+            })
+            .catch(err => console.error('Failed to load rooms for timetable', err));
+    }
+
     function createScheduler(containerId, opts, detail) {
+
+        // Vertical timetable mode: rooms-as-columns, time-as-rows (Day detail only).
+        if (opts.schedulerOrientation === 'vertical' && detail === 'Day') {
+            createVerticalTimetable(containerId, opts);
+            return;
+        }
 
         destroy();
 
@@ -505,6 +658,9 @@ window.MYVH_CalendarCore = (function () {
 
             setMode(mode, startDate = null) {
                 currentMode = toMode(mode);
+                if (currentMode === "Scheduler" && String(opts.schedulerOrientation || "").toLowerCase() === "vertical") {
+                    currentDetail = "Day";
+                }
                 render(currentContainerId, opts, startDate || currentStartDateValue());
             },
 

@@ -236,6 +236,7 @@ var MYVH_CalendarAdmin = (function() {
             headerDateFormat: myvhCal.headerDateFormat || null,
             visibleStartHour: Number(myvhCal.visibleStartHour || 0),
             visibleEndHour: Number(myvhCal.visibleEndHour || 24),
+            schedulerOrientation: String(myvhCal.schedulerOrientation || 'horizontal').toLowerCase(),
 
             onEventClick: function(args) {
                 const id = args.e.id ? args.e.id() : args.e.data.id;

@@ -473,3 +473,110 @@ body .scheduler_default_event_inner {
     .myvh-calendar-views { width: 100%; flex-wrap: wrap; }
     .myvh-cal-btn { min-width: 0; flex: 1 1 auto; }
 }
+
+/* ── Vertical timetable ───────────────────────────────────────────────────── */
+.myvh-timetable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: #fff;
+    table-layout: fixed;
+}
+
+.myvh-timetable th,
+.myvh-timetable td {
+    border: 1px solid #dcdcde;
+    vertical-align: top;
+    padding: 0;
+}
+
+/* Corner cell (shows the date) */
+.myvh-tt-corner {
+    width: 60px;
+    min-width: 60px;
+    background: #f6f7f7;
+    color: #50575e;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 6px 4px;
+    vertical-align: middle;
+}
+
+/* Room header cells */
+.myvh-tt-room-header {
+    background: #f6f7f7;
+    color: #2c3338;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    padding: 6px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Time label cells (left column) */
+.myvh-tt-time-cell {
+    width: 60px;
+    min-width: 60px;
+    background: #f6f7f7;
+    color: #50575e;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: right;
+    padding: 4px 6px 0;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+/* Empty booking cells */
+.myvh-tt-empty-cell {
+    height: 40px;
+    background: #fff;
+}
+
+.myvh-tt-empty-cell:hover {
+    background: #f0f6fc;
+}
+
+/* Event cells */
+.myvh-tt-event-cell {
+    padding: 4px 6px;
+    vertical-align: top;
+    overflow: hidden;
+    cursor: default;
+    transition: filter 0.1s;
+}
+
+.myvh-tt-event-cell:hover {
+    filter: brightness(1.08);
+}
+
+.myvh-tt-event-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.myvh-tt-event-title {
+    font-weight: 500;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.myvh-tt-event-time {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+@media (max-width: 600px) {
+    .myvh-tt-corner,
+    .myvh-tt-time-cell { width: 44px; min-width: 44px; font-size: 10px; }
+    .myvh-tt-room-header { font-size: 11px; padding: 4px 4px; }
+    .myvh-tt-event-title { font-size: 11px; }
+}

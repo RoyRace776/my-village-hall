@@ -265,12 +265,16 @@ class MYVH_Calendar_Service {
     }
 
     private function can_view_private_booking($context, $is_public, $booking_customer_id, $organisation_id, $viewer_scope) {
-        if ($context !== 'portal') {
+        if ($context === 'admin') {
             return true;
         }
 
         if ($is_public) {
             return true;
+        }
+
+        if ($context !== 'portal') {
+            return false;
         }
 
         return (

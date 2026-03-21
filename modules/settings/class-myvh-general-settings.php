@@ -79,6 +79,18 @@ class MYVH_General_Settings extends MYVH_Settings_Base {
                     'description' => 'Label shown for bookings that are not marked public.',
                 ],
 
+                'scheduler_orientation' => [
+                    'type'        => 'select',
+                    'label'       => 'Scheduler Orientation',
+                    'default'     => 'horizontal',
+                    'sanitize'    => 'sanitize_key',
+                    'options'     => [
+                        'horizontal' => 'Horizontal – rooms as rows, time across the top',
+                        'vertical'   => 'Vertical – time as rows, rooms as columns (Day view)',
+                    ],
+                    'description' => 'Vertical shows a timetable layout when the Scheduler is in Day view.',
+                ],
+
             ]
 
         ]
