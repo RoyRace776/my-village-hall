@@ -2,6 +2,19 @@
 
 class MYVH_Asset_Loader {
 
+    private static function asset_version( $relative_path ): string {
+        $full_path = MYVH_PLUGIN_DIR . ltrim( $relative_path, '/\\' );
+
+        if ( file_exists( $full_path ) ) {
+            $mtime = filemtime( $full_path );
+            if ( $mtime ) {
+                return (string) $mtime;
+            }
+        }
+
+        return MYVH_VERSION;
+    }
+
     public static function get_calendar_visible_hours(): array {
 
         $defaults = [
@@ -70,7 +83,7 @@ class MYVH_Asset_Loader {
             'myvh-public-calendar',
             MYVH_PLUGIN_URL . 'assets/js/public-calendar.js',
             [ 'daypilot' ],
-            MYVH_VERSION,
+            self::asset_version( 'assets/js/public-calendar.js' ),
             true
         );
 
@@ -78,7 +91,7 @@ class MYVH_Asset_Loader {
             'myvh-calendar-theme',
             MYVH_PLUGIN_URL . 'assets/css/calendar.css',
             [],
-            MYVH_VERSION
+            self::asset_version( 'assets/css/calendar.css' )
         );
 
         wp_register_style(
@@ -119,7 +132,7 @@ class MYVH_Asset_Loader {
                 'myvh-calendar-theme',
                 MYVH_PLUGIN_URL . 'assets/css/calendar.css',
                 [],
-                MYVH_VERSION
+                self::asset_version( 'assets/css/calendar.css' )
             );
 
             wp_enqueue_script(
@@ -134,7 +147,7 @@ class MYVH_Asset_Loader {
                 'myvh-calendar-core',
                 MYVH_PLUGIN_URL . 'assets/js/calendar-core.js',
                 ['daypilot'],
-                '1.0',
+                self::asset_version( 'assets/js/calendar-core.js' ),
                 true
             );
 
@@ -150,7 +163,7 @@ class MYVH_Asset_Loader {
                 'myvh-calendar-admin',
                 MYVH_PLUGIN_URL . 'assets/js/calendar-admin.js',
                 ['jquery', 'myvh-booking-modal'], // ✅ critical
-                '1.0',
+                self::asset_version( 'assets/js/calendar-admin.js' ),
                 true
             );
 
@@ -226,7 +239,7 @@ class MYVH_Asset_Loader {
             'myvh-calendar-core',
             MYVH_PLUGIN_URL . 'assets/js/calendar-core.js',
             [ 'daypilot' ],
-            MYVH_VERSION,
+            self::asset_version( 'assets/js/calendar-core.js' ),
             true
         );
 
@@ -242,7 +255,7 @@ class MYVH_Asset_Loader {
             'myvh-calendar-portal',
             MYVH_PLUGIN_URL . 'assets/js/calendar-portal.js',
             [ 'myvh-booking-modal' ],
-            MYVH_VERSION,
+            self::asset_version( 'assets/js/calendar-portal.js' ),
             true
         );
 

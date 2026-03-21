@@ -476,11 +476,26 @@ body .scheduler_default_event_inner {
 
 /* ── Vertical timetable ───────────────────────────────────────────────────── */
 .myvh-timetable {
-    width: 100%;
+    --myvh-tt-date-col: 92px;
+    --myvh-tt-time-col: 56px;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     font-size: 13px;
     background: #fff;
-    table-layout: fixed;
+    table-layout: auto;
+}
+
+.myvh-timetable-scroll {
+    height: 100%;
+    max-height: 100%;
+    overflow: auto;
+}
+
+.myvh-timetable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 7;
 }
 
 .myvh-timetable th,
@@ -492,8 +507,8 @@ body .scheduler_default_event_inner {
 
 /* Corner cell (shows the date) */
 .myvh-tt-corner {
-    width: 60px;
-    min-width: 60px;
+    width: var(--myvh-tt-date-col);
+    min-width: var(--myvh-tt-date-col);
     background: #f6f7f7;
     color: #50575e;
     font-size: 11px;
@@ -501,6 +516,48 @@ body .scheduler_default_event_inner {
     text-align: center;
     padding: 6px 4px;
     vertical-align: middle;
+    position: sticky;
+    left: 0;
+    z-index: 9;
+}
+
+.myvh-tt-corner-sub {
+    width: var(--myvh-tt-time-col);
+    min-width: var(--myvh-tt-time-col);
+    background: #f6f7f7;
+    color: #50575e;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 6px 4px;
+    vertical-align: middle;
+    position: sticky;
+    left: var(--myvh-tt-date-col);
+    z-index: 9;
+}
+
+.myvh-tt-date-cell {
+    width: var(--myvh-tt-date-col);
+    min-width: var(--myvh-tt-date-col);
+    background: #eef2f6;
+    color: #2c3338;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px 8px;
+    vertical-align: top;
+    position: sticky;
+    left: 0;
+    z-index: 6;
+}
+
+.myvh-tt-day-header {
+    background: #eef2f6;
+    color: #2c3338;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px 8px;
 }
 
 /* Room header cells */
@@ -510,7 +567,9 @@ body .scheduler_default_event_inner {
     font-size: 12px;
     font-weight: 600;
     text-align: center;
-    padding: 6px 8px;
+    padding: 6px 6px;
+    min-width: 110px;
+    max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -518,8 +577,8 @@ body .scheduler_default_event_inner {
 
 /* Time label cells (left column) */
 .myvh-tt-time-cell {
-    width: 60px;
-    min-width: 60px;
+    width: var(--myvh-tt-time-col);
+    min-width: var(--myvh-tt-time-col);
     background: #f6f7f7;
     color: #50575e;
     font-size: 11px;
@@ -528,6 +587,9 @@ body .scheduler_default_event_inner {
     padding: 4px 6px 0;
     vertical-align: top;
     white-space: nowrap;
+    position: sticky;
+    left: var(--myvh-tt-date-col);
+    z-index: 6;
 }
 
 /* Empty booking cells */
@@ -575,8 +637,9 @@ body .scheduler_default_event_inner {
 }
 
 @media (max-width: 600px) {
+    .myvh-timetable { --myvh-tt-date-col: 76px; --myvh-tt-time-col: 44px; }
     .myvh-tt-corner,
-    .myvh-tt-time-cell { width: 44px; min-width: 44px; font-size: 10px; }
+    .myvh-tt-time-cell { font-size: 10px; }
     .myvh-tt-room-header { font-size: 11px; padding: 4px 4px; }
     .myvh-tt-event-title { font-size: 11px; }
 }

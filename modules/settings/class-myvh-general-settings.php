@@ -86,9 +86,9 @@ class MYVH_General_Settings extends MYVH_Settings_Base {
                     'sanitize'    => 'sanitize_key',
                     'options'     => [
                         'horizontal' => 'Horizontal – rooms as rows, time across the top',
-                        'vertical'   => 'Vertical – time as rows, rooms as columns (Day view)',
+                        'vertical'   => 'Vertical – date/time down the side, rooms across the top',
                     ],
-                    'description' => 'Vertical shows a timetable layout when the Scheduler is in Day view.',
+                    'description' => 'Applies to Scheduler Day, Week and Month views.',
                 ],
 
             ]

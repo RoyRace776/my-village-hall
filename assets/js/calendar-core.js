@@ -1,4 +1,4 @@
-window.MYVH_CalendarCore = (function () {
+﻿window.MYVH_CalendarCore = (function () {
 
     let calendar = null;
     let scheduler = null;
@@ -21,7 +21,6 @@ window.MYVH_CalendarCore = (function () {
             }
 
             const locale = DayPilot.Locale.find(localeId);
-
             if (!locale || !Array.isArray(locale.dayNames) || locale.dayNames.length !== 7) {
                 return;
             }
@@ -37,9 +36,9 @@ window.MYVH_CalendarCore = (function () {
         try {
             const date = new Date(isoDatetime);
             if (isNaN(date.getTime())) return "";
-            const hours = String(date.getHours()).padStart(2, '0');
-            const mins = String(date.getMinutes()).padStart(2, '0');
-            return hours + ':' + mins;
+            const hours = String(date.getHours()).padStart(2, "0");
+            const mins = String(date.getMinutes()).padStart(2, "0");
+            return hours + ":" + mins;
         } catch (e) {
             return "";
         }
@@ -54,7 +53,6 @@ window.MYVH_CalendarCore = (function () {
         if (raw === true || raw === 1 || raw === "1") {
             return true;
         }
-
         if (raw === false || raw === 0 || raw === "0") {
             return false;
         }
@@ -71,7 +69,6 @@ window.MYVH_CalendarCore = (function () {
         if (raw === true || raw === 1 || raw === "1") {
             return true;
         }
-
         if (raw === false || raw === 0 || raw === "0") {
             return false;
         }
@@ -88,12 +85,11 @@ window.MYVH_CalendarCore = (function () {
             tooltipParts.push(String(room).trim());
         }
 
-        // Add time range
         if (event.start && event.end) {
             const startTime = formatTimeFromISO(event.start);
             const endTime = formatTimeFromISO(event.end);
             if (startTime && endTime) {
-                tooltipParts.push(startTime + '-' + endTime);
+                tooltipParts.push(startTime + "-" + endTime);
             }
         }
 
@@ -101,7 +97,6 @@ window.MYVH_CalendarCore = (function () {
         const descriptionFromText = event && event.text ? String(event.text).trim() : "";
         const description = descriptionFromTag || descriptionFromText;
 
-        // Admin always sees the real description. Portal/public mask non-public events.
         if (context === "admin") {
             if (description !== "") {
                 tooltipParts.push(description);
@@ -112,7 +107,7 @@ window.MYVH_CalendarCore = (function () {
             tooltipParts.push(description);
         }
 
-        return tooltipParts.join('\n');
+        return tooltipParts.join("\n");
     }
 
     function toDayPilotDate(value) {
@@ -125,22 +120,16 @@ window.MYVH_CalendarCore = (function () {
 
     function toDetail(value) {
         const detail = String(value || "").toLowerCase();
-        if (detail === "day") {
-            return "Day";
-        }
-        if (detail === "month") {
-            return "Month";
-        }
+        if (detail === "day") return "Day";
+        if (detail === "month") return "Month";
         return "Week";
     }
 
     function getSchedulerStartDate(detail, value) {
         const date = toDayPilotDate(value) || DayPilot.Date.today();
-
         if (detail === "Month") {
             return date.firstDayOfMonth();
         }
-
         return date.getDatePart();
     }
 
@@ -149,6 +138,7 @@ window.MYVH_CalendarCore = (function () {
             calendar.dispose();
             calendar = null;
         }
+
         if (scheduler) {
             scheduler.dispose();
             scheduler = null;
@@ -162,18 +152,14 @@ window.MYVH_CalendarCore = (function () {
         }
     }
 
-    // ───────────────────────────────────────────────
-    // EVENT LOADING (shared)
-    // ───────────────────────────────────────────────
     function loadEvents(ajax_url, nonce, context = "admin") {
-
         if (calendar) {
             const start = calendar.visibleStart();
-            const end   = calendar.visibleEnd();
+            const end = calendar.visibleEnd();
 
             const url = `${ajax_url}?action=myvh_calendar_events&nonce=${nonce}`
-                      + `&context=${encodeURIComponent(context)}`
-                      + `&start=${start.toString()}&end=${end.toString()}`;
+                + `&context=${encodeURIComponent(context)}`
+                + `&start=${start.toString()}&end=${end.toString()}`;
 
             fetch(url).then(r => r.json()).then(events => {
                 events.forEach(e => {
@@ -186,11 +172,11 @@ window.MYVH_CalendarCore = (function () {
 
         if (scheduler) {
             const start = scheduler.startDate;
-            const end   = scheduler.startDate.addDays(scheduler.days);
+            const end = scheduler.startDate.addDays(scheduler.days || 1);
 
             const url = `${ajax_url}?action=myvh_calendar_events&nonce=${nonce}`
-                      + `&context=${encodeURIComponent(context)}`
-                      + `&start=${start.toString()}&end=${end.toString()}`;
+                + `&context=${encodeURIComponent(context)}`
+                + `&start=${start.toString()}&end=${end.toString()}`;
 
             fetch(url).then(r => r.json()).then(events => {
                 events.forEach(e => {
@@ -202,11 +188,7 @@ window.MYVH_CalendarCore = (function () {
         }
     }
 
-    // ───────────────────────────────────────────────
-    // CALENDAR (Day/Week)
-    // ───────────────────────────────────────────────
     function createDayWeekCalendar(containerId, opts, detail) {
-
         destroy();
 
         const visibleStartHour = Number.isFinite(Number(opts.visibleStartHour)) ? Number(opts.visibleStartHour) : null;
@@ -215,6 +197,7 @@ window.MYVH_CalendarCore = (function () {
         calendar = new DayPilot.Calendar(containerId);
         calendar.viewType = detail;
         calendar.startDate = toDayPilotDate(opts.startDate) || DayPilot.Date.today();
+
         if (opts.headerDateFormat) {
             calendar.headerDateFormat = opts.headerDateFormat;
         }
@@ -245,7 +228,6 @@ window.MYVH_CalendarCore = (function () {
     }
 
     function createMonthCalendar(containerId, opts) {
-
         destroy();
 
         calendar = new DayPilot.Month(containerId, {
@@ -264,9 +246,6 @@ window.MYVH_CalendarCore = (function () {
         loadEvents(opts.ajax_url, opts.nonce, opts.context);
     }
 
-    // ───────────────────────────────────────────────
-    // SCHEDULER (Day / Week / Month)
-    // ───────────────────────────────────────────────
     function buildGroupedSchedulerResources(rooms) {
         const groups = {};
 
@@ -316,157 +295,198 @@ window.MYVH_CalendarCore = (function () {
     }
 
     function escHtml(str) {
-        return String(str || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+        return String(str || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
     }
 
-    // ───────────────────────────────────────────────
-    // VERTICAL TIMETABLE (Scheduler Day, orientation=vertical)
-    // Rooms as columns, hourly time-slots as rows.
-    // ───────────────────────────────────────────────
-    function createVerticalTimetable(containerId, opts) {
+    function createVerticalTimetable(containerId, opts, detail) {
         destroy();
 
         const container = document.getElementById(containerId);
         if (!container) return;
 
         const startHour = Number.isFinite(Number(opts.visibleStartHour)) ? Number(opts.visibleStartHour) : 8;
-        const endHour   = Number.isFinite(Number(opts.visibleEndHour))   ? Number(opts.visibleEndHour)   : 22;
+        const endHour = Number.isFinite(Number(opts.visibleEndHour)) ? Number(opts.visibleEndHour) : 22;
         const totalSlots = Math.max(1, endHour - startHour);
         let flatRooms = [];
 
+        function getVisibleDays(startDate) {
+            if (detail === "Day") return 1;
+            if (detail === "Week") return 7;
+            const jsDate = new Date(startDate.toString("yyyy-MM-dd") + "T00:00:00");
+            return new Date(jsDate.getFullYear(), jsDate.getMonth() + 1, 0).getDate();
+        }
+
         function renderTimetable() {
             const startDate = scheduler.startDate;
-            const dayStr = startDate.toString('yyyy-MM-dd');
+            const rooms = flatRooms.length > 0 ? flatRooms : [{ id: "all", name: "Bookings" }];
+            const roomCount = rooms.length;
+            const dayCount = Math.max(1, scheduler.days);
+            const rowCount = dayCount * totalSlots;
+            const grid = Array.from({ length: rowCount }, () => new Array(roomCount).fill(null));
 
-            // Filter events that overlap the current day
-            const dayEvents = scheduler.events.list.filter(event => {
-                const evS = event.start ? String(event.start).substring(0, 10) : '';
-                const evE = event.end   ? String(event.end).substring(0, 10)   : '';
-                return evS <= dayStr && evE >= dayStr;
-            });
+            const dayData = [];
+            for (let dayOffset = 0; dayOffset < dayCount; dayOffset++) {
+                const dayDate = startDate.addDays(dayOffset);
+                dayData.push({
+                    dayOffset,
+                    dayDate,
+                    dayStr: dayDate.toString("yyyy-MM-dd"),
+                    dayLabel: dayDate.toString("ddd d MMM")
+                });
+            }
 
-            // Index by room id
-            const eventsByRoom = {};
-            flatRooms.forEach(r => { eventsByRoom[String(r.id)] = []; });
-            dayEvents.forEach(event => {
-                const rid = String(event.resource || (event.tags && event.tags.roomId) || '');
-                if (rid && eventsByRoom[rid] !== undefined) {
-                    eventsByRoom[rid].push(event);
-                }
-            });
+            dayData.forEach(day => {
+                const dayStart = new Date(day.dayStr + "T00:00:00");
+                const dayEnd = new Date(dayStart);
+                dayEnd.setDate(dayEnd.getDate() + 1);
 
-            // Build grid[slot][col] = null | { event, span } | 'occupied'
-            const grid = Array.from({ length: totalSlots }, () => new Array(flatRooms.length).fill(null));
+                rooms.forEach((room, roomIndex) => {
+                    const col = roomIndex;
 
-            flatRooms.forEach((room, col) => {
-                (eventsByRoom[String(room.id)] || []).forEach(event => {
-                    const evStart = new Date(event.start);
-                    const evEnd   = new Date(event.end);
-                    const sh = evStart.getHours() + evStart.getMinutes() / 60;
-                    const eh = evEnd.getHours()   + evEnd.getMinutes()   / 60;
-                    const startSlot = Math.max(0, Math.floor(sh) - startHour);
-                    const endSlot   = Math.min(totalSlots, Math.ceil(eh) - startHour);
-                    const span = Math.max(1, endSlot - startSlot);
-
-                    if (startSlot < totalSlots && grid[startSlot][col] === null) {
-                        grid[startSlot][col] = { event, span };
-                        for (let s = startSlot + 1; s < startSlot + span && s < totalSlots; s++) {
-                            grid[s][col] = 'occupied';
+                    const matchingEvents = scheduler.events.list.filter(event => {
+                        const rid = String(event.resource || (event.tags && event.tags.roomId) || "");
+                        if (room.id !== "all" && rid !== String(room.id)) {
+                            return false;
                         }
-                    }
+
+                        const evStart = new Date(event.start);
+                        const evEnd = new Date(event.end);
+                        return evStart < dayEnd && evEnd > dayStart;
+                    });
+
+                    matchingEvents.forEach(event => {
+                        const evStart = new Date(event.start);
+                        const evEnd = new Date(event.end);
+                        const clippedStart = evStart > dayStart ? evStart : dayStart;
+                        const clippedEnd = evEnd < dayEnd ? evEnd : dayEnd;
+
+                        const sh = clippedStart.getHours() + clippedStart.getMinutes() / 60;
+                        const eh = clippedEnd.getHours() + clippedEnd.getMinutes() / 60;
+                        const startSlot = Math.max(0, Math.floor(sh) - startHour);
+                        let endSlot = Math.min(totalSlots, Math.ceil(eh) - startHour);
+                        if (endSlot <= startSlot) {
+                            endSlot = Math.min(totalSlots, startSlot + 1);
+                        }
+
+                        const span = Math.max(1, endSlot - startSlot);
+                        if (startSlot < totalSlots) {
+                            const startRow = day.dayOffset * totalSlots + startSlot;
+                            if (grid[startRow][col] === null) {
+                                grid[startRow][col] = { event, span };
+                                for (let s = startSlot + 1; s < startSlot + span && s < totalSlots; s++) {
+                                    grid[day.dayOffset * totalSlots + s][col] = "occupied";
+                                }
+                            }
+                        }
+                    });
                 });
             });
 
-            // Render
-            const dateLabel = startDate.toString('dddd, d MMMM yyyy');
-            let html = `<table class="myvh-timetable" role="grid" aria-label="${escHtml(dateLabel)}">`;
+            let html = '<div class="myvh-timetable-scroll">';
+            html += '<table class="myvh-timetable" role="grid">';
             html += '<thead><tr>';
-            html += `<th class="myvh-tt-corner">${escHtml(dateLabel)}</th>`;
-            flatRooms.forEach(room => {
-                html += `<th class="myvh-tt-room-header" scope="col">${escHtml(room.name || '')}</th>`;
+            html += '<th class="myvh-tt-corner">Date</th>';
+            html += '<th class="myvh-tt-corner-sub">Time</th>';
+            rooms.forEach(room => {
+                html += `<th class="myvh-tt-room-header" scope="col">${escHtml(room.name || "")}</th>`;
             });
             html += '</tr></thead><tbody>';
 
-            for (let slot = 0; slot < totalSlots; slot++) {
-                const hour = startHour + slot;
-                const hourStr = String(hour).padStart(2, '0') + ':00';
-                html += `<tr><th class="myvh-tt-time-cell" scope="row">${escHtml(hourStr)}</th>`;
+            for (let dayOffset = 0; dayOffset < dayCount; dayOffset++) {
+                const day = dayData[dayOffset];
 
-                for (let col = 0; col < flatRooms.length; col++) {
-                    const cell = grid[slot][col];
-                    if (cell === 'occupied') continue;
+                for (let slot = 0; slot < totalSlots; slot++) {
+                    const row = dayOffset * totalSlots + slot;
+                    const hour = startHour + slot;
+                    const hourStr = String(hour).padStart(2, "0") + ":00";
+                    html += "<tr>";
 
-                    if (cell === null) {
-                        html += '<td class="myvh-tt-empty-cell"></td>';
-                    } else {
-                        const { event, span } = cell;
-                        const color     = event.backColor || '#2271b1';
-                        const textColor = event.fontColor || '#fff';
-                        const title     = event.text || 'Booking';
-                        const tooltip   = event.toolTip ? String(event.toolTip).replace(/\n/g, '&#10;') : '';
-                        const startT    = formatTimeFromISO(event.start);
-                        const endT      = formatTimeFromISO(event.end);
-                        const timeStr   = (startT && endT) ? `${startT}–${endT}` : '';
-
-                        html += `<td class="myvh-tt-event-cell" rowspan="${span}"`
-                              + ` style="background:${escHtml(color)};color:${escHtml(textColor)};"`
-                              + ` data-event-id="${escHtml(String(event.id || ''))}"`
-                              + ` title="${escHtml(tooltip)}">`;
-                        html += `<div class="myvh-tt-event-inner"><span class="myvh-tt-event-title">${escHtml(title)}</span>`;
-                        if (timeStr) html += `<span class="myvh-tt-event-time">${escHtml(timeStr)}</span>`;
-                        html += '</div></td>';
+                    if (slot === 0) {
+                        html += `<th class="myvh-tt-date-cell" scope="rowgroup" rowspan="${totalSlots}">${escHtml(day.dayLabel)}</th>`;
                     }
-                }
-                html += '</tr>';
-            }
-            html += '</tbody></table>';
 
+                    html += `<th class="myvh-tt-time-cell" scope="row">${escHtml(hourStr)}</th>`;
+
+                    for (let col = 0; col < roomCount; col++) {
+                        const cell = grid[row][col];
+                        if (cell === "occupied") {
+                            continue;
+                        }
+
+                        if (cell === null) {
+                            html += '<td class="myvh-tt-empty-cell"></td>';
+                        } else {
+                            const { event, span } = cell;
+                            const color = event.backColor || "#2271b1";
+                            const textColor = event.fontColor || "#fff";
+                            const title = event.text || "Booking";
+                            const tooltip = event.toolTip ? String(event.toolTip).replace(/\n/g, "&#10;") : "";
+                            const startT = formatTimeFromISO(event.start);
+                            const endT = formatTimeFromISO(event.end);
+                            const timeStr = (startT && endT) ? `${startT}-${endT}` : "";
+
+                            html += `<td class="myvh-tt-event-cell" rowspan="${span}"`
+                                + ` style="background:${escHtml(color)};color:${escHtml(textColor)};"`
+                                + ` data-event-id="${escHtml(String(event.id || ""))}"`
+                                + ` title="${escHtml(tooltip)}">`;
+                            html += `<div class="myvh-tt-event-inner"><span class="myvh-tt-event-title">${escHtml(title)}</span>`;
+                            if (timeStr) {
+                                html += `<span class="myvh-tt-event-time">${escHtml(timeStr)}</span>`;
+                            }
+                            html += "</div></td>";
+                        }
+                    }
+
+                    html += "</tr>";
+                }
+            }
+
+            html += "</tbody></table></div>";
             container.innerHTML = html;
 
-            if (typeof opts.onEventClick === 'function') {
+            if (typeof opts.onEventClick === "function") {
                 container.querySelectorAll('.myvh-tt-event-cell[data-event-id]').forEach(cell => {
                     const evId = cell.dataset.eventId;
                     const ev = scheduler.events.list.find(e => String(e.id) === evId);
                     if (ev) {
-                        cell.style.cursor = 'pointer';
-                        cell.addEventListener('click', () => opts.onEventClick({ e: { data: () => ev } }));
+                        cell.style.cursor = "pointer";
+                        cell.addEventListener("click", () => opts.onEventClick({ e: { data: () => ev } }));
                     }
                 });
             }
         }
 
-        const startDate = (opts.startDate ? new DayPilot.Date(opts.startDate) : DayPilot.Date.today()).getDatePart();
+        const startDate = getSchedulerStartDate(detail, opts.startDate);
 
         scheduler = {
             startDate,
-            days: 1,
+            days: getVisibleDays(startDate),
             events: { list: [] },
             update() { renderTimetable(); },
-            dispose() {},
+            dispose() {}
         };
 
-        // Fetch rooms, then trigger event load
-        const roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || 'admin')}`;
+        const roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
 
         fetch(roomsUrl)
             .then(r => r.json())
             .then(res => {
                 const rooms = Array.isArray(res?.data) ? res.data : Object.values(res?.data || res || {});
-                flatRooms = buildGroupedSchedulerResources(rooms).filter(r => !r.tags || r.tags.type !== 'venue');
+                flatRooms = buildGroupedSchedulerResources(rooms).filter(r => !r.tags || r.tags.type !== "venue");
                 loadEvents(opts.ajax_url, opts.nonce, opts.context);
             })
-            .catch(err => console.error('Failed to load rooms for timetable', err));
+            .catch(err => console.error("Failed to load rooms for timetable", err));
     }
 
     function createScheduler(containerId, opts, detail) {
+        const schedulerOrientation = String(opts.schedulerOrientation || "horizontal").trim().toLowerCase();
 
-        // Vertical timetable mode: rooms-as-columns, time-as-rows (Day detail only).
-        if (opts.schedulerOrientation === 'vertical' && detail === 'Day') {
-            createVerticalTimetable(containerId, opts);
+        if (schedulerOrientation === "vertical") {
+            createVerticalTimetable(containerId, opts, detail);
             return;
         }
 
@@ -529,25 +549,22 @@ window.MYVH_CalendarCore = (function () {
 
         scheduler = new DayPilot.Scheduler(containerId, config);
 
-        // Load rooms first
         const roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
 
         fetch(roomsUrl)
             .then(r => r.json())
             .then(res => {
-
                 const rooms = Array.isArray(res?.data)
                     ? res.data
                     : Object.values(res?.data || res || {});
 
                 scheduler.resources = buildGroupedSchedulerResources(rooms);
-
                 scheduler.init();
                 loadEvents(opts.ajax_url, opts.nonce, opts.context);
             })
             .catch(err => {
                 console.error("Failed to load rooms", err);
-        });
+            });
     }
 
     function render(containerId, opts, startDate = null) {
@@ -576,11 +593,7 @@ window.MYVH_CalendarCore = (function () {
         return DayPilot.Date.today();
     }
 
-    // ───────────────────────────────────────────────
-    // PUBLIC API
-    // ───────────────────────────────────────────────
     function init(containerId, opts) {
-
         ensureThreeLetterEnglishWeekdays(opts.headerDateFormat);
         currentContainerId = containerId || "myvh-calendar";
 
@@ -596,7 +609,6 @@ window.MYVH_CalendarCore = (function () {
         render(currentContainerId, opts, initialStart);
 
         return {
-
             clearSelection() {
                 calendar?.clearSelection?.();
                 scheduler?.clearSelection?.();
@@ -658,9 +670,6 @@ window.MYVH_CalendarCore = (function () {
 
             setMode(mode, startDate = null) {
                 currentMode = toMode(mode);
-                if (currentMode === "Scheduler" && String(opts.schedulerOrientation || "").toLowerCase() === "vertical") {
-                    currentDetail = "Day";
-                }
                 render(currentContainerId, opts, startDate || currentStartDateValue());
             },
 
@@ -754,6 +763,6 @@ window.MYVH_CalendarCore = (function () {
 
     return {
         init,
-        };
+    };
 
 })();
