@@ -46,3 +46,6 @@ require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-se
 
 // ── 5. Invoices ───────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-service.php';
+
+// ── 6. Calendar ───────────────────────────────────────────────────────────────
+require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-service.php';

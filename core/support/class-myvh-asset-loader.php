@@ -115,6 +115,13 @@ class MYVH_Asset_Loader {
 
             $visible_hours = self::get_calendar_visible_hours();
 
+            wp_enqueue_style(
+                'myvh-calendar-theme',
+                MYVH_PLUGIN_URL . 'assets/css/calendar.css',
+                [],
+                MYVH_VERSION
+            );
+
             wp_enqueue_script(
                 'daypilot',
                 MYVH_PLUGIN_URL . 'assets/js/daypilot-all.min.js',
@@ -196,6 +203,8 @@ class MYVH_Asset_Loader {
             $fonts_url ? [ 'myvh-google-fonts' ] : [],
             MYVH_VERSION
         );
+
+        wp_enqueue_style( 'myvh-calendar-theme' );
 
         wp_enqueue_style(
             'myvh-login',

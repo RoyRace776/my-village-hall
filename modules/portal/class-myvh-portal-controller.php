@@ -16,6 +16,12 @@ class MYVH_Portal_Controller {
 
     public function load_page() {
 
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Not logged in', 401);
+        }
+
+        check_ajax_referer('myvh_portal', 'nonce');
+
         $page = sanitize_text_field($_GET['page'] ?? 'dashboard');
 
         switch ($page) {

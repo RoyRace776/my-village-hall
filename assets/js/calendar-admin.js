@@ -1,6 +1,65 @@
 var MYVH_CalendarAdmin = (function() {
 
     var api = null;
+    var nav = null;
+    var suppressNavSelect = false;
+
+    function getNavSelectMode(detail) {
+        if (detail === 'Day') {
+            return 'Day';
+        }
+        if (detail === 'Month') {
+            return 'Month';
+        }
+        return 'Week';
+    }
+
+    function syncNavigator() {
+        if (!nav || !api?.getState) {
+            return;
+        }
+
+        const state = api.getState();
+        if (!state?.start) {
+            return;
+        }
+
+        suppressNavSelect = true;
+        try {
+            nav.selectMode = getNavSelectMode(state.detail || 'Week');
+            nav.select(new DayPilot.Date(state.start));
+            nav.update();
+        } finally {
+            suppressNavSelect = false;
+        }
+    }
+
+    function initNavigator() {
+        const navEl = document.getElementById('myvh-calendar-nav-picker');
+        if (!navEl || typeof DayPilot === 'undefined') {
+            return;
+        }
+
+        nav = new DayPilot.Navigator('myvh-calendar-nav-picker', {
+            showMonths: 3,
+            skipMonths: 3,
+            selectMode: 'Week',
+            onTimeRangeSelected: function(args) {
+                if (suppressNavSelect) {
+                    return;
+                }
+
+                const state = api?.getState?.() || {};
+                api?.setModeAndDetail?.(state.mode || 'Calendar', state.detail || 'Week', args.day);
+                setActiveModeButton(state.mode || 'Calendar');
+                setActiveDetailButton(state.detail || 'Week');
+                syncNavigator();
+            }
+        });
+
+        nav.init();
+        syncNavigator();
+    }
 
     function setActiveModeButton(mode) {
         document.querySelectorAll('.myvh-mode-btn').forEach(function(button) {
@@ -85,31 +144,36 @@ var MYVH_CalendarAdmin = (function() {
         if (calendarModeBtn) calendarModeBtn.addEventListener('click', () => {
             api.setMode('Calendar');
             setActiveModeButton('Calendar');
+            syncNavigator();
         });
 
         if (schedulerModeBtn) schedulerModeBtn.addEventListener('click', () => {
             api.setMode('Scheduler');
             setActiveModeButton('Scheduler');
+            syncNavigator();
         });
 
         if (dayBtn) dayBtn.addEventListener('click', () => {
             api.setDetail('Day');
             setActiveDetailButton('Day');
+            syncNavigator();
         });
 
         if (weekBtn) weekBtn.addEventListener('click', () => {
             api.setDetail('Week');
             setActiveDetailButton('Week');
+            syncNavigator();
         });
 
         if (monthBtn) monthBtn.addEventListener('click', () => {
             api.setDetail('Month');
             setActiveDetailButton('Month');
+            syncNavigator();
         });
 
-        if (nextBtn)  nextBtn.addEventListener('click', () => api.next());
-        if (prevBtn)  prevBtn.addEventListener('click', () => api.prev());
-        if (todayBtn) todayBtn.addEventListener('click', () => api.today());
+        if (nextBtn)  nextBtn.addEventListener('click', () => { api.next(); syncNavigator(); });
+        if (prevBtn)  prevBtn.addEventListener('click', () => { api.prev(); syncNavigator(); });
+        if (todayBtn) todayBtn.addEventListener('click', () => { api.today(); syncNavigator(); });
     }
 
     // ─────────────────────────────
@@ -215,9 +279,10 @@ var MYVH_CalendarAdmin = (function() {
         });
 
         bindControls();
-    const state = api.getState?.() || {};
-    setActiveModeButton(state.mode || 'Calendar');
-    setActiveDetailButton(state.detail || 'Week');
+        const state = api.getState?.() || {};
+        setActiveModeButton(state.mode || 'Calendar');
+        setActiveDetailButton(state.detail || 'Week');
+        initNavigator();
 
         // Optional: expose for debugging
         window.myvhApi = api;

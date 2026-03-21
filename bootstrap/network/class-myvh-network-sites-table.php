@@ -27,9 +27,10 @@ class MYVH_Network_Sites_Table extends WP_List_Table {
 
             global $wpdb;
             $table = $wpdb->prefix . 'myvh_bookings';
+            $table_like = $wpdb->esc_like($table);
             $count = 0;
 
-            if ($wpdb->get_var("SHOW TABLES LIKE '$table'")) {
+            if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_like))) {
                 $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM $table");
             }
 

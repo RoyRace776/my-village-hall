@@ -3,15 +3,18 @@ if (!defined('ABSPATH')) exit;
 
 class MYVH_Calendar_Ajax_Controller {
 
+    private $calendar_service;
     private $booking_service;
     private $room_repository;
     private $customer_service;
 
     public function __construct(
+        MYVH_Calendar_Service $calendar_service,
         MYVH_Booking_Service $booking_service,
         MYVH_Room_Repository $room_repository,
         MYVH_Customer_Service $customer_service) {
 
+        $this->calendar_service = $calendar_service;
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;
         $this->customer_service = $customer_service;
@@ -95,9 +98,6 @@ class MYVH_Calendar_Ajax_Controller {
     }
 
     public function get_events() {
-
-        //TODO: Fix this to make sure it returns the right data for the right context
-
         $context = $_GET['context'] ?? 'public';
 
         switch ($context) {
@@ -121,28 +121,7 @@ class MYVH_Calendar_Ajax_Controller {
         $end   = sanitize_text_field($_GET['end'] ?? null);
         $context = sanitize_text_field($_GET['context'] ?? 'public');
 
-        $bookings = $this->booking_service->get_between($start, $end, $context);
-
-        $events = [];
-
-        foreach ($bookings as $b) {
-
-            $event = [
-                "id" => $b['Id'],
-                "text" => $b['Description'],
-                "start" => $b['StartDate'] . "T" . $b['StartTime'],
-                "end"   => $b['EndDate'] . "T" . $b['EndTime'],
-                "resource" => $b['RoomId']
-            ];
-
-            // 🔐 Public safety
-            if ($context === 'public') {
-                unset($event['id']); // optional
-                $event['text'] = 'Booked';
-            }
-
-            $events[] = $event;
-        }
+        $events = $this->calendar_service->get_events($start, $end, $context, get_current_user_id());
 
         wp_send_json($events);
     }
@@ -193,108 +172,14 @@ class MYVH_Calendar_Ajax_Controller {
             wp_send_json_error('Permission denied', 403);
         }
 
-        [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
-        [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
-
-        $addons = $this->normalize_addons($request['addons'] ?? []);
-
-        $is_recurring = !empty($request['is_recurring']);
-
-        $recurrence_type = sanitize_text_field($request['recurrence_type'] ?? 'weekly');
-        $recurrence_interval = intval($request['recurrence_interval'] ?? 1);
-        $recurrence_interval_md = intval($request['recurrence_interval_md'] ?? 1);
-
-        if ($recurrence_type === 'monthly_day') {
-            $recurrence_interval = max(1, $recurrence_interval_md);
-        }
-
-        $recurrence_end_type = sanitize_text_field($request['recurrence_end_type'] ?? 'date');
-
-        $data = [
-            'start_date'      => $start_date,
-            'start_time'      => $start_time,
-            'end_date'        => $end_date,
-            'end_time'        => $end_time,
-            'description'     => sanitize_text_field($request['text'] ?? ''),
-            'status'          => sanitize_text_field($request['status'] ?? BookingStatus::PENDING),
-            'room_id'         => intval($request['room_id'] ?? 0),
-            'customer_id'     => intval($request['customer_id'] ?? 0),
-            'organisation_id' => intval($request['organisation_id'] ?? 0),
-            'addons'          => $addons,
-            'is_recurring'    => $is_recurring ? 1 : 0,
-            'recurrence_type' => $recurrence_type,
-            'recurrence_interval' => max(1, $recurrence_interval),
-            'recurrence_week' => sanitize_text_field($request['recurrence_week'] ?? ''),
-            'recurrence_day'  => sanitize_text_field($request['recurrence_day'] ?? ''),
-            'recurrence_end_type' => $recurrence_end_type,
-            'recurrence_end_date' => sanitize_text_field($request['recurrence_end_date'] ?? ''),
-            'max_occurrences' => intval($request['max_occurrences'] ?? 0),
-        ];
-
-        if ($context === 'portal') {
-            $customer = $this->customer_service->get_by_user_id(get_current_user_id());
-
-            if (empty($customer['Id'])) {
-                wp_send_json_error('No customer profile found', 400);
-            }
-
-            $allowed_orgs = $this->customer_service->get_organisations_for_user_id(get_current_user_id());
-            $allowed_org_ids = array_map(static function ($org) {
-                return (int) ($org['Id'] ?? 0);
-            }, $allowed_orgs);
-
-            $selected_org_id = (int) $data['organisation_id'];
-
-            if (!empty($allowed_org_ids) && !in_array($selected_org_id, $allowed_org_ids, true)) {
-                $selected_org_id = (int) $allowed_org_ids[0];
-            }
-
-            $data['customer_id'] = (int) $customer['Id'];
-            $data['organisation_id'] = $selected_org_id;
-            $data['status'] = BookingStatus::PENDING;
-        }
-
-        // Basic validation
-        if (!$data['room_id']) {
-            wp_send_json_error('Room is required');
-        }
-
-        if (!$data['customer_id']) {
-            wp_send_json_error('Customer is required');
-        }
-
-        if (!$data['organisation_id']) {
-            wp_send_json_error('Organisation is required');
-        }
-
-        if ($data['is_recurring']) {
-            if (empty($data['recurrence_type'])) {
-                wp_send_json_error('Recurrence type is required');
-            }
-
-            if ($data['recurrence_end_type'] === 'count' && $data['max_occurrences'] < 1) {
-                wp_send_json_error('Max occurrences must be at least 1');
-            }
-
-            if ($data['recurrence_end_type'] !== 'count' && empty($data['recurrence_end_date'])) {
-                wp_send_json_error('Recurrence end date is required');
-            }
-        }
-
         try {
-            $id = $this->booking_service->save($data);
+            $result = $this->calendar_service->create_event($request, $context, get_current_user_id());
 
-            if (is_wp_error($id)) {
-                wp_send_json_error($id->get_error_message());
+            if (is_wp_error($result)) {
+                wp_send_json_error($result->get_error_message());
             }
 
-            $response = ['id' => $id];
-            $warnings = $this->booking_service->get_last_warnings();
-            if (!empty($warnings)) {
-                $response['warning'] = implode(' ', $warnings);
-            }
-
-            wp_send_json_success($response);
+            wp_send_json_success($result);
 
         } catch (Exception $e) {
             wp_send_json_error($e->getMessage());
@@ -310,38 +195,14 @@ class MYVH_Calendar_Ajax_Controller {
         }
 
         $request = $this->get_request_data();
-        [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
-        [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
-
-        $data = [
-            'booking_id'      => sanitize_text_field($request['booking_id'] ?? $request['id'] ?? ''),
-            'start_date'      => $start_date,
-            'start_time'      => $start_time,
-            'end_date'        => $end_date,
-            'end_time'        => $end_time,
-            'description'     => sanitize_text_field($request['text'] ?? ''),
-            'room_id'         => intval($request['room_id'] ?? 0),
-            'customer_id'     => intval($request['customer_id'] ?? 0),
-            'organisation_id' => intval($request['organisation_id'] ?? 0),
-        ];
-
-        // Basic validation
-        if (!$data['room_id']) {
-            wp_send_json_error('Room is required');
-        }
-
-        if (!$data['customer_id']) {
-            wp_send_json_error('Customer is required');
-        }
-
         try {
-            $id = $this->booking_service->save($data);
+            $result = $this->calendar_service->update_event($request);
 
-            if (is_wp_error($id)) {
-                wp_send_json_error($id->get_error_message());
+            if (is_wp_error($result)) {
+                wp_send_json_error($result->get_error_message());
             }
 
-            wp_send_json_success(['id' => $id]);
+            wp_send_json_success($result);
 
         } catch (Exception $e) {
             wp_send_json_error($e->getMessage());
@@ -350,7 +211,7 @@ class MYVH_Calendar_Ajax_Controller {
 
 
     private function authorize_admin() {
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('manage_myvh')) {
             wp_send_json_error('Unauthorized', 403);
         }
     }
@@ -378,76 +239,6 @@ class MYVH_Calendar_Ajax_Controller {
         $decoded = json_decode($raw, true);
 
         return is_array($decoded) ? $decoded : [];
-    }
-
-    private function split_datetime($value, $default_date = '') {
-
-        $raw = trim((string) $value);
-
-        if ($raw === '') {
-            return [sanitize_text_field($default_date), ''];
-        }
-
-        $timestamp = strtotime($raw);
-
-        if ($timestamp !== false) {
-            return [
-                date('Y-m-d', $timestamp),
-                date('H:i:s', $timestamp),
-            ];
-        }
-
-        $parts = preg_split('/[T\s]/', $raw);
-        $date = sanitize_text_field($parts[0] ?? $default_date);
-        $time = sanitize_text_field($parts[1] ?? '');
-
-        if (preg_match('/^\d{2}:\d{2}$/', $time)) {
-            $time .= ':00';
-        }
-
-        return [$date, $time];
-    }
-
-    private function normalize_addons($raw_addons) {
-
-        if (!is_array($raw_addons)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($raw_addons as $addon) {
-            if (!is_array($addon)) {
-                continue;
-            }
-
-            $addon_id = intval($addon['addon_id'] ?? 0);
-            if ($addon_id <= 0) {
-                continue;
-            }
-
-            $enabled_raw = strtolower(trim((string) ($addon['enabled'] ?? '')));
-            $enabled = in_array($enabled_raw, ['1', 'true', 'on', 'yes'], true);
-
-            // Some clients may omit an explicit enabled flag; keep rows with valid values.
-            if (!$enabled && array_key_exists('enabled', $addon)) {
-                continue;
-            }
-
-            $quantity = floatval($addon['quantity'] ?? 1);
-            if ($quantity <= 0) {
-                continue;
-            }
-
-            $normalized[] = [
-                'addon_id' => $addon_id,
-                'quantity' => $quantity,
-                'unit_price' => floatval($addon['unit_price'] ?? 0),
-                'description' => sanitize_text_field($addon['description'] ?? ''),
-            ];
-        }
-
-        return $normalized;
     }
 
 

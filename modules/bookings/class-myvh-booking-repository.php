@@ -371,15 +371,46 @@ class MYVH_Booking_Repository {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    //TODO: implement filters on get_between
-    public function get_between($start, $end, $context = null) {
-        $sql = $this->wpdb->prepare(
-            "SELECT * FROM {$this->table_name}
-            WHERE StartDate >= %s
-            AND StartDate <= %s",
-            $start,
-            $end
-        );
+    public function get_between($start, $end, $context = null, $filters = []) {
+        $defaults = [
+            'room_id' => 0,
+            'venue_id' => 0,
+            'statuses' => [],
+        ];
+        $filters = wp_parse_args($filters, $defaults);
+
+        $where = [ 'b.StartDate < %s', 'b.EndDate >= %s' ];
+        $params = [ $end, $start ];
+
+        if (!empty($filters['room_id'])) {
+            $where[] = 'b.RoomId = %d';
+            $params[] = (int) $filters['room_id'];
+        }
+
+        if (!empty($filters['venue_id'])) {
+            $where[] = 'r.VenueId = %d';
+            $params[] = (int) $filters['venue_id'];
+        }
+
+        if (!empty($filters['statuses']) && is_array($filters['statuses'])) {
+            $statuses = array_values(array_filter(array_map('sanitize_text_field', $filters['statuses'])));
+            if (!empty($statuses)) {
+                $placeholders = implode(', ', array_fill(0, count($statuses), '%s'));
+                $where[] = "b.Status IN ({$placeholders})";
+                $params = array_merge($params, $statuses);
+            }
+        }
+
+        $where_sql = implode(' AND ', $where);
+
+        $sql = "SELECT b.*, r.Name AS RoomName, v.Name AS VenueName
+            FROM {$this->table_name} b
+            LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
+            LEFT JOIN {$this->wpdb->prefix}myvh_venues v ON r.VenueId = v.Id
+            WHERE {$where_sql}
+            ORDER BY b.StartDate ASC, b.StartTime ASC";
+
+        $sql = $this->wpdb->prepare($sql, ...$params);
 
         return $this->wpdb->get_results($sql, ARRAY_A);
     }

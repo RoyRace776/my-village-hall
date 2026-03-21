@@ -54,7 +54,7 @@ class MYVH_Calendar_Shortcode {
      * are returned. Customer names are never exposed.
      */
     public function get_events( WP_REST_Request $request ): WP_REST_Response {
-        global $wpdb;
+        global $myvh_container;
 
         $default_label = myvh_setting(
             'general.public_calendar_booking_label',
@@ -76,81 +76,24 @@ class MYVH_Calendar_Shortcode {
             return new WP_REST_Response( [], 400 );
         }
 
-        $prefix = $wpdb->prefix;
-
-        $where  = [ '1=1', 'b.Status IN (%s, %s, %s)' ];
-        $params = [];
-
-        $params[] = BookingStatus::CONFIRMED;
-        $params[] = BookingStatus::PENDING;
-        $params[] = BookingStatus::COMPLETED;
-
-        // Date range – bookings that overlap the requested window
-        $where[]  = 'b.StartDate < %s AND b.EndDate >= %s';
-        $params[] = $end;
-        $params[] = $start;
-
-        if ( $venue_id > 0 ) {
-            $where[]  = 'v.Id = %d';
-            $params[] = $venue_id;
+        if ( ! isset( $myvh_container ) ) {
+            return new WP_REST_Response( [], 200 );
         }
 
-        if ( $room_id > 0 ) {
-            $where[]  = 'b.RoomId = %d';
-            $params[] = $room_id;
-        }
-
-        $where_sql = implode( ' AND ', $where );
-
-        $sql = "SELECT
-                    b.Id,
-                    b.StartDate,
-                    b.EndDate,
-                    b.StartTime,
-                    b.EndTime,
-                    b.Description,
-                    b.Status,
-                    b.Public AS IsPublic,
-                        r.Id    AS RoomId,
-                    r.Name  AS RoomName,
-                    v.Id    AS VenueId,
-                    v.Name  AS VenueName
-                FROM {$prefix}myvh_bookings b
-                LEFT JOIN {$prefix}myvh_rooms  r ON b.RoomId  = r.Id
-                LEFT JOIN {$prefix}myvh_venues v ON r.VenueId = v.Id
-                WHERE {$where_sql}
-                ORDER BY b.StartDate ASC, b.StartTime ASC";
-
-        $sql     = $wpdb->prepare( $sql, ...$params );
-        $rows    = $wpdb->get_results( $sql, ARRAY_A );
-        $events  = [];
-
-        foreach ( ( $rows ?: [] ) as $row ) {
-            // DayPilot expects ISO-8601 date-times
-            $start_dt = $row['StartDate'] . 'T' . $row['StartTime'];
-            $end_dt   = $row['EndDate']   . 'T' . $row['EndTime'];
-
-            $is_public = !empty($row['IsPublic']) || !empty($row['Public']);
-
-            $text = $default_label;
-            if ($is_public) {
-                $text = !empty($row['Description']) ? (string) $row['Description'] : (string) $row['RoomName'];
-            }
-
-            $events[] = [
-                'id'       => (int) $row['Id'],
-                'start'    => $start_dt,
-                'end'      => $end_dt,
-                'text'     => sanitize_text_field( $text ),
-                    'resource' => (int) $row['RoomId'],
-                'tags'     => [
-                        'roomId' => (int) $row['RoomId'],
-                    'room'   => $row['RoomName'],
-                    'venue'  => $row['VenueName'],
-                    'status' => $row['Status'],
-                    'isPublic' => $is_public,
+        try {
+            $calendar_service = $myvh_container->get( MYVH_Calendar_Service::class );
+            $events = $calendar_service->get_public_feed_events(
+                $start,
+                $end,
+                is_user_logged_in() ? get_current_user_id() : 0,
+                [
+                    'venue_id' => $venue_id,
+                    'room_id' => $room_id,
                 ],
-            ];
+                $default_label
+            );
+        } catch ( Throwable $e ) {
+            $events = [];
         }
 
         return new WP_REST_Response( $events, 200 );
@@ -178,6 +121,7 @@ class MYVH_Calendar_Shortcode {
         // Pass config to JS
         $unique_id  = 'myvh-cal-' . uniqid();
         $events_url = rest_url( self::REST_NAMESPACE . self::REST_ROUTE );
+        $nav_id = $unique_id . '-nav';
         $visible_hours = [ 'start' => 8, 'end' => 22 ];
         $public_rooms = [];
         global $myvh_container;
@@ -227,6 +171,7 @@ class MYVH_Calendar_Shortcode {
 
         wp_localize_script( 'myvh-public-calendar', 'myvhCalConfig', [
             'containerId' => $unique_id,
+            'navContainerId' => $nav_id,
             'eventsUrl'   => $events_url,
             'venueId'     => (int) $atts['venue_id'],
             'roomId'      => (int) $atts['room_id'],
@@ -268,27 +213,35 @@ class MYVH_Calendar_Shortcode {
                 <?php endif; ?>
             </div>
 
-            <div class="myvh-cal-toolbar" data-target="<?php echo esc_attr( $unique_id ); ?>">
-                <div class="myvh-cal-nav">
-                    <button class="myvh-cal-btn myvh-cal-prev" aria-label="<?php esc_attr_e( 'Previous', 'my-village-hall' ); ?>">&#8249;</button>
-                    <button class="myvh-cal-btn myvh-cal-today"><?php esc_html_e( 'Today', 'my-village-hall' ); ?></button>
-                    <button class="myvh-cal-btn myvh-cal-next" aria-label="<?php esc_attr_e( 'Next', 'my-village-hall' ); ?>">&#8250;</button>
-                    <span class="myvh-cal-title"></span>
+            <div class="myvh-cal-main">
+                <div class="myvh-cal-sidebar">
+                    <div id="<?php echo esc_attr( $nav_id ); ?>" class="myvh-cal-nav-picker"></div>
                 </div>
-                <div class="myvh-cal-views">
-                    <button class="myvh-cal-btn myvh-mode-btn active" data-mode="calendar"><?php esc_html_e( 'Calendar', 'my-village-hall' ); ?></button>
-                    <button class="myvh-cal-btn myvh-mode-btn" data-mode="scheduler"><?php esc_html_e( 'Scheduler', 'my-village-hall' ); ?></button>
-                    <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'month' ? 'active' : ''; ?>" data-view="month"><?php esc_html_e( 'Month', 'my-village-hall' ); ?></button>
-                    <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'week'  ? 'active' : ''; ?>" data-view="week"><?php esc_html_e( 'Week', 'my-village-hall' ); ?></button>
-                    <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'day'   ? 'active' : ''; ?>" data-view="day"><?php esc_html_e( 'Day', 'my-village-hall' ); ?></button>
+
+                <div class="myvh-cal-content">
+                    <div class="myvh-cal-toolbar" data-target="<?php echo esc_attr( $unique_id ); ?>">
+                        <div class="myvh-cal-nav">
+                            <button class="myvh-cal-btn myvh-cal-prev" aria-label="<?php esc_attr_e( 'Previous', 'my-village-hall' ); ?>">&#8249;</button>
+                            <button class="myvh-cal-btn myvh-cal-today"><?php esc_html_e( 'Today', 'my-village-hall' ); ?></button>
+                            <button class="myvh-cal-btn myvh-cal-next" aria-label="<?php esc_attr_e( 'Next', 'my-village-hall' ); ?>">&#8250;</button>
+                            <span class="myvh-cal-title"></span>
+                        </div>
+                        <div class="myvh-cal-views">
+                            <button class="myvh-cal-btn myvh-mode-btn active" data-mode="calendar"><?php esc_html_e( 'Calendar', 'my-village-hall' ); ?></button>
+                            <button class="myvh-cal-btn myvh-mode-btn" data-mode="scheduler"><?php esc_html_e( 'Scheduler', 'my-village-hall' ); ?></button>
+                            <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'day'   ? 'active' : ''; ?>" data-view="day"><?php esc_html_e( 'Day', 'my-village-hall' ); ?></button>
+                            <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'week'  ? 'active' : ''; ?>" data-view="week"><?php esc_html_e( 'Week', 'my-village-hall' ); ?></button>
+                            <button class="myvh-cal-btn myvh-detail-btn <?php echo $atts['view'] === 'month' ? 'active' : ''; ?>" data-view="month"><?php esc_html_e( 'Month', 'my-village-hall' ); ?></button>
+                        </div>
+                    </div>
+
+                    <div id="<?php echo esc_attr( $unique_id ); ?>" class="myvh-daypilot-container" style="height: <?php echo (int) $atts['height']; ?>px;"></div>
+
+                    <div class="myvh-cal-legend">
+                        <span class="myvh-legend-dot myvh-legend-confirmed"></span><?php esc_html_e( 'Confirmed', 'my-village-hall' ); ?>
+                        <span class="myvh-legend-dot myvh-legend-pending"></span><?php esc_html_e( 'Pending', 'my-village-hall' ); ?>
+                    </div>
                 </div>
-            </div>
-
-            <div id="<?php echo esc_attr( $unique_id ); ?>" class="myvh-daypilot-container" style="height: <?php echo (int) $atts['height']; ?>px;"></div>
-
-            <div class="myvh-cal-legend">
-                <span class="myvh-legend-dot myvh-legend-confirmed"></span><?php esc_html_e( 'Confirmed', 'my-village-hall' ); ?>
-                <span class="myvh-legend-dot myvh-legend-pending"></span><?php esc_html_e( 'Pending', 'my-village-hall' ); ?>
             </div>
         </div>
         <?php

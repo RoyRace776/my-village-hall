@@ -101,7 +101,7 @@ $form_end_time = isset($form_data['end_time']) ? sanitize_text_field($form_data[
 $form_description = isset($form_data['description']) ? sanitize_textarea_field($form_data['description']) : ($edit_booking['Description'] ?? '');
 $default_status = myvh_setting('booking.require_approval', true) ? BookingStatus::PENDING : BookingStatus::CONFIRMED;
 $form_status = isset($form_data['status']) ? sanitize_text_field($form_data['status']) : ($edit_booking['Status'] ?? $default_status);
-$form_public = $has_form_data ? !empty($form_data['public']) : (!empty($edit_booking['Public']) || !$edit_booking);
+$form_public = $has_form_data ? !empty($form_data['public']) : !empty($edit_booking['Public']);
 $form_is_recurring = !empty($form_data['is_recurring']);
 $form_recurrence_type = sanitize_text_field($form_data['recurrence_type'] ?? 'weekly');
 $form_recurrence_interval = max(1, intval($form_data['recurrence_interval'] ?? 1));
@@ -739,6 +739,7 @@ $status_colors = [
         jQuery(document).ready(function($) {
             const customerOrganisations = <?php echo wp_json_encode($customer_organisations_map); ?>;
             const initialOrganisationId = '<?php echo esc_js((string) $form_organisation_id); ?>';
+            const isNewBooking = <?php echo $edit_booking ? 'false' : 'true'; ?>;
 
             function roomAllowsMultiday() {
                 const selected = $('#room-select').find(':selected');
@@ -776,7 +777,7 @@ $status_colors = [
                     $organisationSelect.append($('<option>', {
                         value: String(org.Id),
                         text: org.Name
-                    }));
+                    }).attr('data-default-public', String(org.DefaultPublic || 0)));
                 });
 
                 if (preferredOrgId && organisations.some(function(org) { return String(org.Id) === String(preferredOrgId); })) {
@@ -786,11 +787,26 @@ $status_colors = [
                 } else {
                     $organisationSelect.val('');
                 }
+
+                applyVisibilityDefaultFromOrganisation();
+            }
+
+            function applyVisibilityDefaultFromOrganisation() {
+                if (!isNewBooking) {
+                    return;
+                }
+
+                const $selectedOrganisation = $('#organisation-select').find(':selected');
+                const defaultPublic = String($selectedOrganisation.data('default-public') || '0') === '1';
+
+                $('input[name="public"]').prop('checked', defaultPublic);
             }
 
             $('#customer-select').on('change', function() {
                 refreshOrganisationOptions('');
             });
+
+            $('#organisation-select').on('change', applyVisibilityDefaultFromOrganisation);
 
             refreshOrganisationOptions(initialOrganisationId);
 

@@ -93,12 +93,16 @@ class MYVH_Installer {
             OrganisationTypeId  INT UNSIGNED NOT NULL,
             ContactEmail       VARCHAR(100),
             ContactPhone       VARCHAR(100),
+            WebsiteUrl         VARCHAR(255),
             IsActive           TINYINT(1)    DEFAULT 1,
             IsDefault          TINYINT(1)    DEFAULT 0,
+            DefaultPublic      TINYINT(1)    DEFAULT 0,
             Created            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_name    (Name),
+            INDEX      idx_org_type (OrganisationTypeId),
             INDEX      idx_active  (IsActive),
-            INDEX      idx_default (IsDefault)
+            INDEX      idx_default (IsDefault),
+            INDEX      idx_default_public (DefaultPublic)
         ) {$collate};" );
 
         // ── Organisation Types ───────────────────────────────────────────────────
@@ -119,6 +123,7 @@ class MYVH_Installer {
             CustomerId          INT UNSIGNED NOT NULL,
             IsOrganisationAdmin TINYINT(1) NOT NULL DEFAULT 0,
             Created             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX          idx_customer (CustomerId),
             UNIQUE KEY     uq_member (OrganisationId, CustomerId)
         ) {$collate};" );
 
@@ -669,33 +674,80 @@ class MYVH_Installer {
         );
 
         foreach ($options as $option) {
-            self::delete_option($option);
+            delete_option($option);
+        }
+
+        if ( is_multisite() ) {
+            $network_options = $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT meta_key FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s",
+                    $prefix
+                )
+            );
+
+            foreach ($network_options as $option) {
+                delete_site_option($option);
+            }
         }
 
     }
 
     private static function delete_all_transients($wpdb) {
 
-        $prefix = $wpdb->esc_like('_transient_myvh_') . '%';
+        $prefixes = [
+            $wpdb->esc_like('_transient_myvh_') . '%',
+            $wpdb->esc_like('_transient_timeout_myvh_') . '%',
+        ];
 
-        $transients = $wpdb->get_col(
-            $wpdb->prepare(
-                "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-                $prefix
-            )
-        );
+        $transients = [];
+
+        foreach ( $prefixes as $prefix ) {
+            $rows = $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+                    $prefix
+                )
+            );
+
+            if ( is_array($rows) && !empty($rows) ) {
+                $transients = array_merge($transients, $rows);
+            }
+        }
+
+        $transients = array_values(array_unique($transients));
 
         foreach ($transients as $transient) {
-            self::delete_option($transient);
+            delete_option($transient);
         }
 
-    }
-
-    private static function delete_option($option) {
         if ( is_multisite() ) {
-            return delete_site_option( $option );
+            $network_prefixes = [
+                $wpdb->esc_like('_site_transient_myvh_') . '%',
+                $wpdb->esc_like('_site_transient_timeout_myvh_') . '%',
+            ];
+
+            $network_transients = [];
+
+            foreach ( $network_prefixes as $prefix ) {
+                $rows = $wpdb->get_col(
+                    $wpdb->prepare(
+                        "SELECT meta_key FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s",
+                        $prefix
+                    )
+                );
+
+                if ( is_array($rows) && !empty($rows) ) {
+                    $network_transients = array_merge($network_transients, $rows);
+                }
+            }
+
+            $network_transients = array_values(array_unique($network_transients));
+
+            foreach ($network_transients as $transient) {
+                delete_site_option($transient);
+            }
         }
-        return delete_option( $option );
+
     }
 
 }

@@ -15,6 +15,7 @@ class MYVH_Booking_Service {
     private $room_rules;
     private $pricing;
     private $customer_repo;
+    private $organisation_repo;
     private $recurring_pattern_service = null;
     private $last_warnings = [];
 
@@ -27,6 +28,7 @@ class MYVH_Booking_Service {
         MYVH_Room_Rules_Service $room_rules,
         MYVH_Pricing_Service $pricing,
         MYVH_Customer_Repository $customer_repo,
+        MYVH_Organisation_Repository $organisation_repo,
         MYVH_Recurring_Pattern_Service $recurring_pattern_service
     ) {
         $this->room_service = $room_service;
@@ -37,6 +39,7 @@ class MYVH_Booking_Service {
         $this->room_rules = $room_rules;
         $this->pricing = $pricing;
         $this->customer_repo = $customer_repo;
+        $this->organisation_repo = $organisation_repo;
         $this->recurring_pattern_service = $recurring_pattern_service;
     }
 
@@ -149,6 +152,9 @@ class MYVH_Booking_Service {
             $chargeable_hours = $data['chargeable_hours'];
         }
 
+        $booking_id = !empty($data['booking_id']) ? intval($data['booking_id']) : 0;
+        $public_visibility = $this->resolve_public_visibility($data, $organisation_id, $booking_id);
+
         $record = [
             'CustomerId'        => $customer_id,
             'OrganisationId'    => $organisation_id > 0 ? $organisation_id : null,
@@ -159,7 +165,7 @@ class MYVH_Booking_Service {
             'StartTime'         => $start_time,
             'EndTime'           => $end_time,
             'Description'       => sanitize_textarea_field($data['description'] ?? ''),
-            'Public'            => isset($data['public']) ? 1 : 0,
+            'Public'            => $public_visibility,
             'ChargeableHours'   => $chargeable_hours
         ];
 
@@ -272,6 +278,28 @@ class MYVH_Booking_Service {
         return $booking_id;
     }
 
+    private function resolve_public_visibility($data, $organisation_id, $booking_id) {
+        if (array_key_exists('public', $data)) {
+            return !empty($data['public']) ? 1 : 0;
+        }
+
+        if ($booking_id > 0) {
+            $existing = $this->booking_repo->get_by_id($booking_id);
+            if (is_array($existing) && array_key_exists('Public', $existing)) {
+                return !empty($existing['Public']) ? 1 : 0;
+            }
+        }
+
+        if ($organisation_id > 0) {
+            $organisation = $this->organisation_repo->get_by_id($organisation_id);
+            if (is_array($organisation) && array_key_exists('DefaultPublic', $organisation)) {
+                return !empty($organisation['DefaultPublic']) ? 1 : 0;
+            }
+        }
+
+        return 0;
+    }
+
     public function get_last_warnings() {
         return $this->last_warnings;
     }
@@ -364,9 +392,9 @@ class MYVH_Booking_Service {
         ];
     }
 
-    public function get_between($start, $end, $context = null) {
+    public function get_between($start, $end, $context = null, $filters = []) {
 
-        $bookings = $this->booking_repo->get_between($start, $end, $context = null);
+        $bookings = $this->booking_repo->get_between($start, $end, $context, $filters);
         return $bookings;
     }
 

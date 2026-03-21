@@ -6,11 +6,11 @@ abstract class MYVH_Settings_Base {
     protected $schema = [];
     protected $settings = null;
 
-        /**
+    /**
      * 'site'    → stored per-site (default, works in single-site too)
      * 'network' → stored once for the whole network
      */
-    protected $multisite_scope = 'network';
+    protected $multisite_scope = 'site';
 
     /**
      * Return schema
@@ -30,6 +30,10 @@ abstract class MYVH_Settings_Base {
         }
 
         $saved = $this->get_option([]);
+
+        if (!is_array($saved)) {
+            $saved = [];
+        }
 
         $with_defaults = $this->apply_defaults($saved);
 
@@ -139,16 +143,46 @@ abstract class MYVH_Settings_Base {
         $this->settings = $clean;
     }
 
+    protected function get_multisite_scope() {
+        $scope = $this->multisite_scope;
+
+        if (is_multisite()) {
+            $scope = apply_filters(
+                'myvh_settings_multisite_scope',
+                $scope,
+                $this->option_name,
+                static::class
+            );
+        }
+
+        return $scope === 'network' ? 'network' : 'site';
+    }
+
     protected function get_option( $default = [] ) {
-        if ( $this->multisite_scope === 'network' && is_multisite() ) {
+        if ( $this->get_multisite_scope() === 'network' && is_multisite() ) {
             return get_site_option( $this->option_name, $default );
         }
-        return get_option( $this->option_name, $default );
+
+        // Backward compatibility: if values were previously saved at network scope,
+        // continue reading them until this site writes its own local settings.
+        $site_value = get_option( $this->option_name, null );
+        if ( $site_value !== null ) {
+            return $site_value;
+        }
+
+        if ( is_multisite() ) {
+            $network_value = get_site_option( $this->option_name, null );
+            if ( $network_value !== null ) {
+                return $network_value;
+            }
+        }
+
+        return $default;
     }
 
 
     protected function update_option( $value ) {
-        if ( $this->multisite_scope === 'network' && is_multisite() ) {
+        if ( $this->get_multisite_scope() === 'network' && is_multisite() ) {
             return update_site_option( $this->option_name, $value );
         }
         return update_option( $this->option_name, $value );

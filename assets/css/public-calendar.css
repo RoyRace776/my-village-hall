@@ -1,21 +1,61 @@
 /* ==========================================================================
-   My Village Hall – Public Calendar (DayPilot Lite theme: myvh_cal)
+   My Village Hall - Public Calendar
+   DayPilot demo-aligned layout and controls
    ========================================================================== */
 
-/* Wrapper */
 .myvh-public-calendar-wrap {
-    font-family: inherit;
-    color: #1d2327;
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #1b1b1b;
     margin: 1.5em 0;
 }
 
-/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.myvh-cal-login-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #fff;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}
+
+.myvh-cal-login-cta p {
+    margin: 0;
+    color: #50575e;
+    font-size: 0.9em;
+}
+
+.myvh-cal-main {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.myvh-cal-sidebar {
+    width: 250px;
+    min-width: 220px;
+}
+
+.myvh-cal-nav-picker {
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    padding: 8px;
+    background: #fff;
+}
+
+.myvh-cal-content {
+    flex: 1;
+    min-width: 0;
+}
+
 .myvh-cal-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
     margin-bottom: 10px;
 }
 
@@ -32,169 +72,85 @@
     white-space: nowrap;
 }
 
-.myvh-cal-login-cta {
-    display: flex;
+.myvh-cal-views {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    border: 1px solid #dcdcde;
-    border-radius: 4px;
-    background: #fff;
-    padding: 10px 12px;
-    margin-bottom: 10px;
 }
 
-.myvh-cal-login-cta p {
-    margin: 0;
-    color: #50575e;
-    font-size: 0.9em;
+.myvh-cal-btn {
+    background-color: #f3f3f3;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 0.5rem 1rem;
+    height: 38px;
+    min-width: 74px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-right: 1px;
+    transition: all 0.2s;
+    box-sizing: border-box;
+    line-height: 1;
+}
+
+.myvh-cal-btn:hover {
+    background-color: #ffe794;
+    border-color: #ffce18;
+}
+
+.myvh-cal-btn:active {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.myvh-cal-btn.active,
+.myvh-cal-btn:focus-visible {
+    background-color: #e5e5e5;
+    border-color: #ccc;
+    color: #222;
+    outline: none;
+}
+
+.myvh-cal-prev,
+.myvh-cal-next {
+    min-width: 44px;
+    font-size: 20px;
+    padding: 0;
+}
+
+.myvh-cal-nav .myvh-cal-btn:first-child,
+.myvh-cal-views .myvh-cal-btn:first-child {
+    border-top-left-radius: 30px;
+    border-bottom-left-radius: 30px;
+}
+
+.myvh-cal-nav .myvh-cal-btn:last-child,
+.myvh-cal-views .myvh-cal-btn:last-child {
+    border-top-right-radius: 30px;
+    border-bottom-right-radius: 30px;
 }
 
 .myvh-cal-login-btn {
     text-decoration: none;
 }
 
-.myvh-cal-views {
-    display: flex;
-    gap: 4px;
-}
-
-.myvh-cal-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 5px 12px;
-    border: 1px solid #c3c4c7;
-    border-radius: 3px;
-    background: #f6f7f7;
-    color: #2c3338;
-    font-size: 0.875em;
-    font-weight: 500;
-    line-height: 1.4;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-    min-width: 32px;
-}
-
-.myvh-cal-btn:hover {
-    background: #e9e9e9;
-    border-color: #8c8f94;
-}
-
-.myvh-cal-btn.active,
-.myvh-cal-btn:focus-visible {
-    background: #2271b1;
-    border-color: #2271b1;
-    color: #fff;
-    outline: none;
-}
-
-/* Prev / Next arrows – slightly narrower */
-.myvh-cal-prev,
-.myvh-cal-next {
-    font-size: 1.2em;
-    line-height: 1;
-    padding: 4px 10px;
-}
-
-/* ── DayPilot container ──────────────────────────────────────────────────── */
 .myvh-daypilot-container {
-    border: 1px solid #c3c4c7;
-    border-radius: 3px;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
     overflow: hidden;
-}
-
-/* ── DayPilot theme: myvh_cal ────────────────────────────────────────────── */
-
-/* Month grid */
-.myvh_cal_cell {
     background: #fff;
 }
 
-.myvh_cal_cell_business {
-    background: #fff;
+body .calendar_default_event_inner,
+body .month_default_event_inner,
+body .scheduler_default_event_inner {
+    border-radius: 10px;
 }
 
-.myvh_cal_cell_nonbusiness {
-    background: #f9f9f9;
-}
-
-.myvh_cal_header {
-    background: #f6f7f7;
-    color: #2c3338;
-    font-size: 0.8em;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-bottom: 1px solid #dcdcde;
-    text-align: center;
-    padding: 6px 0;
-}
-
-/* Day number in month view */
-.myvh_cal_cell_inner {
-    color: #50575e;
-    font-size: 0.8em;
-    padding: 3px 5px;
-}
-
-.myvh_cal_cell_today .myvh_cal_cell_inner {
-    font-weight: 700;
-    color: #2271b1;
-}
-
-/* Event bar */
-.myvh_cal_event {
-    border-radius: 3px;
-    font-size: 0.8em;
-    padding: 2px 5px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    cursor: default;
-    opacity: 0.92;
-    transition: opacity 0.1s;
-}
-
-.myvh_cal_event:hover {
-    opacity: 1;
-}
-
-.myvh_cal_event_inner {
-    color: inherit;
-    font-weight: 500;
-}
-
-/* Week / Day view time axis */
-.myvh_cal_rowheader {
-    background: #f6f7f7;
-    color: #50575e;
-    font-size: 0.75em;
-    text-align: right;
-    padding-right: 6px;
-    border-right: 1px solid #dcdcde;
-}
-
-/* Separator lines */
-.myvh_cal_divider {
-    background: #dcdcde;
-}
-
-.myvh_cal_separator {
-    background: #c3c4c7;
-}
-
-/* Today highlight */
-.myvh_cal_cell_today {
-    background: #f0f6fc;
-}
-
-/* ── Legend ──────────────────────────────────────────────────────────────── */
 .myvh-cal-legend {
     display: flex;
     gap: 16px;
     flex-wrap: wrap;
-    margin-top: 8px;
+    margin-top: 10px;
     font-size: 0.8em;
     color: #50575e;
     align-items: center;
@@ -210,9 +166,23 @@
 }
 
 .myvh-legend-confirmed { background: #2271b1; }
-.myvh-legend-pending   { background: #f0a500; }
+.myvh-legend-pending { background: #f0a500; }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+    .myvh-cal-main {
+        flex-direction: column;
+    }
+
+    .myvh-cal-sidebar {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .myvh-cal-nav-picker {
+        padding: 6px;
+    }
+}
+
 @media (max-width: 600px) {
     .myvh-cal-toolbar {
         flex-direction: column;
@@ -220,12 +190,18 @@
     }
 
     .myvh-cal-title {
-        margin-left: 0;
         width: 100%;
+        margin-left: 0;
+    }
+
+    .myvh-cal-nav,
+    .myvh-cal-views {
+        width: 100%;
+        flex-wrap: wrap;
     }
 
     .myvh-cal-btn {
-        padding: 5px 9px;
-        font-size: 0.8em;
+        min-width: 0;
+        flex: 1 1 auto;
     }
 }

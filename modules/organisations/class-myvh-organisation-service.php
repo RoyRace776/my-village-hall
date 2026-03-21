@@ -45,6 +45,18 @@ class MYVH_Organisation_Service {
             return new WP_Error( 'validation', __( 'Organisation name is required', 'my-village-hall' ) );
         }
 
+        if ( empty( $data['contact_email'] ) ) {
+            return new WP_Error( 'validation', __( 'Contact email is required', 'my-village-hall' ) );
+        }
+
+        if ( ! is_email( $data['contact_email'] ) ) {
+            return new WP_Error( 'validation', __( 'Contact email must be a valid email address', 'my-village-hall' ) );
+        }
+
+        if ( empty( $data['contact_phone'] ) ) {
+            return new WP_Error( 'validation', __( 'Contact phone is required', 'my-village-hall' ) );
+        }
+
         $is_new = empty( $data['organisation_id'] );
         $requested_default = isset( $data['is_default'] ) ? 1 : 0;
 
@@ -55,10 +67,12 @@ class MYVH_Organisation_Service {
         $record = [
             'Name'               => sanitize_text_field( $data['name'] ),
             'OrganisationTypeId' => !empty( $data['organisation_type_id'] ) ? intval( $data['organisation_type_id'] ) : null,
-            'ContactEmail'       => sanitize_email( $data['contact_email'] ?? '' ) ?: null,
-            'ContactPhone'       => sanitize_text_field( $data['contact_phone'] ?? '' ) ?: null,
+            'ContactEmail'       => sanitize_email( $data['contact_email'] ),
+            'ContactPhone'       => sanitize_text_field( $data['contact_phone'] ),
+            'WebsiteUrl'         => !empty( $data['website_url'] ) ? esc_url_raw( $data['website_url'] ) : null,
             'IsActive'           => isset( $data['is_active'] ) ? 1 : 0,
             'IsDefault'          => $requested_default,
+            'DefaultPublic'      => ( isset( $data['default_public'] ) && intval( $data['default_public'] ) === 1 ) ? 1 : 0,
         ];
 
         if ( !empty( $data['organisation_id'] ) ) {

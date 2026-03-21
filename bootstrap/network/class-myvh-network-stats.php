@@ -15,8 +15,9 @@ class MYVH_Network_Stats {
 
             global $wpdb;
             $table = $wpdb->prefix . 'myvh_bookings';
+            $table_like = $wpdb->esc_like($table);
 
-            if ($wpdb->get_var("SHOW TABLES LIKE '$table'")) {
+            if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_like))) {
 
                 $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM $table");
 
@@ -36,6 +37,8 @@ class MYVH_Network_Stats {
 
     public function bookings_per_day($days = 30) {
 
+        $days = max(1, (int) $days);
+
         $results = array_fill(0, $days, 0);
         $sites = get_sites();
 
@@ -45,14 +48,18 @@ class MYVH_Network_Stats {
 
             global $wpdb;
             $table = $wpdb->prefix . 'myvh_bookings';
+            $table_like = $wpdb->esc_like($table);
 
-            if ($wpdb->get_var("SHOW TABLES LIKE '$table'")) {
+            if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_like))) {
 
                 $rows = $wpdb->get_results(
-                    "SELECT booking_date, COUNT(*) c
-                     FROM $table
-                     WHERE booking_date >= DATE_SUB(CURDATE(), INTERVAL $days DAY)
-                     GROUP BY booking_date"
+                    $wpdb->prepare(
+                        "SELECT StartDate AS booking_date, COUNT(*) c
+                         FROM $table
+                         WHERE StartDate >= DATE_SUB(CURDATE(), INTERVAL %d DAY)
+                         GROUP BY StartDate",
+                        $days
+                    )
                 );
 
                 foreach ($rows as $row) {
@@ -60,7 +67,7 @@ class MYVH_Network_Stats {
                         ->diff(new DateTime())->days;
 
                     if ($index < $days) {
-                        $results[$days - $index - 1] += $row->c;
+                        $results[$days - $index - 1] += (int) $row->c;
                     }
                 }
             }

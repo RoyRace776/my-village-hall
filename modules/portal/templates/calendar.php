@@ -13,23 +13,33 @@ if (!is_user_logged_in()) {
         <h2>Calendar</h2>
     </div>
 
-    <div class="myvh-calendar-toolbar">
-        <div class="myvh-calendar-nav">
-            <button id="myvh-prev" class="button">&lt;</button>
-            <button id="myvh-today" class="button button-primary">Today</button>
-            <button id="myvh-next" class="button">&gt;</button>
-        </div>
+    <div class="myvh-calendar-shell">
+        <div class="myvh-calendar-main">
+            <aside class="myvh-calendar-sidebar">
+                <div id="myvh-calendar-nav-picker" class="myvh-cal-nav-picker"></div>
+            </aside>
 
-        <div class="myvh-calendar-views">
-            <button id="myvh-mode-calendar" class="button myvh-view-btn myvh-mode-btn active" data-mode="Calendar" type="button">Calendar</button>
-            <button id="myvh-mode-scheduler" class="button myvh-view-btn myvh-mode-btn" data-mode="Scheduler" type="button">Scheduler</button>
-            <button id="myvh-day" class="button myvh-view-btn myvh-detail-btn" data-view="Day" type="button">Day</button>
-            <button id="myvh-week" class="button myvh-view-btn myvh-detail-btn active" data-view="Week" type="button">Week</button>
-            <button id="myvh-month" class="button myvh-view-btn myvh-detail-btn" data-view="Month" type="button">Month</button>
+            <div class="myvh-calendar-content">
+                <div class="myvh-calendar-toolbar">
+            <div class="myvh-calendar-nav myvh-pill-group">
+                <button id="myvh-prev" class="myvh-cal-btn myvh-cal-nav-btn" type="button" aria-label="Previous">&lt;</button>
+                <button id="myvh-today" class="myvh-cal-btn myvh-cal-nav-btn" type="button">Today</button>
+                <button id="myvh-next" class="myvh-cal-btn myvh-cal-nav-btn" type="button" aria-label="Next">&gt;</button>
+            </div>
+
+            <div class="myvh-calendar-views myvh-pill-group">
+                <button id="myvh-mode-calendar" class="myvh-cal-btn myvh-view-btn myvh-mode-btn active" data-mode="Calendar" type="button">Calendar</button>
+                <button id="myvh-mode-scheduler" class="myvh-cal-btn myvh-view-btn myvh-mode-btn" data-mode="Scheduler" type="button">Scheduler</button>
+                <button id="myvh-day" class="myvh-cal-btn myvh-view-btn myvh-detail-btn" data-view="Day" type="button">Day</button>
+                <button id="myvh-week" class="myvh-cal-btn myvh-view-btn myvh-detail-btn active" data-view="Week" type="button">Week</button>
+                <button id="myvh-month" class="myvh-cal-btn myvh-view-btn myvh-detail-btn" data-view="Month" type="button">Month</button>
+            </div>
+                </div>
+
+                <div id="myvh-calendar" class="myvh-daypilot-frame" style="height: 700px;"></div>
+            </div>
         </div>
     </div>
-
-    <div id="myvh-calendar" style="height: 700px;"></div>
 
 </div>
 
@@ -73,6 +83,15 @@ if (!is_user_logged_in()) {
                 <tr>
                     <th>Description</th>
                     <td><input type="text" name="text" placeholder="Optional"></td>
+                </tr>
+                <tr>
+                    <th>Visibility</th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="public" value="1">
+                            Show on public calendar
+                        </label>
+                    </td>
                 </tr>
             </table>
 

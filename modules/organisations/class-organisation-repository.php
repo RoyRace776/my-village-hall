@@ -26,6 +26,8 @@ class MYVH_Organisation_Repository {
         $this->types_table = $wpdb->prefix . 'myvh_organisation_types';
 
         $this->ensure_is_default_column();
+        $this->ensure_default_public_column();
+        $this->ensure_website_url_column();
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
@@ -140,6 +142,27 @@ class MYVH_Organisation_Repository {
 
         $this->wpdb->query( "ALTER TABLE {$this->table} ADD COLUMN IsDefault TINYINT(1) NOT NULL DEFAULT 0" );
         $this->wpdb->query( "ALTER TABLE {$this->table} ADD INDEX idx_default (IsDefault)" );
+    }
+
+    private function ensure_default_public_column(): void {
+        $exists = $this->wpdb->get_var( "SHOW COLUMNS FROM {$this->table} LIKE 'DefaultPublic'" );
+
+        if ( $exists ) {
+            return;
+        }
+
+        $this->wpdb->query( "ALTER TABLE {$this->table} ADD COLUMN DefaultPublic TINYINT(1) NOT NULL DEFAULT 0" );
+        $this->wpdb->query( "ALTER TABLE {$this->table} ADD INDEX idx_default_public (DefaultPublic)" );
+    }
+
+    private function ensure_website_url_column(): void {
+        $exists = $this->wpdb->get_var( "SHOW COLUMNS FROM {$this->table} LIKE 'WebsiteUrl'" );
+
+        if ( $exists ) {
+            return;
+        }
+
+        $this->wpdb->query( "ALTER TABLE {$this->table} ADD COLUMN WebsiteUrl VARCHAR(255) NULL" );
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -42,24 +42,36 @@ $org_types = $type_service->get_all();
                         <tr>
                             <th><?php _e('Name', 'my-village-hall'); ?></th>
                             <th><?php _e('Default', 'my-village-hall'); ?></th>
+                            <th><?php _e('Default Visibility', 'my-village-hall'); ?></th>
                             <th><?php _e('Type', 'my-village-hall'); ?></th>
                             <th><?php _e('Email', 'my-village-hall'); ?></th>
                             <th><?php _e('Phone', 'my-village-hall'); ?></th>
+                            <th><?php _e('Website', 'my-village-hall'); ?></th>
                             <th><?php _e('Status', 'my-village-hall'); ?></th>
                             <th><?php _e('Actions', 'my-village-hall'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($orgs)): ?>
-                            <tr><td colspan="7"><?php _e('No organisations found.', 'my-village-hall'); ?></td></tr>
+                            <tr><td colspan="9"><?php _e('No organisations found.', 'my-village-hall'); ?></td></tr>
                         <?php else: ?>
                             <?php foreach ($orgs as $org): ?>
                                 <tr>
                                     <td><strong><?php echo esc_html($org['Name']); ?></strong></td>
                                     <td><?php echo !empty($org['IsDefault']) ? __('Yes', 'my-village-hall') : '—'; ?></td>
+                                    <td><?php echo !empty($org['DefaultPublic']) ? __('Public', 'my-village-hall') : __('Private', 'my-village-hall'); ?></td>
                                     <td><?php echo esc_html($org['OrganisationTypeName'] ?? '—'); ?></td>
                                     <td><?php echo esc_html($org['ContactEmail'] ?? '—'); ?></td>
                                     <td><?php echo esc_html($org['ContactPhone'] ?? '—'); ?></td>
+                                    <td>
+                                        <?php if (!empty($org['WebsiteUrl'])): ?>
+                                            <a href="<?php echo esc_url($org['WebsiteUrl']); ?>" target="_blank" rel="noopener noreferrer">
+                                                <?php echo esc_html($org['WebsiteUrl']); ?>
+                                            </a>
+                                        <?php else: ?>
+                                            —
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo $org['IsActive'] ? __('Active', 'my-village-hall') : __('Inactive', 'my-village-hall'); ?></td>
                                     <td>
                                         <a href="<?php echo admin_url('admin.php?page=myvh-organisations&edit=' . $org['Id']); ?>">
@@ -127,18 +139,28 @@ $org_types = $type_service->get_all();
                         </tr>
 
                         <tr>
-                            <th><?php _e('Contact Email', 'my-village-hall'); ?></th>
+                            <th><?php _e('Contact Email', 'my-village-hall'); ?> *</th>
                             <td>
-                                <input type="email" name="contact_email" class="regular-text"
+                                <input type="email" name="contact_email" required class="regular-text"
                                     value="<?php echo $edit_org ? esc_attr($edit_org['ContactEmail'] ?? '') : ''; ?>">
                             </td>
                         </tr>
 
                         <tr>
-                            <th><?php _e('Contact Phone', 'my-village-hall'); ?></th>
+                            <th><?php _e('Contact Phone', 'my-village-hall'); ?> *</th>
                             <td>
-                                <input type="tel" name="contact_phone" class="regular-text"
+                                <input type="tel" name="contact_phone" required class="regular-text"
                                     value="<?php echo $edit_org ? esc_attr($edit_org['ContactPhone'] ?? '') : ''; ?>">
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Website URL', 'my-village-hall'); ?></th>
+                            <td>
+                                <input type="url" name="website_url" class="regular-text"
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['WebsiteUrl'] ?? '') : ''; ?>"
+                                    placeholder="https://example.org">
+                                <p class="description"><?php _e('Optional website for this organisation.', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
 
@@ -162,6 +184,17 @@ $org_types = $type_service->get_all();
                                     <?php _e('Use as the default organisation', 'my-village-hall'); ?>
                                 </label>
                                 <p class="description"><?php _e('Only one organisation can be default at a time.', 'my-village-hall'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Default Booking Visibility', 'my-village-hall'); ?></th>
+                            <td>
+                                <select name="default_public" class="regular-text">
+                                    <option value="0" <?php selected(!empty($edit_org['DefaultPublic']) ? 1 : 0, 0); ?>><?php _e('Private by default', 'my-village-hall'); ?></option>
+                                    <option value="1" <?php selected(!empty($edit_org['DefaultPublic']) ? 1 : 0, 1); ?>><?php _e('Public by default', 'my-village-hall'); ?></option>
+                                </select>
+                                <p class="description"><?php _e('Used when creating bookings without an explicit visibility choice.', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
                     </table>

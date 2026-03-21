@@ -32,6 +32,89 @@ window.MYVH_CalendarCore = (function () {
         });
     }
 
+    function formatTimeFromISO(isoDatetime) {
+        if (!isoDatetime) return "";
+        try {
+            const date = new Date(isoDatetime);
+            if (isNaN(date.getTime())) return "";
+            const hours = String(date.getHours()).padStart(2, '0');
+            const mins = String(date.getMinutes()).padStart(2, '0');
+            return hours + ':' + mins;
+        } catch (e) {
+            return "";
+        }
+    }
+
+    function isPublicBooking(tags) {
+        if (!tags || !Object.prototype.hasOwnProperty.call(tags, "isPublic")) {
+            return true;
+        }
+
+        const raw = tags.isPublic;
+        if (raw === true || raw === 1 || raw === "1") {
+            return true;
+        }
+
+        if (raw === false || raw === 0 || raw === "0") {
+            return false;
+        }
+
+        return String(raw).toLowerCase() !== "false";
+    }
+
+    function canViewPrivateBooking(tags) {
+        if (!tags || !Object.prototype.hasOwnProperty.call(tags, "canViewPrivate")) {
+            return false;
+        }
+
+        const raw = tags.canViewPrivate;
+        if (raw === true || raw === 1 || raw === "1") {
+            return true;
+        }
+
+        if (raw === false || raw === 0 || raw === "0") {
+            return false;
+        }
+
+        return String(raw).toLowerCase() === "true";
+    }
+
+    function buildEventTooltip(event, context = "admin") {
+        const tooltipParts = [];
+        const tags = event && event.tags ? event.tags : {};
+
+        const room = tags.room || tags.roomName || "";
+        if (String(room).trim() !== "") {
+            tooltipParts.push(String(room).trim());
+        }
+
+        // Add time range
+        if (event.start && event.end) {
+            const startTime = formatTimeFromISO(event.start);
+            const endTime = formatTimeFromISO(event.end);
+            if (startTime && endTime) {
+                tooltipParts.push(startTime + '-' + endTime);
+            }
+        }
+
+        const descriptionFromTag = tags.description ? String(tags.description).trim() : "";
+        const descriptionFromText = event && event.text ? String(event.text).trim() : "";
+        const description = descriptionFromTag || descriptionFromText;
+
+        // Admin always sees the real description. Portal/public mask non-public events.
+        if (context === "admin") {
+            if (description !== "") {
+                tooltipParts.push(description);
+            }
+        } else if (!isPublicBooking(tags) && !canViewPrivateBooking(tags)) {
+            tooltipParts.push("Private event");
+        } else if (description !== "") {
+            tooltipParts.push(description);
+        }
+
+        return tooltipParts.join('\n');
+    }
+
     function toDayPilotDate(value) {
         return value ? new DayPilot.Date(value) : null;
     }
@@ -92,7 +175,13 @@ window.MYVH_CalendarCore = (function () {
                       + `&context=${encodeURIComponent(context)}`
                       + `&start=${start.toString()}&end=${end.toString()}`;
 
-            calendar.events.load(url);
+            fetch(url).then(r => r.json()).then(events => {
+                events.forEach(e => {
+                    e.toolTip = buildEventTooltip(e, context);
+                });
+                calendar.events.list = events;
+                calendar.update();
+            }).catch(err => console.error("Failed to load calendar events", err));
         }
 
         if (scheduler) {
@@ -103,7 +192,13 @@ window.MYVH_CalendarCore = (function () {
                       + `&context=${encodeURIComponent(context)}`
                       + `&start=${start.toString()}&end=${end.toString()}`;
 
-            scheduler.events.load(url);
+            fetch(url).then(r => r.json()).then(events => {
+                events.forEach(e => {
+                    e.toolTip = buildEventTooltip(e, context);
+                });
+                scheduler.events.list = events;
+                scheduler.update();
+            }).catch(err => console.error("Failed to load scheduler events", err));
         }
     }
 
@@ -247,6 +342,8 @@ window.MYVH_CalendarCore = (function () {
             }
         };
 
+        const schedulerDayHeaderFormat = "ddd d";
+
         if (detail === "Day") {
             startDate = DayPilot.Date.today().getDatePart();
             config.startDate = startDate;
@@ -264,7 +361,7 @@ window.MYVH_CalendarCore = (function () {
             config.days = Math.max(1, maxBookingDaysAhead);
             config.timeHeaders = [
                 { groupBy: "Month" },
-                { groupBy: "Day", format: opts.headerDateFormat || "d" }
+                { groupBy: "Day", format: schedulerDayHeaderFormat }
             ];
         } else {
             startDate = DayPilot.Date.today().getDatePart();
@@ -273,7 +370,7 @@ window.MYVH_CalendarCore = (function () {
             config.days = Math.max(1, maxBookingDaysAhead);
             config.timeHeaders = [
                 { groupBy: "Month" },
-                { groupBy: "Day", format: opts.headerDateFormat || "d" }
+                { groupBy: "Day", format: schedulerDayHeaderFormat }
             ];
         }
 

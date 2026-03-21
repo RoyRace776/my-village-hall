@@ -214,17 +214,11 @@ class My_Village_Hall {
 
     /** Runs on plugin deactivation. */
     public function deactivate($network_wide): void {
-        //if the flag is set, then we need to tidy up
-        if ($network_wide && is_multisite()) {
-            $options = get_site_option('myvh_general_settings');
-            if (is_array($options) && $options['delete_on_deactivate']) {
-                MYVH_Installer::tidy_up();
-            }
-        } else {
-            $options = get_option('myvh_general_settings');
-            if (is_array($options) && $options['delete_on_deactivate']) {
-                MYVH_Installer::tidy_up();
-            }
+        $general_settings = new MYVH_General_Settings();
+        $delete_on_deactivate = (bool) $general_settings->get('delete_on_deactivate');
+
+        if ($delete_on_deactivate) {
+            MYVH_Installer::tidy_up();
         }
         flush_rewrite_rules();
     }
@@ -464,15 +458,15 @@ function myvh_activate( bool $network_wide ): void {
         }
     };
 
-    $grant_cap();
-
     if ( is_multisite() && $network_wide ) {
         foreach ( get_sites( [ 'number' => 0 ] ) as $site ) {
             switch_to_blog( $site->blog_id );
+            $grant_cap();
             My_Village_Hall::get_instance()->activate();
             restore_current_blog();
         }
     } else {
+        $grant_cap();
         My_Village_Hall::get_instance()->activate();
     }
 }
@@ -498,7 +492,16 @@ register_deactivation_hook( __FILE__, 'myvh_deactivate' );
  * Runs activation on newly-created sites in a multisite network.
  */
 add_action( 'wp_initialize_site', function ( $new_site ) {
+    $active_sitewide_plugins = (array) get_site_option( 'active_sitewide_plugins', [] );
+    if ( ! isset( $active_sitewide_plugins[ MYVH_PLUGIN_BASENAME ] ) ) {
+        return;
+    }
+
     switch_to_blog( $new_site->blog_id );
+    $role = get_role( 'administrator' );
+    if ( $role && ! $role->has_cap( 'manage_myvh' ) ) {
+        $role->add_cap( 'manage_myvh' );
+    }
     My_Village_Hall::get_instance()->activate();
     restore_current_blog();
 } );

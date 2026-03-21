@@ -35,7 +35,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function loadPage(page) {
 
-        fetch(myvhPortal.ajax_url + "?action=myvh_portal_page&page=" + page)
+        fetch(
+            myvhPortal.ajax_url
+            + "?action=myvh_portal_page"
+            + "&page=" + encodeURIComponent(page)
+            + "&nonce=" + encodeURIComponent(myvhPortal.nonce)
+        )
             .then(r => r.text())
             .then(html => {
                 document.getElementById("portal-content").innerHTML = html;

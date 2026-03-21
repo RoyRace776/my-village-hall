@@ -34,11 +34,14 @@ class MYVH_Network_Dashboard {
             global $wpdb;
             $bookings = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}myvh_bookings");
             $customers = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}myvh_customers");
+            $site_name = isset($site->blogname) ? esc_html($site->blogname) : '';
+            $bookings_count = esc_html((string) intval($bookings));
+            $customers_count = esc_html((string) intval($customers));
 
             echo "<tr>
-                    <td>{$site->blogname}</td>
-                    <td>{$bookings}</td>
-                    <td>{$customers}</td>
+                <td>{$site_name}</td>
+                <td>{$bookings_count}</td>
+                <td>{$customers_count}</td>
                   </tr>";
 
             restore_current_blog();

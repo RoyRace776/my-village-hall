@@ -144,17 +144,27 @@ window.MYVH_BookingModal = (function() {
             orgSelect.disabled = true;
         }
 
+        const publicCheckbox = form.querySelector("[name=public]");
+        if (publicCheckbox) {
+            publicCheckbox.checked = false;
+        }
+
         syncEndDateVisibility();
     }
 
     function bindDependentControls() {
         const customer = form.querySelector("[name=customer_id]");
         const room = form.querySelector("[name=room_id]");
+        const organisation = form.querySelector("[name=organisation_id]");
 
         if (customer) {
             customer.addEventListener("change", () => {
                 refreshOrganisations("");
             });
+        }
+
+        if (organisation) {
+            organisation.addEventListener("change", applyPublicDefaultFromOrganisation);
         }
 
         if (room) {
@@ -296,6 +306,19 @@ window.MYVH_BookingModal = (function() {
         }
     }
 
+    function applyPublicDefaultFromOrganisation() {
+        const publicCheckbox = form.querySelector("[name=public]");
+        const organisationSelect = form.querySelector("[name=organisation_id]");
+
+        if (!publicCheckbox || !organisationSelect) {
+            return;
+        }
+
+        const selected = organisationSelect.options[organisationSelect.selectedIndex];
+        const defaultPublic = selected ? String(selected.dataset.defaultPublic || "0") === "1" : false;
+        publicCheckbox.checked = defaultPublic;
+    }
+
     function setDisplayedDateTimes(start, end) {
         const s = parseDateTime(start);
         const e = parseDateTime(end);
@@ -424,6 +447,10 @@ window.MYVH_BookingModal = (function() {
                     const opt = document.createElement("option");
                     opt.value = item.id || item.Id;
                     opt.text = item.name || item.Name;
+                    const defaultPublic = item.default_public ?? item.DefaultPublic;
+                    if (defaultPublic !== undefined) {
+                        opt.dataset.defaultPublic = String(defaultPublic);
+                    }
                     organisationSelect.appendChild(opt);
                 });
 
@@ -438,12 +465,14 @@ window.MYVH_BookingModal = (function() {
                 }
 
                 organisationSelect.disabled = lockOrganisation || organisations.length === 0;
+                applyPublicDefaultFromOrganisation();
             })
             .catch(() => {
                 organisationSelect.innerHTML = requireOrganisation
                     ? '<option value="">No organisations available</option>'
                     : '<option value="">Select...</option>';
                 organisationSelect.disabled = true;
+                applyPublicDefaultFromOrganisation();
             });
     }
 
@@ -494,6 +523,12 @@ window.MYVH_BookingModal = (function() {
     function buildSubmitFormData() {
 
         const formData = new FormData(form);
+        const publicCheckbox = form.querySelector("[name=public]");
+
+        // Always send explicit visibility for modal creates, even when unchecked.
+        if (publicCheckbox) {
+            formData.set("public", publicCheckbox.checked ? "1" : "0");
+        }
 
         // Disabled controls are excluded from FormData, but locked fields are intentional selections.
         form.querySelectorAll("[name][data-locked=true]").forEach(el => {

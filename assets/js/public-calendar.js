@@ -15,7 +15,11 @@
     var cfg     = myvhCalConfig;
     var wrap    = null;   // .myvh-public-calendar-wrap
     var dp      = null;   // active DayPilot control
+    var nav     = null;   // DayPilot navigator control
     var lastEvents = [];
+    var roomNameById = {};
+    var loadRequestSeq = 0;
+    var suppressNavSelect = false;
     var headerDateFormat = cfg.headerDateFormat || 'd MMM';
     var current = {
         mode : 'calendar',
@@ -28,6 +32,53 @@
         confirmed : '#2271b1',
         pending   : '#f0a500',
     };
+
+    function buildRoomIndex() {
+        roomNameById = {};
+
+        if (!Array.isArray(cfg.rooms)) {
+            return;
+        }
+
+        cfg.rooms.forEach(function(room) {
+            if (!room) {
+                return;
+            }
+
+            var id = room.id;
+            var name = room.name;
+
+            if (id === null || typeof id === 'undefined') {
+                return;
+            }
+
+            if (typeof name !== 'string' || name.trim() === '') {
+                return;
+            }
+
+            roomNameById[String(id)] = name.trim();
+        });
+    }
+
+    function resolveRoomName(event, tags) {
+        var direct = tags.room || tags.roomName || '';
+        if (String(direct).trim() !== '') {
+            return String(direct).trim();
+        }
+
+        var key = null;
+        if (event && event.resource !== null && typeof event.resource !== 'undefined') {
+            key = String(event.resource);
+        } else if (tags.roomId !== null && typeof tags.roomId !== 'undefined') {
+            key = String(tags.roomId);
+        }
+
+        if (!key) {
+            return '';
+        }
+
+        return roomNameById[key] || '';
+    }
 
     function formatUsesShortWeekday(format) {
         return typeof format === 'string' && /(^|[^d])ddd([^d]|$)/.test(format);
@@ -55,18 +106,161 @@
         });
     }
 
+    function formatTimeFromISO(isoDatetime) {
+        if (!isoDatetime) return '';
+        try {
+            var date = new Date(isoDatetime);
+            if (isNaN(date.getTime())) return '';
+            var hours = String(date.getHours()).padStart(2, '0');
+            var mins = String(date.getMinutes()).padStart(2, '0');
+            return hours + ':' + mins;
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function isPublicBooking(tags) {
+        if (!tags || !Object.prototype.hasOwnProperty.call(tags, 'isPublic')) {
+            return true;
+        }
+
+        var raw = tags.isPublic;
+        if (raw === true || raw === 1 || raw === '1') {
+            return true;
+        }
+
+        if (raw === false || raw === 0 || raw === '0') {
+            return false;
+        }
+
+        return String(raw).toLowerCase() !== 'false';
+    }
+
+    function canViewPrivateBooking(tags) {
+        if (!tags || !Object.prototype.hasOwnProperty.call(tags, 'canViewPrivate')) {
+            return false;
+        }
+
+        var raw = tags.canViewPrivate;
+        if (raw === true || raw === 1 || raw === '1') {
+            return true;
+        }
+
+        if (raw === false || raw === 0 || raw === '0') {
+            return false;
+        }
+
+        return String(raw).toLowerCase() === 'true';
+    }
+
+    function buildEventTooltip(event) {
+        var tooltipParts = [];
+        var tags = event && event.tags ? event.tags : {};
+
+        var room = resolveRoomName(event, tags);
+        if (String(room).trim() !== '') {
+            tooltipParts.push(String(room).trim());
+        }
+
+        // Add time range
+        if (event.start && event.end) {
+            var startTime = formatTimeFromISO(event.start);
+            var endTime = formatTimeFromISO(event.end);
+            if (startTime && endTime) {
+                tooltipParts.push(startTime + '-' + endTime);
+            }
+        }
+
+        var description = tags.description ? String(tags.description).trim() : '';
+
+        if (!isPublicBooking(tags) && !canViewPrivateBooking(tags)) {
+            tooltipParts.push('Private event');
+        } else if (description !== '') {
+            tooltipParts.push(description);
+        }
+
+        return tooltipParts.join('\n');
+    }
+
     // ── Initialise on DOM ready ───────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
         var container = document.getElementById(cfg.containerId);
         if (!container) { return; }
 
         ensureThreeLetterEnglishWeekdays(headerDateFormat);
+        buildRoomIndex();
 
         wrap = container.closest('.myvh-public-calendar-wrap');
+
+        initNavigator();
 
         mountView(current.detail, current.mode);
         bindToolbar();
     });
+
+    function getNavigatorSelectMode(detail) {
+        switch (detail) {
+            case 'day':
+                return 'Day';
+            case 'month':
+                return 'Month';
+            default:
+                return 'Week';
+        }
+    }
+
+    function syncNavigatorSelection() {
+        if (!nav) { return; }
+        try {
+            var day = new DayPilot.Date(current.date);
+            suppressNavSelect = true;
+            nav.selectMode = getNavigatorSelectMode(current.detail);
+            nav.select(day);
+            nav.update();
+        } catch (e) {
+            // Keep calendar working even if navigator API differs across builds.
+        } finally {
+            suppressNavSelect = false;
+        }
+    }
+
+    function initNavigator() {
+        var navContainerId = cfg.navContainerId;
+        if (!navContainerId) { return; }
+
+        var navContainer = document.getElementById(navContainerId);
+        if (!navContainer) { return; }
+
+        try {
+            nav = new DayPilot.Navigator(navContainerId, {
+                showMonths: 3,
+                skipMonths: 3,
+                selectMode: getNavigatorSelectMode(current.detail),
+                onTimeRangeSelected: function(args) {
+                    if (suppressNavSelect) {
+                        return;
+                    }
+
+                    current.date = args.day;
+
+                    if (dp) {
+                        dp.startDate = current.date;
+                        dp.update();
+                        loadEvents();
+                    }
+
+                    updateTitle();
+                    syncNavigatorSelection();
+                }
+            });
+
+            nav.init();
+            syncNavigatorSelection();
+        } catch (e) {
+            nav = null;
+            console.warn('MYVH calendar: failed to initialize navigator', e);
+        }
+    }
 
     // ── Mount / re-mount a DayPilot view ─────────────────────────────────────
     function mountView(detail, mode) {
@@ -86,6 +280,7 @@
 
         updateModeButtons();
         updateDetailButtons();
+        syncNavigatorSelection();
 
         // Dispose previous control
         if (dp) {
@@ -125,6 +320,7 @@
         var maxBookingDaysAhead = Number.isFinite(Number(cfg.maxBookingDaysAhead)) ? Number(cfg.maxBookingDaysAhead) : 365;
         var startHour = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 0;
         var endHour = Number.isFinite(Number(cfg.visibleEndHour)) ? Number(cfg.visibleEndHour) : 24;
+        var schedulerDayHeaderFormat = 'ddd d';
         var base = {
             startDate: detail === 'month' ? start.firstDayOfMonth() : start,
             eventResourceField: 'resource',
@@ -164,7 +360,7 @@
             base.days = Math.max(1, maxBookingDaysAhead);
             base.timeHeaders = [
                 { groupBy: 'Month' },
-                { groupBy: 'Day', format: headerDateFormat }
+                { groupBy: 'Day', format: schedulerDayHeaderFormat }
             ];
         } else {
             base.startDate = DayPilot.Date.today().getDatePart();
@@ -172,7 +368,7 @@
             base.days = Math.max(1, maxBookingDaysAhead);
             base.timeHeaders = [
                 { groupBy: 'Month' },
-                { groupBy: 'Day', format: headerDateFormat }
+                { groupBy: 'Day', format: schedulerDayHeaderFormat }
             ];
         }
 
@@ -266,7 +462,6 @@
             onEventClick       : handleEventClick,
             onEventHover       : handleEventHover,
             cellHeaderClickHandling: 'Disabled',
-            theme              : 'myvh_cal',
         };
     }
 
@@ -295,6 +490,8 @@
     function loadEvents() {
         if (!dp) { return; }
 
+        var requestId = ++loadRequestSeq;
+
         var range   = getVisibleRange();
         var url     = cfg.eventsUrl
                     + '?start=' + encodeURIComponent(range.start)
@@ -308,6 +505,10 @@
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
+            if (requestId !== loadRequestSeq) {
+                return;
+            }
+
             if (!Array.isArray(data)) {
                 throw new Error('Unexpected events response payload');
             }
@@ -324,6 +525,7 @@
                     text  : e.text,
                     resource: e.resource,
                     tags  : e.tags,
+                    toolTip: buildEventTooltip(e),
                     backColor : STATUS_COLOURS[e.tags && e.tags.status] || STATUS_COLOURS.confirmed,
                     fontColor : '#ffffff',
                     borderColor: 'darker',
@@ -332,6 +534,9 @@
             dp.update();
         })
         .catch(function (err) {
+            if (requestId !== loadRequestSeq) {
+                return;
+            }
             console.error('MYVH calendar: failed to load events', err);
         });
     }
@@ -419,6 +624,7 @@
         dp.startDate = current.date;
         dp.update();
         loadEvents();
+        syncNavigatorSelection();
         updateTitle();
     }
 
@@ -427,6 +633,7 @@
         dp.startDate = current.date;
         dp.update();
         loadEvents();
+        syncNavigatorSelection();
         updateTitle();
     }
 
@@ -462,13 +669,8 @@
     }
 
     function handleEventHover(args) {
-        if (args.e && args.e.data && args.e.data.tags) {
-            var t = args.e.data.tags;
-            args.e.data.toolTip = [
-                t.venue || '',
-                t.room  || '',
-            ].filter(Boolean).join(' › ');
-        }
+        // Tooltips are already set in loadEvents with time and description
+        // This serves as a fallback if needed
     }
 
     // ── Toolbar binding ───────────────────────────────────────────────────────
