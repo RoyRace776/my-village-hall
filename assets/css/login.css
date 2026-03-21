@@ -1,125 +1,274 @@
+:root {
+    --myvh-login-bg: var(--myvh-cream, #f7f3ee);
+    --myvh-login-surface: var(--myvh-card-bg, #ffffff);
+    --myvh-login-ink: var(--myvh-ink, #1c1a17);
+    --myvh-login-muted: var(--myvh-muted, #7a7166);
+    --myvh-login-border: var(--myvh-warm, #ede6db);
+    --myvh-login-primary: #2f3f54;
+    --myvh-login-secondary: #445a74;
+    --myvh-login-heading-font: var(--myvh-font-heading, 'Playfair Display', Georgia, serif);
+    --myvh-login-body-font: var(--myvh-font-body, 'DM Sans', system-ui, sans-serif);
+}
+
 .myvh-login-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 20px;
+    padding: 46px 20px;
+    background: #f7f8fa;
+    font-family: var(--myvh-login-body-font);
 }
 
-.myvh-login-form {
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-    padding: 40px;
-    width: 100%;
-    max-width: 420px;
+body.myvh-blank-page,
+body.page-template-page-login,
+body.page-template-templates-page-login {
+    background: #f7f8fa !important;
 }
 
-.myvh-login-form h2 {
-    margin: 0 0 30px;
-    font-size: 28px;
-    font-weight: 600;
-    color: #2d3748;
+body.myvh-blank-page .site-main,
+body.page-template-page-login .site-main,
+body.page-template-templates-page-login .site-main {
+    background: transparent !important;
+}
+
+body.myvh-blank-page .myvh-login-container,
+body.page-template-page-login .myvh-login-container,
+body.page-template-templates-page-login .myvh-login-container {
+    background: #f7f8fa !important;
+}
+
+.myvh-login-shell {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.myvh-login-header {
+    margin-bottom: 26px;
     text-align: center;
 }
 
-.myvh-error-message {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #fee;
-    border: 1px solid #fcc;
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 24px;
-    color: #c53030;
-    font-size: 14px;
+.myvh-login-kicker {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #56677d;
 }
 
-.myvh-error-message svg {
-    flex-shrink: 0;
+.myvh-login-header h1 {
+    margin: 8px 0 10px;
+    font-family: var(--myvh-login-heading-font);
+    font-size: clamp(2rem, 4vw, 2.7rem);
+    line-height: 1.08;
+    color: var(--myvh-login-ink);
+}
+
+.myvh-login-header p {
+    margin: 0 auto;
+    max-width: 700px;
+    color: var(--myvh-login-muted);
+    font-size: 0.98rem;
+}
+
+.myvh-login-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.myvh-login-columns--single {
+    grid-template-columns: minmax(0, 560px);
+    justify-content: center;
+}
+
+.myvh-login-form {
+    background: var(--myvh-login-surface);
+    border: 1px solid #ddd4c7;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(28, 26, 23, 0.08);
+    padding: 28px;
+}
+
+.myvh-register-focus {
+    border-color: #bfae98;
+    box-shadow: 0 8px 24px rgba(28, 26, 23, 0.12);
+}
+
+.myvh-login-form h2 {
+    margin: 0;
+    font-family: var(--myvh-login-heading-font);
+    font-size: 1.65rem;
+    line-height: 1.15;
+    color: var(--myvh-login-ink);
+}
+
+.myvh-form-subtitle {
+    margin: 8px 0 22px;
+    color: var(--myvh-login-muted);
+    font-size: 0.91rem;
 }
 
 .myvh-form-group {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .myvh-form-group label {
     display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #4a5568;
+    margin-bottom: 6px;
+    color: #4f4a44;
+    font-size: 0.83rem;
+    font-weight: 600;
 }
 
 .myvh-form-group input[type="text"],
+.myvh-form-group input[type="email"],
 .myvh-form-group input[type="password"] {
     width: 100%;
-    padding: 12px 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 15px;
-    transition: all 0.2s;
+    height: 44px;
     box-sizing: border-box;
+    padding: 11px 13px;
+    border: 1px solid #cfc5b7;
+    border-radius: 8px;
+    background: #fff;
+    color: var(--myvh-login-ink);
+    font-size: 0.94rem;
+    transition: border-color 0.16s, box-shadow 0.16s;
 }
 
 .myvh-form-group input[type="text"]:focus,
+.myvh-form-group input[type="email"]:focus,
 .myvh-form-group input[type="password"]:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #8f7a5f;
+    box-shadow: 0 0 0 3px rgba(143, 122, 95, 0.16);
 }
 
 .myvh-checkbox-group label {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
+    margin: 2px 0 0;
+    font-size: 0.88rem;
     cursor: pointer;
 }
 
 .myvh-checkbox-group input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
+    width: 16px;
+    height: 16px;
 }
 
 .myvh-login-button {
     width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
     margin-top: 8px;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--myvh-login-primary) 0%, var(--myvh-login-secondary) 100%);
+    color: #fff;
+    font-size: 0.94rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
 }
 
 .myvh-login-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 9px 16px rgba(47, 63, 84, 0.28);
 }
 
 .myvh-login-button:active {
     transform: translateY(0);
 }
 
+.myvh-error-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid #e7c7c7;
+    background: #fff7f7;
+    color: #7f2323;
+    font-size: 0.88rem;
+}
+
+.myvh-error-message svg {
+    flex: 0 0 auto;
+}
+
+.myvh-note-message {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid #d6dce3;
+    background: #f7f9fc;
+    color: #415266;
+    font-size: 0.88rem;
+}
+
+.myvh-note-action {
+    color: #2f4f70;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.myvh-note-action:hover {
+    text-decoration: underline;
+}
+
+.myvh-password-hint {
+    margin: 8px 0 0;
+    font-size: 0.78rem;
+    color: var(--myvh-login-muted);
+}
+
 .myvh-form-footer {
-    margin-top: 20px;
+    margin-top: 14px;
     text-align: center;
 }
 
+.myvh-form-footer--secondary {
+    margin-top: 18px;
+    padding-top: 13px;
+    border-top: 1px solid #eee6dc;
+}
+
 .myvh-form-footer a {
-    color: #667eea;
+    color: #3a556f;
     text-decoration: none;
-    font-size: 14px;
-    transition: color 0.2s;
+    font-size: 0.87rem;
+    font-weight: 600;
 }
 
 .myvh-form-footer a:hover {
-    color: #764ba2;
     text-decoration: underline;
+}
+
+@media (max-width: 980px) {
+    .myvh-login-container {
+        padding: 30px 16px;
+    }
+
+    .myvh-login-columns,
+    .myvh-login-columns--single {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .myvh-login-form {
+        padding: 24px;
+    }
+
+    .myvh-login-header {
+        text-align: center;
+        margin-bottom: 18px;
+    }
+
+    .myvh-login-header p {
+        margin: 0 auto;
+    }
 }

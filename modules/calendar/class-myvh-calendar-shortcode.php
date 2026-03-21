@@ -194,7 +194,8 @@ class MYVH_Calendar_Shortcode {
             ],
         ] );
 
-        $login_url = wp_login_url( get_permalink() ?: home_url('/') );
+        $login_url = $this->resolve_login_page_url();
+        $register_url = $this->resolve_register_page_url( $login_url );
         $logout_url = wp_logout_url( get_permalink() ?: home_url('/') );
 
         ob_start();
@@ -207,10 +208,15 @@ class MYVH_Calendar_Shortcode {
                         <?php esc_html_e( 'Log out', 'my-village-hall' ); ?>
                     </a>
                 <?php else : ?>
-                    <p><?php esc_html_e( 'Already have an account?', 'my-village-hall' ); ?></p>
-                    <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $login_url ); ?>">
-                        <?php esc_html_e( 'Log in', 'my-village-hall' ); ?>
-                    </a>
+                    <p><?php esc_html_e( 'Want to manage bookings? Log in or create an account.', 'my-village-hall' ); ?></p>
+                    <div class="myvh-cal-auth-actions">
+                        <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $login_url ); ?>">
+                            <?php esc_html_e( 'Log in', 'my-village-hall' ); ?>
+                        </a>
+                        <a class="myvh-cal-btn myvh-cal-register-btn" href="<?php echo esc_url( $register_url ); ?>">
+                            <?php esc_html_e( 'Create account', 'my-village-hall' ); ?>
+                        </a>
+                    </div>
                 <?php endif; ?>
             </div>
 
@@ -253,5 +259,76 @@ class MYVH_Calendar_Shortcode {
 
     private function is_valid_date( string $value ): bool {
         return (bool) preg_match( '/^\d{4}-\d{2}-\d{2}/', $value );
+    }
+
+    private function resolve_login_page_url(): string {
+        $fallback = home_url('/login/');
+
+        // Allow theme/site to force a specific customer login/register page URL.
+        $filtered = apply_filters( 'myvh_login_page_url', '' );
+        if ( is_string( $filtered ) && $filtered !== '' ) {
+            return esc_url_raw( $filtered );
+        }
+
+        // 1) Theme login template page (most explicit signal).
+        $template_pages = get_pages([
+            'post_type'   => 'page',
+            'post_status' => 'publish',
+            'meta_key'    => '_wp_page_template',
+            'meta_value'  => 'templates/page-login.php',
+            'number'      => 1,
+        ]);
+
+        if ( !empty($template_pages) && !empty($template_pages[0]->ID) ) {
+            return (string) get_permalink( (int) $template_pages[0]->ID );
+        }
+
+        // 2) Any published page containing [myvh_login] shortcode.
+        $candidate_pages = get_posts([
+            'post_type'      => 'page',
+            'post_status'    => 'publish',
+            'posts_per_page' => 200,
+            'orderby'        => 'menu_order title',
+            'order'          => 'ASC',
+            'suppress_filters' => false,
+        ]);
+
+        foreach ( (array) $candidate_pages as $page ) {
+            if ( empty( $page->ID ) ) {
+                continue;
+            }
+
+            if ( has_shortcode( (string) $page->post_content, 'myvh_login' ) ) {
+                return (string) get_permalink( (int) $page->ID );
+            }
+        }
+
+        // 3) Conventional slugs as final custom-page guesses.
+        $slug_guesses = [ 'login', 'sign-in', 'signin', 'account-login' ];
+
+        foreach ( $slug_guesses as $slug ) {
+            $login_page = get_page_by_path( $slug );
+            if ( $login_page && !empty( $login_page->ID ) ) {
+                return (string) get_permalink( (int) $login_page->ID );
+            }
+        }
+
+        return $fallback;
+    }
+
+    private function resolve_register_page_url( string $login_url ): string {
+        $filtered = apply_filters( 'myvh_register_page_url', '' );
+        if ( is_string( $filtered ) && $filtered !== '' ) {
+            return esc_url_raw( $filtered );
+        }
+
+        foreach ( [ 'register', 'create-account', 'signup', 'sign-up' ] as $slug ) {
+            $register_page = get_page_by_path( $slug );
+            if ( $register_page && !empty( $register_page->ID ) ) {
+                return (string) get_permalink( (int) $register_page->ID );
+            }
+        }
+
+        return add_query_arg( 'register', '1', $login_url ) . '#myvh-register-form';
     }
 }
