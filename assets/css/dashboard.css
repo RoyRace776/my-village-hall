@@ -549,7 +549,26 @@
   transition: border-color .12s, box-shadow .12s;
 }
 
+.myvh-account-field select,
+.myvh-account-field textarea {
+  width: 100%;
+  border: 1px solid #d9d2c8;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  padding: 10px 12px;
+  font-size: .92rem;
+  transition: border-color .12s, box-shadow .12s;
+}
+
 .myvh-account-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(181, 69, 27, .12);
+}
+
+.myvh-account-field select:focus,
+.myvh-account-field textarea:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(181, 69, 27, .12);
@@ -574,8 +593,71 @@
   font-size: .85rem;
 }
 
+/* =======================================================================
+   15. ORGANISATIONS PAGE
+   ======================================================================= */
+
+.myvh-orgs-page .myvh-account-grid {
+  margin-bottom: 16px;
+}
+
+.myvh-orgs-table {
+  font-size: .85rem;
+}
+
+.myvh-orgs-subsection {
+  margin-top: 16px;
+}
+
+.myvh-orgs-subsection h4,
+.myvh-org-admin-section h4 {
+  margin-bottom: 8px;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.myvh-orgs-pending-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.myvh-orgs-pending-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--warm);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.myvh-inline-form {
+  display: inline-flex;
+}
+
+.myvh-account-checkbox span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.myvh-org-admin-section {
+  display: grid;
+  gap: 14px;
+}
+
+.myvh-org-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
 /* ==========================================================================
-   15. BOOKING MODAL (Portal)
+   16. BOOKING MODAL (Portal)
    ========================================================================== */
 
 #myvh-booking-modal.hidden {
@@ -612,7 +694,7 @@
 }
 
 /* ==========================================================================
-  16. RESPONSIVE
+  17. RESPONSIVE
    ========================================================================== */
 
 @media (max-width: 720px) {
@@ -625,6 +707,7 @@
   .myvh-account-grid    { grid-template-columns: 1fr; }
   .myvh-account-header  { flex-direction: column; }
   .myvh-account-chip    { align-self: flex-start; }
+  .myvh-org-admin-grid  { grid-template-columns: 1fr; }
   .myvh-booking-main    { flex-direction: column; gap: 10px; }
   .myvh-booking-status  { text-align: left; }
   .myvh-group-header    { flex-direction: column; align-items: flex-start; }

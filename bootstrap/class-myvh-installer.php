@@ -127,6 +127,19 @@ class MYVH_Installer {
             UNIQUE KEY     uq_member (OrganisationId, CustomerId)
         ) {$collate};" );
 
+        dbDelta( "CREATE TABLE {$p}myvh_organisation_member_requests (
+            Id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            OrganisationId       INT UNSIGNED NOT NULL,
+            CustomerId           INT UNSIGNED NOT NULL,
+            Status               VARCHAR(20) NOT NULL DEFAULT 'pending',
+            RequestMessage       VARCHAR(500),
+            ReviewedByCustomerId INT UNSIGNED NULL,
+            ReviewedAt           DATETIME NULL,
+            Created              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_org_status (OrganisationId, Status),
+            INDEX idx_customer_status (CustomerId, Status)
+        ) {$collate};" );
+
     // ── Customers ─────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$p}myvh_customers (
             Id              INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
@@ -395,6 +408,27 @@ class MYVH_Installer {
            FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
            ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
+                // Organisation Member Requests → Organisations
+                [ "{$p}myvh_organisation_member_requests", 'fk_org_member_requests_organisation',
+                    "ALTER TABLE {$p}myvh_organisation_member_requests
+                     ADD CONSTRAINT fk_org_member_requests_organisation
+                     FOREIGN KEY (OrganisationId) REFERENCES {$p}myvh_organisations(Id)
+                     ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+                // Organisation Member Requests → Customers (requesting member)
+                [ "{$p}myvh_organisation_member_requests", 'fk_org_member_requests_customer',
+                    "ALTER TABLE {$p}myvh_organisation_member_requests
+                     ADD CONSTRAINT fk_org_member_requests_customer
+                     FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
+                     ON DELETE RESTRICT ON UPDATE CASCADE" ],
+
+                // Organisation Member Requests → Customers (reviewing admin)
+                [ "{$p}myvh_organisation_member_requests", 'fk_org_member_requests_reviewer',
+                    "ALTER TABLE {$p}myvh_organisation_member_requests
+                     ADD CONSTRAINT fk_org_member_requests_reviewer
+                     FOREIGN KEY (ReviewedByCustomerId) REFERENCES {$p}myvh_customers(Id)
+                     ON DELETE SET NULL ON UPDATE CASCADE" ],
+
         // ── Venues & Rooms ────────────────────────────────────────────────────────
 
         // Rooms → Venues
@@ -639,6 +673,7 @@ class MYVH_Installer {
             'myvh_organisations',
             'myvh_organisation_types',
             'myvh_organisation_members',
+            'myvh_organisation_member_requests',
             'myvh_addons',
             'myvh_booking_addons',
             'myvh_invoices',

@@ -91,7 +91,19 @@ class MYVH_Organisation_Controller {
         $member_id = intval( $_GET['id'] );
         $org_id    = intval( $_GET['organisation_id'] ?? 0 );
 
-        $this->service->remove_member( $member_id );
+        $result = $this->service->remove_member( $member_id );
+
+        if ( is_wp_error( $result ) ) {
+            $error = '&error=' . urlencode( $result->get_error_message() );
+
+            if ( !empty( $_GET['redirect'] ) && $_GET['redirect'] === 'customer' && !empty( $_GET['customer_id'] ) ) {
+                wp_redirect( admin_url( 'admin.php?page=myvh-customers&edit=' . intval( $_GET['customer_id'] ) . $error ) );
+                exit;
+            }
+
+            wp_redirect( admin_url( 'admin.php?page=myvh-org-members&organisation_id=' . $org_id . $error ) );
+            exit;
+        }
 
         // Support redirect back to the customer edit page
         if ( !empty( $_GET['redirect'] ) && $_GET['redirect'] === 'customer' && !empty( $_GET['customer_id'] ) ) {

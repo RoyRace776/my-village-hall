@@ -118,6 +118,13 @@ $current_user = wp_get_current_user();
           </a>
         </div>
 
+        <div class="dashboard-card">
+          <a href="#organisations">
+            <span class="card-icon">👥</span>
+            Organisations
+          </a>
+        </div>
+
       </div>
     </div>
 

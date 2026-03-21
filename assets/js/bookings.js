@@ -1,35 +1,53 @@
 var MYVH_Bookings = (function() {
 
+    var initialized = false;
+
     function bindAccordion() {
+        document.addEventListener('click', function(e) {
+            var header = e.target.closest('.myvh-group-header');
+            if (!header) {
+                return;
+            }
 
-        $(document).on('click', '.myvh-group-header', function(e) {
+            // Ignore clicks on links inside the group header.
+            if (e.target.closest('a')) {
+                return;
+            }
 
-            // Ignore clicks on links
-            if ($(e.target).is('a')) return;
+            var group = header.getAttribute('data-group');
+            header.classList.toggle('is-open');
 
-            var group = $(this).data('group');
+            if (!group) {
+                return;
+            }
 
-            $(this).toggleClass('is-open');
-
-            $('.myvh-group-children[data-group="' + group + '"]')
-                .toggleClass('is-open');
+            var children = document.querySelector('.myvh-group-children[data-group="' + group + '"]');
+            if (children) {
+                children.classList.toggle('is-open');
+            }
         });
     }
 
     function bindActions() {
-
-        // Cancel booking (AJAX-ready later)
-        $(document).on('click', '.myvh-cancel-booking', function(e) {
-
-            if (!confirm('Cancel this booking?')) {
-                e.preventDefault();
+        document.addEventListener('click', function(e) {
+            var cancelBtn = e.target.closest('.myvh-cancel-booking');
+            if (!cancelBtn) {
                 return;
             }
 
+            if (!window.confirm('Cancel this booking?')) {
+                e.preventDefault();
+                return;
+            }
         });
     }
 
     function init() {
+        if (initialized) {
+            return;
+        }
+
+        initialized = true;
         bindAccordion();
         bindActions();
     }

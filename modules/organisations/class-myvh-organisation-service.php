@@ -13,13 +13,16 @@ class MYVH_Organisation_Service {
 
     private $repo;
     private $member_repo;
+    private $request_repo;
 
     public function __construct(
         MYVH_Organisation_Repository        $repo,
-        MYVH_Organisation_Member_Repository $member_repo
+        MYVH_Organisation_Member_Repository $member_repo,
+        MYVH_Organisation_Member_Request_Repository $request_repo
     ) {
         $this->repo        = $repo;
         $this->member_repo = $member_repo;
+        $this->request_repo = $request_repo;
     }
 
     // ── Organisations ─────────────────────────────────────────────────────────
@@ -116,18 +119,202 @@ class MYVH_Organisation_Service {
         return $this->member_repo->get_by_organisation( $org_id );
     }
 
-    public function add_member( int $org_id, int $user_id ) {
-        if ( $this->member_repo->exists( $org_id, $user_id ) ) {
+    public function get_memberships_for_customer( int $customer_id ): array {
+        return $this->member_repo->get_by_user( $customer_id );
+    }
+
+    public function get_manageable_organisations_for_customer( int $customer_id ): array {
+        return $this->member_repo->get_admin_organisations_for_customer( $customer_id );
+    }
+
+    public function get_pending_requests_for_admin_customer( int $customer_id ): array {
+        return $this->request_repo->get_pending_for_admin_customer( $customer_id );
+    }
+
+    public function get_pending_requests_for_organisation( int $org_id, int $acting_customer_id ): array {
+        if ( !$this->member_repo->is_customer_admin( $org_id, $acting_customer_id ) ) {
+            return [];
+        }
+
+        return $this->request_repo->get_pending_by_organisation( $org_id );
+    }
+
+    public function get_pending_requests_for_customer( int $customer_id ): array {
+        return $this->request_repo->get_pending_by_customer( $customer_id );
+    }
+
+    public function is_customer_admin_for_organisation( int $org_id, int $customer_id ): bool {
+        return $this->member_repo->is_customer_admin( $org_id, $customer_id );
+    }
+
+    public function add_member( int $org_id, int $customer_id, bool $is_admin = false ) {
+        if ( $this->member_repo->exists( $org_id, $customer_id ) ) {
             return new WP_Error( 'duplicate', __( 'User is already a member of this organisation', 'my-village-hall' ) );
+        }
+
+        $admin_count = $this->member_repo->count_admins_for_organisation( $org_id );
+        if ( $admin_count === 0 ) {
+            $is_admin = true;
         }
 
         return $this->member_repo->create( [
             'OrganisationId' => $org_id,
-            'CustomerId'         => $user_id,
+            'CustomerId' => $customer_id,
+            'IsOrganisationAdmin' => $is_admin ? 1 : 0,
         ] );
     }
 
     public function remove_member( int $member_id ) {
+        $member = $this->member_repo->get_by_id( $member_id );
+
+        if ( empty( $member['Id'] ) ) {
+            return new WP_Error( 'not_found', __( 'Organisation member not found', 'my-village-hall' ) );
+        }
+
+        $is_admin = !empty( $member['IsOrganisationAdmin'] );
+
+        if ( $is_admin ) {
+            $admin_count = $this->member_repo->count_admins_for_organisation( (int) $member['OrganisationId'] );
+            if ( $admin_count <= 1 ) {
+                return new WP_Error( 'last_admin', __( 'Each organisation must have at least one admin', 'my-village-hall' ) );
+            }
+        }
+
         return $this->member_repo->delete( $member_id );
+    }
+
+    public function update_member_admin_status( int $member_id, bool $is_admin ) {
+        $member = $this->member_repo->get_by_id( $member_id );
+
+        if ( empty( $member['Id'] ) ) {
+            return new WP_Error( 'not_found', __( 'Organisation member not found', 'my-village-hall' ) );
+        }
+
+        $currently_admin = !empty( $member['IsOrganisationAdmin'] );
+
+        if ( !$is_admin && $currently_admin ) {
+            $admin_count = $this->member_repo->count_admins_for_organisation( (int) $member['OrganisationId'] );
+            if ( $admin_count <= 1 ) {
+                return new WP_Error( 'last_admin', __( 'Each organisation must have at least one admin', 'my-village-hall' ) );
+            }
+        }
+
+        return $this->member_repo->update_admin_status( $member_id, $is_admin );
+    }
+
+    public function create_membership_request( int $org_id, int $customer_id, string $request_message = '' ) {
+        if ( !$this->repo->get_by_id( $org_id ) ) {
+            return new WP_Error( 'not_found', __( 'Organisation not found', 'my-village-hall' ) );
+        }
+
+        if ( $this->member_repo->exists( $org_id, $customer_id ) ) {
+            return new WP_Error( 'duplicate', __( 'You are already a member of this organisation', 'my-village-hall' ) );
+        }
+
+        if ( $this->request_repo->get_pending_request( $org_id, $customer_id ) ) {
+            return new WP_Error( 'duplicate_request', __( 'A pending request already exists for this organisation', 'my-village-hall' ) );
+        }
+
+        return $this->request_repo->create( [
+            'OrganisationId' => $org_id,
+            'CustomerId' => $customer_id,
+            'Status' => 'pending',
+            'RequestMessage' => sanitize_text_field( $request_message ),
+        ] );
+    }
+
+    public function approve_membership_request( int $request_id, int $acting_customer_id ) {
+        $request = $this->request_repo->get_by_id( $request_id );
+
+        if ( empty( $request['Id'] ) || $request['Status'] !== 'pending' ) {
+            return new WP_Error( 'not_found', __( 'Pending request not found', 'my-village-hall' ) );
+        }
+
+        $org_id = (int) $request['OrganisationId'];
+
+        if ( !$this->member_repo->is_customer_admin( $org_id, $acting_customer_id ) ) {
+            return new WP_Error( 'forbidden', __( 'Only organisation admins can approve requests', 'my-village-hall' ) );
+        }
+
+        if ( !$this->member_repo->exists( $org_id, (int) $request['CustomerId'] ) ) {
+            $add_result = $this->add_member( $org_id, (int) $request['CustomerId'], false );
+            if ( is_wp_error( $add_result ) ) {
+                return $add_result;
+            }
+        }
+
+        $updated = $this->request_repo->update( $request_id, [
+            'Status' => 'approved',
+            'ReviewedByCustomerId' => $acting_customer_id,
+            'ReviewedAt' => current_time( 'mysql' ),
+        ] );
+
+        if ( !$updated ) {
+            return new WP_Error( 'database', __( 'Failed to approve membership request', 'my-village-hall' ) );
+        }
+
+        return true;
+    }
+
+    public function reject_membership_request( int $request_id, int $acting_customer_id ) {
+        $request = $this->request_repo->get_by_id( $request_id );
+
+        if ( empty( $request['Id'] ) || $request['Status'] !== 'pending' ) {
+            return new WP_Error( 'not_found', __( 'Pending request not found', 'my-village-hall' ) );
+        }
+
+        $org_id = (int) $request['OrganisationId'];
+
+        if ( !$this->member_repo->is_customer_admin( $org_id, $acting_customer_id ) ) {
+            return new WP_Error( 'forbidden', __( 'Only organisation admins can reject requests', 'my-village-hall' ) );
+        }
+
+        $updated = $this->request_repo->update( $request_id, [
+            'Status' => 'rejected',
+            'ReviewedByCustomerId' => $acting_customer_id,
+            'ReviewedAt' => current_time( 'mysql' ),
+        ] );
+
+        if ( !$updated ) {
+            return new WP_Error( 'database', __( 'Failed to reject membership request', 'my-village-hall' ) );
+        }
+
+        return true;
+    }
+
+    public function add_member_by_admin( int $org_id, int $acting_customer_id, int $customer_id, bool $is_admin = false ) {
+        if ( !$this->member_repo->is_customer_admin( $org_id, $acting_customer_id ) ) {
+            return new WP_Error( 'forbidden', __( 'Only organisation admins can add members', 'my-village-hall' ) );
+        }
+
+        return $this->add_member( $org_id, $customer_id, $is_admin );
+    }
+
+    public function remove_member_by_admin( int $member_id, int $acting_customer_id ) {
+        $member = $this->member_repo->get_by_id( $member_id );
+
+        if ( empty( $member['Id'] ) ) {
+            return new WP_Error( 'not_found', __( 'Organisation member not found', 'my-village-hall' ) );
+        }
+
+        if ( !$this->member_repo->is_customer_admin( (int) $member['OrganisationId'], $acting_customer_id ) ) {
+            return new WP_Error( 'forbidden', __( 'Only organisation admins can remove members', 'my-village-hall' ) );
+        }
+
+        return $this->remove_member( $member_id );
+    }
+
+    public function set_member_admin_status_by_admin( int $member_id, int $acting_customer_id, bool $is_admin ) {
+        $member = $this->member_repo->get_by_id( $member_id );
+
+        if ( empty( $member['Id'] ) ) {
+            return new WP_Error( 'not_found', __( 'Organisation member not found', 'my-village-hall' ) );
+        }
+
+        if ( !$this->member_repo->is_customer_admin( (int) $member['OrganisationId'], $acting_customer_id ) ) {
+            return new WP_Error( 'forbidden', __( 'Only organisation admins can change member status', 'my-village-hall' ) );
+        }
+
+        return $this->update_member_admin_status( $member_id, $is_admin );
     }
 }

@@ -115,6 +115,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 .catch(() => {
                     showMessage(message, 'Unexpected error updating password', true);
                 });
+
+            return;
+        }
+
+        const portalAction = form.dataset.portalAction;
+        if (portalAction) {
+            e.preventDefault();
+
+            const confirmMessage = form.dataset.confirm || '';
+            if (confirmMessage && !window.confirm(confirmMessage)) {
+                return;
+            }
+
+            const messageTargetId = form.dataset.messageTarget || '';
+            const reloadPage = form.dataset.reloadPage || '';
+            const message = messageTargetId ? document.getElementById(messageTargetId) : null;
+
+            showMessage(message, 'Saving...', false);
+
+            postPortalForm(portalAction, form)
+                .then(res => {
+                    if (!res.success) {
+                        showMessage(message, res.data || 'Request failed', true);
+                        return;
+                    }
+
+                    if (form.tagName === 'FORM') {
+                        form.reset();
+                    }
+
+                    showMessage(message, res.data?.message || 'Saved', false);
+
+                    if (reloadPage) {
+                        setTimeout(() => loadPage(reloadPage), 200);
+                    }
+                })
+                .catch(() => {
+                    showMessage(message, 'Unexpected error while saving', true);
+                });
         }
     });
 

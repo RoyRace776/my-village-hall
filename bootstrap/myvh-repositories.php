@@ -32,6 +32,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/customers/class-customer-repository.php'
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-type-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-member-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-organisation-member-request-repository.php';
 
 // ── 3. Bookings ───────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-repository.php';
