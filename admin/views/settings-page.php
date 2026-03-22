@@ -45,11 +45,16 @@ class MYVH_Settings_Page {
 
         ?>
 
-        <div class="wrap">
+        <div class="wrap myvh-settings-page">
 
-            <h1>My Plugin Settings</h1>
+            <h1><?php esc_html_e('My Village Hall Settings', 'my-village-hall'); ?></h1>
+            <p class="myvh-settings-intro"><?php esc_html_e('Configure system behavior, booking defaults, and display preferences for this site.', 'my-village-hall'); ?></p>
 
-            <h2 class="nav-tab-wrapper">
+            <?php if (!empty($_GET['updated'])): ?>
+                <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Settings saved.', 'my-village-hall'); ?></p></div>
+            <?php endif; ?>
+
+            <h2 class="nav-tab-wrapper myvh-settings-tabs">
 
                 <?php foreach ($groups as $key => $group): ?>
 
@@ -90,7 +95,7 @@ class MYVH_Settings_Page {
 
         ?>
 
-        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+        <form class="myvh-settings-form" method="post" action="<?php echo admin_url('admin-post.php'); ?>">
 
             <input type="hidden" name="action" value="myvh_save_settings">
             <input type="hidden" name="group" value="<?php echo esc_attr($key); ?>">
@@ -101,11 +106,13 @@ class MYVH_Settings_Page {
 
             foreach ($schema as $section_key => $section) {
 
+                echo '<section class="myvh-settings-section">';
+
                 if (!empty($section['title'])) {
-                    echo '<h2>' . esc_html($section['title']) . '</h2>';
+                    echo '<h2 class="myvh-settings-section-title">' . esc_html($section['title']) . '</h2>';
                 }
 
-                echo '<table class="form-table">';
+                echo '<table class="form-table myvh-settings-table">';
 
                 if (!empty($section['fields'])) {
 
@@ -136,10 +143,13 @@ class MYVH_Settings_Page {
                 }
 
                 echo '</table>';
+                echo '</section>';
 
             }
 
-            submit_button();
+            echo '<div class="myvh-settings-actions">';
+            submit_button(__('Save Settings', 'my-village-hall'));
+            echo '</div>';
 
             ?>
 
@@ -147,7 +157,7 @@ class MYVH_Settings_Page {
 
         <script>
         (function () {
-            var form    = document.querySelector('.wrap form');
+            var form    = document.querySelector('.myvh-settings-page .myvh-settings-form');
             var btn     = document.getElementById('submit');
             var isDirty = false;
 

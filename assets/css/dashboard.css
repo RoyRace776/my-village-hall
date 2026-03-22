@@ -887,6 +887,213 @@
   font-size: .85rem;
 }
 
+/* Client settings page */
+.myvh-client-settings-page {
+  margin-top: 8px;
+}
+
+.myvh-client-settings-page .myvh-settings-header {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid #e5ddd1;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fff 0%, #fbf7f2 100%);
+  box-shadow: 0 10px 24px rgba(28, 26, 23, 0.05);
+}
+
+.myvh-client-settings-page .myvh-settings-header p {
+  max-width: 780px;
+  font-size: .94rem;
+}
+
+.myvh-client-settings-page .myvh-settings-groups {
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.myvh-client-settings-page .myvh-settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0 0 1px;
+  border-bottom: 1px solid #d8ccbc;
+}
+
+.myvh-client-settings-page .myvh-settings-tab {
+  appearance: none;
+  border: 1px solid #d8ccbc;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #f4eee6;
+  color: #4f473f;
+  padding: 9px 14px;
+  font-size: .84rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease, border-color .14s ease;
+}
+
+.myvh-client-settings-page .myvh-settings-tab:hover {
+  background: #efe7dc;
+  color: #2f2a25;
+}
+
+.myvh-client-settings-page .myvh-settings-tab:focus-visible {
+  outline: 2px solid rgba(181, 69, 27, .45);
+  outline-offset: 1px;
+}
+
+.myvh-client-settings-page .myvh-settings-tab.is-active {
+  background: #fff;
+  color: #1d2327;
+  border-color: #d8ccbc;
+  transform: translateY(1px);
+}
+
+.myvh-client-settings-page .myvh-settings-panels {
+  margin-top: 0;
+}
+
+.myvh-client-settings-page .myvh-settings-group {
+  display: none;
+}
+
+.myvh-client-settings-page .myvh-settings-group.is-active {
+  display: block;
+}
+
+.myvh-client-settings-page .myvh-settings-group {
+  position: relative;
+  border-color: #e3d7c7;
+  padding: 18px 20px;
+  overflow: hidden;
+}
+
+.myvh-client-settings-page .myvh-settings-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #b5451b 0%, #cc7b59 55%, #e6baa6 100%);
+}
+
+.myvh-client-settings-page .myvh-account-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #efe8dd;
+}
+
+.myvh-client-settings-page .myvh-settings-group-key {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid #eadfd2;
+  border-radius: 999px;
+  background: #fbf7f2;
+  font-size: .75rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.myvh-client-settings-page .myvh-settings-form {
+  gap: 14px;
+}
+
+.myvh-client-settings-page .myvh-settings-section {
+  display: grid;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border: 1px solid #f0e7db;
+  border-radius: 10px;
+  background: #fffcf8;
+}
+
+.myvh-client-settings-page .myvh-settings-section h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.myvh-client-settings-page .myvh-settings-field {
+  gap: 6px;
+  padding-top: 6px;
+}
+
+.myvh-client-settings-page .myvh-settings-field-label {
+  font-size: .84rem;
+  letter-spacing: .01em;
+}
+
+.myvh-client-settings-page .myvh-settings-field-control {
+  display: block;
+}
+
+.myvh-client-settings-page .myvh-settings-checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #dfd3c4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.myvh-client-settings-page .myvh-settings-checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.myvh-client-settings-page .myvh-settings-feedback {
+  min-height: 20px;
+  font-size: .84rem;
+}
+
+.myvh-client-settings-page .myvh-account-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #efe8dd;
+}
+
+.myvh-client-settings-page .myvh-account-actions .button {
+  min-height: 38px;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 600;
+}
+
+.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-clean,
+.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-clean:hover,
+.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-clean:focus {
+  background: #dad4ca;
+  border-color: #c8bfb1;
+  color: #4f473f;
+  box-shadow: none;
+}
+
+.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-dirty,
+.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-dirty:hover,
+.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-dirty:focus {
+  background: #b5451b;
+  border-color: #963916;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(150, 57, 22, 0.24);
+}
+
+.myvh-client-settings-page .myvh-account-actions .button:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
+
 /* =======================================================================
    15. ORGANISATIONS PAGE
    ======================================================================= */
@@ -1320,6 +1527,27 @@
   .myvh-booking-status  { justify-self: start; text-align: left; }
   .myvh-group-header    { flex-direction: column; align-items: flex-start; }
   .myvh-group-room      { margin-left: 0; margin-top: 2px; min-width: 0; text-align: left; }
+
+  .myvh-client-settings-page .myvh-settings-header,
+  .myvh-client-settings-page .myvh-settings-group {
+    padding: 14px;
+  }
+
+  .myvh-client-settings-page .myvh-settings-tabs {
+    gap: 4px;
+  }
+
+  .myvh-client-settings-page .myvh-settings-tab {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 8px 10px;
+    font-size: .8rem;
+  }
+
+  .myvh-client-settings-page .myvh-account-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 420px) {

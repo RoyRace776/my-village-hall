@@ -109,8 +109,20 @@ class MYVH_Asset_Loader {
         if ( strpos( $hook, 'myvh' ) === false && strpos( $hook, 'my-village-hall' ) === false ) return;
 
         // Shared across all plugin admin pages
-        wp_enqueue_style(  'myvh-admin', MYVH_PLUGIN_URL . 'assets/css/admin.css', [], MYVH_VERSION );
-        wp_enqueue_script( 'myvh-admin', MYVH_PLUGIN_URL . 'assets/js/admin.js', [ 'jquery' ], MYVH_VERSION, true );
+        wp_enqueue_style(
+            'myvh-admin',
+            MYVH_PLUGIN_URL . 'assets/css/admin.css',
+            [],
+            self::asset_version( 'assets/css/admin.css' )
+        );
+
+        wp_enqueue_script(
+            'myvh-admin',
+            MYVH_PLUGIN_URL . 'assets/js/admin.js',
+            [ 'jquery' ],
+            self::asset_version( 'assets/js/admin.js' ),
+            true
+        );
 
         // Bookings list page
         if ( strpos( $hook, 'my-village-hall' ) !== false ) {

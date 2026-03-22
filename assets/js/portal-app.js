@@ -50,6 +50,114 @@ document.addEventListener("DOMContentLoaded", () => {
                 syncSubmitState();
             }
         }
+
+        const settingsPage = document.querySelector('.myvh-client-settings-page');
+        if (settingsPage) {
+            initSettingsTabs(settingsPage);
+            initSettingsDirtyState(settingsPage);
+        }
+    }
+
+    function initSettingsTabs(settingsPage) {
+        const tabs = Array.from(settingsPage.querySelectorAll('.myvh-settings-tab'));
+        const panels = Array.from(settingsPage.querySelectorAll('[data-settings-panel]'));
+        if (!tabs.length || !panels.length) return;
+
+        const storageKey = 'myvhPortalSettingsTab';
+
+        function activateTab(tabKey) {
+            let hasMatch = false;
+
+            tabs.forEach((tab) => {
+                const isActive = tab.dataset.settingsTab === tabKey;
+                tab.classList.toggle('is-active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                if (isActive) hasMatch = true;
+            });
+
+            panels.forEach((panel) => {
+                const isActive = panel.dataset.settingsPanel === tabKey;
+                panel.classList.toggle('is-active', isActive);
+                panel.hidden = !isActive;
+            });
+
+            if (hasMatch) {
+                try {
+                    window.localStorage.setItem(storageKey, tabKey);
+                } catch (e) {
+                    // Ignore storage failures in private browsing modes.
+                }
+            }
+        }
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                activateTab(tab.dataset.settingsTab || '');
+            });
+        });
+
+        let storedTab = '';
+        try {
+            storedTab = window.localStorage.getItem(storageKey) || '';
+        } catch (e) {
+            storedTab = '';
+        }
+
+        if (storedTab && tabs.some((tab) => tab.dataset.settingsTab === storedTab)) {
+            activateTab(storedTab);
+        }
+    }
+
+    function initSettingsDirtyState(settingsPage) {
+        const forms = Array.from(settingsPage.querySelectorAll('.myvh-settings-form'));
+        if (!forms.length) return;
+
+        forms.forEach((form) => {
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (!submitButton) return;
+
+            const trackedFields = Array.from(form.querySelectorAll('input, select, textarea'))
+                .filter((field) => field.name && field.type !== 'hidden' && !field.disabled);
+
+            if (!trackedFields.length) return;
+
+            const captureState = () => JSON.stringify(
+                trackedFields.map((field) => {
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        return { name: field.name, checked: !!field.checked };
+                    }
+
+                    return { name: field.name, value: field.value };
+                })
+            );
+
+            let baselineState = captureState();
+
+            const syncDirtyState = () => {
+                const isDirty = captureState() !== baselineState;
+                submitButton.classList.toggle('myvh-settings-save-dirty', isDirty);
+                submitButton.classList.toggle('myvh-settings-save-clean', !isDirty);
+                submitButton.disabled = !isDirty;
+            };
+
+            trackedFields.forEach((field) => {
+                field.addEventListener('input', syncDirtyState);
+                field.addEventListener('change', syncDirtyState);
+            });
+
+            form.addEventListener('reset', () => {
+                setTimeout(() => {
+                    baselineState = captureState();
+                    syncDirtyState();
+                }, 0);
+            });
+
+            form.addEventListener('submit', () => {
+                submitButton.disabled = true;
+            });
+
+            syncDirtyState();
+        });
     }
 
     function postPortalForm(action, form) {

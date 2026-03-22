@@ -87,6 +87,10 @@ class MYVH_Portal_Controller {
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/calendar.php';
                 break;
 
+            case 'invoices':
+                include MYVH_PLUGIN_DIR . 'modules/portal/templates/invoices.php';
+                break;
+
             case 'account':
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/account.php';
                 break;

@@ -124,6 +124,7 @@ class My_Village_Hall {
         // 1. Core WordPress integration
         add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
         add_action( 'admin_menu',     [ $this, 'register_admin_menu' ] );
+        add_action( 'admin_menu',     [ $this, 'ensure_invoices_menu_item' ], 99 );
 
         MYVH_Asset_Loader::init();
 
@@ -314,6 +315,15 @@ class My_Village_Hall {
             'manage_options', 'myvh-org-members', [ $this, 'render_org_members_page' ]
         );
 
+        add_submenu_page(
+            'my-village-hall',
+            __( 'Client Administrators', 'my-village-hall' ),
+            __( 'Client Admins', 'my-village-hall' ),
+            'manage_options',
+            'myvh-client-admins-network',
+            [ $this, 'render_client_admins_network_page' ]
+        );
+
         $this->add_menu_separator();
 
         // ── Venues & Rooms ────────────────────────────────────────────────────
@@ -357,6 +367,32 @@ class My_Village_Hall {
             __( 'Recurring Bookings',  'my-village-hall' ),
             __( 'Recurring Patterns',  'my-village-hall' ),
             'manage_options', 'myvh-recurring', [ $this, 'render_recurring_page' ]
+        );
+    }
+
+    public function ensure_invoices_menu_item(): void {
+        global $submenu;
+
+        $parent_slug = 'my-village-hall';
+        $target_slug = 'myvh-invoices';
+
+        if (empty($submenu[$parent_slug]) || !is_array($submenu[$parent_slug])) {
+            return;
+        }
+
+        foreach ($submenu[$parent_slug] as $item) {
+            if (!empty($item[2]) && $item[2] === $target_slug) {
+                return;
+            }
+        }
+
+        add_submenu_page(
+            $parent_slug,
+            __( 'Invoices', 'my-village-hall' ),
+            __( 'Invoices', 'my-village-hall' ),
+            'manage_options',
+            $target_slug,
+            [ $this, 'render_invoices_page' ]
         );
     }
 
@@ -408,6 +444,139 @@ class My_Village_Hall {
     public function render_organisations_page():   void { $this->render_page( 'organisations' ); }
     public function render_org_types_page():       void { $this->render_page( 'org-types' ); }
     public function render_org_members_page():     void { $this->render_page( 'org-members' ); }
+    public function render_client_admins_network_page(): void {
+
+        if ( is_multisite() && current_user_can( 'manage_network_options' ) ) {
+            $target = add_query_arg(
+                [
+                    'page' => 'myvh-network-client-admins',
+                    'blog_id' => get_current_blog_id(),
+                ],
+                network_admin_url( 'admin.php' )
+            );
+
+            wp_safe_redirect( $target );
+            exit;
+        }
+
+        if ( ! class_exists( 'MYVH_Client_Admin_Service' ) ) {
+            echo '<div class="wrap"><h1>' . esc_html__( 'Client Administrators', 'my-village-hall' ) . '</h1>';
+            echo '<div class="notice notice-error"><p>' . esc_html__( 'Client admin service is not available.', 'my-village-hall' ) . '</p></div>';
+            echo '</div>';
+            return;
+        }
+
+        if ( is_multisite() ) {
+            echo '<div class="wrap">';
+            echo '<h1>' . esc_html__( 'Client Administrators', 'my-village-hall' ) . '</h1>';
+            echo '<div class="notice notice-warning"><p>'
+                . esc_html__( 'Only network administrators can manage cross-site client admin assignments. Ask a network admin to use Network Admin → Village Halls → Client Admins.', 'my-village-hall' )
+                . '</p></div>';
+            echo '</div>';
+            return;
+        }
+
+        $service = new MYVH_Client_Admin_Service();
+        $blog_id = get_current_blog_id();
+
+        if ( $_SERVER['REQUEST_METHOD'] === 'POST' && ! empty( $_POST['myvh_client_admin_action'] ) ) {
+            check_admin_referer( 'myvh_site_client_admins' );
+
+            $action = sanitize_key( $_POST['myvh_client_admin_action'] );
+            $redirect_args = [ 'page' => 'myvh-client-admins-network' ];
+
+            if ( $action === 'add' ) {
+                $identifier = sanitize_text_field( $_POST['user_identifier'] ?? '' );
+
+                if ( $identifier === '' ) {
+                    $redirect_args['myvh_notice'] = 'missing_user';
+                } else {
+                    $user = $service->find_user( $identifier );
+
+                    if ( $user instanceof WP_User ) {
+                        $service->add_assignment( $blog_id, (int) $user->ID );
+                        $redirect_args['myvh_notice'] = 'added';
+                    } else {
+                        $redirect_args['myvh_notice'] = 'user_not_found';
+                    }
+                }
+            } elseif ( $action === 'remove' ) {
+                $user_id = (int) ( $_POST['user_id'] ?? 0 );
+
+                if ( $user_id > 0 ) {
+                    $service->remove_assignment( $blog_id, $user_id );
+                    $redirect_args['myvh_notice'] = 'removed';
+                } else {
+                    $redirect_args['myvh_notice'] = 'invalid_user';
+                }
+            }
+
+            wp_safe_redirect( add_query_arg( $redirect_args, admin_url( 'admin.php' ) ) );
+            exit;
+        }
+
+        $notices = [
+            'added' => [ 'success', __( 'Client administrator added.', 'my-village-hall' ) ],
+            'removed' => [ 'success', __( 'Client administrator removed.', 'my-village-hall' ) ],
+            'missing_user' => [ 'error', __( 'Email address or username is required.', 'my-village-hall' ) ],
+            'user_not_found' => [ 'error', __( 'No WordPress user was found with that email or username.', 'my-village-hall' ) ],
+            'invalid_user' => [ 'error', __( 'Please select a valid user.', 'my-village-hall' ) ],
+        ];
+
+        $notice_key = sanitize_key( $_GET['myvh_notice'] ?? '' );
+        $assigned_users = $service->get_assigned_users_for_blog( $blog_id );
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__( 'Client Administrators', 'my-village-hall' ) . '</h1>';
+        echo '<p>' . esc_html__( 'Assign users who can administer this client site in the portal.', 'my-village-hall' ) . '</p>';
+
+        if ( isset( $notices[ $notice_key ] ) ) {
+            $notice_type = $notices[ $notice_key ][0];
+            $notice_text = $notices[ $notice_key ][1];
+            echo '<div class="notice notice-' . esc_attr( $notice_type ) . ' is-dismissible"><p>' . esc_html( $notice_text ) . '</p></div>';
+        }
+
+        echo '<form method="post" action="' . esc_url( add_query_arg( [ 'page' => 'myvh-client-admins-network' ], admin_url( 'admin.php' ) ) ) . '" style="max-width:620px; margin-bottom:24px;">';
+        wp_nonce_field( 'myvh_site_client_admins' );
+        echo '<input type="hidden" name="myvh_client_admin_action" value="add">';
+        echo '<table class="form-table" role="presentation"><tbody>';
+        echo '<tr>';
+        echo '<th scope="row"><label for="myvh-user-identifier">' . esc_html__( 'Email or username', 'my-village-hall' ) . '</label></th>';
+        echo '<td><input id="myvh-user-identifier" type="text" name="user_identifier" class="regular-text" required></td>';
+        echo '</tr>';
+        echo '</tbody></table>';
+        submit_button( __( 'Add Client Admin', 'my-village-hall' ) );
+        echo '</form>';
+
+        echo '<h2>' . esc_html__( 'Assigned Client Admins', 'my-village-hall' ) . '</h2>';
+        echo '<table class="widefat striped">';
+        echo '<thead><tr><th>' . esc_html__( 'Name', 'my-village-hall' ) . '</th><th>' . esc_html__( 'Email', 'my-village-hall' ) . '</th><th>' . esc_html__( 'Username', 'my-village-hall' ) . '</th><th style="width:120px;">' . esc_html__( 'Action', 'my-village-hall' ) . '</th></tr></thead><tbody>';
+
+        if ( empty( $assigned_users ) ) {
+            echo '<tr><td colspan="4">' . esc_html__( 'No explicit client admin assignments for this site.', 'my-village-hall' ) . '</td></tr>';
+        } else {
+            foreach ( $assigned_users as $assigned_user ) {
+                echo '<tr>';
+                echo '<td>' . esc_html( $assigned_user['display_name'] ?: $assigned_user['user_login'] ) . '</td>';
+                echo '<td>' . esc_html( $assigned_user['user_email'] ) . '</td>';
+                echo '<td>' . esc_html( $assigned_user['user_login'] ) . '</td>';
+                echo '<td>';
+                echo '<form method="post" action="' . esc_url( add_query_arg( [ 'page' => 'myvh-client-admins-network' ], admin_url( 'admin.php' ) ) ) . '" onsubmit="return confirm(\'' . esc_js( __( 'Remove this client admin assignment?', 'my-village-hall' ) ) . '\');">';
+                wp_nonce_field( 'myvh_site_client_admins' );
+                echo '<input type="hidden" name="myvh_client_admin_action" value="remove">';
+                echo '<input type="hidden" name="user_id" value="' . esc_attr( (int) $assigned_user['ID'] ) . '">';
+                submit_button( __( 'Remove', 'my-village-hall' ), 'small', '', false );
+                echo '</form>';
+                echo '</td>';
+                echo '</tr>';
+            }
+        }
+
+        echo '</tbody></table>';
+        echo '</div>';
+        return;
+
+    }
     public function render_venues_page():          void { $this->render_page( 'venues' ); }
     public function render_rooms_page():           void { $this->render_page( 'rooms' ); }
     public function render_room_rates_page():      void { $this->render_page( 'room-rates' ); }

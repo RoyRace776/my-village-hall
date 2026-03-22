@@ -32,6 +32,7 @@ $accessible_sites = $client_admin_service ? $client_admin_service->get_accessibl
         <a href="#dashboard">Dashboard</a>
         <a href="#bookings"><?php echo $is_client_admin ? 'Bookings' : 'My Bookings'; ?></a>
         <a href="#calendar">Calendar</a>
+        <a href="#invoices">Invoices</a>
         <?php if ($has_customer): ?>
             <a href="#organisations">Organisations</a>
         <?php endif; ?>
