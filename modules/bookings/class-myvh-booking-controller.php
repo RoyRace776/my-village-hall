@@ -3,9 +3,14 @@
 class MYVH_Booking_Controller {
 
     private $service;
+    private $request_validator;
 
-    public function __construct(MYVH_Booking_Service $service) {
+    public function __construct(
+        MYVH_Booking_Service $service,
+        MYVH_Booking_Request_Validator $request_validator
+    ) {
         $this->service = $service;
+        $this->request_validator = $request_validator;
     }
 
     public function save() {
@@ -15,21 +20,20 @@ class MYVH_Booking_Controller {
 
         check_admin_referer('myvh_save_booking');
 
-        $data = wp_unslash($_POST);
+        $posted_data = wp_unslash($_POST);
+        $data = MYVH_Save_Booking_Request::from_post($posted_data);
 
-        // Filter addons: only keep rows where the user ticked the checkbox
-        if (!empty($data['addons']) && is_array($data['addons'])) {
-            $data['addons'] = array_values(array_filter($data['addons'], function($a) {
-                return !empty($a['enabled']) && $a['enabled'] === '1' && !empty($a['addon_id']);
-            }));
-        } else {
-            $data['addons'] = [];
+        $validation_result = $this->request_validator->validate($data);
+        if (is_wp_error($validation_result)) {
+            set_transient($this->get_form_transient_key(), $posted_data, 120);
+            wp_redirect($this->get_form_redirect_url($data, $validation_result->get_error_message()));
+            exit;
         }
 
         $result = $this->service->save($data);
 
         if (is_wp_error($result)) {
-            set_transient($this->get_form_transient_key(), $data, 120);
+            set_transient($this->get_form_transient_key(), $posted_data, 120);
             wp_redirect($this->get_form_redirect_url($data, $result->get_error_message()));
             exit;
         }

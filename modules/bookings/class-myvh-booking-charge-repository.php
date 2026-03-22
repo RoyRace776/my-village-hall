@@ -145,7 +145,7 @@ class MYVH_Booking_Charge_Repository {
             array('%d')
         );
 
-        if ($result <> 0) {
+        if ($result === false) {
             error_log('MYVH Booking_Charge Repository Error (update): ' . $this->wpdb->last_error);
             return false;
         }

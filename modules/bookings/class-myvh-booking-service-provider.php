@@ -4,6 +4,8 @@ require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-repository.p
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-addon-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-discount-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-charge-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-save-booking-request.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-request-validator.php';
 
 require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-validator.php';
@@ -22,6 +24,7 @@ class MYVH_Booking_Service_Provider
 
         $container->singleton(MYVH_Availability_Service::class);
         $container->singleton(MYVH_Booking_Validator::class);
+        $container->singleton(MYVH_Booking_Request_Validator::class);
         $container->singleton(MYVH_Room_Rules_Service::class);
         $container->singleton(MYVH_Pricing_Service::class);
 

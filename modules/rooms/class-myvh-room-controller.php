@@ -4,11 +4,14 @@ if (!defined('ABSPATH')) exit;
 class MYVH_Room_Controller {
 
     private $service;
+    private $request_validator;
 
     public function __construct(
         MYVH_Room_Service $service,
+        MYVH_Room_Request_Validator $request_validator
     ) {
         $this->service = $service;
+        $this->request_validator = $request_validator;
     }
 
     public function save() {
@@ -19,13 +22,30 @@ class MYVH_Room_Controller {
 
         check_admin_referer('myvh_save_room');
 
-        $data = wp_unslash($_POST);
+        $posted_data = wp_unslash($_POST);
+        $data = MYVH_Save_Room_Request::from_post($posted_data);
+
+        $validation_result = $this->request_validator->validate($data);
+        if (is_wp_error($validation_result)) {
+            set_transient($this->get_form_transient_key(), $posted_data, 120);
+
+            foreach ($validation_result->get_error_messages() as $msg) {
+                MYVH_Admin_Notices::error($msg);
+            }
+
+            $redirect = !empty($data['room_id'])
+                ? admin_url('admin.php?page=myvh-rooms&edit=' . intval($data['room_id']))
+                : admin_url('admin.php?page=myvh-rooms&add=1');
+
+            wp_redirect($redirect);
+            exit;
+        }
 
         $result = $this->service->save($data);
 
         if (is_wp_error($result)) {
 
-            set_transient($this->get_form_transient_key(), $data, 120);
+            set_transient($this->get_form_transient_key(), $posted_data, 120);
 
             foreach ($result->get_error_messages() as $msg) {
                 MYVH_Admin_Notices::error($msg);

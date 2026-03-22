@@ -4,9 +4,14 @@ if (!defined('ABSPATH')) exit;
 class MYVH_Addon_Controller {
 
     private $service;
+    private $request_validator;
 
-    public function __construct(MYVH_Addon_Service $service) {
+    public function __construct(
+        MYVH_Addon_Service $service,
+        MYVH_Addon_Request_Validator $request_validator
+    ) {
         $this->service = $service;
+        $this->request_validator = $request_validator;
     }
 
     public function save(): void {
@@ -17,7 +22,19 @@ class MYVH_Addon_Controller {
 
         check_admin_referer('myvh_save_addon');
 
-        $this->service->save($_POST);
+        $data = MYVH_Save_Addon_Request::from_post(wp_unslash($_POST));
+
+        $validation_result = $this->request_validator->validate($data);
+        if (is_wp_error($validation_result)) {
+            wp_redirect(admin_url('admin.php?page=myvh-addons&error=' . urlencode($validation_result->get_error_message())));
+            exit;
+        }
+
+        $result = $this->service->save($data);
+        if (is_wp_error($result)) {
+            wp_redirect(admin_url('admin.php?page=myvh-addons&error=' . urlencode($result->get_error_message())));
+            exit;
+        }
 
         wp_redirect(admin_url('admin.php?page=myvh-addons&updated=1'));
         exit;

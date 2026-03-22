@@ -14,8 +14,6 @@
  *   $myvh_container = require MYVH_PLUGIN_DIR . 'bootstrap/myvh-container.php';
  */
 
-use MyVH\Infrastructure\MYVH_Shortcode_Registry;
-
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
@@ -39,15 +37,6 @@ require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-ser
 require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/payments/class-myvh-payment-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-service-provider.php';
-
-// Get the files needed for shortcodes
-require_once MYVH_PLUGIN_DIR . 'core/shortcode/shortcode-interface.php';
-require_once MYVH_PLUGIN_DIR . 'core/shortcode/class-myvh-shortcode-registry.php';
-require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-shortcode.php';
-require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-shortcode.php';
-require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-controller.php';
-
-require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-handler.php';
 
 
 // Register wpdb so it can be injected like any other dependency
@@ -76,30 +65,5 @@ $providers = [
 foreach ( $providers as $provider ) {
     ( new $provider() )->register( $myvh_container );
 }
-
-$calendar_ajax = $myvh_container->get(MYVH_Calendar_Ajax_Controller::class);
-$calendar_ajax->register_routes();
-
-// Register the shortcodes
-$registry = new MYVH_Shortcode_Registry();
-add_action('init', [$registry, 'register']);
-
-use MYVH\Shortcodes\MYVH_Login_Shortcode;
-//use MYVH\Shortcodes\MYVH_Dashboard_Shortcode;
-
-$registry->add($myvh_container->get(MYVH_Login_Shortcode::class));
-$login_handler = new MYVH_Login_Handler();
-$login_handler->init();
-
-//$registry->add($myvh_container->get(MYVH_Dashboard_Shortcode::class));
-
-$portal_shortcode = new MYVH_Portal_Shortcode();
-$portal_shortcode->register();
-
-$portal_controller = $myvh_container->get(MYVH_Portal_Controller::class);
-$portal_controller->register();
-
-$customer_user_sync = $myvh_container->get(MYVH_Customer_User_Sync::class);
-$customer_user_sync->register();
 
 return $myvh_container;

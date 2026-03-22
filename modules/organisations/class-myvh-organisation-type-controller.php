@@ -12,9 +12,14 @@ if (!defined('ABSPATH')) {
 class MYVH_Organisation_Type_Controller {
 
     private $service;
+    private $request_validator;
 
-    public function __construct( MYVH_Organisation_Type_Service $service ) {
+    public function __construct(
+        MYVH_Organisation_Type_Service $service,
+        MYVH_Organisation_Type_Request_Validator $request_validator
+    ) {
         $this->service = $service;
+        $this->request_validator = $request_validator;
     }
 
     public function save(): void {
@@ -24,7 +29,15 @@ class MYVH_Organisation_Type_Controller {
 
         check_admin_referer( 'myvh_save_org_type' );
 
-        $result = $this->service->save( $_POST );
+        $data = MYVH_Save_Organisation_Type_Request::from_post( wp_unslash( $_POST ) );
+
+        $validation_result = $this->request_validator->validate( $data );
+        if ( is_wp_error( $validation_result ) ) {
+            wp_redirect( admin_url( 'admin.php?page=myvh-org-types&error=' . urlencode( $validation_result->get_error_message() ) ) );
+            exit;
+        }
+
+        $result = $this->service->save( $data );
 
         if ( is_wp_error( $result ) ) {
             wp_redirect( admin_url( 'admin.php?page=myvh-org-types&error=' . urlencode( $result->get_error_message() ) ) );
@@ -42,7 +55,15 @@ class MYVH_Organisation_Type_Controller {
 
         check_admin_referer( 'myvh_delete_org_type' );
 
-        $this->service->delete( intval( $_GET['id'] ) );
+        $data = MYVH_Delete_Organisation_Type_Request::from_query( $_GET );
+
+        $validation_result = $this->request_validator->validate_delete( $data );
+        if ( is_wp_error( $validation_result ) ) {
+            wp_redirect( admin_url( 'admin.php?page=myvh-org-types&error=' . urlencode( $validation_result->get_error_message() ) ) );
+            exit;
+        }
+
+        $this->service->delete( $data['id'] );
 
         wp_redirect( admin_url( 'admin.php?page=myvh-org-types&deleted=1' ) );
         exit;
