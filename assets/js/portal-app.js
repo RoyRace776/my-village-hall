@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const routeAliases = {
         'my-bookings': 'bookings',
         'book-room': 'bookings',
+        'new-booking': 'bookings-new',
         'home': 'dashboard'
     };
 
@@ -13,6 +14,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (document.querySelector('.myvh-bookings-list') && typeof MYVH_Bookings !== 'undefined') {
             MYVH_Bookings.init();
+        }
+
+        const bookingEditForm = document.getElementById('myvh-booking-edit-form');
+        if (bookingEditForm) {
+            const submitButton = bookingEditForm.querySelector('button[type="submit"]');
+            if (submitButton) {
+                const trackedFields = Array.from(
+                    bookingEditForm.querySelectorAll('input:not([type="hidden"]), textarea, select')
+                );
+
+                const initialState = JSON.stringify(
+                    trackedFields.map((field) => ({
+                        name: field.name,
+                        value: field.value,
+                    }))
+                );
+
+                const syncSubmitState = () => {
+                    const currentState = JSON.stringify(
+                        trackedFields.map((field) => ({
+                            name: field.name,
+                            value: field.value,
+                        }))
+                    );
+
+                    submitButton.disabled = currentState === initialState;
+                };
+
+                trackedFields.forEach((field) => {
+                    field.addEventListener('input', syncSubmitState);
+                    field.addEventListener('change', syncSubmitState);
+                });
+
+                syncSubmitState();
+            }
         }
     }
 
@@ -33,13 +69,23 @@ document.addEventListener("DOMContentLoaded", () => {
         target.style.color = isError ? '#b32d2e' : '#2d5a27';
     }
 
-    function loadPage(page) {
+    function loadPage(page, params = {}) {
+
+        const query = new URLSearchParams({
+            action: 'myvh_portal_page',
+            page: page,
+            nonce: myvhPortal.nonce,
+        });
+
+        Object.keys(params || {}).forEach((key) => {
+            if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+                query.set(key, params[key]);
+            }
+        });
 
         fetch(
             myvhPortal.ajax_url
-            + "?action=myvh_portal_page"
-            + "&page=" + encodeURIComponent(page)
-            + "&nonce=" + encodeURIComponent(myvhPortal.nonce)
+            + "?" + query.toString()
         )
             .then(r => r.text())
             .then(html => {
@@ -50,10 +96,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function router() {
 
-        let page = location.hash.replace("#", "") || "dashboard";
+        let hash = location.hash.replace("#", "") || "dashboard";
+        let page = hash;
+        let params = {};
+
+        if (hash.includes('?')) {
+            const parts = hash.split('?');
+            page = parts[0] || 'dashboard';
+            const searchParams = new URLSearchParams(parts[1] || '');
+            searchParams.forEach((value, key) => {
+                params[key] = value;
+            });
+        }
+
         page = routeAliases[page] || page;
 
-        loadPage(page);
+        loadPage(page, params);
     }
 
     window.addEventListener("hashchange", router);

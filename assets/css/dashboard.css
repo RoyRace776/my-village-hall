@@ -91,7 +91,7 @@
 
 .myvh-dashboard-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 240px;
   gap: 1.75rem;
   align-items: start;
   margin-bottom: 1.75rem;
@@ -308,11 +308,52 @@
 }
 
 .myvh-booking-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-width: 96px;
   text-align: left;
   font-weight: 600;
   font-size: 14px;
   justify-self: end;
+}
+
+.myvh-booking-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.myvh-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #dfd5c8;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 12px;
+  line-height: 1;
+  background: #fff;
+  color: #5a5045;
+  transition: border-color .12s, background .12s;
+}
+
+.myvh-action-icon:hover {
+  border-color: #c4b9ab;
+  background: #f9f5ee;
+}
+
+.myvh-action-danger {
+  color: #9f2829;
+}
+
+.myvh-action-icon-disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .myvh-booking-main-inline {
@@ -841,6 +882,80 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+/* Edit Booking page uses a cleaner sans-serif hierarchy. */
+.myvh-booking-edit-page .myvh-account-header h2,
+.myvh-booking-edit-page .myvh-account-card-head h3 {
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.myvh-booking-edit-page .myvh-account-header h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.myvh-booking-edit-page .myvh-account-card-head h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.myvh-booking-edit-page .myvh-account-field input,
+.myvh-booking-edit-page .myvh-account-field textarea,
+.myvh-booking-edit-page .myvh-account-field select {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.myvh-booking-edit-page #myvh-booking-edit-form .button.button-primary {
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #b5451b 0%, #933517 100%);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  padding: 10px 16px;
+  box-shadow: 0 6px 18px rgba(181, 69, 27, 0.28);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+
+.myvh-booking-edit-page #myvh-booking-edit-form .button.button-primary:hover,
+.myvh-booking-edit-page #myvh-booking-edit-form .button.button-primary:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(181, 69, 27, 0.34);
+  filter: brightness(1.03);
+}
+
+.myvh-booking-edit-page #myvh-booking-edit-form .button.button-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.myvh-booking-delete-page .myvh-account-actions .myvh-delete-booking-button {
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #c63a2f 0%, #9d261f 100%);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  padding: 10px 16px;
+  box-shadow: 0 6px 18px rgba(157, 38, 31, 0.3);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+
+.myvh-booking-delete-page .myvh-account-actions .myvh-delete-booking-button:hover,
+.myvh-booking-delete-page .myvh-account-actions .myvh-delete-booking-button:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(157, 38, 31, 0.35);
+  filter: brightness(1.04);
+}
+
+.myvh-booking-delete-page .myvh-account-actions .button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ==========================================================================

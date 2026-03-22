@@ -424,6 +424,28 @@ class MYVH_Booking_Service {
         );
     }
 
+    public function delete($id) {
+        $booking_id = intval($id);
+        if ($booking_id <= 0) {
+            return new WP_Error('validation', __('Booking ID is required', 'my-village-hall'));
+        }
+
+        if ($this->booking_addon_repo && !$this->booking_addon_repo->delete_by_booking_id($booking_id)) {
+            return new WP_Error('database', __('Failed to remove booking addons', 'my-village-hall'));
+        }
+
+        if ($this->booking_charge_repo && !$this->booking_charge_repo->delete_by_booking_id($booking_id)) {
+            return new WP_Error('database', __('Failed to remove booking charges', 'my-village-hall'));
+        }
+
+        $deleted = $this->booking_repo->delete($booking_id);
+        if (!$deleted) {
+            return new WP_Error('database', __('Failed to delete booking', 'my-village-hall'));
+        }
+
+        return true;
+    }
+
     public function get_all_with_details($args = []) {
         return $this->booking_repo->get_all_with_details($args);
     }

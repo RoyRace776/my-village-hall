@@ -27,6 +27,27 @@ $result = $booking_service->get_booking_list([
 
 $groups = $result['groups'];
 $today  = date('Y-m-d');
+$now_ts = current_time('timestamp');
+$min_notice_hours = max(0, intval(myvh_setting('booking.general.min_notice_hours', 24)));
+
+$can_delete_booking = static function(array $booking) use ($now_ts, $min_notice_hours): bool {
+    $status = strtolower((string)($booking['Status'] ?? ''));
+    $start_ts = strtotime((string)($booking['StartDate'] ?? '') . ' ' . (string)($booking['StartTime'] ?? ''));
+
+    if (!$start_ts || $start_ts <= $now_ts) {
+        return false;
+    }
+
+    if ($status === 'pending') {
+        return true;
+    }
+
+    if ($status === 'confirmed') {
+        return $start_ts > ($now_ts + ($min_notice_hours * HOUR_IN_SECONDS));
+    }
+
+    return false;
+};
 
 $groups = array_values($groups);
 
@@ -63,7 +84,7 @@ usort($groups, function ($a, $b) use ($today) {
     <div class="myvh-section-header">
         <h2>My Bookings</h2>
 
-        <a href="<?php echo site_url('/dashboard/?tab=new-booking'); ?>"
+        <a href="#new-booking"
            class="myvh-button myvh-button-primary">
             ➕ New Booking
         </a>
@@ -170,6 +191,7 @@ usort($groups, function ($a, $b) use ($today) {
                                 $is_past = $b['StartDate'] < $today;
                                 $status_class = 'is-' . sanitize_html_class($b['Status']);
                                 $child_year = date('Y', strtotime($b['StartDate']));
+                                $can_delete = $can_delete_booking($b);
 
                                 if ($show_child_year_dividers && $last_child_year !== null && $child_year !== $last_child_year):
                                     ?>
@@ -204,6 +226,15 @@ usort($groups, function ($a, $b) use ($today) {
                                             <span class="myvh-status-chip <?php echo esc_attr($status_class); ?>">
                                                 <?php echo esc_html(ucfirst($b['Status'])); ?>
                                             </span>
+                                            <div class="myvh-booking-actions-inline">
+                                                <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo intval($b['Id']); ?>" aria-label="View booking" title="View booking">👁</a>
+                                                <a class="myvh-action-icon" href="#booking-edit?booking_id=<?php echo intval($b['Id']); ?>" aria-label="Edit booking" title="Edit booking">✎</a>
+                                                <?php if ($can_delete): ?>
+                                                    <a class="myvh-action-icon myvh-action-danger" href="#booking-delete?booking_id=<?php echo intval($b['Id']); ?>" aria-label="Delete booking" title="Delete booking">🗑</a>
+                                                <?php else: ?>
+                                                    <span class="myvh-action-icon myvh-action-danger myvh-action-icon-disabled" aria-disabled="true" title="Delete not available">🗑</span>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
 
                                     </div>
@@ -221,6 +252,7 @@ usort($groups, function ($a, $b) use ($today) {
                     $b       = $group['bookings'][0];
                     $is_past = $b['StartDate'] < $today;
                     $status_class = 'is-' . sanitize_html_class($b['Status']);
+                    $can_delete = $can_delete_booking($b);
                     $group_year = date('Y', strtotime($b['StartDate']));
 
                     if ($group_year !== $last_group_year):
@@ -255,6 +287,15 @@ usort($groups, function ($a, $b) use ($today) {
                                 <span class="myvh-status-chip <?php echo esc_attr($status_class); ?>">
                                     <?php echo esc_html(ucfirst($b['Status'])); ?>
                                 </span>
+                                <div class="myvh-booking-actions-inline">
+                                    <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo intval($b['Id']); ?>" aria-label="View booking" title="View booking">👁</a>
+                                    <a class="myvh-action-icon" href="#booking-edit?booking_id=<?php echo intval($b['Id']); ?>" aria-label="Edit booking" title="Edit booking">✎</a>
+                                    <?php if ($can_delete): ?>
+                                        <a class="myvh-action-icon myvh-action-danger" href="#booking-delete?booking_id=<?php echo intval($b['Id']); ?>" aria-label="Delete booking" title="Delete booking">🗑</a>
+                                    <?php else: ?>
+                                        <span class="myvh-action-icon myvh-action-danger myvh-action-icon-disabled" aria-disabled="true" title="Delete not available">🗑</span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
 
                         </div>
