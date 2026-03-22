@@ -370,12 +370,12 @@ class MYVH_Booking_Service {
 
         foreach ($addons as $addon) {
             $addon_id   = intval($addon['addon_id'] ?? 0);
-            $quantity   = floatval($addon['quantity'] ?? 1);
             $unit_price = floatval($addon['unit_price'] ?? 0);
 
-            if ($addon_id <= 0 || $quantity <= 0) continue;
+            if ($addon_id <= 0) continue;
 
-            // For per-hour addons, override quantity with the actual hours booked.
+            // Quantity is system-derived: fixed/per_day => 1, per_hour => booking hours.
+            $quantity = 1.0;
             $addon_record = $this->addon_repo ? $this->addon_repo->get_by_id($addon_id) : null;
             if ($addon_record && ($addon_record['ChargeType'] ?? '') === 'per_hour') {
                 if ($booking_hours === null) {
@@ -387,9 +387,11 @@ class MYVH_Booking_Service {
                     }
                 }
                 if ($booking_hours !== null) {
-                    $quantity = $booking_hours;
+                    $quantity = max(0, $booking_hours);
                 }
             }
+
+            if ($quantity <= 0) continue;
 
             $this->booking_addon_repo->create([
                 'BookingId'   => $booking_id,

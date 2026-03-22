@@ -310,7 +310,6 @@ $status_colors = [
                         <thead>
                             <tr>
                                 <th><?php _e('Add-on', 'my-village-hall'); ?></th>
-                                <th><?php _e('Qty', 'my-village-hall'); ?></th>
                                 <th><?php _e('Unit Price', 'my-village-hall'); ?></th>
                                 <th><?php _e('Total', 'my-village-hall'); ?></th>
                             </tr>
@@ -326,7 +325,6 @@ $status_colors = [
                                             <br><small style="color:#666;"><?php echo esc_html($ba['Description']); ?></small>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo esc_html($ba['Quantity']); ?></td>
                                     <td>£<?php echo number_format($ba['UnitPrice'], 2); ?></td>
                                     <td><strong>£<?php echo number_format($ba['TotalAmount'], 2); ?></strong></td>
                                 </tr>
@@ -334,7 +332,7 @@ $status_colors = [
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="3"><?php _e('Add-ons Total', 'my-village-hall'); ?></th>
+                                <th colspan="2"><?php _e('Add-ons Total', 'my-village-hall'); ?></th>
                                 <th>£<?php echo number_format($addons_total, 2); ?></th>
                             </tr>
                         </tfoot>
@@ -655,7 +653,6 @@ $status_colors = [
                                 <th style="width:30px;"></th>
                                 <th><?php _e('Add-on', 'my-village-hall'); ?></th>
                                 <th style="width:110px;"><?php _e('Unit Price (£)', 'my-village-hall'); ?></th>
-                                <th style="width:90px;"><?php _e('Quantity', 'my-village-hall'); ?></th>
                                 <th style="width:100px;"><?php _e('Total', 'my-village-hall'); ?></th>
                                 <th><?php _e('Note', 'my-village-hall'); ?></th>
                             </tr>
@@ -664,11 +661,12 @@ $status_colors = [
                         <?php foreach ($available_addons as $i => $addon):
                             $existing   = $selected_addon_map[$addon['Id']] ?? null;
                             $is_checked = !empty($existing);
-                            $quantity   = $existing ? floatval($existing['Quantity'])  : 1;
+                            $charge_type = (string)($addon['ChargeType'] ?? 'fixed');
+                            $quantity   = $charge_type === 'per_hour' ? ($existing ? floatval($existing['Quantity']) : 0) : 1;
                             $unit_price = $existing ? floatval($existing['UnitPrice']) : floatval($addon['Price']);
                             $note       = $existing ? esc_attr($existing['Description']) : '';
                         ?>
-                        <tr class="myvh-addon-row<?php echo $is_checked ? ' addon-selected' : ''; ?>">
+                        <tr class="myvh-addon-row<?php echo $is_checked ? ' addon-selected' : ''; ?>" data-charge-type="<?php echo esc_attr($charge_type); ?>">
                             <td>
                                 <input type="checkbox"
                                     class="myvh-addon-checkbox"
@@ -676,6 +674,7 @@ $status_colors = [
                                     <?php checked($is_checked); ?>>
                                 <input type="hidden" name="addons[<?php echo $i; ?>][addon_id]"   value="<?php echo intval($addon['Id']); ?>">
                                 <input type="hidden" name="addons[<?php echo $i; ?>][enabled]"    class="myvh-addon-enabled" value="<?php echo $is_checked ? '1' : '0'; ?>">
+                                <input type="hidden" name="addons[<?php echo $i; ?>][quantity]" class="myvh-addon-qty" value="<?php echo esc_attr($quantity); ?>">
                             </td>
                             <td>
                                 <strong><?php echo esc_html($addon['Name']); ?></strong>
@@ -689,13 +688,6 @@ $status_colors = [
                                     name="addons[<?php echo $i; ?>][unit_price]"
                                     class="small-text myvh-addon-price"
                                     value="<?php echo number_format($unit_price, 2, '.', ''); ?>"
-                                    <?php echo !$is_checked ? 'disabled' : ''; ?>>
-                            </td>
-                            <td>
-                                <input type="number" step="0.5" min="0.5"
-                                    name="addons[<?php echo $i; ?>][quantity]"
-                                    class="small-text myvh-addon-qty"
-                                    value="<?php echo esc_attr($quantity); ?>"
                                     <?php echo !$is_checked ? 'disabled' : ''; ?>>
                             </td>
                             <td class="myvh-addon-total" style="font-weight:bold; white-space:nowrap;">
@@ -714,7 +706,7 @@ $status_colors = [
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="4" style="text-align:right; padding-right:10px;"><?php _e('Add-ons Total:', 'my-village-hall'); ?></th>
+                                <th colspan="3" style="text-align:right; padding-right:10px;"><?php _e('Add-ons Total:', 'my-village-hall'); ?></th>
                                 <th id="myvh-addons-grand-total" style="font-weight:bold; white-space:nowrap;">£0.00</th>
                                 <th></th>
                             </tr>
@@ -811,9 +803,33 @@ $status_colors = [
             refreshOrganisationOptions(initialOrganisationId);
 
             // ── Add-ons panel ────────────────────────────────────────────
+            function getBookingHours() {
+                const startDate = $('#start-date').val();
+                const startTime = $('#start-time').val();
+                const endTime = $('#end-time').val();
+                const endDate = $('#end-date').val() || startDate;
+
+                if (!startDate || !startTime || !endDate || !endTime) {
+                    return 0;
+                }
+
+                const start = new Date(startDate + 'T' + startTime);
+                const end = new Date(endDate + 'T' + endTime);
+                const diffHours = (end - start) / 3600000;
+
+                return diffHours > 0 ? Math.round(diffHours * 100) / 100 : 0;
+            }
+
+            function addonQuantityForRow($row) {
+                const chargeType = String($row.data('charge-type') || 'fixed');
+                const quantity = chargeType === 'per_hour' ? getBookingHours() : 1;
+                $row.find('.myvh-addon-qty').val(quantity);
+                return quantity;
+            }
+
             function recalcAddonRow($row) {
                 var price = parseFloat($row.find('.myvh-addon-price').val()) || 0;
-                var qty   = parseFloat($row.find('.myvh-addon-qty').val())   || 0;
+                var qty   = addonQuantityForRow($row);
                 var total = price * qty;
                 $row.find('.myvh-addon-total').text(total > 0 ? '£' + total.toFixed(2) : '—');
             }
@@ -822,7 +838,7 @@ $status_colors = [
                 var grand = 0;
                 $('.myvh-addon-row.addon-selected').each(function() {
                     var price = parseFloat($(this).find('.myvh-addon-price').val()) || 0;
-                    var qty   = parseFloat($(this).find('.myvh-addon-qty').val())   || 0;
+                    var qty   = addonQuantityForRow($(this));
                     grand += price * qty;
                 });
                 $('#myvh-addons-grand-total').text('£' + grand.toFixed(2));
@@ -833,14 +849,14 @@ $status_colors = [
                 var $row     = $(this).closest('.myvh-addon-row');
                 var enabled  = this.checked;
                 $row.toggleClass('addon-selected', enabled);
-                $row.find('.myvh-addon-price, .myvh-addon-qty, input[type="text"]').prop('disabled', !enabled);
+                $row.find('.myvh-addon-price, input[type="text"]').prop('disabled', !enabled);
                 $row.find('.myvh-addon-enabled').val(enabled ? '1' : '0');
                 recalcAddonRow($row);
                 recalcGrandTotal();
             });
 
-            // Recalc on price / qty changes
-            $(document).on('input change', '.myvh-addon-price, .myvh-addon-qty', function() {
+            // Recalc on price changes
+            $(document).on('input change', '.myvh-addon-price', function() {
                 var $row = $(this).closest('.myvh-addon-row');
                 recalcAddonRow($row);
                 recalcGrandTotal();
@@ -915,6 +931,8 @@ $status_colors = [
             }
 
             $('#start-time, #end-time, #start-date, #end-date').on('change', updateDuration);
+
+            $('#start-time, #end-time, #start-date, #end-date').on('change', recalcGrandTotal);
 
             updateDuration(); // Initial calculation
 

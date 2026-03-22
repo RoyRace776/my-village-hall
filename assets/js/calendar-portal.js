@@ -188,6 +188,7 @@ var MYVH_Calendar = (function() {
             lockCustomer: true,
             lockOrganisation: true,
             hideCustomer: true,
+            lockAddonPrices: true,
 
             onClose: () => api?.clearSelection?.(),
             onSuccess: () => api.reload()

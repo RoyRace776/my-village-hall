@@ -28,6 +28,7 @@ window.MYVH_BookingModal = (function() {
             onOpen: () => {},
             onClose: () => {},
             beforeSubmit: () => true, // allow validation hook
+            lockAddonPrices: false,
 
             ...userConfig
         };
@@ -259,13 +260,27 @@ window.MYVH_BookingModal = (function() {
         });
     }
 
+    function isAddonPriceLocked() {
+        return !!config.lockAddonPrices || config.context === "portal";
+    }
+
     function toggleAddonRow(row, enabled) {
         const enabledField = row.querySelector(".myvh-modal-addon-enabled");
         if (enabledField) {
             enabledField.value = enabled ? "1" : "0";
         }
 
-        row.querySelectorAll(".myvh-modal-addon-price, .myvh-modal-addon-qty").forEach(input => {
+        row.querySelectorAll(".myvh-modal-addon-price").forEach(input => {
+            if (isAddonPriceLocked()) {
+                input.disabled = !enabled;
+                input.readOnly = true;
+            } else {
+                input.disabled = !enabled;
+                input.readOnly = false;
+            }
+        });
+
+        row.querySelectorAll(".myvh-modal-addon-qty").forEach(input => {
             input.disabled = !enabled;
         });
 

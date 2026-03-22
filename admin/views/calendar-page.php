@@ -68,6 +68,11 @@ add_action('admin_footer', function() use ($available_addons) {
         <div class="myvh-modal-content">
             <h2>Create Booking</h2>
 
+            <p style="margin-bottom: 15px;">
+                <button type="submit" class="button button-primary" form="myvh-booking-form">Create Booking</button>
+                <button type="button" class="button myvh-cancel">Cancel</button>
+            </p>
+
             <form id="myvh-booking-form">
                 <input type="hidden" name="start">
                 <input type="hidden" name="end">
@@ -200,7 +205,6 @@ add_action('admin_footer', function() use ($available_addons) {
                                 <th style="width:30px;"></th>
                                 <th>Add-on</th>
                                 <th style="width:110px;">Unit Price</th>
-                                <th style="width:90px;">Qty</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -213,13 +217,12 @@ add_action('admin_footer', function() use ($available_addons) {
                                     </td>
                                     <td>
                                         <strong><?php echo esc_html($addon['Name']); ?></strong>
+                                        <br><small style="color:#999;"><?php echo esc_html(ucfirst(str_replace('_', ' ', $addon['ChargeType']))); ?></small>
                                     </td>
                                     <td>
                                         <input type="number" step="0.01" min="0" name="addons[<?php echo $i; ?>][unit_price]" class="small-text myvh-modal-addon-price" value="<?php echo esc_attr(number_format((float)$addon['Price'], 2, '.', '')); ?>" disabled>
                                     </td>
-                                    <td>
-                                        <input type="number" step="0.5" min="0.5" name="addons[<?php echo $i; ?>][quantity]" class="small-text myvh-modal-addon-qty" value="1" disabled>
-                                    </td>
+                                    <input type="hidden" name="addons[<?php echo $i; ?>][quantity]" value="1">
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

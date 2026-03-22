@@ -215,7 +215,7 @@ class MYVH_Asset_Loader {
             'myvh-dashboard',
             MYVH_PLUGIN_URL . 'assets/css/dashboard.css',
             $fonts_url ? [ 'myvh-google-fonts' ] : [],
-            MYVH_VERSION
+            self::asset_version( 'assets/css/dashboard.css' )
         );
 
         wp_enqueue_style( 'myvh-calendar-theme' );
