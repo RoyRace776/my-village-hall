@@ -9,7 +9,9 @@ class MYVH_Booking_Service {
 
     private $room_service;
     private $booking_repo;
+    private $booking_charge_repo;
     private $booking_addon_repo;
+    private $addon_repo;
     private $validator;
     private $availability;
     private $room_rules;
@@ -22,7 +24,9 @@ class MYVH_Booking_Service {
     public function __construct(
         MYVH_Room_Service $room_service,
         MYVH_Booking_Repository $booking_repo,
+        MYVH_Booking_Charge_Repository $booking_charge_repo,
         MYVH_Booking_Addon_Repository $booking_addon_repo,
+        MYVH_Addon_Repository $addon_repo,
         MYVH_Booking_Validator $validator,
         MYVH_Availability_Service $availability,
         MYVH_Room_Rules_Service $room_rules,
@@ -33,7 +37,9 @@ class MYVH_Booking_Service {
     ) {
         $this->room_service = $room_service;
         $this->booking_repo = $booking_repo;
+        $this->booking_charge_repo = $booking_charge_repo;
         $this->booking_addon_repo = $booking_addon_repo;
+        $this->addon_repo = $addon_repo;
         $this->validator = $validator;
         $this->availability = $availability;
         $this->room_rules = $room_rules;
@@ -192,8 +198,10 @@ class MYVH_Booking_Service {
         // Replace addons: delete existing then re-save.  This saves the price for theadd ons
         $this->save_addons(intval($data['booking_id']), $data['addons'] ?? [], true);
 
-        //TODO: Add in the row to the booking charges table to fix the charges, but only if
-        //      the booking is still pending
+        $charge_result = $this->recalculate_booking_charges(intval($data['booking_id']));
+        if (is_wp_error($charge_result)) {
+            return $charge_result;
+        }
 
         $this->dispatch_update_event($data, $current_record['Status'] ?? null);
 
@@ -207,8 +215,15 @@ class MYVH_Booking_Service {
             return new WP_Error('database', __('Failed to create booking', 'my-village-hall'));
         }
 
-        //TODO: Add in the row to the booking charges table to fix the charges, but only if
-        //      the booking is still pending
+        // Save addons before price snapshot so addon totals are included.
+        $this->save_addons($booking_id, $data['addons'] ?? []);
+
+        $charge_result = $this->recalculate_booking_charges($booking_id);
+        if (is_wp_error($charge_result)) {
+            $this->booking_addon_repo->delete_by_booking_id($booking_id);
+            $this->booking_repo->delete($booking_id);
+            return $charge_result;
+        }
 
         MYVH_Event_Dispatcher::dispatch(
             MYVH_Booking_Events::CREATED,
@@ -231,9 +246,6 @@ class MYVH_Booking_Service {
                 ]
             );
         }
-
-        // Save addons
-        $this->save_addons($booking_id, $data['addons'] ?? []);
 
         // Handle recurring pattern if requested
         if (!empty($data['is_recurring']) && $this->recurring_pattern_service) {
@@ -278,6 +290,39 @@ class MYVH_Booking_Service {
         return $booking_id;
     }
 
+    /**
+     * Recalculate and persist booking charge snapshot rows.
+     *
+     * TODO: Decide all lifecycle events that should trigger automatic
+     * recalculation (status transitions, room/time edits, addon changes, etc.).
+     *
+     * @param int $booking_id
+     * @return true|WP_Error
+     */
+    public function recalculate_booking_charges($booking_id) {
+        $booking_id = intval($booking_id);
+        if ($booking_id <= 0) {
+            return new WP_Error('validation', __('Invalid booking id for charge recalculation', 'my-village-hall'));
+        }
+
+        $snapshot = $this->pricing->get_charge_snapshot($booking_id);
+        if (is_wp_error($snapshot)) {
+            return $snapshot;
+        }
+
+        $deleted = $this->booking_charge_repo->delete_by_booking_id($booking_id);
+        if ($deleted === false) {
+            return new WP_Error('database', __('Failed to clear previous booking charge rows', 'my-village-hall'));
+        }
+
+        $created = $this->booking_charge_repo->create($snapshot);
+        if ($created === false) {
+            return new WP_Error('database', __('Failed to save booking charge snapshot', 'my-village-hall'));
+        }
+
+        return true;
+    }
+
     private function resolve_public_visibility($data, $organisation_id, $booking_id) {
         if (array_key_exists('public', $data)) {
             return !empty($data['public']) ? 1 : 0;
@@ -320,12 +365,31 @@ class MYVH_Booking_Service {
 
         if (empty($addons) || !is_array($addons)) return;
 
+        // Fetch booking hours lazily — only needed when a per_hour addon is present.
+        $booking_hours = null;
+
         foreach ($addons as $addon) {
             $addon_id   = intval($addon['addon_id'] ?? 0);
             $quantity   = floatval($addon['quantity'] ?? 1);
             $unit_price = floatval($addon['unit_price'] ?? 0);
 
             if ($addon_id <= 0 || $quantity <= 0) continue;
+
+            // For per-hour addons, override quantity with the actual hours booked.
+            $addon_record = $this->addon_repo ? $this->addon_repo->get_by_id($addon_id) : null;
+            if ($addon_record && ($addon_record['ChargeType'] ?? '') === 'per_hour') {
+                if ($booking_hours === null) {
+                    $booking = $this->booking_repo->get_by_id($booking_id);
+                    if ($booking) {
+                        $start = strtotime($booking['StartDate'] . ' ' . $booking['StartTime']);
+                        $end   = strtotime($booking['EndDate']   . ' ' . $booking['EndTime']);
+                        $booking_hours = round(($end - $start) / 3600, 2);
+                    }
+                }
+                if ($booking_hours !== null) {
+                    $quantity = $booking_hours;
+                }
+            }
 
             $this->booking_addon_repo->create([
                 'BookingId'   => $booking_id,

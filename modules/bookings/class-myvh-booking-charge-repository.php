@@ -10,17 +10,17 @@ if (!defined('ABSPATH')) {
 }
 
 class MYVH_Booking_Charge_Repository {
-    
+
     /**
      * @var wpdb
      */
     private $wpdb;
-    
+
     /**
      * @var string
      */
     private $table_name;
-    
+
     /**
      * Constructor
      */
@@ -28,7 +28,7 @@ class MYVH_Booking_Charge_Repository {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_booking_charges';
     }
-    
+
     /**
      * Create a new record
      *
@@ -41,15 +41,15 @@ class MYVH_Booking_Charge_Repository {
             $data,
             $this->get_format($data)
         );
-        
+
         if ($result === false) {
             error_log('MYVH Booking_Charge Repository Error (create): ' . $this->wpdb->last_error);
             return false;
         }
-        
+
         return $this->wpdb->insert_id;
     }
-    
+
     /**
      * Get all records
      *
@@ -63,29 +63,29 @@ class MYVH_Booking_Charge_Repository {
             'limit' => null,
             'offset' => null
         );
-        
+
         $args = wp_parse_args($args, $defaults);
-        
+
         $sql = "SELECT * FROM $this->table_name";
         $sql .= " ORDER BY {$args['orderby']} {$args['order']}";
-        
+
         if ($args['limit'] !== null) {
             $sql .= " LIMIT " . intval($args['limit']);
-            
+
             if ($args['offset'] !== null) {
                 $sql .= " OFFSET " . intval($args['offset']);
             }
         }
-        
+
         $results = $this->wpdb->get_results($sql, ARRAY_A);
-        
+
         if ($results === null) {
             error_log('MYVH Booking_Charge Repository Error (get_all): ' . $this->wpdb->last_error);
         }
-        
+
         return $results;
     }
-    
+
     /**
      * Get a record by ID
      *
@@ -97,16 +97,38 @@ class MYVH_Booking_Charge_Repository {
             "SELECT * FROM $this->table_name WHERE Id = %d",
             $id
         );
-        
+
         $result = $this->wpdb->get_row($sql, ARRAY_A);
-        
+
         if ($result === null && $this->wpdb->last_error) {
             error_log('MYVH Booking_Charge Repository Error (get_by_id): ' . $this->wpdb->last_error);
         }
-        
+
         return $result;
     }
-    
+
+    /**
+     * Get all charge rows for a booking
+     *
+     * @param int $booking_id Booking ID
+     * @return array
+     */
+    public function get_by_booking_id($booking_id) {
+        $sql = $this->wpdb->prepare(
+            "SELECT * FROM $this->table_name WHERE BookingId = %d ORDER BY Id ASC",
+            $booking_id
+        );
+
+        $result = $this->wpdb->get_results($sql, ARRAY_A);
+
+        if ($result === null && $this->wpdb->last_error) {
+            error_log('MYVH Booking_Charge Repository Error (get_by_booking_id): ' . $this->wpdb->last_error);
+            return [];
+        }
+
+        return $result ?? [];
+    }
+
     /**
      * Update a record
      *
@@ -122,15 +144,15 @@ class MYVH_Booking_Charge_Repository {
             $this->get_format($data),
             array('%d')
         );
-        
+
         if ($result <> 0) {
             error_log('MYVH Booking_Charge Repository Error (update): ' . $this->wpdb->last_error);
             return false;
         }
-        
+
         return true;
     }
-    
+
     /**
      * Delete a record
      *
@@ -143,15 +165,36 @@ class MYVH_Booking_Charge_Repository {
             array('Id' => $id),
             array('%d')
         );
-        
+
         if ($result === false) {
             error_log('MYVH Booking_Charge Repository Error (delete): ' . $this->wpdb->last_error);
             return false;
         }
-        
+
         return true;
     }
-    
+
+    /**
+     * Delete all charge rows for a booking
+     *
+     * @param int $booking_id Booking ID
+     * @return bool True on success, false on failure
+     */
+    public function delete_by_booking_id($booking_id) {
+        $result = $this->wpdb->delete(
+            $this->table_name,
+            array('BookingId' => intval($booking_id)),
+            array('%d')
+        );
+
+        if ($result === false) {
+            error_log('MYVH Booking_Charge Repository Error (delete_by_booking_id): ' . $this->wpdb->last_error);
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * Get the format array for wpdb operations
      *
@@ -160,7 +203,7 @@ class MYVH_Booking_Charge_Repository {
      */
     private function get_format($data) {
         $formats = array();
-        
+
         foreach ($data as $key => $value) {
             if (is_int($value)) {
                 $formats[] = '%d';
@@ -170,7 +213,7 @@ class MYVH_Booking_Charge_Repository {
                 $formats[] = '%s';
             }
         }
-        
+
         return $formats;
     }
 }

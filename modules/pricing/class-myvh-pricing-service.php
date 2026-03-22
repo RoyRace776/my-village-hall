@@ -22,7 +22,26 @@ Class MYVH_Pricing_Service {
 
     public function calculate_price($booking_id) {
 
-        $room_price = 0.0;
+        $snapshot = $this->get_charge_snapshot($booking_id);
+        if (is_wp_error($snapshot)) {
+            return $snapshot;
+        }
+
+        return floatval($snapshot['TotalAmount']) + $this->calculate_addon_price($booking_id);
+    }
+
+    /**
+     * Build a persistable snapshot payload for myvh_booking_charges.
+     *
+     * @param int $booking_id
+     * @return array|WP_Error
+     */
+    public function get_charge_snapshot($booking_id) {
+
+        $booking_id = intval($booking_id);
+        if ($booking_id <= 0) {
+            return new WP_Error('invalid_booking', __('Invalid booking id', 'my-village-hall'));
+        }
 
         $booking = $this->booking_repo->get_by_id($booking_id);
         if (!$booking) {
@@ -44,20 +63,55 @@ Class MYVH_Pricing_Service {
             return new WP_Error('no room rate', __('No room rate configured', 'my-village-hall'));
         }
 
-        if ($room_rate['RateType'] === 'fixed') {
-            $room_price =  floatval($room_rate['Rate']);
-        } else {
-            // hourly calculation
-            $start = strtotime($booking['StartDate'] . ' ' . $booking['StartTime']);
-            $end = strtotime($booking['EndDate'] . ' ' . $booking['EndTime']);
+        ['quantity' => $quantity, 'unit_price' => $unit_price, 'total' => $total] =
+            $this->calculate_room_price($booking, $room_rate);
 
-            $interval = $end - $start;
+        return [
+            'BookingId'   => $booking_id,
+            'RoomRateId'  => intval($room_rate['Id']),
+            'ChargeType'  => sanitize_text_field((string) ($room_rate['ChargeType'] ?? $room_rate['RateType'] ?? 'fixed')),
+            'Description' => __('Room charge snapshot', 'my-village-hall'),
+            'Quantity'    => $quantity,
+            'UnitPrice'   => $unit_price,
+            'TotalAmount' => $total,
+            'TaxRate'     => 0.00,
+            'TaxAmount'   => 0.00,
+        ];
+    }
 
-            $hours = $interval/60/60;
-            $room_price = round($hours * floatval($room_rate['Rate']), 2);
+    /**
+     * Returns quantity, unit_price, and total for the room charge.
+     *
+     * For hourly/per-day rates: Quantity = hours booked, UnitPrice = rate per hour.
+     * For fixed rates: Quantity = 1, UnitPrice = fixed rate.
+     *
+     * @param array $booking
+     * @param array $room_rate
+     * @return array { quantity: float, unit_price: float, total: float }
+     */
+    private function calculate_room_price($booking, $room_rate) {
+
+        $charge_type = $room_rate['ChargeType'] ?? $room_rate['RateType'] ?? '';
+        $rate        = floatval($room_rate['Rate']);
+
+        if ($charge_type === 'fixed') {
+            return [
+                'quantity'   => 1.00,
+                'unit_price' => round($rate, 2),
+                'total'      => round($rate, 2),
+            ];
         }
 
-        return $room_price + $this->calculate_addon_price($booking_id);
+        // Hourly / per-day: quantity is the number of hours booked
+        $start = strtotime($booking['StartDate'] . ' ' . $booking['StartTime']);
+        $end   = strtotime($booking['EndDate']   . ' ' . $booking['EndTime']);
+        $hours = round(($end - $start) / 3600, 2);
+
+        return [
+            'quantity'   => $hours,
+            'unit_price' => round($rate, 2),
+            'total'      => round($hours * $rate, 2),
+        ];
     }
 
     private function calculate_addon_price($booking_id) {
