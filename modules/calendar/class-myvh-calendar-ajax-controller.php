@@ -7,17 +7,20 @@ class MYVH_Calendar_Ajax_Controller {
     private $booking_service;
     private $room_repository;
     private $customer_service;
+    private $client_admin_service;
 
     public function __construct(
         MYVH_Calendar_Service $calendar_service,
         MYVH_Booking_Service $booking_service,
         MYVH_Room_Repository $room_repository,
-        MYVH_Customer_Service $customer_service) {
+        MYVH_Customer_Service $customer_service,
+        MYVH_Client_Admin_Service $client_admin_service) {
 
         $this->calendar_service = $calendar_service;
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;
         $this->customer_service = $customer_service;
+        $this->client_admin_service = $client_admin_service;
     }
 
     public function register_routes(): void {
@@ -39,6 +42,20 @@ class MYVH_Calendar_Ajax_Controller {
         }
 
         $user_id = get_current_user_id();
+
+        if ($this->client_admin_service->can_administer_blog($user_id, get_current_blog_id()) || current_user_can('manage_myvh')) {
+            $customers = $this->customer_service->get_all([
+                'orderby' => 'Name',
+                'order' => 'ASC',
+            ]);
+
+            wp_send_json(array_map(static function ($customer): array {
+                return [
+                    'id' => (int) ($customer['Id'] ?? 0),
+                    'name' => (string) ($customer['Name'] ?? ''),
+                ];
+            }, $customers ?: []));
+        }
 
         // Map WP user → customer
         $customer = $this->customer_service->get_by_user_id($user_id);

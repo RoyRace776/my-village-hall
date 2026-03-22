@@ -457,6 +457,10 @@
     background: #fff;
 }
 
+.myvh-portal-calendar-frame {
+    height: clamp(420px, 62vh, 700px);
+}
+
 body .calendar_default_event_inner,
 body .month_default_event_inner,
 body .scheduler_default_event_inner {
@@ -472,6 +476,13 @@ body .scheduler_default_event_inner {
     .myvh-calendar-nav,
     .myvh-calendar-views { width: 100%; flex-wrap: wrap; }
     .myvh-cal-btn { min-width: 0; flex: 1 1 auto; }
+    .myvh-portal-calendar-frame { height: min(58vh, 560px); }
+}
+
+@media (max-width: 600px) {
+    .myvh-portal-calendar-frame {
+        height: min(52vh, 480px);
+    }
 }
 
 /* ── Vertical timetable ───────────────────────────────────────────────────── */

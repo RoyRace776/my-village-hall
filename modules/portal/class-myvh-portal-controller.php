@@ -4,15 +4,18 @@ class MYVH_Portal_Controller {
     private $booking_service;
     private $customer_service;
     private $organisation_service;
+    private $client_admin_service;
 
     public function __construct(
         MYVH_Booking_Service $booking_service,
         MYVH_Customer_Service $customer_service,
-        MYVH_Organisation_Service $organisation_service
+        MYVH_Organisation_Service $organisation_service,
+        MYVH_Client_Admin_Service $client_admin_service
     ) {
         $this->booking_service = $booking_service;
         $this->customer_service = $customer_service;
         $this->organisation_service = $organisation_service;
+        $this->client_admin_service = $client_admin_service;
     }
 
     public function register() {
@@ -28,6 +31,11 @@ class MYVH_Portal_Controller {
         add_action('wp_ajax_myvh_portal_org_set_admin', [$this, 'organisation_set_member_admin']);
         add_action('wp_ajax_myvh_portal_update_booking', [$this, 'update_booking']);
         add_action('wp_ajax_myvh_portal_delete_booking', [$this, 'delete_booking']);
+        add_action('wp_ajax_myvh_portal_add_client_admin', [$this, 'add_client_admin']);
+        add_action('wp_ajax_myvh_portal_remove_client_admin', [$this, 'remove_client_admin']);
+        add_action('wp_ajax_myvh_portal_save_customer', [$this, 'save_customer']);
+        add_action('wp_ajax_myvh_portal_delete_customer', [$this, 'delete_customer']);
+        add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
     }
 
     public function load_page() {
@@ -39,52 +47,98 @@ class MYVH_Portal_Controller {
         check_ajax_referer('myvh_portal', 'nonce');
 
         $page = sanitize_text_field($_GET['page'] ?? 'dashboard');
+        $customer = $this->customer_service->get_by_user_id(get_current_user_id());
+        $is_client_admin = $this->current_user_is_client_admin();
+        $has_customer = !empty($customer['Id']);
 
         switch ($page) {
 
             case 'bookings':
+                $groups = $this->get_portal_booking_groups($customer, $is_client_admin);
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/bookings.php';
                 break;
 
             case 'bookings-new':
-                $customer = $this->customer_service->get_by_user_id(get_current_user_id());
+                $can_create_booking = $is_client_admin || $has_customer;
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/bookings-new.php';
                 break;
 
             case 'booking-view':
-                $customer = $this->customer_service->get_by_user_id(get_current_user_id());
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = $this->get_customer_booking($booking_id, intval($customer['Id'] ?? 0));
+                $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-view.php';
                 break;
 
             case 'booking-edit':
-                $customer = $this->customer_service->get_by_user_id(get_current_user_id());
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = $this->get_customer_booking($booking_id, intval($customer['Id'] ?? 0));
+                $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-edit.php';
                 break;
 
             case 'booking-delete':
-                $customer = $this->customer_service->get_by_user_id(get_current_user_id());
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = $this->get_customer_booking($booking_id, intval($customer['Id'] ?? 0));
+                $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
                 $delete_rules = $this->evaluate_booking_delete_rules($booking);
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-delete.php';
                 break;
 
             case 'calendar':
+                $can_create_booking = $is_client_admin || $has_customer;
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/calendar.php';
                 break;
 
             case 'account':
-                $customer = $this->customer_service->get_by_user_id(get_current_user_id());
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/account.php';
                 break;
 
-            case 'organisations':
-                $customer = $this->customer_service->get_by_user_id(get_current_user_id());
+            case 'client-admins':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
 
+                $client_admins = $this->client_admin_service->get_assigned_users_for_blog(get_current_blog_id());
+                $accessible_sites = $this->client_admin_service->get_accessible_sites_for_user(get_current_user_id());
+                include MYVH_PLUGIN_DIR . 'modules/portal/templates/client-admins.php';
+                break;
+
+            case 'customers':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $customers = $this->customer_service->get_all([
+                    'orderby' => 'Name',
+                    'order' => 'ASC',
+                ]);
+
+                include MYVH_PLUGIN_DIR . 'modules/portal/templates/customers.php';
+                break;
+
+            case 'settings':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $settings_groups = [];
+                foreach (MYVH_Settings_Registry::groups() as $group_key => $group_meta) {
+                    $settings = MYVH_Settings_Registry::get($group_key);
+
+                    if (!$settings) {
+                        continue;
+                    }
+
+                    $settings_groups[] = [
+                        'key' => $group_key,
+                        'label' => $group_meta['label'] ?? ucfirst((string) $group_key),
+                        'schema' => $settings->schema(),
+                        'values' => $settings->all(),
+                    ];
+                }
+
+                include MYVH_PLUGIN_DIR . 'modules/portal/templates/settings.php';
+                break;
+
+            case 'organisations':
                 $my_memberships = [];
                 $pending_requests = [];
                 $manageable_organisations = [];
@@ -127,11 +181,7 @@ class MYVH_Portal_Controller {
                 break;
 
             default:
-                $customer = $this->customer_service->get_by_user_id(get_current_user_id());
-                $result = $customer ? $this->booking_service->get_booking_list([
-                    'customer_id' => $customer['Id']
-                ]) : ['groups' => []];
-                $groups = $result['groups'];
+                $groups = $this->get_portal_booking_groups($customer, $is_client_admin);
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/dashboard.php';
         }
 
@@ -173,23 +223,23 @@ class MYVH_Portal_Controller {
 
         $customer = $this->customer_service->get_by_user_id($user_id);
 
-        if (!$customer || empty($customer['Id'])) {
+        if ($customer && !empty($customer['Id'])) {
+            $saved = $this->customer_service->save([
+                'customer_id' => (int) $customer['Id'],
+                'name' => $name,
+                'email' => $email,
+                'phone_number' => $phone_number,
+                'address_line1' => $address_line1,
+                'post_code' => $post_code,
+                'email_verified' => !empty($customer['EmailVerified']),
+                'user_id' => $user_id,
+            ]);
+
+            if (is_wp_error($saved)) {
+                wp_send_json_error($saved->get_error_message(), 400);
+            }
+        } elseif (!$this->current_user_is_client_admin()) {
             wp_send_json_error('Customer profile not found', 400);
-        }
-
-        $saved = $this->customer_service->save([
-            'customer_id' => (int) $customer['Id'],
-            'name' => $name,
-            'email' => $email,
-            'phone_number' => $phone_number,
-            'address_line1' => $address_line1,
-            'post_code' => $post_code,
-            'email_verified' => !empty($customer['EmailVerified']),
-            'user_id' => $user_id,
-        ]);
-
-        if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
         }
 
         wp_send_json_success(['message' => 'Account details updated']);
@@ -392,7 +442,9 @@ class MYVH_Portal_Controller {
         check_ajax_referer('myvh_portal', 'nonce');
 
         $customer = $this->customer_service->get_by_user_id(get_current_user_id());
-        if (empty($customer['Id'])) {
+        $is_client_admin = $this->current_user_is_client_admin();
+
+        if (empty($customer['Id']) && !$is_client_admin) {
             wp_send_json_error('Customer profile not found', 400);
         }
 
@@ -401,7 +453,7 @@ class MYVH_Portal_Controller {
             wp_send_json_error('Booking ID is required', 400);
         }
 
-        $booking = $this->get_customer_booking($booking_id, intval($customer['Id']));
+        $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
         if (!$booking) {
             wp_send_json_error('Booking not found', 404);
         }
@@ -413,7 +465,7 @@ class MYVH_Portal_Controller {
 
         $save_result = $this->booking_service->save([
             'booking_id'       => $booking_id,
-            'customer_id'      => intval($customer['Id']),
+            'customer_id'      => intval($booking['CustomerId'] ?? 0),
             'organisation_id'  => intval($booking['OrganisationId'] ?? 0),
             'room_id'          => intval($booking['RoomId']),
             'status'           => sanitize_text_field($booking['Status']),
@@ -442,7 +494,9 @@ class MYVH_Portal_Controller {
         check_ajax_referer('myvh_portal', 'nonce');
 
         $customer = $this->customer_service->get_by_user_id(get_current_user_id());
-        if (empty($customer['Id'])) {
+        $is_client_admin = $this->current_user_is_client_admin();
+
+        if (empty($customer['Id']) && !$is_client_admin) {
             wp_send_json_error('Customer profile not found', 400);
         }
 
@@ -451,7 +505,7 @@ class MYVH_Portal_Controller {
             wp_send_json_error('Booking ID is required', 400);
         }
 
-        $booking = $this->get_customer_booking($booking_id, intval($customer['Id']));
+        $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
         if (!$booking) {
             wp_send_json_error('Booking not found', 404);
         }
@@ -467,6 +521,133 @@ class MYVH_Portal_Controller {
         }
 
         wp_send_json_success(['message' => 'Booking deleted']);
+    }
+
+    public function add_client_admin() {
+        $this->require_client_admin_access();
+
+        $identifier = sanitize_text_field($_POST['user_identifier'] ?? '');
+
+        if ($identifier === '') {
+            wp_send_json_error('Email address or username is required', 400);
+        }
+
+        $user = $this->client_admin_service->find_user($identifier);
+
+        if (!$user) {
+            wp_send_json_error('No WordPress user was found with those details', 404);
+        }
+
+        $this->client_admin_service->add_assignment(get_current_blog_id(), (int) $user->ID);
+
+        wp_send_json_success(['message' => 'Client administrator added']);
+    }
+
+    public function remove_client_admin() {
+        $this->require_client_admin_access();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if ($user_id <= 0) {
+            wp_send_json_error('User ID is required', 400);
+        }
+
+        $this->client_admin_service->remove_assignment(get_current_blog_id(), $user_id);
+
+        wp_send_json_success(['message' => 'Client administrator removed']);
+    }
+
+    public function save_customer() {
+        $this->require_client_admin_access();
+
+        $customer_id = intval($_POST['customer_id'] ?? 0);
+        $name = sanitize_text_field($_POST['name'] ?? '');
+        $email = sanitize_email($_POST['email'] ?? '');
+        $phone_number = sanitize_text_field($_POST['phone_number'] ?? '');
+        $address_line1 = sanitize_text_field($_POST['address_line1'] ?? '');
+        $post_code = sanitize_text_field($_POST['post_code'] ?? '');
+        $email_verified = !empty($_POST['email_verified']);
+
+        if ($name === '') {
+            wp_send_json_error('Customer name is required', 400);
+        }
+
+        if ($email === '' || !is_email($email)) {
+            wp_send_json_error('A valid customer email is required', 400);
+        }
+
+        $payload = [
+            'name' => $name,
+            'email' => $email,
+            'phone_number' => $phone_number,
+            'address_line1' => $address_line1,
+            'post_code' => $post_code,
+            'email_verified' => $email_verified,
+        ];
+
+        if ($customer_id > 0) {
+            $payload['customer_id'] = $customer_id;
+        }
+
+        try {
+            $saved = $this->customer_service->save($payload);
+        } catch (Throwable $throwable) {
+            wp_send_json_error($throwable->getMessage(), 400);
+        }
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        wp_send_json_success([
+            'message' => $customer_id > 0 ? 'Customer updated' : 'Customer created',
+            'customer_id' => (int) $saved,
+        ]);
+    }
+
+    public function delete_customer() {
+        $this->require_client_admin_access();
+
+        $customer_id = intval($_POST['customer_id'] ?? 0);
+
+        if ($customer_id <= 0) {
+            wp_send_json_error('Customer ID is required', 400);
+        }
+
+        $deleted = $this->customer_service->delete($customer_id);
+
+        if (is_wp_error($deleted)) {
+            wp_send_json_error($deleted->get_error_message(), 400);
+        }
+
+        if (!$deleted) {
+            wp_send_json_error('Failed to delete customer', 400);
+        }
+
+        wp_send_json_success(['message' => 'Customer deleted']);
+    }
+
+    public function save_client_settings() {
+        $this->require_client_admin_access();
+
+        $group = sanitize_key($_POST['settings_group'] ?? '');
+
+        if ($group === '') {
+            wp_send_json_error('Settings group is required', 400);
+        }
+
+        $settings = MYVH_Settings_Registry::get($group);
+
+        if (!$settings) {
+            wp_send_json_error('Settings group not found', 404);
+        }
+
+        $input = wp_unslash($_POST);
+        unset($input['action'], $input['nonce'], $input['settings_group']);
+
+        $settings->save($input);
+
+        wp_send_json_success(['message' => 'Client settings updated']);
     }
 
     private function get_authenticated_customer() {
@@ -502,6 +683,51 @@ class MYVH_Portal_Controller {
         }
 
         return null;
+    }
+
+    private function get_accessible_booking($booking_id, $customer_id, bool $is_client_admin) {
+        if ($booking_id <= 0) {
+            return null;
+        }
+
+        if ($is_client_admin) {
+            return $this->booking_service->get_by_id_with_details((int) $booking_id);
+        }
+
+        return $this->get_customer_booking($booking_id, (int) $customer_id);
+    }
+
+    private function get_portal_booking_groups($customer, bool $is_client_admin): array {
+        if ($is_client_admin) {
+            $result = $this->booking_service->get_booking_list();
+            return $result['groups'];
+        }
+
+        if (empty($customer['Id'])) {
+            return [];
+        }
+
+        $result = $this->booking_service->get_booking_list([
+            'customer_id' => $customer['Id']
+        ]);
+
+        return $result['groups'];
+    }
+
+    private function current_user_is_client_admin(): bool {
+        return $this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
+    }
+
+    private function require_client_admin_access(): void {
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Not logged in', 401);
+        }
+
+        check_ajax_referer('myvh_portal', 'nonce');
+
+        if (!$this->current_user_is_client_admin()) {
+            wp_send_json_error('Permission denied', 403);
+        }
     }
 
     private function evaluate_booking_delete_rules($booking) {

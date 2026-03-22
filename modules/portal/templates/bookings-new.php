@@ -6,9 +6,9 @@ if (!defined('ABSPATH')) exit;
     <div class="myvh-account-header">
         <div>
             <h2>New Booking</h2>
-            <p>Choose a room and time slot from the live calendar.</p>
+            <p><?php echo !empty($is_client_admin) ? 'Choose a room, customer, and time slot from the live calendar.' : 'Choose a room and time slot from the live calendar.'; ?></p>
         </div>
-        <a href="#bookings" class="myvh-button">Back to My Bookings</a>
+        <a href="#bookings" class="myvh-button">Back to <?php echo !empty($is_client_admin) ? 'Bookings' : 'My Bookings'; ?></a>
     </div>
 
     <div class="myvh-surface-panel myvh-bookings-panel">
@@ -18,14 +18,18 @@ if (!defined('ABSPATH')) exit;
                 <span>Availability and booking rules are checked automatically.</span>
             </div>
 
-            <p class="myvh-account-hint">
-                Use the calendar flow to pick a date, time, and room, then submit your booking.
-            </p>
+            <?php if (empty($can_create_booking)): ?>
+                <p class="myvh-account-hint">A customer profile is required before this account can create bookings.</p>
+            <?php else: ?>
+                <p class="myvh-account-hint">
+                    Use the calendar flow to pick a date, time, and room, then submit your booking.
+                </p>
 
-            <div class="myvh-account-actions">
-                <a href="#calendar" class="button button-primary">Open Booking Calendar</a>
-                <div class="myvh-muted">You can return to My Bookings at any time.</div>
-            </div>
+                <div class="myvh-account-actions">
+                    <a href="#calendar" class="button button-primary">Open Booking Calendar</a>
+                    <div class="myvh-muted">You can return to bookings at any time.</div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

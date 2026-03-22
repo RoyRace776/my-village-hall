@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
             <h2>Edit Booking</h2>
             <p>Update your booking details.</p>
         </div>
-        <a href="#bookings" class="myvh-button">Back to My Bookings</a>
+        <a href="#bookings" class="myvh-button">Back to <?php echo !empty($is_client_admin) ? 'Bookings' : 'My Bookings'; ?></a>
     </div>
 
     <div class="myvh-surface-panel myvh-bookings-panel">
@@ -54,6 +54,9 @@ if (!defined('ABSPATH')) exit;
                     </label>
 
                     <p class="myvh-account-hint">Room and organisation are fixed for this edit flow.</p>
+                    <?php if (!empty($is_client_admin) && !empty($booking['CustomerName'])): ?>
+                        <p class="myvh-account-hint">Customer: <?php echo esc_html($booking['CustomerName']); ?></p>
+                    <?php endif; ?>
 
                     <div class="myvh-account-actions">
                         <button type="submit" class="button button-primary">Save Booking</button>

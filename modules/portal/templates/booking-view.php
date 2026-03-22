@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
             <h2>View Booking</h2>
             <p>Review booking details.</p>
         </div>
-        <a href="#bookings" class="myvh-button">Back to My Bookings</a>
+        <a href="#bookings" class="myvh-button">Back to <?php echo !empty($is_client_admin) ? 'Bookings' : 'My Bookings'; ?></a>
     </div>
 
     <div class="myvh-surface-panel myvh-bookings-panel">
@@ -37,6 +37,9 @@ if (!defined('ABSPATH')) exit;
                             <h3>Details</h3>
                         </div>
                         <p><strong>Status:</strong> <?php echo esc_html(ucfirst($booking['Status'] ?? '')); ?></p>
+                        <?php if (!empty($is_client_admin)): ?>
+                            <p><strong>Customer:</strong> <?php echo esc_html($booking['CustomerName'] ?? '-'); ?></p>
+                        <?php endif; ?>
                         <p><strong>Venue:</strong> <?php echo esc_html($booking['VenueName'] ?? '-'); ?></p>
                         <p><strong>Organisation:</strong> <?php echo esc_html($booking['OrganisationName'] ?? '-'); ?></p>
                         <p><strong>Description:</strong> <?php echo esc_html($booking['Description'] ?? '-'); ?></p>

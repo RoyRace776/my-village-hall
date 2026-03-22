@@ -2,8 +2,10 @@
 if (!defined('ABSPATH')) exit;
 
 $current_user = wp_get_current_user();
+$customer = $customer ?? null;
+$is_client_admin = !empty($is_client_admin);
 
-$groups = array_values($groups);
+$groups = array_values($groups ?? []);
 $now_ts = current_time('timestamp');
 $min_notice_hours = max(0, intval(myvh_setting('booking.general.min_notice_hours', 24)));
 
@@ -58,20 +60,22 @@ usort($groups, function ($a, $b) {
 
   <div class="myvh-header">
     <h1 class="greeting">Welcome, <em><?= esc_html($current_user->display_name) ?></em></h1>
-    <span class="tagline">My Village Hall &mdash; Member Portal</span>
+    <span class="tagline"><?php echo $is_client_admin ? esc_html(get_bloginfo('name') . ' - Client Admin Portal') : 'My Village Hall - Member Portal'; ?></span>
   </div>
 
   <div class="myvh-dashboard-columns">
 
     <div class="dashboard-left myvh-surface-panel">
-      <h2 class="section-title">Upcoming Bookings</h2>
+      <h2 class="section-title"><?php echo $is_client_admin ? 'Client Bookings' : 'Upcoming Bookings'; ?></h2>
 
-      <?php if (!empty($groups)): ?>
+      <?php if (!$is_client_admin && empty($customer['Id'])): ?>
+        <p class="no-bookings">No customer profile is linked to this account yet.</p>
+      <?php elseif (!empty($groups)): ?>
         <div class="myvh-bookings-list dashboard-style">
           <?php $last_group_year = null; ?>
           <?php
             $today = date('Y-m-d');
-            foreach ($groups as $group_key => $group):
+            foreach ($groups as $group):
               $is_recurring = ($group['type'] === 'recurring');
               if ($is_recurring):
                 $pattern   = $group['pattern'];
@@ -84,8 +88,8 @@ usort($groups, function ($a, $b) {
                   );
                 });
 
-                $count     = count($members);
-                $rep       = $members[0];
+                $count = count($members);
+                $rep = $members[0];
                 $upcoming = null;
                 foreach ($members as $mb) {
                   if ($mb['StartDate'] >= $today && $mb['Status'] !== 'cancelled') {
@@ -103,7 +107,6 @@ usort($groups, function ($a, $b) {
                 <?php endif; ?>
 
                 <?php
-
                 $schedule = MYVH_Recurring_Pattern_Service::describe($pattern);
                 $group_id = 'rg_' . $pattern['Id'];
                 ?>
@@ -157,6 +160,9 @@ usort($groups, function ($a, $b) {
                                 - <?php echo esc_html($b['Description']); ?>
                               <?php endif; ?>
                             </strong>
+                            <?php if ($is_client_admin && !empty($b['CustomerName'])): ?>
+                              <small><?php echo esc_html($b['CustomerName']); ?><?php echo !empty($b['OrganisationName']) ? ' · ' . esc_html($b['OrganisationName']) : ''; ?></small>
+                            <?php endif; ?>
                           </div>
                           <div class="myvh-booking-status">
                             <span class="myvh-status-chip <?php echo esc_attr($status_class); ?>">
@@ -206,6 +212,9 @@ usort($groups, function ($a, $b) {
                           - <?php echo esc_html($b['Description']); ?>
                         <?php endif; ?>
                       </strong>
+                      <?php if ($is_client_admin && !empty($b['CustomerName'])): ?>
+                        <small><?php echo esc_html($b['CustomerName']); ?><?php echo !empty($b['OrganisationName']) ? ' · ' . esc_html($b['OrganisationName']) : ''; ?></small>
+                      <?php endif; ?>
                     </div>
                     <div class="myvh-booking-status">
                       <span class="myvh-status-chip <?php echo esc_attr($status_class); ?>">
@@ -230,7 +239,7 @@ usort($groups, function ($a, $b) {
         </div>
 
       <?php else: ?>
-        <p class="no-bookings">You have no upcoming bookings.</p>
+        <p class="no-bookings"><?php echo $is_client_admin ? 'No bookings found for this client.' : 'You have no upcoming bookings.'; ?></p>
       <?php endif; ?>
     </div>
 
@@ -241,7 +250,7 @@ usort($groups, function ($a, $b) {
         <div class="dashboard-card">
           <a href="#bookings">
             <span class="card-icon">📅</span>
-            Book a Room
+            <?php echo $is_client_admin ? 'View Bookings' : 'Book a Room'; ?>
           </a>
         </div>
 
@@ -255,16 +264,39 @@ usort($groups, function ($a, $b) {
         <div class="dashboard-card">
           <a href="#bookings">
             <span class="card-icon">📋</span>
-            My Bookings
+            <?php echo $is_client_admin ? 'All Bookings' : 'My Bookings'; ?>
           </a>
         </div>
 
-        <div class="dashboard-card">
-          <a href="#organisations">
-            <span class="card-icon">👥</span>
-            Organisations
-          </a>
-        </div>
+        <?php if (!empty($customer['Id'])): ?>
+          <div class="dashboard-card">
+            <a href="#organisations">
+              <span class="card-icon">👥</span>
+              Organisations
+            </a>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($is_client_admin): ?>
+          <div class="dashboard-card">
+            <a href="#client-admins">
+              <span class="card-icon">🛡</span>
+              Client Admins
+            </a>
+          </div>
+          <div class="dashboard-card">
+            <a href="#customers">
+              <span class="card-icon">👤</span>
+              Customers
+            </a>
+          </div>
+          <div class="dashboard-card">
+            <a href="#settings">
+              <span class="card-icon">⚙</span>
+              Settings
+            </a>
+          </div>
+        <?php endif; ?>
 
       </div>
     </div>

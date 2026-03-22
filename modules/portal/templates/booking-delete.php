@@ -6,9 +6,9 @@ if (!defined('ABSPATH')) exit;
     <div class="myvh-account-header">
         <div>
             <h2>Delete Booking</h2>
-            <p>Deletion rules will be added next.</p>
+            <p>Review the deletion rules before confirming.</p>
         </div>
-        <a href="#bookings" class="myvh-button">Back to My Bookings</a>
+        <a href="#bookings" class="myvh-button">Back to <?php echo !empty($is_client_admin) ? 'Bookings' : 'My Bookings'; ?></a>
     </div>
 
     <div class="myvh-surface-panel myvh-bookings-panel">
@@ -28,6 +28,9 @@ if (!defined('ABSPATH')) exit;
                     <strong>Description:</strong>
                     <?php echo esc_html(!empty($booking['Description']) ? $booking['Description'] : 'No description provided.'); ?>
                 </p>
+                <?php if (!empty($is_client_admin)): ?>
+                    <p><strong>Customer:</strong> <?php echo esc_html($booking['CustomerName'] ?? '-'); ?></p>
+                <?php endif; ?>
                 <?php if (!$can_delete): ?>
                     <p><?php echo esc_html($delete_rules['reason'] ?? 'This booking cannot be deleted.'); ?></p>
                 <?php endif; ?>

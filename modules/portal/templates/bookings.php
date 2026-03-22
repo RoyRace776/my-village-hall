@@ -1,31 +1,9 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-if (!is_user_logged_in()) {
-    echo '<p>Please log in to view bookings.</p>';
-    return;
-}
-
-global $myvh_container;
-
-$booking_service  = $myvh_container->get(MYVH_Booking_Service::class);
-$customer_service = $myvh_container->get(MYVH_Customer_Service::class);
-
-// Map WP user → customer
-$current_user_id = get_current_user_id();
-$customer = $customer_service->get_by_user_id($current_user_id);
-
-if (!$customer) {
-    echo '<p>No customer profile found.</p>';
-    return;
-}
-
-// 👇 IMPORTANT: reuse your grouping logic
-$result = $booking_service->get_booking_list([
-    'customer_id' => $customer['Id'],
-]);
-
-$groups = $result['groups'];
+$is_client_admin = !empty($is_client_admin);
+$customer = $customer ?? null;
+$groups = array_values($groups ?? []);
 $today  = date('Y-m-d');
 $now_ts = current_time('timestamp');
 $min_notice_hours = max(0, intval(myvh_setting('booking.general.min_notice_hours', 24)));
@@ -48,8 +26,6 @@ $can_delete_booking = static function(array $booking) use ($now_ts, $min_notice_
 
     return false;
 };
-
-$groups = array_values($groups);
 
 usort($groups, function ($a, $b) use ($today) {
     $next_timestamp = function ($group) use ($today) {
@@ -82,20 +58,28 @@ usort($groups, function ($a, $b) use ($today) {
 <div class="myvh-dashboard-section">
 
     <div class="myvh-section-header">
-        <h2>My Bookings</h2>
+        <h2><?php echo $is_client_admin ? 'Client Bookings' : 'My Bookings'; ?></h2>
 
-        <a href="#new-booking"
-           class="myvh-button myvh-button-primary">
-            ➕ New Booking
-        </a>
+        <?php if ($is_client_admin || !empty($customer['Id'])): ?>
+            <a href="#new-booking"
+               class="myvh-button myvh-button-primary">
+                ➕ New Booking
+            </a>
+        <?php endif; ?>
     </div>
 
     <div class="myvh-surface-panel myvh-bookings-panel">
 
-    <?php if (empty($groups)): ?>
+    <?php if (!$is_client_admin && empty($customer['Id'])): ?>
 
         <div class="myvh-card">
-            <p>No bookings yet.</p>
+            <p>No customer profile is linked to this account yet.</p>
+        </div>
+
+    <?php elseif (empty($groups)): ?>
+
+        <div class="myvh-card">
+            <p><?php echo $is_client_admin ? 'No bookings found for this client.' : 'No bookings yet.'; ?></p>
         </div>
 
     <?php else: ?>
@@ -104,14 +88,14 @@ usort($groups, function ($a, $b) use ($today) {
 
             <?php $last_group_year = null; ?>
 
-            <?php foreach ($groups as $group_key => $group):
+            <?php foreach ($groups as $group):
 
                 $is_recurring = ($group['type'] === 'recurring');
 
                 if ($is_recurring):
 
-                    $pattern   = $group['pattern'];
-                    $members   = $group['bookings'];
+                    $pattern = $group['pattern'];
+                    $members = $group['bookings'];
 
                     usort($members, function ($a, $b) {
                         return strcmp(
@@ -120,11 +104,10 @@ usort($groups, function ($a, $b) use ($today) {
                         );
                     });
 
-                    $count     = count($members);
-                    $rep       = $members[0];
-
-                    // Find next upcoming
+                    $count = count($members);
+                    $rep = $members[0];
                     $upcoming = null;
+
                     foreach ($members as $mb) {
                         if ($mb['StartDate'] >= $today && $mb['Status'] !== BookingStatus::CANCELLED) {
                             $upcoming = $mb;
@@ -142,22 +125,14 @@ usort($groups, function ($a, $b) use ($today) {
                     <?php endif; ?>
 
                     <?php
-
                     $schedule = MYVH_Recurring_Pattern_Service::describe($pattern);
                     $group_id = 'rg_' . $pattern['Id'];
                     ?>
 
-                    <!-- 🔄 GROUP CARD -->
                     <div class="myvh-booking-group">
-
                         <div class="myvh-group-header" data-group="<?php echo esc_attr($group_id); ?>">
-
-                            <div class="myvh-group-toggle">
-                                ▶
-                            </div>
-
+                            <div class="myvh-group-toggle">▶</div>
                             <div class="myvh-group-main">
-
                                 <strong>
                                     🔄 <?php echo esc_html($schedule); ?>
                                     <?php if ($summary_booking): ?>
@@ -167,7 +142,6 @@ usort($groups, function ($a, $b) use ($today) {
                                     <?php endif; ?>
                                     · <?php echo $count; ?> bookings
                                 </strong>
-
                             </div>
 
                             <div class="myvh-group-room">
@@ -176,18 +150,14 @@ usort($groups, function ($a, $b) use ($today) {
                                     - <?php echo esc_html($summary_booking['Description']); ?>
                                 <?php endif; ?>
                             </div>
-
                         </div>
 
-                        <!-- CHILD BOOKINGS -->
                         <div class="myvh-group-children" data-group="<?php echo esc_attr($group_id); ?>">
-
                             <?php $last_child_year = null; ?>
                             <?php $child_years = array_unique(array_map(fn($m) => date('Y', strtotime($m['StartDate'])), $members)); ?>
                             <?php $show_child_year_dividers = count($child_years) > 1; ?>
 
                             <?php foreach ($members as $b):
-
                                 $is_past = $b['StartDate'] < $today;
                                 $status_class = 'is-' . sanitize_html_class($b['Status']);
                                 $child_year = date('Y', strtotime($b['StartDate']));
@@ -202,9 +172,7 @@ usort($groups, function ($a, $b) use ($today) {
                                 ?>
 
                                 <div class="myvh-booking-card myvh-child <?php echo $is_past ? 'is-past' : ''; ?>">
-
                                     <div class="myvh-booking-main myvh-booking-main-inline">
-
                                         <div class="myvh-booking-date">
                                             <strong>
                                                 <?php echo date('D d/m', strtotime($b['StartDate'])); ?>
@@ -216,10 +184,13 @@ usort($groups, function ($a, $b) use ($today) {
                                         <div class="myvh-booking-details">
                                             <strong>
                                                 <?php echo esc_html($b['RoomName'] ?? 'Room booking'); ?>
-                                                <?php if ($b['Description']): ?>
+                                                <?php if (!empty($b['Description'])): ?>
                                                     - <?php echo esc_html($b['Description']); ?>
                                                 <?php endif; ?>
                                             </strong>
+                                            <?php if ($is_client_admin && !empty($b['CustomerName'])): ?>
+                                                <small><?php echo esc_html($b['CustomerName']); ?><?php echo !empty($b['OrganisationName']) ? ' · ' . esc_html($b['OrganisationName']) : ''; ?></small>
+                                            <?php endif; ?>
                                         </div>
 
                                         <div class="myvh-booking-status">
@@ -236,20 +207,15 @@ usort($groups, function ($a, $b) use ($today) {
                                                 <?php endif; ?>
                                             </div>
                                         </div>
-
                                     </div>
-
                                 </div>
-
                             <?php endforeach; ?>
-
                         </div>
-
                     </div>
 
                 <?php else:
 
-                    $b       = $group['bookings'][0];
+                    $b = $group['bookings'][0];
                     $is_past = $b['StartDate'] < $today;
                     $status_class = 'is-' . sanitize_html_class($b['Status']);
                     $can_delete = $can_delete_booking($b);
@@ -261,11 +227,8 @@ usort($groups, function ($a, $b) use ($today) {
                         <div class="myvh-year-divider"><span><?php echo esc_html($group_year); ?></span></div>
                     <?php endif; ?>
 
-                    <!-- SINGLE BOOKING -->
                     <div class="myvh-booking-card <?php echo $is_past ? 'is-past' : ''; ?>">
-
                         <div class="myvh-booking-main">
-
                             <div class="myvh-booking-date">
                                 <strong>
                                     <?php echo date('D d/m', strtotime($b['StartDate'])); ?>
@@ -277,10 +240,13 @@ usort($groups, function ($a, $b) use ($today) {
                             <div class="myvh-booking-details">
                                 <strong>
                                     <?php echo esc_html($b['RoomName']); ?>
-                                    <?php if ($b['Description']): ?>
+                                    <?php if (!empty($b['Description'])): ?>
                                         - <?php echo esc_html($b['Description']); ?>
                                     <?php endif; ?>
                                 </strong>
+                                <?php if ($is_client_admin && !empty($b['CustomerName'])): ?>
+                                    <small><?php echo esc_html($b['CustomerName']); ?><?php echo !empty($b['OrganisationName']) ? ' · ' . esc_html($b['OrganisationName']) : ''; ?></small>
+                                <?php endif; ?>
                             </div>
 
                             <div class="myvh-booking-status">
@@ -297,9 +263,7 @@ usort($groups, function ($a, $b) use ($today) {
                                     <?php endif; ?>
                                 </div>
                             </div>
-
                         </div>
-
                     </div>
 
                 <?php endif; ?>

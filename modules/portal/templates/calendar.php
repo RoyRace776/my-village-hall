@@ -18,6 +18,15 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
         <h2>Calendar</h2>
     </div>
 
+    <?php if (empty($can_create_booking)): ?>
+        <div class="myvh-surface-panel myvh-bookings-panel">
+            <div class="myvh-card">
+                <p>A customer profile is required before this account can create portal bookings.</p>
+            </div>
+        </div>
+        <?php return; ?>
+    <?php endif; ?>
+
     <div class="myvh-calendar-shell">
         <div class="myvh-calendar-main">
             <aside class="myvh-calendar-sidebar">
@@ -41,7 +50,7 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
             </div>
                 </div>
 
-                <div id="myvh-calendar" class="myvh-daypilot-frame" style="height: 700px;"></div>
+                <div id="myvh-calendar" class="myvh-daypilot-frame myvh-portal-calendar-frame"></div>
             </div>
         </div>
     </div>

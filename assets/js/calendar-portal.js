@@ -41,9 +41,12 @@ var MYVH_Calendar = (function() {
             return;
         }
 
+        const isSmallViewport = window.matchMedia('(max-width: 782px)').matches;
+        const visibleMonths = isSmallViewport ? 1 : 3;
+
         nav = new DayPilot.Navigator('myvh-calendar-nav-picker', {
-            showMonths: 3,
-            skipMonths: 3,
+            showMonths: visibleMonths,
+            skipMonths: visibleMonths,
             selectMode: 'Week',
             onTimeRangeSelected: function(args) {
                 if (suppressNavSelect) {
@@ -68,11 +71,13 @@ var MYVH_Calendar = (function() {
             return;
         }
 
+        const isClientAdmin = !!Number(myvhCal.isClientAdmin || 0);
+
         modal.open({
             start: args.start.toString(),
             end: args.end.toString(),
-            customer_id: myvhCal.currentCustomerId || '',
-            organisation_id: myvhCal.defaultOrganisationId || ''
+            customer_id: isClientAdmin ? '' : (myvhCal.currentCustomerId || ''),
+            organisation_id: isClientAdmin ? '' : (myvhCal.defaultOrganisationId || '')
         });
 
         api?.clearSelection?.();
@@ -167,6 +172,7 @@ var MYVH_Calendar = (function() {
     function init() {
 
         modal = MYVH_BookingModal;
+        const isClientAdmin = !!Number(myvhCal.isClientAdmin || 0);
 
         modal.init({
             ajax_url: myvhCal.ajax_url,
@@ -185,10 +191,11 @@ var MYVH_Calendar = (function() {
                 fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}&customer_id=${encodeURIComponent(customerId || '')}`)
                     .then(r => r.json()),
 
-            lockCustomer: true,
-            lockOrganisation: true,
-            hideCustomer: true,
+            lockCustomer: !isClientAdmin,
+            lockOrganisation: !isClientAdmin,
+            hideCustomer: !isClientAdmin,
             lockAddonPrices: true,
+            requireOrganisation: true,
 
             onClose: () => api?.clearSelection?.(),
             onSuccess: () => api.reload()

@@ -49,3 +49,4 @@ require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-service.php'
 
 // ── 6. Calendar ───────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-client-admin-service.php';

@@ -96,13 +96,14 @@
         const descriptionFromTag = tags.description ? String(tags.description).trim() : "";
         const descriptionFromText = event && event.text ? String(event.text).trim() : "";
         const description = descriptionFromTag || descriptionFromText;
+        const privateLabel = tags.privateLabel ? String(tags.privateLabel).trim() : "";
 
         if (context === "admin") {
             if (description !== "") {
                 tooltipParts.push(description);
             }
         } else if (!isPublicBooking(tags) && !canViewPrivateBooking(tags)) {
-            tooltipParts.push("Private event");
+            tooltipParts.push(privateLabel || descriptionFromText || "Private booking");
         } else if (description !== "") {
             tooltipParts.push(description);
         }

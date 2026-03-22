@@ -5,25 +5,30 @@ class MYVH_Calendar_Service {
     private $booking_service;
     private $room_repository;
     private $customer_service;
+    private $client_admin_service;
 
     public function __construct(
         MYVH_Booking_Service $booking_service,
         MYVH_Room_Repository $room_repository,
-        MYVH_Customer_Service $customer_service
+        MYVH_Customer_Service $customer_service,
+        MYVH_Client_Admin_Service $client_admin_service
     ) {
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;
         $this->customer_service = $customer_service;
+        $this->client_admin_service = $client_admin_service;
     }
 
     public function get_events($start, $end, $context = 'public', $viewer_user_id = 0, $filters = []) {
         $bookings = $this->booking_service->get_between($start, $end, $context, $filters);
         $room_names = $this->get_room_names();
         $viewer_scope = $this->resolve_viewer_scope($context, $viewer_user_id);
+        $default_label = $this->get_private_booking_label();
         $events = [];
 
         foreach ((array) $bookings as $booking) {
-            $events[] = $this->map_booking_to_event($booking, $context, $room_names, $viewer_scope);
+            $event = $this->map_booking_to_event($booking, $context, $room_names, $viewer_scope, $default_label);
+            $events[] = $event;
         }
 
         return $events;
@@ -90,22 +95,26 @@ class MYVH_Calendar_Service {
         }
 
         if ($context === 'portal') {
-            $portal_customer = $this->customer_service->get_by_user_id($viewer_user_id);
+            $is_client_admin = $this->client_admin_service->can_administer_blog($viewer_user_id, get_current_blog_id());
 
-            if (empty($portal_customer['Id'])) {
-                return new WP_Error('validation', __('No customer profile found', 'my-village-hall'));
+            if (!$is_client_admin) {
+                $portal_customer = $this->customer_service->get_by_user_id($viewer_user_id);
+
+                if (empty($portal_customer['Id'])) {
+                    return new WP_Error('validation', __('No customer profile found', 'my-village-hall'));
+                }
+
+                $allowed_org_ids = $this->resolve_allowed_organisation_ids($viewer_user_id, (int) $portal_customer['Id']);
+                $selected_org_id = (int) $data['organisation_id'];
+
+                if (!empty($allowed_org_ids) && !in_array($selected_org_id, $allowed_org_ids, true)) {
+                    $selected_org_id = (int) $allowed_org_ids[0];
+                }
+
+                $data['customer_id'] = (int) $portal_customer['Id'];
+                $data['organisation_id'] = $selected_org_id;
+                $data['status'] = BookingStatus::PENDING;
             }
-
-            $allowed_org_ids = $this->resolve_allowed_organisation_ids($viewer_user_id, (int) $portal_customer['Id']);
-            $selected_org_id = (int) $data['organisation_id'];
-
-            if (!empty($allowed_org_ids) && !in_array($selected_org_id, $allowed_org_ids, true)) {
-                $selected_org_id = (int) $allowed_org_ids[0];
-            }
-
-            $data['customer_id'] = (int) $portal_customer['Id'];
-            $data['organisation_id'] = $selected_org_id;
-            $data['status'] = BookingStatus::PENDING;
         }
 
         $validation = $this->validate_calendar_booking_payload($data);
@@ -190,9 +199,16 @@ class MYVH_Calendar_Service {
         $scope = [
             'customer_id' => 0,
             'organisation_ids' => [],
+            'is_client_admin' => false,
         ];
 
         if ($context !== 'portal' || $viewer_user_id <= 0) {
+            return $scope;
+        }
+
+        $scope['is_client_admin'] = $this->client_admin_service->can_administer_blog($viewer_user_id, get_current_blog_id());
+
+        if ($scope['is_client_admin']) {
             return $scope;
         }
 
@@ -219,7 +235,7 @@ class MYVH_Calendar_Service {
         return $scope;
     }
 
-    private function map_booking_to_event($booking, $context, $room_names, $viewer_scope) {
+    private function map_booking_to_event($booking, $context, $room_names, $viewer_scope, $default_label) {
         $room_id_raw = isset($booking['RoomId']) ? (string) $booking['RoomId'] : '';
         $room_id = (int) $room_id_raw;
         $resource_id = $room_id_raw !== '' ? $room_id_raw : (string) $room_id;
@@ -236,23 +252,28 @@ class MYVH_Calendar_Service {
             $viewer_scope
         );
 
+        $display_text = $description;
+        $safe_description = $description;
+
         if ($context === 'portal' && !$is_public && !$can_view_private) {
-            $description = '';
+            $display_text = $default_label;
+            $safe_description = '';
         }
 
         $event = [
             'id' => $booking['Id'],
-            'text' => ($context === 'portal' && !$is_public && !$can_view_private) ? 'Private event' : $description,
+            'text' => $display_text,
             'start' => $booking['StartDate'] . 'T' . $booking['StartTime'],
             'end' => $booking['EndDate'] . 'T' . $booking['EndTime'],
             'resource' => $resource_id,
             'tags' => [
                 'roomId' => $resource_id,
                 'roomName' => $room_name,
-                'description' => $description,
+                'description' => $safe_description,
                 'isPublic' => $is_public,
                 'organisationId' => $organisation_id,
                 'canViewPrivate' => $can_view_private,
+                'privateLabel' => $default_label,
             ],
         ];
 
@@ -262,6 +283,22 @@ class MYVH_Calendar_Service {
         }
 
         return $event;
+    }
+
+    private function get_private_booking_label(): string {
+        $default_label = myvh_setting(
+            'general.public_calendar_booking_label',
+            __('Private booking', 'my-village-hall')
+        );
+
+        $default_label = apply_filters('myvh_public_calendar_booking_label', $default_label);
+        $default_label = sanitize_text_field((string) $default_label);
+
+        if ($default_label === '') {
+            return __('Private booking', 'my-village-hall');
+        }
+
+        return $default_label;
     }
 
     private function can_view_private_booking($context, $is_public, $booking_customer_id, $organisation_id, $viewer_scope) {
@@ -277,10 +314,12 @@ class MYVH_Calendar_Service {
             return false;
         }
 
-        return (
-            (!empty($viewer_scope['customer_id']) && $booking_customer_id === (int) $viewer_scope['customer_id'])
-            || in_array($organisation_id, $viewer_scope['organisation_ids'], true)
-        );
+        if (!empty($viewer_scope['is_client_admin'])) {
+            return true;
+        }
+
+        return !empty($viewer_scope['customer_id'])
+            && $booking_customer_id === (int) $viewer_scope['customer_id'];
     }
 
     private function map_booking_to_public_feed_event($booking, $room_meta, $viewer_scope, $default_label, $context) {

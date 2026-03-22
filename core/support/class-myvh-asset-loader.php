@@ -187,14 +187,17 @@ class MYVH_Asset_Loader {
 
         $current_customer_id = 0;
         $default_organisation_id = 0;
+        $is_client_admin = false;
 
         if ( is_user_logged_in() ) {
             global $myvh_container;
 
             if ( isset( $myvh_container ) ) {
+                $client_admin_service = $myvh_container->get( MYVH_Client_Admin_Service::class );
                 $customer_service = $myvh_container->get( MYVH_Customer_Service::class );
                 $customer = $customer_service->get_by_user_id( get_current_user_id() );
                 $organisations = $customer_service->get_organisations_for_user_id( get_current_user_id() );
+                $is_client_admin = $client_admin_service->can_administer_blog( get_current_user_id(), get_current_blog_id() );
 
                 $current_customer_id = ! empty( $customer['Id'] ) ? (int) $customer['Id'] : 0;
                 $default_organisation_id = ! empty( $organisations[0]['Id'] ) ? (int) $organisations[0]['Id'] : 0;
@@ -286,6 +289,7 @@ class MYVH_Asset_Loader {
         wp_localize_script( 'myvh-portal-app', 'myvhPortal', [
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'myvh_portal' ),
+            'isClientAdmin' => $is_client_admin ? 1 : 0,
         ] );
 
         // myvhCal used by calendar-core.js via calendar-portal.js
@@ -296,6 +300,7 @@ class MYVH_Asset_Loader {
             'maxBookingDaysAhead'   => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
             'currentCustomerId'     => $current_customer_id,
             'defaultOrganisationId' => $default_organisation_id,
+            'isClientAdmin'         => $is_client_admin ? 1 : 0,
             'visibleStartHour'      => $visible_hours['start'],
             'visibleEndHour'        => $visible_hours['end'],
             'schedulerOrientation'  => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),

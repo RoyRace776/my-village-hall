@@ -452,6 +452,18 @@ class MYVH_Booking_Service {
         return $this->booking_repo->get_all_with_details($args);
     }
 
+    public function get_by_id_with_details(int $booking_id) {
+        if ($booking_id <= 0) {
+            return null;
+        }
+
+        $results = $this->booking_repo->get_all_with_details([
+            'booking_id' => $booking_id,
+        ]);
+
+        return $results[0] ?? null;
+    }
+
     public function get_booking_list($filters = []) {
         $defaults = [
             'status'      => '',

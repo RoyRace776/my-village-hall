@@ -1,6 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+$is_client_admin = !empty($is_client_admin);
 $current_user = wp_get_current_user();
 $profile_name = !empty($customer['Name']) ? $customer['Name'] : $current_user->display_name;
 $profile_email = !empty($customer['Email']) ? $customer['Email'] : $current_user->user_email;
@@ -13,7 +14,7 @@ $profile_post_code = !empty($customer['PostCode']) ? $customer['PostCode'] : '';
     <div class="myvh-account-header">
         <div>
             <h2>Account Settings</h2>
-            <p>Manage your profile details and sign-in credentials.</p>
+            <p><?php echo $is_client_admin ? 'Manage your portal details and sign-in credentials for this client.' : 'Manage your profile details and sign-in credentials.'; ?></p>
         </div>
         <div class="myvh-account-chip"><?php echo esc_html($current_user->user_login); ?></div>
     </div>
@@ -22,7 +23,7 @@ $profile_post_code = !empty($customer['PostCode']) ? $customer['PostCode'] : '';
         <div class="myvh-card myvh-account-card">
             <div class="myvh-account-card-head">
                 <h3>Your Details</h3>
-                <span>Public profile and contact information</span>
+                <span><?php echo !empty($customer['Id']) ? 'Public profile and contact information' : 'WordPress profile details'; ?></span>
             </div>
 
             <form id="myvh-account-details-form" class="myvh-account-form">

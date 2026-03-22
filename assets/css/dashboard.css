@@ -258,6 +258,72 @@
   font-size: 12px;
 }
 
+.myvh-booking-details small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.myvh-portal-sites {
+  max-width: 1240px;
+  margin: 20px auto 14px;
+  padding: 12px 16px;
+  border: 1px solid #e5ddd1;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.myvh-portal-sites-label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.myvh-portal-sites-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.myvh-portal-site-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #d9cdbf;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--ink);
+  background: #fff;
+}
+
+.myvh-portal-site-link.is-current {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.myvh-client-admin-list {
+  display: grid;
+  gap: 12px;
+}
+
+.myvh-client-admin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee7de;
+}
+
+.myvh-client-admin-item:last-child {
+  border-bottom: 0;
+}
+
 .myvh-booking-details {
   min-width: 0;
   font-size: 14px;

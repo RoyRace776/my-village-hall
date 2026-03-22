@@ -157,18 +157,22 @@ class MYVH_Booking_Repository {
      */
     /**
      * Get all bookings with customer, room, venue, and pattern details in one query.
-     * Supports optional status / room / customer filters.
+    * Supports optional booking / status / room / customer filters.
      *
-     * @param array $args orderby, order, status, room_id, customer_id
+     * @param array $args orderby, order, booking_id, status, room_id, customer_id
      * @return array
      */
     public function get_all_with_details($args = []) {
-        $defaults = ['orderby' => 'b.StartDate', 'order' => 'DESC', 'status' => '', 'room_id' => 0, 'customer_id' => 0];
+        $defaults = ['orderby' => 'b.StartDate', 'order' => 'DESC', 'booking_id' => 0, 'status' => '', 'room_id' => 0, 'customer_id' => 0];
         $args = wp_parse_args($args, $defaults);
 
         $where  = ['1=1'];
         $params = [];
 
+        if (!empty($args['booking_id'])) {
+            $where[]  = 'b.Id = %d';
+            $params[] = intval($args['booking_id']);
+        }
         if (!empty($args['status'])) {
             $where[]  = 'b.Status = %s';
             $params[] = $args['status'];
