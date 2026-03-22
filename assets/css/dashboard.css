@@ -35,6 +35,14 @@
   color: var(--ink);
 }
 
+.myvh-dashboard > .myvh-header,
+.myvh-dashboard > .myvh-dashboard-columns,
+.myvh-dashboard > .dashboard-notices {
+  max-width: 1240px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* Legacy container used outside the .myvh-dashboard shell */
 .myvh-container {
   max-width: 1100px;
@@ -83,14 +91,35 @@
 
 .myvh-dashboard-columns {
   display: grid;
-  grid-template-columns: 1fr 260px;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 1.75rem;
   align-items: start;
   margin-bottom: 1.75rem;
 }
 
 .myvh-dashboard-section {
-  margin-top: 20px;
+  max-width: 1240px;
+  margin: 20px auto 0;
+}
+
+.myvh-surface-panel {
+  background: #fff;
+  border: 1px solid #e5ddd1;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(28, 26, 23, 0.05);
+  padding: 18px;
+}
+
+.myvh-bookings-panel {
+  padding: 14px;
+}
+
+.myvh-bookings-panel .myvh-bookings-list {
+  margin-bottom: 0;
+}
+
+.myvh-surface-panel .section-title {
+  margin-bottom: 14px;
 }
 
 .myvh-section-header {
@@ -130,11 +159,19 @@
 .myvh-card,
 .myvh-booking-card {
   background: var(--card-bg);
-  border: 1px solid var(--warm);
-  border-radius: var(--radius);
+  border: 1px solid #e4dbcf;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 10px 28px rgba(28, 26, 23, 0.06);
+}
+
+.myvh-booking-card {
+  border: 1px solid #eee7de;
+  border-radius: 6px;
+  padding: 7px 9px;
+  margin-bottom: 4px;
+  box-shadow: none;
 }
 
 .myvh-booking-card.is-past {
@@ -199,27 +236,137 @@
    ========================================================================== */
 
 .myvh-booking-main {
-  display: flex;
-  gap: 20px;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) auto;
+  column-gap: 5px;
+  align-items: center;
 }
 
 .myvh-booking-date {
-  min-width: 160px;
+  min-width: 176px;
   font-size: 14px;
+}
+
+.myvh-booking-date strong {
+  display: block;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.myvh-booking-date small {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .myvh-booking-details {
-  flex: 1;
+  min-width: 0;
   font-size: 14px;
 }
 
+.myvh-booking-details strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.myvh-year-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+
+.myvh-year-divider::before,
+.myvh-year-divider::after {
+  content: '';
+  height: 1px;
+  background: #e2d9cc;
+  flex: 1;
+}
+
+.myvh-year-divider span {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.myvh-year-divider-child {
+  margin: 8px 2px 4px;
+}
+
+.myvh-year-divider-child span {
+  font-size: 10px;
+}
+
+.myvh-booking-details small {
+  color: var(--muted);
+}
+
 .myvh-booking-status {
-  min-width: 120px;
-  text-align: right;
+  min-width: 96px;
+  text-align: left;
   font-weight: 600;
   font-size: 14px;
+  justify-self: end;
+}
+
+.myvh-booking-main-inline {
+  grid-template-columns: 190px minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.myvh-booking-main-inline .myvh-booking-details strong {
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+.myvh-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.myvh-status-chip::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.myvh-status-chip.is-confirmed {
+  color: #1f6a22;
+  background: #e7f4e7;
+  border-color: #cde6cf;
+}
+
+.myvh-status-chip.is-pending {
+  color: #1c5c8b;
+  background: #e8f1fa;
+  border-color: #c8dcee;
+}
+
+.myvh-status-chip.is-cancelled {
+  color: #9f2829;
+  background: #fbeaea;
+  border-color: #f0c7c7;
+}
+
+.myvh-status-chip.is-completed {
+  color: #5a5045;
+  background: #f4f0ea;
+  border-color: #dfd4c8;
 }
 
 .myvh-booking-actions {
@@ -232,24 +379,26 @@
    ========================================================================== */
 
 .myvh-booking-group {
-  border: 1px solid var(--warm);
-  border-radius: var(--radius);
-  margin-bottom: 16px;
+  border: 1px solid #e8e1d7;
+  border-radius: 8px;
+  margin-bottom: 10px;
   overflow: hidden;
+  background: #fff;
+  box-shadow: none;
 }
 
 .myvh-group-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 14px;
+  gap: 10px;
+  padding: 10px 12px;
   cursor: pointer;
-  background: var(--cream);
+  background: #f9f6f1;
   transition: background .15s;
 }
 
-.myvh-group-header:hover   { background: var(--warm); }
-.myvh-group-header.is-open { background: #eef0eb; }
+.myvh-group-header:hover   { background: #f2ebdf; }
+.myvh-group-header.is-open { background: #efe7da; }
 
 .myvh-group-toggle {
   font-size: 14px;
@@ -262,19 +411,33 @@
 }
 
 .myvh-group-main        { flex: 1; }
-.myvh-group-main strong { font-size: 15px; }
-.myvh-group-meta        { font-size: 12px; color: var(--muted); }
-.myvh-group-room        { font-weight: 600; font-size: 14px; }
+.myvh-group-main strong { font-size: 14px; display: block; }
+.myvh-group-meta        { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.myvh-group-room        { font-weight: 600; font-size: 13px; text-align: right; min-width: 260px; }
 
 .myvh-group-children {
   display: none;
-  padding: 12px;
+  padding: 8px;
   background: var(--card-bg);
 }
 
 .myvh-group-children.is-open { display: block; }
 
-.myvh-child { margin-bottom: 10px; }
+.myvh-group-children .myvh-child {
+  margin-bottom: 4px;
+}
+
+.myvh-group-children .myvh-child:last-child {
+  margin-bottom: 0;
+}
+
+.myvh-bookings-list .myvh-booking-card {
+  margin-bottom: 4px;
+}
+
+.myvh-bookings-list .myvh-booking-card:last-child {
+  margin-bottom: 0;
+}
 
 /* ==========================================================================
    9. BUTTONS
@@ -391,6 +554,30 @@
   border-radius: var(--radius);
   padding: 1.4rem 1.6rem;
   color: #d8edcf;
+}
+
+.dashboard-notices.myvh-surface-panel {
+  background: #fff;
+  border-left: 4px solid var(--accent);
+  margin-top: 4px;
+  color: var(--ink);
+}
+
+.dashboard-notices.myvh-surface-panel .section-title {
+  color: var(--ink);
+}
+
+.dashboard-notices.myvh-surface-panel .section-title::after {
+  background: #efe6da;
+}
+
+.dashboard-notices.myvh-surface-panel .notices-list li {
+  color: #4a433a;
+  font-weight: 400;
+}
+
+.dashboard-notices.myvh-surface-panel .notices-list li::before {
+  color: var(--accent);
 }
 
 .dashboard-notices .section-title {
@@ -697,10 +884,103 @@
   17. RESPONSIVE
    ========================================================================== */
 
+@media (max-width: 860px) {
+  .myvh-booking-main,
+  .myvh-booking-main-inline {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'date status'
+      'details details';
+    row-gap: 4px;
+    column-gap: 8px;
+  }
+
+  .myvh-booking-date {
+    grid-area: date;
+    min-width: 0;
+  }
+
+  .myvh-booking-date strong {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .myvh-booking-status {
+    grid-area: status;
+    min-width: 0;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .myvh-booking-details {
+    grid-area: details;
+  }
+
+  .myvh-booking-details strong {
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 13px;
+  }
+
+  .myvh-group-header {
+    min-height: 44px;
+    padding: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+
+  .myvh-group-main {
+    min-width: 0;
+    flex: 1 1 calc(100% - 30px);
+  }
+
+  .myvh-group-main strong {
+    font-size: 13px;
+  }
+
+  .myvh-group-room {
+    flex: 1 1 100%;
+    margin-left: 24px;
+    min-width: 0;
+    text-align: left;
+    font-size: 12px;
+  }
+
+  .myvh-status-chip {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .myvh-year-divider {
+    margin: 6px 0 4px;
+  }
+
+  .myvh-year-divider span {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  .myvh-year-divider-child {
+    margin: 5px 0 2px;
+  }
+}
+
 @media (max-width: 720px) {
+  .myvh-dashboard {
+    padding: 1.25rem 0.9rem 2rem;
+  }
+
   .myvh-dashboard-columns { grid-template-columns: 1fr; }
-  .myvh-header             { flex-wrap: wrap; }
-  .myvh-header .tagline    { margin-left: 0; }
+  .myvh-header            { flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .myvh-header .tagline   { margin-left: 0; }
+  .myvh-dashboard-section { margin-top: 12px; }
+  .myvh-surface-panel     { padding: 12px; }
 }
 
 @media (max-width: 768px) {
@@ -708,8 +988,34 @@
   .myvh-account-header  { flex-direction: column; }
   .myvh-account-chip    { align-self: flex-start; }
   .myvh-org-admin-grid  { grid-template-columns: 1fr; }
-  .myvh-booking-main    { flex-direction: column; gap: 10px; }
-  .myvh-booking-status  { text-align: left; }
+  .myvh-booking-status  { justify-self: start; text-align: left; }
   .myvh-group-header    { flex-direction: column; align-items: flex-start; }
-  .myvh-group-room      { margin-top: 5px; }
+  .myvh-group-room      { margin-left: 0; margin-top: 2px; min-width: 0; text-align: left; }
+}
+
+@media (max-width: 420px) {
+  .myvh-booking-main,
+  .myvh-booking-main-inline {
+    row-gap: 3px;
+    column-gap: 6px;
+  }
+
+  .myvh-booking-date strong {
+    font-size: 12px;
+  }
+
+  .myvh-booking-details strong {
+    font-size: 12px;
+    -webkit-line-clamp: 3;
+  }
+
+  .myvh-status-chip {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+
+  .myvh-status-chip::before {
+    width: 6px;
+    height: 6px;
+  }
 }

@@ -2,6 +2,35 @@
 if (!defined('ABSPATH')) exit;
 
 $current_user = wp_get_current_user();
+
+$groups = array_values($groups);
+
+usort($groups, function ($a, $b) {
+  $next_timestamp = function ($group) {
+    $members = $group['bookings'] ?? [];
+
+    usort($members, function ($x, $y) {
+      return strcmp(
+        ($x['StartDate'] ?? '') . ' ' . ($x['StartTime'] ?? ''),
+        ($y['StartDate'] ?? '') . ' ' . ($y['StartTime'] ?? '')
+      );
+    });
+
+    foreach ($members as $member) {
+      if (($member['StartDate'] ?? '') >= date('Y-m-d') && ($member['Status'] ?? '') !== 'cancelled') {
+        return strtotime(($member['StartDate'] ?? '') . ' ' . ($member['StartTime'] ?? '00:00:00')) ?: PHP_INT_MAX;
+      }
+    }
+
+    if (!empty($members[0])) {
+      return (strtotime(($members[0]['StartDate'] ?? '') . ' ' . ($members[0]['StartTime'] ?? '00:00:00')) ?: PHP_INT_MAX) + 315360000;
+    }
+
+    return PHP_INT_MAX;
+  };
+
+  return $next_timestamp($a) <=> $next_timestamp($b);
+});
 ?>
 
 <div class="myvh-dashboard">
@@ -13,52 +42,106 @@ $current_user = wp_get_current_user();
 
   <div class="myvh-dashboard-columns">
 
-    <div class="dashboard-left">
+    <div class="dashboard-left myvh-surface-panel">
       <h2 class="section-title">Upcoming Bookings</h2>
 
       <?php if (!empty($groups)): ?>
         <div class="myvh-bookings-list dashboard-style">
+          <?php $last_group_year = null; ?>
           <?php
             $today = date('Y-m-d');
-            $status_colors = [
-              'pending'   => '#2271b1',
-              'confirmed' => '#46b450',
-              'cancelled' => '#dc3232',
-              'completed' => '#777',
-            ];
             foreach ($groups as $group_key => $group):
               $is_recurring = ($group['type'] === 'recurring');
               if ($is_recurring):
                 $pattern   = $group['pattern'];
                 $members   = $group['bookings'];
+
+                usort($members, function ($a, $b) {
+                  return strcmp(
+                    ($a['StartDate'] ?? '') . ' ' . ($a['StartTime'] ?? ''),
+                    ($b['StartDate'] ?? '') . ' ' . ($b['StartTime'] ?? '')
+                  );
+                });
+
                 $count     = count($members);
                 $rep       = $members[0];
                 $upcoming = null;
-                foreach (array_reverse($members) as $mb) {
+                foreach ($members as $mb) {
                   if ($mb['StartDate'] >= $today && $mb['Status'] !== 'cancelled') {
                     $upcoming = $mb;
                     break;
                   }
                 }
+                $summary_booking = $upcoming ?: $rep;
+                $group_year = $summary_booking ? date('Y', strtotime($summary_booking['StartDate'])) : null;
+
+                if ($group_year && $group_year !== $last_group_year):
+                  $last_group_year = $group_year;
+                  ?>
+                  <div class="myvh-year-divider"><span><?php echo esc_html($group_year); ?></span></div>
+                <?php endif; ?>
+
+                <?php
+
                 $schedule = MYVH_Recurring_Pattern_Service::describe($pattern);
                 $group_id = 'rg_' . $pattern['Id'];
                 ?>
                 <div class="myvh-booking-group">
-                  <div class="myvh-group-header" data-group="<?php echo esc_attr($group_id); ?>" style="cursor:pointer;padding:8px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;gap:12px;">
-                    <div class="myvh-group-toggle" style="color:#2271b1;font-weight:bold;min-width:16px;">▶</div>
-                    <div class="myvh-group-main" style="flex-grow:1;">
-                      <strong>🔄 <?php echo esc_html($schedule); ?></strong>
-                      <div style="font-size:0.9em;color:#666;"><?php echo $count; ?> bookings <?php if ($upcoming): ?>· next: <?php echo date('j M', strtotime($upcoming['StartDate'])); ?><?php endif; ?></div>
+                  <div class="myvh-group-header" data-group="<?php echo esc_attr($group_id); ?>">
+                    <div class="myvh-group-toggle">▶</div>
+                    <div class="myvh-group-main">
+                      <strong>
+                        🔄 <?php echo esc_html($schedule); ?>
+                        <?php if ($summary_booking): ?>
+                          · <?php echo date('D d/m', strtotime($summary_booking['StartDate'])); ?>
+                          <?php echo date('H:i', strtotime($summary_booking['StartTime'])); ?>-
+                          <?php echo date('H:i', strtotime($summary_booking['EndTime'])); ?>
+                        <?php endif; ?>
+                        · <?php echo $count; ?> bookings
+                      </strong>
                     </div>
-                    <div class="myvh-group-room" style="text-align:right;color:#666;"><?php echo esc_html($rep['RoomName']); ?></div>
+                    <div class="myvh-group-room">
+                      <?php echo esc_html($rep['RoomName']); ?>
+                      <?php if (!empty($summary_booking['Description'])): ?>
+                        - <?php echo esc_html($summary_booking['Description']); ?>
+                      <?php endif; ?>
+                    </div>
                   </div>
-                  <div class="myvh-group-children" data-group="<?php echo esc_attr($group_id); ?>" style="padding:4px 0;border-left:2px solid #ddd;margin-left:12px;padding-left:8px;">
+                  <div class="myvh-group-children" data-group="<?php echo esc_attr($group_id); ?>">
+                    <?php $last_child_year = null; ?>
+                    <?php $child_years = array_unique(array_map(fn($m) => date('Y', strtotime($m['StartDate'])), $members)); ?>
+                    <?php $show_child_year_dividers = count($child_years) > 1; ?>
                     <?php foreach ($members as $b): ?>
                       <?php $is_past = $b['StartDate'] < $today; ?>
-                      <div style="padding:4px 0;opacity:<?php echo $is_past ? '0.55' : '1'; ?>;font-size:0.9em;">
-                        <span style="color:<?php echo $status_colors[$b['Status']] ?? '#777'; ?>;margin-right:4px;">●</span>
-                        <span><?php echo date('j M Y', strtotime($b['StartDate'])); ?></span>
-                        <span style="color:#666;"><?php echo date('g:i A', strtotime($b['StartTime'])); ?> – <?php echo date('g:i A', strtotime($b['EndTime'])); ?></span>
+                      <?php $status_class = 'is-' . sanitize_html_class($b['Status']); ?>
+                      <?php $child_year = date('Y', strtotime($b['StartDate'])); ?>
+                      <?php if ($show_child_year_dividers && $last_child_year !== null && $child_year !== $last_child_year): ?>
+                        <div class="myvh-year-divider myvh-year-divider-child"><span><?php echo esc_html($child_year); ?></span></div>
+                      <?php endif; ?>
+                      <?php $last_child_year = $child_year; ?>
+                      <div class="myvh-booking-card myvh-child <?php echo $is_past ? 'is-past' : ''; ?>">
+                        <div class="myvh-booking-main myvh-booking-main-inline">
+                          <div class="myvh-booking-date">
+                            <strong>
+                              <?php echo date('D d/m', strtotime($b['StartDate'])); ?>
+                              <?php echo date('H:i', strtotime($b['StartTime'])); ?>-
+                              <?php echo date('H:i', strtotime($b['EndTime'])); ?>
+                            </strong>
+                          </div>
+                          <div class="myvh-booking-details">
+                            <strong>
+                              <?php echo esc_html($b['RoomName'] ?? 'Room booking'); ?>
+                              <?php if (!empty($b['Description'])): ?>
+                                - <?php echo esc_html($b['Description']); ?>
+                              <?php endif; ?>
+                            </strong>
+                          </div>
+                          <div class="myvh-booking-status">
+                            <span class="myvh-status-chip <?php echo esc_attr($status_class); ?>">
+                              <?php echo esc_html(ucfirst($b['Status'])); ?>
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     <?php endforeach; ?>
                   </div>
@@ -67,18 +150,35 @@ $current_user = wp_get_current_user();
               else:
                 $b = $group['bookings'][0];
                 $is_past = $b['StartDate'] < $today;
-                $sc = $status_colors[$b['Status']] ?? '#777';
-                ?>
-                <div style="padding:8px;border-bottom:1px solid #ddd;opacity:<?php echo $is_past ? '0.55' : '1'; ?>;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                      <strong><?php echo esc_html($b['RoomName']); ?></strong><br>
-                      <small style="color:#666;"><?php echo date('j M Y', strtotime($b['StartDate'])); ?></small>
+                $status_class = 'is-' . sanitize_html_class($b['Status']);
+                $group_year = date('Y', strtotime($b['StartDate']));
+
+                if ($group_year !== $last_group_year):
+                  $last_group_year = $group_year;
+                  ?>
+                  <div class="myvh-year-divider"><span><?php echo esc_html($group_year); ?></span></div>
+                <?php endif; ?>
+                <div class="myvh-booking-card <?php echo $is_past ? 'is-past' : ''; ?>">
+                  <div class="myvh-booking-main">
+                    <div class="myvh-booking-date">
+                      <strong>
+                        <?php echo date('D d/m', strtotime($b['StartDate'])); ?>
+                        <?php echo date('H:i', strtotime($b['StartTime'])); ?>-
+                        <?php echo date('H:i', strtotime($b['EndTime'])); ?>
+                      </strong>
                     </div>
-                    <div style="text-align:right;">
-                      <small style="color:#666;"><?php echo date('g:i A', strtotime($b['StartTime'])); ?> – <?php echo date('g:i A', strtotime($b['EndTime'])); ?></small><br>
-                      <span style="color:<?php echo $sc; ?>;margin-right:4px;">●</span>
-                      <small><?php echo esc_html(ucfirst($b['Status'])); ?></small>
+                    <div class="myvh-booking-details">
+                      <strong>
+                        <?php echo esc_html($b['RoomName']); ?>
+                        <?php if (!empty($b['Description'])): ?>
+                          - <?php echo esc_html($b['Description']); ?>
+                        <?php endif; ?>
+                      </strong>
+                    </div>
+                    <div class="myvh-booking-status">
+                      <span class="myvh-status-chip <?php echo esc_attr($status_class); ?>">
+                        <?php echo esc_html(ucfirst($b['Status'])); ?>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -93,7 +193,7 @@ $current_user = wp_get_current_user();
       <?php endif; ?>
     </div>
 
-    <div class="dashboard-right">
+    <div class="dashboard-right myvh-surface-panel">
       <h2 class="section-title">Quick Actions</h2>
       <div class="action-cards">
 
@@ -130,7 +230,7 @@ $current_user = wp_get_current_user();
 
   </div>
 
-  <div class="dashboard-notices">
+  <div class="dashboard-notices myvh-surface-panel">
     <h2 class="section-title">Hall Notices</h2>
     <ul class="notices-list">
       <li>Kitchen refurbishment starting next month.</li>

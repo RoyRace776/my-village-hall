@@ -118,26 +118,77 @@
 }
 
 /* ── Bookings list – recurring groups ──────────────────── */
+.myvh-bookings-admin .myvh-bookings-filters {
+    margin-bottom: 20px;
+    border: 1px solid #e3e6eb;
+    box-shadow: 0 4px 14px rgba(17, 24, 39, 0.04);
+}
+
+.myvh-bookings-filters-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.myvh-bookings-filters-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.myvh-bookings-filter-select {
+    min-width: 150px;
+}
+
+.myvh-bookings-admin .myvh-bookings-table {
+    border: 1px solid #d6dbe3;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.06);
+}
+
+.myvh-bookings-admin .myvh-bookings-table thead th {
+    background: #f6f8fb;
+    color: #2c3338;
+    border-bottom: 1px solid #d6dbe3;
+    font-weight: 600;
+}
+
+.myvh-bookings-admin .myvh-bookings-table tbody td {
+    padding-top: 11px;
+    padding-bottom: 11px;
+    border-top: 1px solid #edf0f4;
+}
+
+.myvh-bookings-admin .myvh-bookings-table tbody tr:hover td {
+    background: #fbfcfd;
+}
+
 .myvh-booking-group-header td {
-    background: #f6f7f7;
+    background: #f6f8fb;
     cursor: pointer;
     user-select: none;
+    border-top-color: #dfe4eb;
 }
+
 .myvh-booking-group-header:hover td {
-    background: #edf2fa;
+    background: #eef3f8;
 }
+
 .myvh-group-toggle {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-weight: 600;
-    color: #2271b1;
+    color: #1f5f92;
     background: none;
     border: none;
     padding: 0;
     cursor: pointer;
     font-size: inherit;
 }
+
 .myvh-group-toggle .toggle-icon {
     display: inline-block;
     width: 18px;
@@ -145,40 +196,61 @@
     line-height: 18px;
     text-align: center;
     border-radius: 3px;
-    background: #2271b1;
+    background: #1f5f92;
     color: #fff;
     font-size: 11px;
     font-style: normal;
     flex-shrink: 0;
     transition: transform 0.15s ease;
 }
+
 .myvh-group-toggle.is-open .toggle-icon {
     transform: rotate(90deg);
 }
+
 .myvh-recurring-child {
     display: none;
 }
+
 .myvh-recurring-child.is-visible {
     display: table-row;
 }
+
 .myvh-recurring-child td:first-child {
     padding-left: 36px;
 }
+
 .myvh-recurring-child td {
-    border-top: 1px solid #f0f0f1;
-    background: #fafafa;
+    border-top: 1px solid #edf0f4;
+    background: #fbfcfd;
 }
+
 .myvh-child-past td {
-    opacity: 0.55;
+    opacity: 0.58;
 }
+
 .myvh-expand-all-bar {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
+
 .myvh-expand-all-bar button {
     font-size: 12px;
+}
+
+.myvh-bookings-summary {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #f7f8fa;
+    border: 1px solid #e4e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.myvh-bookings-actions {
+    margin-top: 20px;
 }
 
 /* Base modal */

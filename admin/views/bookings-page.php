@@ -48,7 +48,7 @@ $total_shown = count($bookings);
 $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'recurring'));
 
 ?>
-<div class="wrap">
+<div class="wrap myvh-bookings-admin">
     <h1 class="wp-heading-inline"><?php _e('All Bookings', 'my-village-hall'); ?></h1>
     <a href="<?php echo admin_url('admin.php?page=myvh-calendar'); ?>" class="page-title-action">
         <?php _e('Calendar View', 'my-village-hall'); ?>
@@ -70,13 +70,13 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
     <?php endif; ?>
 
     <!-- Filters -->
-    <div class="myvh-card" style="margin-bottom: 20px;">
+    <div class="myvh-card myvh-bookings-filters">
         <form method="get" action="<?php echo admin_url('admin.php'); ?>">
             <input type="hidden" name="page" value="my-village-hall">
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div class="myvh-bookings-filters-row">
                 <label>
                     <strong><?php _e('Status:', 'my-village-hall'); ?></strong>
-                    <select name="status" style="margin-left:5px;">
+                    <select name="status" class="myvh-bookings-filter-select">
                         <option value="all"       <?php selected($status_filter,'all');       ?>><?php _e('All Statuses','my-village-hall'); ?></option>
                         <option value="pending"   <?php selected($status_filter,BookingStatus::PENDING);   ?>><?php _e('Pending',     'my-village-hall'); ?></option>
                         <option value="confirmed" <?php selected($status_filter,BookingStatus::CONFIRMED); ?>><?php _e('Confirmed',   'my-village-hall'); ?></option>
@@ -86,7 +86,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                 </label>
                 <label>
                     <strong><?php _e('Room:', 'my-village-hall'); ?></strong>
-                    <select name="room_id" style="margin-left:5px;">
+                    <select name="room_id" class="myvh-bookings-filter-select">
                         <option value="0"><?php _e('All Rooms', 'my-village-hall'); ?></option>
                         <?php foreach ($rooms as $room): ?>
                             <option value="<?php echo $room['Id']; ?>" <?php selected($room_filter, $room['Id']); ?>>
@@ -97,7 +97,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                 </label>
                 <label>
                     <strong><?php _e('Customer:', 'my-village-hall'); ?></strong>
-                    <select name="customer_id" style="margin-left:5px;">
+                    <select name="customer_id" class="myvh-bookings-filter-select">
                         <option value="0"><?php _e('All Customers', 'my-village-hall'); ?></option>
                         <?php foreach ($customers as $customer): ?>
                             <option value="<?php echo $customer['Id']; ?>" <?php selected($customer_filter, $customer['Id']); ?>>
@@ -145,7 +145,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
         </div>
         <?php endif; ?>
 
-        <table class="wp-list-table widefat" id="myvh-bookings-table">
+        <table class="wp-list-table widefat myvh-bookings-table" id="myvh-bookings-table">
             <thead>
                 <tr>
                     <th style="width:175px;"><?php _e('Date & Time', 'my-village-hall'); ?></th>
@@ -380,7 +380,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
             </tbody>
         </table>
 
-        <div style="margin-top:12px; padding:10px; background:#f9f9f9; border-radius:3px; font-size:13px;">
+        <div class="myvh-bookings-summary">
             <strong><?php _e('Total:', 'my-village-hall'); ?></strong>
             <?php echo $total_shown; ?> <?php _e('booking(s)', 'my-village-hall'); ?>
             <?php if ($recurring_group_count > 0): ?>
@@ -398,7 +398,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
         <?php endif; // not empty bookings ?>
     </div>
 
-    <div class="myvh-card" style="margin-top:20px;">
+    <div class="myvh-card myvh-bookings-actions">
         <h3><?php _e('Quick Actions', 'my-village-hall'); ?></h3>
         <p>
             <a href="<?php echo admin_url('admin.php?page=myvh-calendar'); ?>" class="button">
