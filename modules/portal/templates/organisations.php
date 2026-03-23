@@ -73,7 +73,7 @@ if (!defined('ABSPATH')) exit;
                     </label>
 
                     <div class="myvh-account-actions">
-                        <button type="submit" class="button button-primary">Send Request</button>
+                        <button type="submit" class="button myvh-cal-btn">Send Request</button>
                         <div id="myvh-org-request-message" class="myvh-muted" aria-live="polite"></div>
                     </div>
                 </form>
@@ -126,7 +126,7 @@ if (!defined('ABSPATH')) exit;
                                 <span>Invoice this organisation for its bookings</span>
                             </label>
 
-                            <div class="myvh-org-billing-fields"<?php echo empty($org['InvoiceOrganisationBookings']) ? ' hidden' : ''; ?>>
+                            <div class="myvh-org-billing-fields"<?php echo empty($org['InvoiceOrganisationBookings']) ? ' hidden' : ''; ?> >
                                 <div class="myvh-field-grid">
                                     <label class="myvh-account-field">
                                         <span>Billing contact name</span>
@@ -170,7 +170,7 @@ if (!defined('ABSPATH')) exit;
                             </div>
 
                             <div class="myvh-account-actions">
-                                <button type="submit" class="button button-primary">Save Invoicing Details</button>
+                                <button type="submit" class="button myvh-cal-btn">Save Invoicing Details</button>
                             </div>
                         </form>
                     </div>
@@ -232,7 +232,7 @@ if (!defined('ABSPATH')) exit;
                                     </span>
                                 </label>
 
-                                <button type="submit" class="button button-primary">Add Member</button>
+                                <button type="submit" class="button myvh-cal-btn">Add Member</button>
                             </form>
                         </div>
                     </div>

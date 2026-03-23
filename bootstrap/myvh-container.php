@@ -37,6 +37,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-ser
 require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/payments/class-myvh-payment-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-service-provider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-service-provider.php';
 
 
 // Register wpdb so it can be injected like any other dependency

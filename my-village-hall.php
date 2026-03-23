@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: My Village Hall
  * Plugin URI: https://example.com/my-village-hall
@@ -33,6 +34,9 @@ define( 'MYVH_PLUGIN_BASENAME',  plugin_basename( __FILE__ ) );
 // files doesn't trigger WordPress's "unexpected output" activation error.
 
 ob_start();
+
+// Load compatibility shims (e.g., wp_timestamp for WP < 5.3)
+require_once MYVH_PLUGIN_DIR . 'core/support/wp-compat.php';
 
 // Core infrastructure
 require_once MYVH_PLUGIN_DIR . 'core/container/class-myvh-container.php';

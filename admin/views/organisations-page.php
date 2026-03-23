@@ -282,11 +282,11 @@ $org_types = $type_service->get_all();
                     </table>
 
                     <p class="submit">
-                        <button class="button button-primary">
+                        <button class="myvh-cal-btn">
                             <?php echo $edit_org ? __('Update Organisation', 'my-village-hall') : __('Add Organisation', 'my-village-hall'); ?>
                         </button>
                         <?php if ($edit_org): ?>
-                            <a href="<?php echo admin_url('admin.php?page=myvh-organisations'); ?>" class="button">
+                            <a href="<?php echo admin_url('admin.php?page=myvh-organisations'); ?>" class="myvh-cal-btn" style="background:#fff;color:#333;border:1px solid #ccc;">
                                 <?php _e('Cancel', 'my-village-hall'); ?>
                             </a>
                         <?php endif; ?>

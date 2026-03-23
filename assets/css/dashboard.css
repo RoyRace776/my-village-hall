@@ -1,3 +1,74 @@
+/* Make add member and pending requests sections as wide as members list */
+.myvh-orgs-page .myvh-org-admin-section > div {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.myvh-orgs-page .myvh-org-admin-grid > div {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+/* Widen organisation admin section for better members list fit */
+.myvh-orgs-page .myvh-org-admin-section {
+  max-width: 1100px;
+}
+.myvh-orgs-page .myvh-account-card {
+  max-width: 1100px;
+}
+/* --- Portal Organisation Page Compact Layout --- */
+.myvh-orgs-page .myvh-account-form {
+  max-width: 420px;
+  margin-left: 0;
+  margin-right: auto;
+  background: none;
+}
+.myvh-orgs-page .myvh-account-field input,
+.myvh-orgs-page .myvh-account-field select,
+.myvh-orgs-page .myvh-account-field textarea {
+  max-width: 350px;
+  width: 100%;
+}
+.myvh-orgs-page .myvh-account-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  padding-bottom: 2px;
+}
+.myvh-orgs-page .myvh-account-actions button {
+  min-width: 120px;
+  max-width: 200px;
+  width: auto;
+}
+.myvh-orgs-page .myvh-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 18px;
+}
+.myvh-orgs-page .myvh-account-field {
+  margin-bottom: 0;
+}
+.myvh-orgs-page .myvh-account-card {
+  max-width: 520px;
+  margin-left: 0;
+  margin-right: auto;
+}
+.myvh-orgs-page .myvh-org-admin-section {
+  margin-top: 32px;
+}
+.myvh-orgs-page .myvh-orgs-subsection {
+  margin-top: 18px;
+  margin-bottom: 18px;
+}
+.myvh-orgs-page .myvh-account-card-head {
+  margin-bottom: 10px;
+}
+.myvh-orgs-page .booking-table {
+  font-size: 0.95rem;
+}
+.myvh-orgs-page .myvh-account-form label[for="myvh-request-message"] textarea {
+  min-height: 60px;
+}
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap');
 
 /* ==========================================================================
