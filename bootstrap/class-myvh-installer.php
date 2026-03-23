@@ -94,6 +94,7 @@ class MYVH_Installer {
             ContactEmail       VARCHAR(100),
             ContactPhone       VARCHAR(100),
             WebsiteUrl         VARCHAR(255),
+            InvoiceOrganisationBookings TINYINT(1) NOT NULL DEFAULT 0,
             BillingContactName VARCHAR(150) NULL,
             BillingEmail       VARCHAR(150) NULL,
             BillingAddressLine1 VARCHAR(255) NULL,
@@ -109,7 +110,8 @@ class MYVH_Installer {
             INDEX      idx_org_type (OrganisationTypeId),
             INDEX      idx_active  (IsActive),
             INDEX      idx_default (IsDefault),
-            INDEX      idx_default_public (DefaultPublic)
+            INDEX      idx_default_public (DefaultPublic),
+            INDEX      idx_invoice_org (InvoiceOrganisationBookings)
         ) {$collate};" );
 
         // ── Organisation Types ───────────────────────────────────────────────────

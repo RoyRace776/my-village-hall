@@ -116,51 +116,58 @@ if (!defined('ABSPATH')) exit;
 
                     <div class="myvh-orgs-subsection">
                         <h4>Invoicing Details</h4>
-                        <p class="myvh-muted">These details are used when invoices are grouped by organisation.</p>
+                        <p class="myvh-muted">Enable organisation invoicing before entering billing contact details.</p>
 
                         <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_billing" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
                             <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
 
-                            <div class="myvh-field-grid">
-                                <label class="myvh-account-field">
-                                    <span>Billing contact name</span>
-                                    <input type="text" name="billing_contact_name" value="<?php echo esc_attr($org['BillingContactName'] ?? ''); ?>" placeholder="Accounts contact">
-                                </label>
-
-                                <label class="myvh-account-field">
-                                    <span>Billing email</span>
-                                    <input type="email" name="billing_email" value="<?php echo esc_attr($org['BillingEmail'] ?? ''); ?>" placeholder="accounts@example.com">
-                                </label>
-                            </div>
-
-                            <div class="myvh-field-grid">
-                                <label class="myvh-account-field">
-                                    <span>Address line 1</span>
-                                    <input type="text" name="billing_address_line1" value="<?php echo esc_attr($org['BillingAddressLine1'] ?? ''); ?>">
-                                </label>
-
-                                <label class="myvh-account-field">
-                                    <span>Address line 2</span>
-                                    <input type="text" name="billing_address_line2" value="<?php echo esc_attr($org['BillingAddressLine2'] ?? ''); ?>">
-                                </label>
-                            </div>
-
-                            <div class="myvh-field-grid">
-                                <label class="myvh-account-field">
-                                    <span>Town or city</span>
-                                    <input type="text" name="billing_town_city" value="<?php echo esc_attr($org['BillingTownCity'] ?? ''); ?>">
-                                </label>
-
-                                <label class="myvh-account-field">
-                                    <span>Postcode</span>
-                                    <input type="text" name="billing_postcode" value="<?php echo esc_attr($org['BillingPostcode'] ?? ''); ?>">
-                                </label>
-                            </div>
-
-                            <label class="myvh-account-field">
-                                <span>Billing reference</span>
-                                <input type="text" name="billing_reference" value="<?php echo esc_attr($org['BillingReference'] ?? ''); ?>" placeholder="PO number or internal reference">
+                            <label class="myvh-toggle-row">
+                                <input type="checkbox" name="invoice_organisation_bookings" value="1" class="myvh-org-invoice-toggle" <?php checked(!empty($org['InvoiceOrganisationBookings'])); ?>>
+                                <span>Invoice this organisation for its bookings</span>
                             </label>
+
+                            <div class="myvh-org-billing-fields"<?php echo empty($org['InvoiceOrganisationBookings']) ? ' hidden' : ''; ?>>
+                                <div class="myvh-field-grid">
+                                    <label class="myvh-account-field">
+                                        <span>Billing contact name</span>
+                                        <input type="text" name="billing_contact_name" value="<?php echo esc_attr($org['BillingContactName'] ?? ''); ?>" placeholder="Accounts contact">
+                                    </label>
+
+                                    <label class="myvh-account-field">
+                                        <span>Billing email</span>
+                                        <input type="email" name="billing_email" value="<?php echo esc_attr($org['BillingEmail'] ?? ''); ?>" placeholder="accounts@example.com">
+                                    </label>
+                                </div>
+
+                                <div class="myvh-field-grid">
+                                    <label class="myvh-account-field">
+                                        <span>Address line 1</span>
+                                        <input type="text" name="billing_address_line1" value="<?php echo esc_attr($org['BillingAddressLine1'] ?? ''); ?>">
+                                    </label>
+
+                                    <label class="myvh-account-field">
+                                        <span>Address line 2</span>
+                                        <input type="text" name="billing_address_line2" value="<?php echo esc_attr($org['BillingAddressLine2'] ?? ''); ?>">
+                                    </label>
+                                </div>
+
+                                <div class="myvh-field-grid">
+                                    <label class="myvh-account-field">
+                                        <span>Town or city</span>
+                                        <input type="text" name="billing_town_city" value="<?php echo esc_attr($org['BillingTownCity'] ?? ''); ?>">
+                                    </label>
+
+                                    <label class="myvh-account-field">
+                                        <span>Postcode</span>
+                                        <input type="text" name="billing_postcode" value="<?php echo esc_attr($org['BillingPostcode'] ?? ''); ?>">
+                                    </label>
+                                </div>
+
+                                <label class="myvh-account-field">
+                                    <span>Billing reference</span>
+                                    <input type="text" name="billing_reference" value="<?php echo esc_attr($org['BillingReference'] ?? ''); ?>" placeholder="PO number or internal reference">
+                                </label>
+                            </div>
 
                             <div class="myvh-account-actions">
                                 <button type="submit" class="button button-primary">Save Invoicing Details</button>

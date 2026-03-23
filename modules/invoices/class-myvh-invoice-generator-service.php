@@ -300,7 +300,7 @@ class MYVH_Invoice_Generator_Service {
         if ($group_by === 'by_organisation' && $organisation_id > 0) {
             $organisation = $this->organisation_repo->get_by_id($organisation_id);
 
-            if (!empty($organisation)) {
+            if (!empty($organisation) && !empty($organisation['InvoiceOrganisationBookings'])) {
                 return [
                     'billing_name' => $organisation['BillingContactName'] ?? $organisation['Name'] ?? null,
                     'billing_organisation_name' => $organisation['Name'] ?? null,

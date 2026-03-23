@@ -45,6 +45,7 @@ $org_types = $type_service->get_all();
                             <th><?php _e('Default Visibility', 'my-village-hall'); ?></th>
                             <th><?php _e('Type', 'my-village-hall'); ?></th>
                             <th><?php _e('Email', 'my-village-hall'); ?></th>
+                            <th><?php _e('Invoice Org', 'my-village-hall'); ?></th>
                             <th><?php _e('Billing Email', 'my-village-hall'); ?></th>
                             <th><?php _e('Phone', 'my-village-hall'); ?></th>
                             <th><?php _e('Website', 'my-village-hall'); ?></th>
@@ -54,7 +55,7 @@ $org_types = $type_service->get_all();
                     </thead>
                     <tbody>
                         <?php if (empty($orgs)): ?>
-                            <tr><td colspan="10"><?php _e('No organisations found.', 'my-village-hall'); ?></td></tr>
+                            <tr><td colspan="11"><?php _e('No organisations found.', 'my-village-hall'); ?></td></tr>
                         <?php else: ?>
                             <?php foreach ($orgs as $org): ?>
                                 <tr>
@@ -63,7 +64,8 @@ $org_types = $type_service->get_all();
                                     <td><?php echo !empty($org['DefaultPublic']) ? __('Public', 'my-village-hall') : __('Private', 'my-village-hall'); ?></td>
                                     <td><?php echo esc_html($org['OrganisationTypeName'] ?? '—'); ?></td>
                                     <td><?php echo esc_html($org['ContactEmail'] ?? '—'); ?></td>
-                                    <td><?php echo esc_html($org['BillingEmail'] ?? '—'); ?></td>
+                                    <td><?php echo !empty($org['InvoiceOrganisationBookings']) ? __('Yes', 'my-village-hall') : '—'; ?></td>
+                                    <td><?php echo !empty($org['InvoiceOrganisationBookings']) ? esc_html($org['BillingEmail'] ?? '—') : '—'; ?></td>
                                     <td><?php echo esc_html($org['ContactPhone'] ?? '—'); ?></td>
                                     <td>
                                         <?php if (!empty($org['WebsiteUrl'])): ?>
@@ -167,6 +169,19 @@ $org_types = $type_service->get_all();
                         </tr>
 
                         <tr>
+                            <th><?php _e('Invoice Organisation Bookings', 'my-village-hall'); ?></th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" name="invoice_organisation_bookings" value="1" class="myvh-org-invoice-toggle"
+                                        <?php checked(!empty($edit_org['InvoiceOrganisationBookings'])); ?>>
+                                    <?php _e('Invoice this organisation for its bookings', 'my-village-hall'); ?>
+                                </label>
+                                <p class="description"><?php _e('Only when enabled will organisation billing details be used and shown.', 'my-village-hall'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tbody class="myvh-org-billing-fields"<?php echo empty($edit_org['InvoiceOrganisationBookings']) ? ' style="display:none;"' : ''; ?>>
+                        <tr>
                             <th colspan="2" style="padding-top: 18px;"><?php _e('Invoicing Details', 'my-village-hall'); ?></th>
                         </tr>
 
@@ -229,6 +244,7 @@ $org_types = $type_service->get_all();
                                     placeholder="<?php esc_attr_e('PO number or internal ref', 'my-village-hall'); ?>">
                             </td>
                         </tr>
+                        </tbody>
 
                         <tr>
                             <th><?php _e('Status', 'my-village-hall'); ?></th>

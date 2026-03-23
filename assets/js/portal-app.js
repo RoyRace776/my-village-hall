@@ -59,7 +59,30 @@ document.addEventListener("DOMContentLoaded", () => {
             initSettingsDirtyState(settingsPage);
         }
 
+        initOrganisationBillingToggles();
         initInvoicesPage();
+    }
+
+    function initOrganisationBillingToggles() {
+        const toggleInputs = Array.from(document.querySelectorAll('.myvh-org-invoice-toggle'));
+        if (!toggleInputs.length) {
+            return;
+        }
+
+        toggleInputs.forEach((toggleInput) => {
+            const form = toggleInput.closest('form');
+            const fields = form ? form.querySelector('.myvh-org-billing-fields') : null;
+            if (!fields) {
+                return;
+            }
+
+            const syncVisibility = () => {
+                fields.hidden = !toggleInput.checked;
+            };
+
+            toggleInput.addEventListener('change', syncVisibility);
+            syncVisibility();
+        });
     }
 
     function initInvoicesPage() {

@@ -421,6 +421,7 @@ class MYVH_Portal_Controller {
             $org_id,
             (int) $customer['Id'],
             [
+                'invoice_organisation_bookings' => !empty($_POST['invoice_organisation_bookings']) ? 1 : 0,
                 'billing_contact_name' => sanitize_text_field($_POST['billing_contact_name'] ?? ''),
                 'billing_email' => sanitize_email($_POST['billing_email'] ?? ''),
                 'billing_address_line1' => sanitize_text_field($_POST['billing_address_line1'] ?? ''),

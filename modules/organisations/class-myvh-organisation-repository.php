@@ -28,6 +28,7 @@ class MYVH_Organisation_Repository {
         $this->ensure_is_default_column();
         $this->ensure_default_public_column();
         $this->ensure_website_url_column();
+        $this->ensure_invoice_organisation_bookings_column();
         $this->ensure_billing_columns();
     }
 
@@ -164,6 +165,17 @@ class MYVH_Organisation_Repository {
         }
 
         $this->wpdb->query( "ALTER TABLE {$this->table} ADD COLUMN WebsiteUrl VARCHAR(255) NULL" );
+    }
+
+    private function ensure_invoice_organisation_bookings_column(): void {
+        $exists = $this->wpdb->get_var( "SHOW COLUMNS FROM {$this->table} LIKE 'InvoiceOrganisationBookings'" );
+
+        if ( $exists ) {
+            return;
+        }
+
+        $this->wpdb->query( "ALTER TABLE {$this->table} ADD COLUMN InvoiceOrganisationBookings TINYINT(1) NOT NULL DEFAULT 0 AFTER WebsiteUrl" );
+        $this->wpdb->query( "ALTER TABLE {$this->table} ADD INDEX idx_invoice_org (InvoiceOrganisationBookings)" );
     }
 
     private function ensure_billing_columns(): void {

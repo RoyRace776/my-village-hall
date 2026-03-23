@@ -67,19 +67,22 @@ class MYVH_Organisation_Service {
             $requested_default = 1;
         }
 
+        $invoice_organisation_bookings = !empty( $data['invoice_organisation_bookings'] ) ? 1 : 0;
+
         $record = [
             'Name'               => sanitize_text_field( $data['name'] ),
             'OrganisationTypeId' => !empty( $data['organisation_type_id'] ) ? intval( $data['organisation_type_id'] ) : null,
             'ContactEmail'       => sanitize_email( $data['contact_email'] ),
             'ContactPhone'       => sanitize_text_field( $data['contact_phone'] ),
             'WebsiteUrl'         => !empty( $data['website_url'] ) ? esc_url_raw( $data['website_url'] ) : null,
-            'BillingContactName' => !empty( $data['billing_contact_name'] ) ? sanitize_text_field( $data['billing_contact_name'] ) : null,
-            'BillingEmail'       => !empty( $data['billing_email'] ) ? sanitize_email( $data['billing_email'] ) : null,
-            'BillingAddressLine1'=> !empty( $data['billing_address_line1'] ) ? sanitize_text_field( $data['billing_address_line1'] ) : null,
-            'BillingAddressLine2'=> !empty( $data['billing_address_line2'] ) ? sanitize_text_field( $data['billing_address_line2'] ) : null,
-            'BillingTownCity'    => !empty( $data['billing_town_city'] ) ? sanitize_text_field( $data['billing_town_city'] ) : null,
-            'BillingPostcode'    => !empty( $data['billing_postcode'] ) ? sanitize_text_field( $data['billing_postcode'] ) : null,
-            'BillingReference'   => !empty( $data['billing_reference'] ) ? sanitize_text_field( $data['billing_reference'] ) : null,
+            'InvoiceOrganisationBookings' => $invoice_organisation_bookings,
+            'BillingContactName' => $invoice_organisation_bookings && !empty( $data['billing_contact_name'] ) ? sanitize_text_field( $data['billing_contact_name'] ) : null,
+            'BillingEmail'       => $invoice_organisation_bookings && !empty( $data['billing_email'] ) ? sanitize_email( $data['billing_email'] ) : null,
+            'BillingAddressLine1'=> $invoice_organisation_bookings && !empty( $data['billing_address_line1'] ) ? sanitize_text_field( $data['billing_address_line1'] ) : null,
+            'BillingAddressLine2'=> $invoice_organisation_bookings && !empty( $data['billing_address_line2'] ) ? sanitize_text_field( $data['billing_address_line2'] ) : null,
+            'BillingTownCity'    => $invoice_organisation_bookings && !empty( $data['billing_town_city'] ) ? sanitize_text_field( $data['billing_town_city'] ) : null,
+            'BillingPostcode'    => $invoice_organisation_bookings && !empty( $data['billing_postcode'] ) ? sanitize_text_field( $data['billing_postcode'] ) : null,
+            'BillingReference'   => $invoice_organisation_bookings && !empty( $data['billing_reference'] ) ? sanitize_text_field( $data['billing_reference'] ) : null,
             'IsActive'           => isset( $data['is_active'] ) ? 1 : 0,
             'IsDefault'          => $requested_default,
             'DefaultPublic'      => ( isset( $data['default_public'] ) && intval( $data['default_public'] ) === 1 ) ? 1 : 0,
@@ -336,19 +339,21 @@ class MYVH_Organisation_Service {
             return new WP_Error( 'not_found', __( 'Organisation not found', 'my-village-hall' ) );
         }
 
+        $invoice_organisation_bookings = !empty( $data['invoice_organisation_bookings'] ) ? 1 : 0;
         $billing_email = sanitize_email( $data['billing_email'] ?? '' );
-        if ( !empty( $data['billing_email'] ) && !is_email( $billing_email ) ) {
+        if ( $invoice_organisation_bookings && !empty( $data['billing_email'] ) && !is_email( $billing_email ) ) {
             return new WP_Error( 'validation', __( 'Billing email must be a valid email address', 'my-village-hall' ) );
         }
 
         $updated = $this->repo->update( [
-            'BillingContactName'  => !empty( $data['billing_contact_name'] ) ? sanitize_text_field( $data['billing_contact_name'] ) : null,
-            'BillingEmail'        => !empty( $data['billing_email'] ) ? $billing_email : null,
-            'BillingAddressLine1' => !empty( $data['billing_address_line1'] ) ? sanitize_text_field( $data['billing_address_line1'] ) : null,
-            'BillingAddressLine2' => !empty( $data['billing_address_line2'] ) ? sanitize_text_field( $data['billing_address_line2'] ) : null,
-            'BillingTownCity'     => !empty( $data['billing_town_city'] ) ? sanitize_text_field( $data['billing_town_city'] ) : null,
-            'BillingPostcode'     => !empty( $data['billing_postcode'] ) ? sanitize_text_field( $data['billing_postcode'] ) : null,
-            'BillingReference'    => !empty( $data['billing_reference'] ) ? sanitize_text_field( $data['billing_reference'] ) : null,
+            'InvoiceOrganisationBookings' => $invoice_organisation_bookings,
+            'BillingContactName'  => $invoice_organisation_bookings && !empty( $data['billing_contact_name'] ) ? sanitize_text_field( $data['billing_contact_name'] ) : null,
+            'BillingEmail'        => $invoice_organisation_bookings && !empty( $data['billing_email'] ) ? $billing_email : null,
+            'BillingAddressLine1' => $invoice_organisation_bookings && !empty( $data['billing_address_line1'] ) ? sanitize_text_field( $data['billing_address_line1'] ) : null,
+            'BillingAddressLine2' => $invoice_organisation_bookings && !empty( $data['billing_address_line2'] ) ? sanitize_text_field( $data['billing_address_line2'] ) : null,
+            'BillingTownCity'     => $invoice_organisation_bookings && !empty( $data['billing_town_city'] ) ? sanitize_text_field( $data['billing_town_city'] ) : null,
+            'BillingPostcode'     => $invoice_organisation_bookings && !empty( $data['billing_postcode'] ) ? sanitize_text_field( $data['billing_postcode'] ) : null,
+            'BillingReference'    => $invoice_organisation_bookings && !empty( $data['billing_reference'] ) ? sanitize_text_field( $data['billing_reference'] ) : null,
         ], [ 'Id' => $org_id ] );
 
         if ( !$updated ) {

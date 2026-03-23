@@ -17,6 +17,24 @@ jQuery(document).ready(function($) {
     
     // ==================== ROOMS ====================
     
+    function syncOrganisationBillingFields() {
+        var toggle = $('.myvh-org-invoice-toggle');
+        var fields = $('.myvh-org-billing-fields');
+
+        if (!toggle.length || !fields.length) {
+            return;
+        }
+
+        if (toggle.is(':checked')) {
+            fields.show();
+        } else {
+            fields.hide();
+        }
+    }
+
+    $('.myvh-org-invoice-toggle').on('change', syncOrganisationBillingFields);
+    syncOrganisationBillingFields();
+
     // Toggle custom room hours
     $('#use_venue_hours').on('change', function() {
         if ($(this).is(':checked')) {
