@@ -37,6 +37,8 @@ class MYVH_Calendar_Ajax_Controller {
 
     public function get_customers(): void {
 
+        check_ajax_referer('myvh_calendar', 'nonce');
+
         if (!is_user_logged_in()) {
             wp_send_json_error('Not logged in', 401);
         }
@@ -70,7 +72,18 @@ class MYVH_Calendar_Ajax_Controller {
 
     public function get_organisations(): void {
 
-        if (current_user_can('manage_myvh')) {
+        check_ajax_referer('myvh_calendar', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Not logged in', 401);
+        }
+
+        $user_id = get_current_user_id();
+        $can_view_any_customer_orgs =
+            current_user_can('manage_myvh')
+            || $this->client_admin_service->can_administer_blog($user_id, get_current_blog_id());
+
+        if ($can_view_any_customer_orgs) {
             $customer_id = intval($_GET['customer_id'] ?? $_POST['customer_id'] ?? 0);
 
             if ($customer_id > 0) {
@@ -79,7 +92,7 @@ class MYVH_Calendar_Ajax_Controller {
             }
         }
 
-        $orgs = $this->customer_service->get_organisations_for_user_id(get_current_user_id());
+        $orgs = $this->customer_service->get_organisations_for_user_id($user_id);
 
         wp_send_json($orgs);
     }
@@ -115,6 +128,8 @@ class MYVH_Calendar_Ajax_Controller {
     }
 
     public function get_events(): void {
+        check_ajax_referer('myvh_calendar', 'nonce');
+
         $context = $_GET['context'] ?? 'public';
 
         switch ($context) {
@@ -131,8 +146,6 @@ class MYVH_Calendar_Ajax_Controller {
                 // no auth needed
                 break;
         }
-
-        check_ajax_referer('myvh_calendar', 'nonce');
 
         $start = sanitize_text_field($_GET['start'] ?? null);
         $end   = sanitize_text_field($_GET['end'] ?? null);

@@ -88,9 +88,13 @@ class MYVH_Booking_Controller {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
+        // Only read booking ID after nonce validation
         check_admin_referer('myvh_cancel_booking');
 
-        $id = intval($_GET['id']);
+        $id = isset($_POST['id']) ? intval($_POST['id']) : (isset($_GET['id']) ? intval($_GET['id']) : 0);
+        if ($id <= 0) {
+            wp_die(__('Invalid booking ID', 'my-village-hall'));
+        }
         $this->service->cancel($id);
 
         wp_redirect(admin_url('admin.php?page=my-village-hall&updated=1'));

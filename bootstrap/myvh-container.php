@@ -60,6 +60,7 @@ $providers = [
     MYVH_Invoice_Service_Provider::class,
     MYVH_Payment_Service_Provider::class,
     MYVH_Calendar_Service_Provider::class,
+    MYVH_Portal_Service_Provider::class,
 ];
 
 foreach ( $providers as $provider ) {

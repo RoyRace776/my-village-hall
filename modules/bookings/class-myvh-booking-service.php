@@ -689,7 +689,7 @@ class MYVH_Booking_Service {
         $new_status = $data['status'];
         $current_status = $old_status;
 
-        if ($new_status=='Confirmed' && $current_status<>'Confirmed') {
+        if ($new_status==BookingStatus::CONFIRMED && $current_status<>BookingStatus::CONFIRMED) {
             MYVH_Event_Dispatcher::dispatch(
                 MYVH_Booking_Events::CONFIRMED,
                 [

@@ -1,22 +1,22 @@
 jQuery(document).ready(function($) {
-    
+
     // Helper functions
     function showMessage(element, message, type) {
         element.removeClass('success error').addClass(type).text(message).fadeIn();
         setTimeout(function() { element.fadeOut(); }, 3000);
     }
-    
+
     function showLoading(button) {
         button.prop('disabled', true).after('<span class="myvh-loading"></span>');
     }
-    
+
     function hideLoading(button) {
         button.prop('disabled', false);
         $('.myvh-loading').remove();
     }
-    
+
     // ==================== ROOMS ====================
-    
+
     function syncOrganisationBillingFields() {
         var toggle = $('.myvh-org-invoice-toggle');
         var fields = $('.myvh-org-billing-fields');
@@ -47,9 +47,9 @@ jQuery(document).ready(function($) {
             $('.room-hours-field').show();
         }
     });
-    
+
     // ==================== RECURRING BOOKINGS ====================
-    
+
     // Toggle recurring options
     $('#enable_recurring').on('change', function() {
         if ($(this).is(':checked')) {
@@ -58,46 +58,46 @@ jQuery(document).ready(function($) {
             $('#recurring_options').slideUp();
         }
     });
-    
+
     // Recurrence type change
     $('#recurrence_type').on('change', function() {
         var type = $(this).val();
-        
+
         if (type === 'custom' || type === 'daily' || type === 'monthly') {
             $('#recurrence_interval_row').show();
             $('#interval_unit').text(type === 'daily' ? 'days' : (type === 'monthly' ? 'months' : 'days'));
         } else {
             $('#recurrence_interval_row').hide();
         }
-        
+
         if (type === 'monthly_day') {
             $('#monthly_day_options').show();
         } else {
             $('#monthly_day_options').hide();
         }
     });
-    
+
     // End repeat type change
     $('input[name="recurrence_end_type"]').on('change', function() {
         var type = $(this).val();
         $('#recurrence_end_date').prop('disabled', type !== 'on_date');
         $('#max_occurrences').prop('disabled', type !== 'after_occurrences');
     });
-    
+
     // ==================== BOOKING FORM ====================
-    
+
     // Load rooms when venue selected (for multi-venue setup)
     $('#venue_id').on('change', function() {
         var venueId = $(this).val();
         var roomContainer = $('#room-checkboxes');
-        
+
         if (!venueId) {
             roomContainer.html('<p class="description">Select a venue first to see available rooms</p>');
             return;
         }
-        
+
         roomContainer.html('<p class="description">Loading rooms...</p>');
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
@@ -121,7 +121,7 @@ jQuery(document).ready(function($) {
                         html += '</label>';
                     });
                     roomContainer.html(html);
-                    
+
                     // Attach change handler to new radio buttons
                     attachRoomChangeHandler();
                 } else {
@@ -133,7 +133,7 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
     // Function to attach room change handler
     function attachRoomChangeHandler() {
         $('.room-radio').off('change').on('change', function() {
@@ -142,34 +142,34 @@ jQuery(document).ready(function($) {
             }
         });
     }
-    
+
     // Attach to existing radio buttons on page load
     attachRoomChangeHandler();
-    
+
     // Auto-load times if venue is pre-selected (single venue or editing)
     if ($('#venue_id').val() && $('.room-radio:checked').length > 0) {
         loadRoomTimes($('.room-radio:checked').val());
     }
-    
+
     // Function to load time options for a room
     function loadRoomTimes(roomId) {
         var startTimeSelect = $('#start_time');
         var endTimeSelect = $('#end_time');
-        
+
         // Save currently selected values
         var selectedStartTime = startTimeSelect.val();
         var selectedEndTime = endTimeSelect.val();
-        
+
         if (!roomId) {
             startTimeSelect.html('<option value="">Select room first</option>');
             endTimeSelect.html('<option value="">Select room first</option>');
             return;
         }
-        
+
         // Show loading state
         startTimeSelect.html('<option value="">Loading times...</option>');
         endTimeSelect.html('<option value="">Loading times...</option>');
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
@@ -182,7 +182,7 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     startTimeSelect.html('<option value="">Select start time</option>' + response.data.start_time_options);
                     endTimeSelect.html('<option value="">Select end time</option>' + response.data.end_time_options);
-                    
+
                     // Restore previously selected values if they exist in the new options
                     if (selectedStartTime) {
                         startTimeSelect.val(selectedStartTime);
@@ -201,24 +201,24 @@ jQuery(document).ready(function($) {
             }
         });
     }
-    
+
     // Save booking
     $('#myvh-booking-form').on('submit', function(e) {
         e.preventDefault();
-        
+
         var form = $(this);
         var submitBtn = form.find('button[type="submit"]');
         var messageEl = form.find('.myvh-form-message');
-        
+
         showLoading(submitBtn);
-        
+
         var bookingId = form.find('input[name="booking_id"]').val();
         var isRecurring = $('#enable_recurring').is(':checked');
         var editScope = form.find('input[name="edit_scope"]:checked').val();
-        
+
         // Determine which action to use
         var action = 'myvh_save_booking';
-        
+
         if (bookingId && editScope) {
             // Editing an existing recurring booking
             action = 'myvh_update_recurring_booking';
@@ -226,16 +226,16 @@ jQuery(document).ready(function($) {
             // Creating a new recurring booking
             action = 'myvh_save_recurring_booking';
         }
-        
+
         console.log('Saving booking with action:', action, 'Edit scope:', editScope);
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
             data: form.serialize() + '&action=' + action + '&nonce=' + myvhAjax.nonce,
             success: function(response) {
                 hideLoading(submitBtn);
-                
+
                 if (response.success) {
                     var msg = response.data.message;
                     if (response.data.generated_count) {
@@ -255,18 +255,18 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
     // Delete booking
     $('.myvh-delete-booking').on('click', function(e) {
         e.preventDefault();
-        
+
         if (!confirm('Are you sure you want to delete this booking?')) {
             return;
         }
-        
+
         var bookingId = $(this).data('id');
         var row = $(this).closest('tr');
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
@@ -284,26 +284,26 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
     // ==================== OTHER PAGES ====================
-    
+
     // Customer form
     $('#myvh-customer-form').on('submit', function(e) {
         e.preventDefault();
-        
+
         var form = $(this);
         var submitBtn = form.find('button[type="submit"]');
         var messageEl = form.find('.myvh-form-message');
-        
+
         showLoading(submitBtn);
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
             data: form.serialize() + '&action=myvh_save_customer&nonce=' + myvhAjax.nonce,
             success: function(response) {
                 hideLoading(submitBtn);
-                
+
                 if (response.success) {
                     showMessage(messageEl, response.data.message, 'success');
                     setTimeout(function() {
@@ -319,18 +319,18 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
     // Delete customer
     $('.myvh-delete-customer').on('click', function(e) {
         e.preventDefault();
-        
+
         if (!confirm('Are you sure you want to delete this customer?')) {
             return;
         }
-        
+
         var customerId = $(this).data('id');
         var row = $(this).closest('tr');
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
@@ -348,24 +348,24 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
     // Venue form
     $('#myvh-venue-form').on('submit', function(e) {
         e.preventDefault();
-        
+
         var form = $(this);
         var submitBtn = form.find('button[type="submit"]');
         var messageEl = form.find('.myvh-form-message');
-        
+
         showLoading(submitBtn);
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
             data: form.serialize() + '&action=myvh_save_venue&nonce=' + myvhAjax.nonce,
             success: function(response) {
                 hideLoading(submitBtn);
-                
+
                 if (response.success) {
                     showMessage(messageEl, response.data.message, 'success');
                     setTimeout(function() {
@@ -381,18 +381,18 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
     // Delete venue
     $('.myvh-delete-venue').on('click', function(e) {
         e.preventDefault();
-        
+
         if (!confirm('Are you sure you want to delete this venue?')) {
             return;
         }
-        
+
         var venueId = $(this).data('id');
         var row = $(this).closest('tr');
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
@@ -410,24 +410,24 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
     // Room form
     $('#myvh-room-form').on('submit', function(e) {
         e.preventDefault();
-        
+
         var form = $(this);
         var submitBtn = form.find('button[type="submit"]');
         var messageEl = form.find('.myvh-form-message');
-        
+
         showLoading(submitBtn);
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
             data: form.serialize() + '&action=myvh_save_room&nonce=' + myvhAjax.nonce,
             success: function(response) {
                 hideLoading(submitBtn);
-                
+
                 if (response.success) {
                     showMessage(messageEl, response.data.message, 'success');
                     setTimeout(function() {
@@ -443,18 +443,18 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
     // Delete room
     $('.myvh-delete-room').on('click', function(e) {
         e.preventDefault();
-        
+
         if (!confirm('Are you sure you want to delete this room?')) {
             return;
         }
-        
+
         var roomId = $(this).data('id');
         var row = $(this).closest('tr');
-        
+
         $.ajax({
             url: myvhAjax.ajax_url,
             type: 'POST',
@@ -472,5 +472,5 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
 });

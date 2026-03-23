@@ -5,7 +5,7 @@ $is_client_admin = !empty($is_client_admin);
 $customer = $customer ?? null;
 $groups = array_values($groups ?? []);
 $today  = date('Y-m-d');
-$now_ts = current_time('timestamp');
+$now_ts = wp_timestamp();
 $min_notice_hours = max(0, intval(myvh_setting('booking.general.min_notice_hours', 24)));
 
 $can_delete_booking = static function(array $booking) use ($now_ts, $min_notice_hours): bool {

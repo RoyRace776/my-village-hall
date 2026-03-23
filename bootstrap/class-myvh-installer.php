@@ -709,7 +709,8 @@ class MYVH_Installer {
         foreach ($tables as $table) {
             $sql = "SET FOREIGN_KEY_CHECKS = 0;";
             $wpdb->query($sql);
-            $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}";
+            $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}{$table};
+                    SET FOREIGN_KEY_CHECKS = 1;";
             $wpdb->query($sql);
         }
     }

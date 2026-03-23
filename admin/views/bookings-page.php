@@ -38,10 +38,10 @@ $bookings = $booking_service->get_all_with_details($query_args);
 $today = date('Y-m-d');
 
 $status_colors = [
-    BookingStatus::PENDING   => '#2271b1',
-    BookingStatus::CONFIRMED => '#46b450',
-    BookingStatus::CANCELLED => '#dc3232',
-    BookingStatus::CANCELLED => '#777',
+    BookingStatus::PENDING    => '#2271b1',
+    BookingStatus::CONFIRMED  => '#46b450',
+    BookingStatus::CANCELLED  => '#dc3232',
+    BookingStatus::COMPLETED  => '#777',
 ];
 
 $total_shown = count($bookings);
