@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
+    document.body.classList.add('myvh-has-portal');
+
     const routeAliases = {
         'my-bookings': 'bookings',
         'book-room': 'bookings',
@@ -55,6 +57,44 @@ document.addEventListener("DOMContentLoaded", () => {
         if (settingsPage) {
             initSettingsTabs(settingsPage);
             initSettingsDirtyState(settingsPage);
+        }
+
+        initInvoicesPage();
+    }
+
+    function initInvoicesPage() {
+        const filterForm = document.getElementById('myvh-invoice-filter-form');
+        if (filterForm) {
+            filterForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                const selected = Array.from(filterForm.querySelectorAll('input[name="statuses[]"]:checked'))
+                    .map((checkbox) => checkbox.value)
+                    .filter(Boolean);
+
+                const statusCsv = selected.join(',');
+                location.hash = statusCsv ? '#invoices?statuses=' + encodeURIComponent(statusCsv) : '#invoices';
+            });
+        }
+
+        const checkboxes = Array.from(document.querySelectorAll('.myvh-uninvoiced-checkbox'));
+        const selectAllButton = document.getElementById('myvh-select-all-uninvoiced');
+        const clearAllButton = document.getElementById('myvh-clear-all-uninvoiced');
+
+        if (selectAllButton) {
+            selectAllButton.addEventListener('click', function () {
+                checkboxes.forEach((checkbox) => {
+                    checkbox.checked = true;
+                });
+            });
+        }
+
+        if (clearAllButton) {
+            clearAllButton.addEventListener('click', function () {
+                checkboxes.forEach((checkbox) => {
+                    checkbox.checked = false;
+                });
+            });
         }
     }
 

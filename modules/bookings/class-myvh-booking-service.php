@@ -760,4 +760,42 @@ class MYVH_Booking_Service {
         return max(0, $hours);
     }
 
+    /**
+     * Get uninvoiced bookings for reporting
+     *
+     * @param array $args Optional filters (orderby, order, limit, offset, organisation_id, customer_id)
+     * @return array Array of uninvoiced bookings with details
+     */
+    public function get_uninvoiced_bookings($args = []) {
+        return $this->booking_repo->get_uninvoiced_bookings($args);
+    }
+
+    /**
+     * Get uninvoiced booking counts by organisation
+     *
+     * @return array Array of [OrganisationId, OrganisationName, UninvoicedCount]
+     */
+    public function get_uninvoiced_by_organisation() {
+        return $this->booking_repo->count_uninvoiced_by_organisation();
+    }
+
+    /**
+     * Get uninvoiced booking counts by customer
+     *
+     * @return array Array of [CustomerId, CustomerName, CustomerEmail, UninvoicedCount]
+     */
+    public function get_uninvoiced_by_customer() {
+        return $this->booking_repo->count_uninvoiced_by_customer();
+    }
+
+    /**
+     * Check if a booking has been invoiced (mutual exclusivity check)
+     *
+     * @param int $booking_id The booking ID to check
+     * @return bool True if booking has any non-cancelled invoices
+     */
+    public function booking_has_invoices($booking_id) {
+        return $this->booking_repo->has_invoiced_items($booking_id);
+    }
+
 }

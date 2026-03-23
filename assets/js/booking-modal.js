@@ -51,10 +51,13 @@ window.MYVH_BookingModal = (function() {
 
         form.addEventListener("submit", submit);
 
-        const cancelBtn = modal.querySelector(".myvh-cancel");
-        if (cancelBtn) {
-            cancelBtn.addEventListener("click", close);
-        }
+        const cancelButtons = modal.querySelectorAll(".myvh-cancel");
+        cancelButtons.forEach((button) => {
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+                close();
+            });
+        });
 
         // Click outside closes modal
         modal.addEventListener("click", function(e) {

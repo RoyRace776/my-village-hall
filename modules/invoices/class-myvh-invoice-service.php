@@ -42,7 +42,7 @@ class MYVH_Invoice_Service {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
         }
 
-        if (empty($data['total_amount']) || floatval($data['total_amount']) < 0) {
+        if (!isset($data['total_amount']) || floatval($data['total_amount']) < 0) {
             return new WP_Error('validation', __('Valid total amount is required', 'my-village-hall'));
         }
 
@@ -54,19 +54,21 @@ class MYVH_Invoice_Service {
             $invoice_number_formatted = $data['invoice_number'];
         }
 
+        $total_amount = floatval($data['total_amount']);
+        $amount_paid  = floatval($data['amount_paid'] ?? 0);
+
         $record = [
-            'InvoiceNumber'     => $invoice_number_formatted,
-            'CustomerId'        => intval($data['customer_id']),
-            'BookingId'         => !empty($data['booking_id']) ? intval($data['booking_id']) : null,
-            'InvoiceDate'       => !empty($data['invoice_date']) ? sanitize_text_field($data['invoice_date']) : date('Y-m-d'),
-            'DueDate'           => !empty($data['due_date']) ? sanitize_text_field($data['due_date']) : date('Y-m-d', strtotime('+14 days')),
-            'SubTotal'          => floatval($data['sub_total'] ?? 0),
-            'TaxAmount'         => floatval($data['tax_amount'] ?? 0),
-            'DiscountAmount'    => floatval($data['discount_amount'] ?? 0),
-            'TotalAmount'       => floatval($data['total_amount']),
-            'AmountPaid'        => floatval($data['amount_paid'] ?? 0),
-            'Status'            => sanitize_text_field($data['status'] ?? 'draft'),
-            'Notes'             => sanitize_textarea_field($data['notes'] ?? ''),
+            'InvoiceNumber' => $invoice_number_formatted,
+            'CustomerId'    => intval($data['customer_id']),
+            'InvoiceDate'   => !empty($data['invoice_date']) ? sanitize_text_field($data['invoice_date']) : date('Y-m-d'),
+            'DueDate'       => !empty($data['due_date']) ? sanitize_text_field($data['due_date']) : date('Y-m-d', strtotime('+14 days')),
+            'SubTotal'      => floatval($data['sub_total'] ?? 0),
+            'TaxAmount'     => floatval($data['tax_amount'] ?? 0),
+            'TotalAmount'   => $total_amount,
+            'AmountPaid'    => $amount_paid,
+            'AmountDue'     => max(0.0, $total_amount - $amount_paid),
+            'Status'        => sanitize_text_field($data['status'] ?? 'draft'),
+            'Notes'         => sanitize_textarea_field($data['notes'] ?? ''),
         ];
 
         if (!empty($data['invoice_id'])) {
@@ -91,6 +93,17 @@ class MYVH_Invoice_Service {
         }
 
         return $this->repo->delete($id);
+    }
+
+    /**
+     * Get invoices for customer portal with organisation metadata
+     *
+     * @param int $customer_id The customer ID
+     * @param array $statuses Optional array of statuses to filter by
+     * @return array Invoice records with organisation information
+     */
+    public function get_for_portal($customer_id, $statuses = []) {
+        return $this->repo->get_for_customer_portal($customer_id, $statuses);
     }
 
     /**
@@ -127,7 +140,10 @@ class MYVH_Invoice_Service {
         $new_amount_paid = floatval($invoice['AmountPaid']) + floatval($amount);
         $total_amount = floatval($invoice['TotalAmount']);
 
-        $data = ['AmountPaid' => $new_amount_paid];
+        $data = [
+            'AmountPaid' => $new_amount_paid,
+            'AmountDue'  => max(0.0, $total_amount - $new_amount_paid),
+        ];
 
         // Update status if fully paid
         if ($new_amount_paid >= $total_amount) {

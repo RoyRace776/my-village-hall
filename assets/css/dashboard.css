@@ -35,10 +35,19 @@
   color: var(--ink);
 }
 
+/* If portal is rendered on a standard page template, remove theme width cap. */
+body.myvh-has-portal .site-main,
+body .site-main:has(#myvh-portal) {
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 .myvh-dashboard > .myvh-header,
 .myvh-dashboard > .myvh-dashboard-columns,
 .myvh-dashboard > .dashboard-notices {
-  max-width: 1240px;
+  max-width: 1600px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -98,7 +107,7 @@
 }
 
 .myvh-dashboard-section {
-  max-width: 1240px;
+  max-width: 1600px;
   margin: 20px auto 0;
 }
 
@@ -266,7 +275,7 @@
 }
 
 .myvh-portal-sites {
-  max-width: 1240px;
+  max-width: 1600px;
   margin: 20px auto 14px;
   padding: 12px 16px;
   border: 1px solid #e5ddd1;

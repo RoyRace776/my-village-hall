@@ -5,17 +5,24 @@ class MYVH_Portal_Controller {
     private $customer_service;
     private $organisation_service;
     private $client_admin_service;
+    private $invoice_generator_service;
+    private $invoice_service;
 
     public function __construct(
         MYVH_Booking_Service $booking_service,
         MYVH_Customer_Service $customer_service,
         MYVH_Organisation_Service $organisation_service,
-        MYVH_Client_Admin_Service $client_admin_service
+        MYVH_Client_Admin_Service $client_admin_service,
+        MYVH_Invoice_Generator_Service $invoice_generator_service
+        ,
+        MYVH_Invoice_Service $invoice_service
     ) {
         $this->booking_service = $booking_service;
         $this->customer_service = $customer_service;
         $this->organisation_service = $organisation_service;
         $this->client_admin_service = $client_admin_service;
+        $this->invoice_generator_service = $invoice_generator_service;
+        $this->invoice_service = $invoice_service;
     }
 
     public function register() {
@@ -36,6 +43,7 @@ class MYVH_Portal_Controller {
         add_action('wp_ajax_myvh_portal_save_customer', [$this, 'save_customer']);
         add_action('wp_ajax_myvh_portal_delete_customer', [$this, 'delete_customer']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
+        add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
     }
 
     public function load_page() {
@@ -87,10 +95,49 @@ class MYVH_Portal_Controller {
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/calendar.php';
                 break;
 
+                // Duplicate case 'invoices' removed
+
             case 'invoices':
+                // Get invoice filters from request
+                $selected_statuses = [];
+                if (isset($_GET['statuses'])) {
+                    $raw_statuses = wp_unslash($_GET['statuses']);
+
+                    if (is_string($raw_statuses)) {
+                        $selected_statuses = array_map('sanitize_text_field', explode(',', $raw_statuses));
+                    } else {
+                        $selected_statuses = array_map('sanitize_text_field', (array) $raw_statuses);
+                    }
+                }
+
+                // Validate statuses against allowed values
+                $valid_statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
+                $selected_statuses = array_values(array_intersect($selected_statuses, $valid_statuses));
+
+                // Get invoices for customer with optional status filter
+                $invoices = [];
+                if ($has_customer) {
+                    $customer_id = intval($customer['Id']);
+                    $invoices = $this->invoice_service->get_for_portal(
+                        $customer_id,
+                        !empty($selected_statuses) ? $selected_statuses : []
+                    );
+                }
+
+                // Client admins can manually create invoices from uninvoiced bookings.
+                $uninvoiced_bookings = [];
+                if ($is_client_admin) {
+                    $uninvoiced_bookings = $this->booking_service->get_uninvoiced_bookings([
+                        'orderby' => 'b.StartDate',
+                        'order' => 'DESC',
+                    ]);
+                }
+
+                // Prepare available statuses for UI filter
+                $available_statuses = $valid_statuses;
+
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/invoices.php';
                 break;
-
             case 'account':
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/account.php';
                 break;
@@ -652,6 +699,47 @@ class MYVH_Portal_Controller {
         $settings->save($input);
 
         wp_send_json_success(['message' => 'Client settings updated']);
+    }
+
+    public function create_invoice() {
+        $this->require_client_admin_access();
+
+        // Get booking IDs from POST
+        $booking_ids_raw = $_POST['booking_ids'] ?? [];
+        if (is_string($booking_ids_raw)) {
+            $booking_ids_raw = explode(',', $booking_ids_raw);
+        }
+        $booking_ids = array_map('intval', (array) $booking_ids_raw);
+        $booking_ids = array_filter($booking_ids);
+
+        if (empty($booking_ids)) {
+            wp_send_json_error('No bookings selected', 400);
+        }
+
+        // Get grouping strategy
+        $group_by = sanitize_key($_POST['group_by'] ?? 'per_booking');
+        if (!in_array($group_by, ['per_booking', 'by_customer', 'by_organisation'], true)) {
+            $group_by = 'per_booking';
+        }
+
+        // Generate invoices
+        $options = [
+            'group_by' => $group_by,
+            'trigger_event' => 'manual'
+        ];
+
+        $result = $this->invoice_generator_service->generate_invoices_from_bookings($booking_ids, $options);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message(), 400);
+        }
+
+        $count = count($result);
+        wp_send_json_success([
+            'message' => sprintf(__('Created %d invoice(s)', 'my-village-hall'), $count),
+            'invoice_ids' => $result,
+            'count' => $count
+        ]);
     }
 
     private function get_authenticated_customer() {

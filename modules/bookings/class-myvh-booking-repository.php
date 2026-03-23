@@ -467,6 +467,166 @@ class MYVH_Booking_Repository {
 
 
     /**
+     * Get uninvoiced bookings (confirmed or completed status, no non-cancelled invoices)
+     *
+     * @param array $args Optional query arguments (orderby, order, limit, offset, organisation_id, customer_id)
+     * @return array|null Array of uninvoiced bookings with customer/org details
+     */
+    public function get_uninvoiced_bookings($args = []) {
+        $defaults = [
+            'orderby' => 'b.StartDate',
+            'order' => 'DESC',
+            'limit' => null,
+            'offset' => null,
+            'organisation_id' => 0,
+            'customer_id' => 0
+        ];
+        $args = wp_parse_args($args, $defaults);
+
+        $where = [
+            "b.Status IN ('confirmed', 'completed')",
+            "ii.Id IS NULL"  // No invoice items linked
+        ];
+        $params = [];
+
+        if (!empty($args['organisation_id'])) {
+            $where[] = 'b.OrganisationId = %d';
+            $params[] = intval($args['organisation_id']);
+        }
+
+        if (!empty($args['customer_id'])) {
+            $where[] = 'b.CustomerId = %d';
+            $params[] = intval($args['customer_id']);
+        }
+
+        $where_sql = implode(' AND ', $where);
+        $order_sql = esc_sql($args['orderby']) . ' ' . ('ASC' === strtoupper($args['order']) ? 'ASC' : 'DESC');
+        $limit_sql = '';
+
+        if ($args['limit'] !== null) {
+            $limit_sql = ' LIMIT ' . intval($args['limit']);
+            if ($args['offset'] !== null) {
+                $limit_sql .= ' OFFSET ' . intval($args['offset']);
+            }
+        }
+
+        $sql = "SELECT
+                    b.*,
+                    c.Name AS CustomerName,
+                    c.Email AS CustomerEmail,
+                    o.Name AS OrganisationName,
+                    r.Name AS RoomName,
+                    v.Name AS VenueName
+                FROM {$this->table_name} b
+                LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_venues v ON r.VenueId = v.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON b.Id = ii.BookingId
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
+                    AND i.Status NOT IN ('cancelled')
+                WHERE $where_sql
+                GROUP BY b.Id
+                HAVING COUNT(i.Id) = 0
+                ORDER BY $order_sql
+                $limit_sql";
+
+        if (!empty($params)) {
+            $sql = $this->wpdb->prepare($sql, ...$params);
+        }
+
+        $results = $this->wpdb->get_results($sql, ARRAY_A);
+
+        if ($results === null && $this->wpdb->last_error) {
+            error_log('MYVH Booking Repository Error (get_uninvoiced_bookings): ' . $this->wpdb->last_error);
+        }
+
+        return $results ?: [];
+    }
+
+    /**
+     * Count uninvoiced bookings by organisation
+     *
+     * @return array Array of [OrganisationId => count] pairs
+     */
+    public function count_uninvoiced_by_organisation() {
+        $sql = "SELECT
+                    b.OrganisationId,
+                    o.Name AS OrganisationName,
+                    COUNT(DISTINCT b.Id) AS UninvoicedCount
+                FROM {$this->table_name} b
+                LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON b.Id = ii.BookingId
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
+                    AND i.Status NOT IN ('cancelled')
+                WHERE b.Status IN ('confirmed', 'completed')
+                    AND b.OrganisationId IS NOT NULL
+                GROUP BY b.OrganisationId, o.Name
+                HAVING COUNT(i.Id) = 0
+                ORDER BY o.Name ASC";
+
+        $results = $this->wpdb->get_results($sql, ARRAY_A);
+
+        if ($results === null && $this->wpdb->last_error) {
+            error_log('MYVH Booking Repository Error (count_uninvoiced_by_organisation): ' . $this->wpdb->last_error);
+            return [];
+        }
+
+        return $results ?: [];
+    }
+
+    /**
+     * Count uninvoiced bookings by customer
+     *
+     * @return array Array of [CustomerId => count] pairs
+     */
+    public function count_uninvoiced_by_customer() {
+        $sql = "SELECT
+                    b.CustomerId,
+                    c.Name AS CustomerName,
+                    c.Email AS CustomerEmail,
+                    COUNT(DISTINCT b.Id) AS UninvoicedCount
+                FROM {$this->table_name} b
+                LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON b.Id = ii.BookingId
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
+                    AND i.Status NOT IN ('cancelled')
+                WHERE b.Status IN ('confirmed', 'completed')
+                GROUP BY b.CustomerId, c.Name, c.Email
+                HAVING COUNT(i.Id) = 0
+                ORDER BY c.Name ASC";
+
+        $results = $this->wpdb->get_results($sql, ARRAY_A);
+
+        if ($results === null && $this->wpdb->last_error) {
+            error_log('MYVH Booking Repository Error (count_uninvoiced_by_customer): ' . $this->wpdb->last_error);
+            return [];
+        }
+
+        return $results ?: [];
+    }
+
+    /**
+     * Check if a booking has any non-cancelled invoices (for mutual exclusivity)
+     *
+     * @param int $booking_id The booking ID to check
+     * @return bool True if booking has any non-cancelled invoices, false otherwise
+     */
+    public function has_invoiced_items($booking_id) {
+        $sql = $this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT i.Id) AS invoice_count
+            FROM {$this->wpdb->prefix}myvh_invoice_items ii
+            LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
+            WHERE ii.BookingId = %d
+                AND i.Status NOT IN ('cancelled')",
+            intval($booking_id)
+        );
+
+        $result = $this->wpdb->get_var($sql);
+        return intval($result) > 0;
+    }
+
+    /**
      * Get the format array for wpdb operations
      *
      * @param array $data The data array
