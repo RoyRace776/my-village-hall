@@ -243,9 +243,19 @@ class MYVH_Invoice_Generator_Service {
             intval(myvh_setting('invoicing.single_due_date_offset_days', 30))
         );
 
+        $billing_snapshot = $this->build_billing_snapshot($first_booking, $options);
+
         // Create the invoice
         $invoice_data = [
             'customer_id' => $customer_id,
+            'billing_name' => $billing_snapshot['billing_name'] ?? null,
+            'billing_organisation_name' => $billing_snapshot['billing_organisation_name'] ?? null,
+            'billing_email' => $billing_snapshot['billing_email'] ?? null,
+            'billing_address_line1' => $billing_snapshot['billing_address_line1'] ?? null,
+            'billing_address_line2' => $billing_snapshot['billing_address_line2'] ?? null,
+            'billing_town_city' => $billing_snapshot['billing_town_city'] ?? null,
+            'billing_postcode' => $billing_snapshot['billing_postcode'] ?? null,
+            'billing_reference' => $billing_snapshot['billing_reference'] ?? null,
             'sub_total' => $subtotal,
             'tax_amount' => $tax_amount,
             'total_amount' => $total_amount,
@@ -278,5 +288,41 @@ class MYVH_Invoice_Generator_Service {
         do_action('myvh_invoice_generated', $invoice_id, $bookings, $options);
 
         return $invoice_id;
+    }
+
+    private function build_billing_snapshot($booking, $options) {
+        $group_by = sanitize_key($options['group_by'] ?? 'per_booking');
+        $customer_id = intval($booking['CustomerId'] ?? 0);
+        $organisation_id = intval($booking['OrganisationId'] ?? 0);
+
+        $customer = $customer_id > 0 ? $this->customer_repo->get_by_id($customer_id) : null;
+
+        if ($group_by === 'by_organisation' && $organisation_id > 0) {
+            $organisation = $this->organisation_repo->get_by_id($organisation_id);
+
+            if (!empty($organisation)) {
+                return [
+                    'billing_name' => $organisation['BillingContactName'] ?? $organisation['Name'] ?? null,
+                    'billing_organisation_name' => $organisation['Name'] ?? null,
+                    'billing_email' => $organisation['BillingEmail'] ?? $organisation['ContactEmail'] ?? null,
+                    'billing_address_line1' => $organisation['BillingAddressLine1'] ?? null,
+                    'billing_address_line2' => $organisation['BillingAddressLine2'] ?? null,
+                    'billing_town_city' => $organisation['BillingTownCity'] ?? null,
+                    'billing_postcode' => $organisation['BillingPostcode'] ?? null,
+                    'billing_reference' => $organisation['BillingReference'] ?? null,
+                ];
+            }
+        }
+
+        return [
+            'billing_name' => $customer['Name'] ?? null,
+            'billing_organisation_name' => null,
+            'billing_email' => $customer['Email'] ?? null,
+            'billing_address_line1' => $customer['AddressLine1'] ?? null,
+            'billing_address_line2' => null,
+            'billing_town_city' => null,
+            'billing_postcode' => $customer['PostCode'] ?? null,
+            'billing_reference' => null,
+        ];
     }
 }

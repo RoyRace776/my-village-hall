@@ -33,6 +33,7 @@ class MYVH_Portal_Controller {
         add_action('wp_ajax_myvh_portal_request_org_membership', [$this, 'request_organisation_membership']);
         add_action('wp_ajax_myvh_portal_approve_org_request', [$this, 'approve_organisation_membership_request']);
         add_action('wp_ajax_myvh_portal_reject_org_request', [$this, 'reject_organisation_membership_request']);
+        add_action('wp_ajax_myvh_portal_save_org_billing', [$this, 'save_organisation_billing']);
         add_action('wp_ajax_myvh_portal_org_add_member', [$this, 'organisation_add_member']);
         add_action('wp_ajax_myvh_portal_org_remove_member', [$this, 'organisation_remove_member']);
         add_action('wp_ajax_myvh_portal_org_set_admin', [$this, 'organisation_set_member_admin']);
@@ -402,6 +403,39 @@ class MYVH_Portal_Controller {
         }
 
         wp_send_json_success(['message' => 'Request rejected']);
+    }
+
+    public function save_organisation_billing() {
+        $customer = $this->get_authenticated_customer();
+        if (!$customer) {
+            return;
+        }
+
+        $org_id = intval($_POST['organisation_id'] ?? 0);
+
+        if ($org_id <= 0) {
+            wp_send_json_error('Organisation is required', 400);
+        }
+
+        $result = $this->organisation_service->update_billing_details_by_admin(
+            $org_id,
+            (int) $customer['Id'],
+            [
+                'billing_contact_name' => sanitize_text_field($_POST['billing_contact_name'] ?? ''),
+                'billing_email' => sanitize_email($_POST['billing_email'] ?? ''),
+                'billing_address_line1' => sanitize_text_field($_POST['billing_address_line1'] ?? ''),
+                'billing_address_line2' => sanitize_text_field($_POST['billing_address_line2'] ?? ''),
+                'billing_town_city' => sanitize_text_field($_POST['billing_town_city'] ?? ''),
+                'billing_postcode' => sanitize_text_field($_POST['billing_postcode'] ?? ''),
+                'billing_reference' => sanitize_text_field($_POST['billing_reference'] ?? ''),
+            ]
+        );
+
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message(), 400);
+        }
+
+        wp_send_json_success(['message' => 'Organisation billing details updated']);
     }
 
     public function organisation_add_member() {

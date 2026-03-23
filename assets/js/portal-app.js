@@ -63,7 +63,74 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function initInvoicesPage() {
-        const filterForm = document.getElementById('myvh-invoice-filter-form');
+        const invoicesPage = document.querySelector('.myvh-invoices-page');
+        if (!invoicesPage) {
+            return;
+        }
+
+        const invoiceTabs = Array.from(invoicesPage.querySelectorAll('.myvh-invoices-tab'));
+        const invoicePanels = Array.from(invoicesPage.querySelectorAll('[data-invoices-panel]'));
+
+        if (invoiceTabs.length && invoicePanels.length) {
+            const storageKey = 'myvhPortalInvoicesTab';
+
+            const activateInvoicesTab = (tabKey) => {
+                let hasMatch = false;
+
+                invoiceTabs.forEach((tab) => {
+                    const isActive = tab.dataset.invoicesTab === tabKey;
+                    tab.classList.toggle('is-active', isActive);
+                    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                    if (isActive) hasMatch = true;
+                });
+
+                invoicePanels.forEach((panel) => {
+                    const isActive = panel.dataset.invoicesPanel === tabKey;
+                    panel.classList.toggle('is-active', isActive);
+                    panel.hidden = !isActive;
+                });
+
+                if (hasMatch) {
+                    try {
+                        window.localStorage.setItem(storageKey, tabKey);
+                    } catch (e) {
+                        // Ignore storage failures.
+                    }
+                }
+            };
+
+            // Use delegated click handling to keep tabs working across dynamic re-renders.
+            invoicesPage.addEventListener('click', (event) => {
+                const clickedTab = event.target.closest('[data-invoices-tab]');
+                if (!clickedTab || !invoicesPage.contains(clickedTab)) {
+                    return;
+                }
+
+                event.preventDefault();
+                activateInvoicesTab(clickedTab.dataset.invoicesTab || 'list');
+            });
+
+            const currentHash = window.location.hash || '';
+            const hasStatusFiltersInHash = currentHash.indexOf('#invoices?') === 0 && currentHash.indexOf('statuses=') > -1;
+
+            let initialTab = hasStatusFiltersInHash ? 'list' : '';
+
+            if (!initialTab) {
+                try {
+                    initialTab = window.localStorage.getItem(storageKey) || '';
+                } catch (e) {
+                    initialTab = '';
+                }
+            }
+
+            if (!initialTab || !invoiceTabs.some((tab) => tab.dataset.invoicesTab === initialTab)) {
+                initialTab = invoiceTabs[0]?.dataset.invoicesTab || 'list';
+            }
+
+            activateInvoicesTab(initialTab);
+        }
+
+        const filterForm = invoicesPage.querySelector('#myvh-invoice-filter-form');
         if (filterForm) {
             filterForm.addEventListener('submit', function (event) {
                 event.preventDefault();
@@ -77,9 +144,9 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        const checkboxes = Array.from(document.querySelectorAll('.myvh-uninvoiced-checkbox'));
-        const selectAllButton = document.getElementById('myvh-select-all-uninvoiced');
-        const clearAllButton = document.getElementById('myvh-clear-all-uninvoiced');
+        const checkboxes = Array.from(invoicesPage.querySelectorAll('.myvh-uninvoiced-checkbox'));
+        const selectAllButton = invoicesPage.querySelector('#myvh-select-all-uninvoiced');
+        const clearAllButton = invoicesPage.querySelector('#myvh-clear-all-uninvoiced');
 
         if (selectAllButton) {
             selectAllButton.addEventListener('click', function () {

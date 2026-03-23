@@ -1,21 +1,23 @@
 <?php
+namespace MYVH\Shortcodes;
 
-class MYVH_Portal_Shortcode {
-
-    public function register() {
-        add_shortcode('myvh_portal', [$this, 'render']);
+class MYVH_Portal_Shortcode implements MYVH_Shortcode_Interface
+{
+    public function tag(): string
+    {
+        return 'myvh_portal';
     }
 
-    public function render() {
-
-        if (!is_user_logged_in()) {
-            return do_shortcode('[myvh_login]');
+    public function render($atts = [], $content = null): string
+    {
+        if ( ! \is_user_logged_in() ) {
+            return \do_shortcode( '[myvh_login]' );
         }
 
-        MYVH_Asset_Loader::enqueue_portal();
+        \MYVH_Asset_Loader::enqueue_portal();
 
-        ob_start();
+        \ob_start();
         include MYVH_PLUGIN_DIR . 'modules/portal/templates/portal-shell.php';
-        return ob_get_clean();
+        return (string) \ob_get_clean();
     }
 }

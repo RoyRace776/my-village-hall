@@ -73,6 +73,13 @@ class MYVH_Organisation_Service {
             'ContactEmail'       => sanitize_email( $data['contact_email'] ),
             'ContactPhone'       => sanitize_text_field( $data['contact_phone'] ),
             'WebsiteUrl'         => !empty( $data['website_url'] ) ? esc_url_raw( $data['website_url'] ) : null,
+            'BillingContactName' => !empty( $data['billing_contact_name'] ) ? sanitize_text_field( $data['billing_contact_name'] ) : null,
+            'BillingEmail'       => !empty( $data['billing_email'] ) ? sanitize_email( $data['billing_email'] ) : null,
+            'BillingAddressLine1'=> !empty( $data['billing_address_line1'] ) ? sanitize_text_field( $data['billing_address_line1'] ) : null,
+            'BillingAddressLine2'=> !empty( $data['billing_address_line2'] ) ? sanitize_text_field( $data['billing_address_line2'] ) : null,
+            'BillingTownCity'    => !empty( $data['billing_town_city'] ) ? sanitize_text_field( $data['billing_town_city'] ) : null,
+            'BillingPostcode'    => !empty( $data['billing_postcode'] ) ? sanitize_text_field( $data['billing_postcode'] ) : null,
+            'BillingReference'   => !empty( $data['billing_reference'] ) ? sanitize_text_field( $data['billing_reference'] ) : null,
             'IsActive'           => isset( $data['is_active'] ) ? 1 : 0,
             'IsDefault'          => $requested_default,
             'DefaultPublic'      => ( isset( $data['default_public'] ) && intval( $data['default_public'] ) === 1 ) ? 1 : 0,
@@ -316,5 +323,38 @@ class MYVH_Organisation_Service {
         }
 
         return $this->update_member_admin_status( $member_id, $is_admin );
+    }
+
+    public function update_billing_details_by_admin( int $org_id, int $acting_customer_id, array $data ) {
+        if ( !$this->member_repo->is_customer_admin( $org_id, $acting_customer_id ) ) {
+            return new WP_Error( 'forbidden', __( 'Only organisation admins can update billing details', 'my-village-hall' ) );
+        }
+
+        $organisation = $this->repo->get_by_id( $org_id );
+
+        if ( empty( $organisation['Id'] ) ) {
+            return new WP_Error( 'not_found', __( 'Organisation not found', 'my-village-hall' ) );
+        }
+
+        $billing_email = sanitize_email( $data['billing_email'] ?? '' );
+        if ( !empty( $data['billing_email'] ) && !is_email( $billing_email ) ) {
+            return new WP_Error( 'validation', __( 'Billing email must be a valid email address', 'my-village-hall' ) );
+        }
+
+        $updated = $this->repo->update( [
+            'BillingContactName'  => !empty( $data['billing_contact_name'] ) ? sanitize_text_field( $data['billing_contact_name'] ) : null,
+            'BillingEmail'        => !empty( $data['billing_email'] ) ? $billing_email : null,
+            'BillingAddressLine1' => !empty( $data['billing_address_line1'] ) ? sanitize_text_field( $data['billing_address_line1'] ) : null,
+            'BillingAddressLine2' => !empty( $data['billing_address_line2'] ) ? sanitize_text_field( $data['billing_address_line2'] ) : null,
+            'BillingTownCity'     => !empty( $data['billing_town_city'] ) ? sanitize_text_field( $data['billing_town_city'] ) : null,
+            'BillingPostcode'     => !empty( $data['billing_postcode'] ) ? sanitize_text_field( $data['billing_postcode'] ) : null,
+            'BillingReference'    => !empty( $data['billing_reference'] ) ? sanitize_text_field( $data['billing_reference'] ) : null,
+        ], [ 'Id' => $org_id ] );
+
+        if ( !$updated ) {
+            return new WP_Error( 'database', __( 'Failed to update billing details', 'my-village-hall' ) );
+        }
+
+        return true;
     }
 }

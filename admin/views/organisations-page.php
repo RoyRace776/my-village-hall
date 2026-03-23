@@ -45,6 +45,7 @@ $org_types = $type_service->get_all();
                             <th><?php _e('Default Visibility', 'my-village-hall'); ?></th>
                             <th><?php _e('Type', 'my-village-hall'); ?></th>
                             <th><?php _e('Email', 'my-village-hall'); ?></th>
+                            <th><?php _e('Billing Email', 'my-village-hall'); ?></th>
                             <th><?php _e('Phone', 'my-village-hall'); ?></th>
                             <th><?php _e('Website', 'my-village-hall'); ?></th>
                             <th><?php _e('Status', 'my-village-hall'); ?></th>
@@ -53,7 +54,7 @@ $org_types = $type_service->get_all();
                     </thead>
                     <tbody>
                         <?php if (empty($orgs)): ?>
-                            <tr><td colspan="9"><?php _e('No organisations found.', 'my-village-hall'); ?></td></tr>
+                            <tr><td colspan="10"><?php _e('No organisations found.', 'my-village-hall'); ?></td></tr>
                         <?php else: ?>
                             <?php foreach ($orgs as $org): ?>
                                 <tr>
@@ -62,6 +63,7 @@ $org_types = $type_service->get_all();
                                     <td><?php echo !empty($org['DefaultPublic']) ? __('Public', 'my-village-hall') : __('Private', 'my-village-hall'); ?></td>
                                     <td><?php echo esc_html($org['OrganisationTypeName'] ?? '—'); ?></td>
                                     <td><?php echo esc_html($org['ContactEmail'] ?? '—'); ?></td>
+                                    <td><?php echo esc_html($org['BillingEmail'] ?? '—'); ?></td>
                                     <td><?php echo esc_html($org['ContactPhone'] ?? '—'); ?></td>
                                     <td>
                                         <?php if (!empty($org['WebsiteUrl'])): ?>
@@ -161,6 +163,70 @@ $org_types = $type_service->get_all();
                                     value="<?php echo $edit_org ? esc_attr($edit_org['WebsiteUrl'] ?? '') : ''; ?>"
                                     placeholder="https://example.org">
                                 <p class="description"><?php _e('Optional website for this organisation.', 'my-village-hall'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th colspan="2" style="padding-top: 18px;"><?php _e('Invoicing Details', 'my-village-hall'); ?></th>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Billing Contact Name', 'my-village-hall'); ?></th>
+                            <td>
+                                <input type="text" name="billing_contact_name" class="regular-text"
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['BillingContactName'] ?? '') : ''; ?>"
+                                    placeholder="<?php esc_attr_e('Accounts Payable', 'my-village-hall'); ?>">
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Billing Email', 'my-village-hall'); ?></th>
+                            <td>
+                                <input type="email" name="billing_email" class="regular-text"
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['BillingEmail'] ?? '') : ''; ?>"
+                                    placeholder="billing@example.org">
+                                <p class="description"><?php _e('Optional invoice recipient email for this organisation.', 'my-village-hall'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Billing Address Line 1', 'my-village-hall'); ?></th>
+                            <td>
+                                <input type="text" name="billing_address_line1" class="regular-text"
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['BillingAddressLine1'] ?? '') : ''; ?>">
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Billing Address Line 2', 'my-village-hall'); ?></th>
+                            <td>
+                                <input type="text" name="billing_address_line2" class="regular-text"
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['BillingAddressLine2'] ?? '') : ''; ?>">
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Town / City', 'my-village-hall'); ?></th>
+                            <td>
+                                <input type="text" name="billing_town_city" class="regular-text"
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['BillingTownCity'] ?? '') : ''; ?>">
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Postcode', 'my-village-hall'); ?></th>
+                            <td>
+                                <input type="text" name="billing_postcode" class="regular-text"
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['BillingPostcode'] ?? '') : ''; ?>">
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Billing Reference', 'my-village-hall'); ?></th>
+                            <td>
+                                <input type="text" name="billing_reference" class="regular-text"
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['BillingReference'] ?? '') : ''; ?>"
+                                    placeholder="<?php esc_attr_e('PO number or internal ref', 'my-village-hall'); ?>">
                             </td>
                         </tr>
 

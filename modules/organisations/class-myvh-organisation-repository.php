@@ -28,6 +28,7 @@ class MYVH_Organisation_Repository {
         $this->ensure_is_default_column();
         $this->ensure_default_public_column();
         $this->ensure_website_url_column();
+        $this->ensure_billing_columns();
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
@@ -163,6 +164,25 @@ class MYVH_Organisation_Repository {
         }
 
         $this->wpdb->query( "ALTER TABLE {$this->table} ADD COLUMN WebsiteUrl VARCHAR(255) NULL" );
+    }
+
+    private function ensure_billing_columns(): void {
+        $columns = [
+            'BillingContactName'  => "ALTER TABLE {$this->table} ADD COLUMN BillingContactName VARCHAR(150) NULL",
+            'BillingEmail'        => "ALTER TABLE {$this->table} ADD COLUMN BillingEmail VARCHAR(150) NULL",
+            'BillingAddressLine1' => "ALTER TABLE {$this->table} ADD COLUMN BillingAddressLine1 VARCHAR(255) NULL",
+            'BillingAddressLine2' => "ALTER TABLE {$this->table} ADD COLUMN BillingAddressLine2 VARCHAR(255) NULL",
+            'BillingTownCity'     => "ALTER TABLE {$this->table} ADD COLUMN BillingTownCity VARCHAR(120) NULL",
+            'BillingPostcode'     => "ALTER TABLE {$this->table} ADD COLUMN BillingPostcode VARCHAR(30) NULL",
+            'BillingReference'    => "ALTER TABLE {$this->table} ADD COLUMN BillingReference VARCHAR(100) NULL",
+        ];
+
+        foreach ( $columns as $column_name => $sql ) {
+            $exists = $this->wpdb->get_var( $this->wpdb->prepare( "SHOW COLUMNS FROM {$this->table} LIKE %s", $column_name ) );
+            if ( !$exists ) {
+                $this->wpdb->query( $sql );
+            }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -33,12 +33,10 @@ if ( $myvh_container instanceof MYVH_Container ) {
     add_action( 'init', [ $registry, 'register' ] );
 
     $registry->add( $myvh_container->get( \MYVH\Shortcodes\MYVH_Login_Shortcode::class ) );
+    $registry->add( new \MYVH\Shortcodes\MYVH_Portal_Shortcode() );
 
     $login_handler = new MYVH_Login_Handler();
     $login_handler->init();
-
-    $portal_shortcode = new MYVH_Portal_Shortcode();
-    $portal_shortcode->register();
 
     $portal_controller = $myvh_container->get( MYVH_Portal_Controller::class );
     $portal_controller->register();
