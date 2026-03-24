@@ -76,7 +76,7 @@ class MYVH_Room_Service {
     }
 
     public function delete($id) {
-        $return = $this->repo->delete($id);
+        $return = $this->repo->delete_by_id($id);
 
         if (!$return) {
             return new WP_Error('delete', __('Room delete failed', 'my-village-hall'));

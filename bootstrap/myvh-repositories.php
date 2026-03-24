@@ -21,6 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+require_once MYVH_PLUGIN_DIR . '/core/support/class-myvh-repository-base.php';
+
 // ── 1. Venues & Rooms ─────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-repository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-repository.php';

@@ -40,6 +40,6 @@ class MYVH_Venue_Service {
     }
 
     public function delete($id) {
-        return $this->repo->delete($id);
+        return $this->repo->delete_by_id($id);
     }
 }

@@ -28,7 +28,23 @@ class MYVH_Booking_Service_Provider
         $container->singleton(MYVH_Room_Rules_Service::class);
         $container->singleton(MYVH_Pricing_Service::class);
 
-        $container->singleton(MYVH_Booking_Service::class);
+        $container->singleton(MYVH_Booking_Service::class, function($container) {
+            return new MYVH_Booking_Service(
+                $container->get(MYVH_Room_Service::class),
+                $container->get(MYVH_Booking_Repository::class),
+                $container->get(MYVH_Booking_Charge_Repository::class),
+                $container->get(MYVH_Booking_Addon_Repository::class),
+                $container->get(MYVH_Addon_Repository::class),
+                $container->get(MYVH_Addon_Service::class),
+                $container->get(MYVH_Booking_Validator::class),
+                $container->get(MYVH_Availability_Service::class),
+                $container->get(MYVH_Room_Rules_Service::class),
+                $container->get(MYVH_Pricing_Service::class),
+                $container->get(MYVH_Customer_Repository::class),
+                $container->get(MYVH_Organisation_Repository::class),
+                $container->get(MYVH_Recurring_Pattern_Service::class)
+            );
+        });
         $container->singleton(MYVH_Booking_Controller::class);
     }
 }

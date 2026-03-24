@@ -12,6 +12,7 @@ class MYVH_Booking_Service {
     private $booking_charge_repo;
     private $booking_addon_repo;
     private $addon_repo;
+    private $addon_service;
     private $validator;
     private $availability;
     private $room_rules;
@@ -27,6 +28,7 @@ class MYVH_Booking_Service {
         MYVH_Booking_Charge_Repository $booking_charge_repo,
         MYVH_Booking_Addon_Repository $booking_addon_repo,
         MYVH_Addon_Repository $addon_repo,
+        MYVH_Addon_Service $addon_service,
         MYVH_Booking_Validator $validator,
         MYVH_Availability_Service $availability,
         MYVH_Room_Rules_Service $room_rules,
@@ -40,6 +42,7 @@ class MYVH_Booking_Service {
         $this->booking_charge_repo = $booking_charge_repo;
         $this->booking_addon_repo = $booking_addon_repo;
         $this->addon_repo = $addon_repo;
+        $this->addon_service = $addon_service;
         $this->validator = $validator;
         $this->availability = $availability;
         $this->room_rules = $room_rules;
@@ -50,103 +53,37 @@ class MYVH_Booking_Service {
     }
 
     public function save($data) {
+
         $this->last_warnings = [];
 
-        if (empty($data['customer_id'])) {
-            return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
+        // Dispatch before create/update event
+        if (!empty($data['booking_id'])) {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::BEFORE_UPDATE,
+                $data
+            );
+        } else {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::BEFORE_CREATE,
+                $data
+            );
         }
 
-        if (empty($data['room_id'])) {
-            return new WP_Error('validation', __('Room is required', 'my-village-hall'));
-        }
-
-        if (empty($data['start_date'])) {
-            return new WP_Error('validation', __('Start date is required', 'my-village-hall'));
-        }
-
-        if (empty($data['start_time']) || empty($data['end_time'])) {
-            return new WP_Error('validation', __('Start and end times are required', 'my-village-hall'));
+        $validation_result = $this->validator->validate($data);
+        if (is_wp_error($validation_result)) {
+            return $validation_result;
         }
 
         $customer_id = intval($data['customer_id']);
         $organisation_id = !empty($data['organisation_id']) ? intval($data['organisation_id']) : 0;
 
-        if ($organisation_id > 0) {
-            $customer_organisations = $this->customer_repo->get_organisations_for_customer($customer_id);
-            $allowed_organisation_ids = array_map(static function ($org) {
-                return intval($org['Id'] ?? 0);
-            }, $customer_organisations ?: []);
-
-            if (!in_array($organisation_id, $allowed_organisation_ids, true)) {
-                return new WP_Error(
-                    'validation',
-                    __('Selected organisation is not linked to this customer.', 'my-village-hall')
-                );
-            }
-        }
-
-        // Validate time
         $room = $this->room_service->get($data['room_id']);
-        if (!$room) {
-            return new WP_Error('validation', __('Room is required', 'my-village-hall'));
-        }
-
         $start_date = sanitize_text_field($data['start_date']);
         $end_date = !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : $start_date;
-        if ($start_date <> $end_date) {
-            if (!$room['AllowMultiDayBookings'] ){
-                return new WP_Error('validation', __('Multi day bookings are not allowed for this room', 'my-village-hall'));
-            }
-        }
-        $start_datetime = new DateTime($start_date . ' ' . $data['start_time']);
-        $end_datetime = new DateTime($end_date . ' ' . $data['end_time']);
-
-        if ($end_datetime <= $start_datetime) {
-            return new WP_Error('validation', __('End time must be after start time', 'my-village-hall'));
-        }
-
         $start_time = sanitize_text_field($data['start_time']);
         $end_time = sanitize_text_field($data['end_time']);
 
-        $within_opening_hours = $this->availability->booking_within_opening_hours(
-            intval($data['room_id']),
-            $start_time,
-            $end_time
-        );
-
-        if (is_wp_error($within_opening_hours)) {
-            return $within_opening_hours;
-        }
-
-        if (!$within_opening_hours) {
-            return new WP_Error(
-                'validation',
-                sprintf(
-                    __('Booking times must be within the room opening hours of %1$s to %2$s.', 'my-village-hall'),
-                    substr((string) $room['OpeningTime'], 0, 5),
-                    substr((string) $room['ClosingTime'], 0, 5)
-                )
-            );
-        }
-
-        $is_available = $this->availability->room_is_available(
-            intval($data['room_id']),
-            $start_date,
-            $start_time,
-            $end_time,
-            $end_date,
-            !empty($data['booking_id']) ? intval($data['booking_id']) : null
-        );
-
-        if (!$is_available) {
-            return new WP_Error(
-                'validation',
-                __('This room is already booked for part or all of the selected time.', 'my-village-hall')
-            );
-        }
-
         if (!isset($data['chargeable_hours'])) {
-
             $chargeable_hours = $this->calculate_chargeable_hours(
                 $start_date,
                 $start_time,
@@ -187,16 +124,47 @@ class MYVH_Booking_Service {
     }
 
     private function update_booking($data, $record) {
+
         // Capture the current status BEFORE overwriting the row, so that
         // dispatch_update_event() can compare old vs new correctly.
         $current_record = $this->booking_repo->get_by_id( intval( $data['booking_id'] ) );
+
+        // Dispatch before status change if status is changing
+        if (isset($current_record['Status']) && $current_record['Status'] !== $data['status']) {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::BEFORE_STATUS_CHANGE,
+                [
+                    'booking_id' => $data['booking_id'],
+                    'old_status' => $current_record['Status'],
+                    'new_status' => $data['status'],
+                    'data' => $data
+                ]
+            );
+        }
 
         $result = $this->booking_repo->update($record, ['Id' => intval($data['booking_id'])]);
         if ($result === false) {
             return new WP_Error('database', __('Failed to update booking', 'my-village-hall'));
         }
-        // Replace addons: delete existing then re-save.  This saves the price for theadd ons
+
+        // Addons before/after events
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::BEFORE_ADDONS_CHANGE,
+            [
+                'booking_id' => $data['booking_id'],
+                'addons' => $data['addons'] ?? [],
+                'replace' => true
+            ]
+        );
         $this->save_addons(intval($data['booking_id']), $data['addons'] ?? [], true);
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::AFTER_ADDONS_CHANGE,
+            [
+                'booking_id' => $data['booking_id'],
+                'addons' => $data['addons'] ?? [],
+                'replace' => true
+            ]
+        );
 
         $charge_result = $this->recalculate_booking_charges(intval($data['booking_id']));
         if (is_wp_error($charge_result)) {
@@ -205,18 +173,53 @@ class MYVH_Booking_Service {
 
         $this->dispatch_update_event($data, $current_record['Status'] ?? null);
 
+        // After status change event
+        if (isset($current_record['Status']) && $current_record['Status'] !== $data['status']) {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::AFTER_STATUS_CHANGE,
+                [
+                    'booking_id' => $data['booking_id'],
+                    'old_status' => $current_record['Status'],
+                    'new_status' => $data['status'],
+                    'data' => $data
+                ]
+            );
+        }
+
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::AFTER_UPDATE,
+            $data
+        );
+
         return intval($data['booking_id']);
 
     }
 
     private function create_booking($data, $record) {
+        // Before create event already dispatched in save()
         $booking_id = $this->booking_repo->create($record);
         if ($booking_id === false) {
             return new WP_Error('database', __('Failed to create booking', 'my-village-hall'));
         }
 
-        // Save addons before price snapshot so addon totals are included.
+        // Addons before/after events
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::BEFORE_ADDONS_CHANGE,
+            [
+                'booking_id' => $booking_id,
+                'addons' => $data['addons'] ?? [],
+                'replace' => false
+            ]
+        );
         $this->save_addons($booking_id, $data['addons'] ?? []);
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::AFTER_ADDONS_CHANGE,
+            [
+                'booking_id' => $booking_id,
+                'addons' => $data['addons'] ?? [],
+                'replace' => false
+            ]
+        );
 
         $charge_result = $this->recalculate_booking_charges($booking_id);
         if (is_wp_error($charge_result)) {
@@ -247,31 +250,34 @@ class MYVH_Booking_Service {
             );
         }
 
-        // Handle recurring pattern if requested
+        // Recurring pattern events
         if (!empty($data['is_recurring']) && $this->recurring_pattern_service) {
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::BEFORE_RECURRING,
+                [
+                    'parent_booking_id' => $booking_id,
+                    'data' => $data
+                ]
+            );
             $pattern_data = [
                 'parent_booking_id'   => $booking_id,
-                'recurrence_type'     => sanitize_text_field($data['recurrence_type']),
-                'recurrence_interval' => intval($data['recurrence_interval'] ?? 1),
-                'recurrence_day'      => sanitize_text_field($data['recurrence_day'] ?? ''),
-                'recurrence_week'     => sanitize_text_field($data['recurrence_week'] ?? ''),
-                'start_date'          => sanitize_text_field($data['start_date']),
+                'recurrence_type'     => $data['recurrence_type'] ?? '',
+                'recurrence_interval' => $data['recurrence_interval'] ?? 1,
+                'recurrence_day'      => $data['recurrence_day'] ?? '',
+                'recurrence_week'     => $data['recurrence_week'] ?? '',
+                'start_date'          => $data['start_date'] ?? '',
                 'is_active'           => 1,
             ];
-
             // Set end condition
-            if ($data['recurrence_end_type'] === 'date') {
-                $pattern_data['end_date'] = sanitize_text_field($data['recurrence_end_date']);
+            if (($data['recurrence_end_type'] ?? '') === 'date') {
+                $pattern_data['end_date'] = $data['recurrence_end_date'] ?? '';
             } else {
-                $pattern_data['max_occurrences'] = intval($data['max_occurrences']);
+                $pattern_data['max_occurrences'] = $data['max_occurrences'] ?? null;
             }
-
             $pattern_result = $this->recurring_pattern_service->save($pattern_data);
-
             if (is_wp_error($pattern_result)) {
                 return $pattern_result;
             }
-
             $booking_results = $this->recurring_pattern_service->get_last_booking_results();
             if (is_array($booking_results)) {
                 if (!empty($booking_results['conflicts'])) {
@@ -280,12 +286,23 @@ class MYVH_Booking_Service {
                         implode(', ', $booking_results['conflicts'])
                     );
                 }
-
                 if (!empty($booking_results['errors'])) {
                     $this->last_warnings[] = implode(' ', $booking_results['errors']);
                 }
             }
+            MYVH_Event_Dispatcher::dispatch(
+                MYVH_Booking_Events::AFTER_RECURRING,
+                [
+                    'parent_booking_id' => $booking_id,
+                    'data' => $data
+                ]
+            );
         }
+
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::AFTER_CREATE,
+            $data + ['booking_id' => $booking_id]
+        );
 
         return $booking_id;
     }
@@ -356,52 +373,11 @@ class MYVH_Booking_Service {
      * @param array $addons     Array of ['addon_id' => int, 'quantity' => float, 'unit_price' => float, 'description' => string]
      * @param bool  $replace    If true, delete all existing addons before saving
      */
+
     public function save_addons($booking_id, $addons, $replace = false) {
-        if (!$this->booking_addon_repo) return;
-
-        if ($replace) {
-            $this->booking_addon_repo->delete_by_booking_id($booking_id);
-        }
-
-        if (empty($addons) || !is_array($addons)) return;
-
-        // Fetch booking hours lazily — only needed when a per_hour addon is present.
-        $booking_hours = null;
-
-        foreach ($addons as $addon) {
-            $addon_id   = intval($addon['addon_id'] ?? 0);
-            $unit_price = floatval($addon['unit_price'] ?? 0);
-
-            if ($addon_id <= 0) continue;
-
-            // Quantity is system-derived: fixed/per_day => 1, per_hour => booking hours.
-            $quantity = 1.0;
-            $addon_record = $this->addon_repo ? $this->addon_repo->get_by_id($addon_id) : null;
-            if ($addon_record && ($addon_record['ChargeType'] ?? '') === 'per_hour') {
-                if ($booking_hours === null) {
-                    $booking = $this->booking_repo->get_by_id($booking_id);
-                    if ($booking) {
-                        $start = strtotime($booking['StartDate'] . ' ' . $booking['StartTime']);
-                        $end   = strtotime($booking['EndDate']   . ' ' . $booking['EndTime']);
-                        $booking_hours = round(($end - $start) / 3600, 2);
-                    }
-                }
-                if ($booking_hours !== null) {
-                    $quantity = max(0, $booking_hours);
-                }
-            }
-
-            if ($quantity <= 0) continue;
-
-            $this->booking_addon_repo->create([
-                'BookingId'   => $booking_id,
-                'AddonId'     => $addon_id,
-                'Quantity'    => $quantity,
-                'UnitPrice'   => $unit_price,
-                'TotalAmount' => round($quantity * $unit_price, 2),
-                'Description' => sanitize_text_field($addon['description'] ?? ''),
-            ]);
-        }
+        // Delegate to MYVH_Addon_Service (implement a method if needed)
+        if (!$this->addon_service) return;
+        $this->addon_service->save_booking_addons($booking_id, $addons, $replace);
     }
 
     /**
@@ -411,8 +387,8 @@ class MYVH_Booking_Service {
      * @return array
      */
     public function get_addons_for_booking($booking_id) {
-        if (!$this->booking_addon_repo) return [];
-        return $this->booking_addon_repo->get_by_booking_id($booking_id) ?? [];
+        if (!$this->addon_service) return [];
+        return $this->addon_service->get_addons_for_booking($booking_id);
     }
 
     public function get_by_id($booking_id) {
@@ -432,6 +408,11 @@ class MYVH_Booking_Service {
             return new WP_Error('validation', __('Booking ID is required', 'my-village-hall'));
         }
 
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::BEFORE_DELETE,
+            ['booking_id' => $booking_id]
+        );
+
         if ($this->booking_addon_repo && !$this->booking_addon_repo->delete_by_booking_id($booking_id)) {
             return new WP_Error('database', __('Failed to remove booking addons', 'my-village-hall'));
         }
@@ -444,6 +425,15 @@ class MYVH_Booking_Service {
         if (!$deleted) {
             return new WP_Error('database', __('Failed to delete booking', 'my-village-hall'));
         }
+
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::DELETED,
+            ['booking_id' => $booking_id]
+        );
+        MYVH_Event_Dispatcher::dispatch(
+            MYVH_Booking_Events::AFTER_DELETE,
+            ['booking_id' => $booking_id]
+        );
 
         return true;
     }

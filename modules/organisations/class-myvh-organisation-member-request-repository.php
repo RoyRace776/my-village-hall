@@ -9,10 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class MYVH_Organisation_Member_Request_Repository {
-
-    /** @var wpdb */
-    private $wpdb;
+class MYVH_Organisation_Member_Request_Repository extends MYVH_Repository_Base{
 
     /** @var string */
     private $table;
@@ -22,22 +19,6 @@ class MYVH_Organisation_Member_Request_Repository {
         $this->table = $wpdb->prefix . 'myvh_organisation_member_requests';
 
         $this->ensure_table();
-    }
-
-    public function create( array $data ) {
-        $result = $this->wpdb->insert( $this->table, $data, $this->get_format( $data ) );
-
-        if ( $result === false ) {
-            error_log( 'MYVH Organisation_Member_Request Repository Error (create): ' . $this->wpdb->last_error );
-            return false;
-        }
-
-        return $this->wpdb->insert_id;
-    }
-
-    public function get_by_id( int $id ) {
-        $sql = $this->wpdb->prepare( "SELECT * FROM {$this->table} WHERE Id = %d", $id );
-        return $this->wpdb->get_row( $sql, ARRAY_A );
     }
 
     public function get_pending_by_organisation( int $org_id ): array {
@@ -103,23 +84,6 @@ class MYVH_Organisation_Member_Request_Repository {
         return $this->wpdb->get_row( $sql, ARRAY_A );
     }
 
-    public function update( int $id, array $data ) {
-        $result = $this->wpdb->update(
-            $this->table,
-            $data,
-            [ 'Id' => $id ],
-            $this->get_format( $data ),
-            [ '%d' ]
-        );
-
-        if ( $result === false ) {
-            error_log( 'MYVH Organisation_Member_Request Repository Error (update): ' . $this->wpdb->last_error );
-            return false;
-        }
-
-        return true;
-    }
-
     private function ensure_table(): void {
         $exists = $this->wpdb->get_var(
             $this->wpdb->prepare( 'SHOW TABLES LIKE %s', $this->table )
@@ -148,17 +112,4 @@ class MYVH_Organisation_Member_Request_Repository {
         ) {$collate};" );
     }
 
-    private function get_format( array $data ): array {
-        return array_map( function ( $v ) {
-            if ( is_int( $v ) ) {
-                return '%d';
-            }
-
-            if ( is_float( $v ) ) {
-                return '%f';
-            }
-
-            return '%s';
-        }, $data );
-    }
 }

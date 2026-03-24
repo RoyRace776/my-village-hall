@@ -9,38 +9,18 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class MYVH_Organisation_Member_Repository {
-
-    /** @var wpdb */
-    private $wpdb;
+class MYVH_Organisation_Member_Repository extends MYVH_Repository_Base{
 
     /** @var string */
     private $table;
 
     public function __construct( \wpdb $wpdb ) {
-        $this->wpdb  = $wpdb;
         $this->table = $wpdb->prefix . 'myvh_organisation_members';
 
         $this->ensure_admin_column();
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
-
-    public function create( array $data ) {
-        $result = $this->wpdb->insert( $this->table, $data, $this->get_format( $data ) );
-
-        if ( $result === false ) {
-            error_log( 'MYVH Organisation_Member Repository Error (create): ' . $this->wpdb->last_error );
-            return false;
-        }
-
-        return $this->wpdb->insert_id;
-    }
-
-    public function get_by_id( int $id ) {
-        $sql = $this->wpdb->prepare( "SELECT * FROM {$this->table} WHERE Id = %d", $id );
-        return $this->wpdb->get_row( $sql, ARRAY_A );
-    }
 
     public function get_by_organisation_and_customer( int $org_id, int $customer_id ) {
         $sql = $this->wpdb->prepare(
@@ -149,17 +129,6 @@ class MYVH_Organisation_Member_Repository {
         return true;
     }
 
-    public function delete( int $id ) {
-        $result = $this->wpdb->delete( $this->table, [ 'Id' => $id ], [ '%d' ] );
-
-        if ( $result === false ) {
-            error_log( 'MYVH Organisation_Member Repository Error (delete): ' . $this->wpdb->last_error );
-            return false;
-        }
-
-        return true;
-    }
-
     public function delete_by_organisation( int $org_id ): bool {
         $result = $this->wpdb->delete( $this->table, [ 'OrganisationId' => $org_id ], [ '%d' ] );
 
@@ -179,15 +148,5 @@ class MYVH_Organisation_Member_Repository {
         }
 
         $this->wpdb->query( "ALTER TABLE {$this->table} ADD COLUMN IsOrganisationAdmin TINYINT(1) NOT NULL DEFAULT 0" );
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private function get_format( array $data ): array {
-        return array_map( function ( $v ) {
-            if ( is_int( $v ) )   return '%d';
-            if ( is_float( $v ) ) return '%f';
-            return '%s';
-        }, $data );
     }
 }
