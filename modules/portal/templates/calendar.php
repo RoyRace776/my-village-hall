@@ -57,27 +57,7 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
 
 </div>
 
-<div id="myvh-booking-modal" class="myvh-modal hidden">
-    <div class="myvh-modal-content myvh-booking-modal-shell">
-        <h2>Create Booking</h2>
-        <p class="myvh-account-hint">Complete the details below to create a booking.</p>
-
-        <p class="myvh-modal-actions" style="margin-bottom: 15px;">
-            <button type="submit" class="button button-primary" form="myvh-booking-form">Create Booking</button>
-            <button type="button" class="button myvh-cancel">Cancel</button>
-        </p>
-
-        <form id="myvh-booking-form">
-            <input type="hidden" name="start">
-            <input type="hidden" name="end">
-
-            <div class="myvh-modal-group myvh-modal-group-main">
-                <h3>Booking Details</h3>
-
-                <table class="form-table">
-                    <tr>
-                        <th>Start Date</th>
-                        <td><input type="date" id="myvh-modal-start-date" readonly></td>
+<!-- Booking modal for viewing bookings from calendar event click removed -->
                     </tr>
                     <tr>
                         <th>Start Time</th>

@@ -78,41 +78,48 @@ window.MYVH_BookingModal = (function() {
 
         resetForm();
 
-        setValue("start", data.start);
-        setValue("end", data.end);
-        setValue("text", data.text || "");
-        setDisplayedDateTimes(data.start, data.end);
+        // If viewOnly and id provided, fetch booking details and populate, then disable all fields
+        if (data.viewOnly && data.id) {
+            setLoading(true);
+            // Hide submit button, show close button
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.style.display = 'none';
+            let closeBtn = form.querySelector('.myvh-modal-close');
+            if (!closeBtn) {
+                closeBtn = document.createElement('button');
+                closeBtn.type = 'button';
+                closeBtn.className = 'myvh-modal-close myvh-button';
+                closeBtn.textContent = 'Close';
+                closeBtn.addEventListener('click', close);
+                form.appendChild(closeBtn);
+            } else {
+                closeBtn.style.display = '';
+            }
+            // Fetch booking details from new AJAX endpoint
+            fetch(`${config.ajax_url}?action=myvh_portal_get_booking&booking_id=${encodeURIComponent(data.id)}&nonce=${encodeURIComponent(config.nonce)}`)
+                .then(r => r.json())
+                .then(res => {
+                    if (!res || !res.success || !res.data || !res.data.booking) throw new Error('Booking not found');
+                    const booking = res.data.booking;
+                    // Populate fields (add more as needed)
+                    setValue('start', booking.StartDate || '');
+                    setValue('end', booking.EndDate || '');
+                    setValue('text', booking.Description || '');
+                    setDisplayedDateTimes(booking.StartDate, booking.EndDate);
+                    // Disable all fields
+                    form.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = true; });
+                    // Hide recurring/addon controls if present
+                    const recurringOptions = form.querySelector('#myvh-modal-recurring-options');
+                    if (recurringOptions) recurringOptions.style.display = 'none';
+                    // Show modal
+                    modal.classList.remove('hidden');
+                    config.onOpen(data);
+                });
+            return;
+        }
 
-        setLoading(true);
-
-        populateDropdowns()
-            .then(() => {
-
-                applyContext(data);
-                applyVisibility();
-                return refreshOrganisations(data.organisation_id || "");
-            })
-            .then(() => {
-                syncEndDateVisibility();
-
-                modal.classList.remove("hidden");
-                config.onOpen(data);
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Failed to load booking data");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-    }
-
-    function close() {
-        modal.classList.add("hidden");
-        config.onClose();
-    }
-
-    function resetForm() {
+        // Only normal (add/edit) mode remains
+        if (submitBtn) submitBtn.style.display = '';
         form.reset();
 
         // Re-enable all fields

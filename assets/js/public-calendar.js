@@ -493,19 +493,7 @@
 
             // Bind click handlers
             var evList = vtDp.events.list;
-            container.querySelectorAll('.myvh-tt-event-cell[data-event-id]').forEach(function(cell) {
-                var evId = cell.dataset.eventId;
-                var found = null;
-                for (var i = 0; i < evList.length; i++) {
-                    if (String(evList[i].id) === evId) { found = evList[i]; break; }
-                }
-                if (found) {
-                    cell.style.cursor = 'pointer';
-                    (function(ev) {
-                        cell.addEventListener('click', function() { handleEventClick({ e: { data: function() { return ev; } } }); });
-                    }(found));
-                }
-            });
+            // Removed event click handler for public calendar
         }
 
         return {
@@ -532,8 +520,8 @@
             timeRangeSelectedHandling: 'Disabled',
             eventMoveHandling: 'Disabled',
             eventResizeHandling: 'Disabled',
-            onEventClick: handleEventClick,
-            onEventHover: handleEventHover,
+            // onEventClick removed
+            // onEventHover removed
             onBeforeRowHeaderRender: function(args) {
                 var tags = (args.row && args.row.tags) ? args.row.tags : {};
 
@@ -662,8 +650,8 @@
             locale             : document.documentElement.lang || 'en-us',
             eventMoveHandling  : 'Disabled',
             eventResizeHandling: 'Disabled',
-            onEventClick       : handleEventClick,
-            onEventHover       : handleEventHover,
+            // onEventClick removed
+            // onEventHover removed
             cellHeaderClickHandling: 'Disabled',
         };
     }
@@ -683,8 +671,8 @@
             dayEndsHour        : endHour,
             eventMoveHandling  : 'Disabled',
             eventResizeHandling: 'Disabled',
-            onEventClick       : handleEventClick,
-            onEventHover       : handleEventHover,
+            // onEventClick removed
+            // onEventHover removed
             timeRangeSelectedHandling: 'Disabled',
         };
     }
@@ -866,15 +854,7 @@
     }
 
     // ── Event handlers ────────────────────────────────────────────────────────
-    function handleEventClick(args) {
-        // Read-only calendar: show a simple tooltip / no action needed.
-        // You can extend this to open a details modal if desired.
-    }
-
-    function handleEventHover(args) {
-        // Tooltips are already set in loadEvents with time and description
-        // This serves as a fallback if needed
-    }
+    // handleEventClick and handleEventHover removed
 
     // ── Toolbar binding ───────────────────────────────────────────────────────
     function bindToolbar() {

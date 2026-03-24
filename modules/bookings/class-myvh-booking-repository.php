@@ -163,7 +163,12 @@ class MYVH_Booking_Repository {
      * @return array
      */
     public function get_all_with_details($args = []) {
-        $defaults = ['orderby' => 'b.StartDate', 'order' => 'DESC', 'booking_id' => 0, 'status' => '', 'room_id' => 0, 'customer_id' => 0];
+        $defaults = ['orderby'      => 'b.StartDate',
+                     'order'        => 'DESC',
+                     'booking_id'   => 0,
+                     'status'       => '',
+                     'room_id'      => 0,
+                     'customer_id'  => 0];
         $args = wp_parse_args($args, $defaults);
 
         $where  = ['1=1'];

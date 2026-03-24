@@ -217,10 +217,7 @@ var MYVH_Calendar = (function() {
             initialMode: 'Calendar',
             initialDetail: 'Week',
 
-            onEventClick: function(args) {
-                const id = args.e.id ? args.e.id() : args.e.data.id;
-                window.location.href = '/dashboard/?tab=view-booking&id=' + id;
-            },
+            // onEventClick removed: clicking events no longer shows booking
 
             onTimeRangeSelected: openSelectionModal
         });
