@@ -1,6 +1,15 @@
 <?php
 
 class MYVH_Addon_Repository extends MYVH_Repository_Base {
+
+    /**
+     * Constructor
+     */
+    public function __construct( \wpdb $wpdb ) {
+        $this->wpdb = $wpdb;
+        $this->table_name = $wpdb->prefix . 'myvh_addons';
+    }
+
     // Custom methods preserved
     public function get_all_with_relations() {
         $sql = "SELECT\n                    a.*,\n                    r.Name as RoomName\n                FROM {$this->table_name} a\n                LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON a.RoomId = r.Id\n                ORDER BY a.DisplayOrder, a.Name";

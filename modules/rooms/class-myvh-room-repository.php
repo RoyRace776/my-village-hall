@@ -10,6 +10,14 @@ if (!defined('ABSPATH')) {
 }
 
 class MYVH_Room_Repository extends MYVH_Repository_Base {
+
+    /**
+     * Constructor
+     */
+    public function __construct( \wpdb $wpdb ) {
+        $this->wpdb = $wpdb;
+        $this->table_name = $wpdb->prefix . 'myvh_rooms';
+    }
     // Custom method preserved
     public function get_all_with_venues() {
         $sql = "SELECT r.*, v.Id as VenueId, v.Name as VenueName FROM $this->table_name r

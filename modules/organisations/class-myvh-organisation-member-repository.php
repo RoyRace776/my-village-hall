@@ -16,6 +16,7 @@ class MYVH_Organisation_Member_Repository extends MYVH_Repository_Base{
 
     public function __construct( \wpdb $wpdb ) {
         $this->table = $wpdb->prefix . 'myvh_organisation_members';
+        $this->wpdb = $wpdb;
 
         $this->ensure_admin_column();
     }
