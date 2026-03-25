@@ -1,7 +1,17 @@
 <?php
 
+/**
+ * Class MYVH_Asset_Loader
+ *
+ * Handles registration and enqueuing of plugin assets (JS, CSS) for both frontend and admin.
+ * Provides helpers for asset versioning and dynamic configuration for calendar/portal features.
+ */
 class MYVH_Asset_Loader {
 
+    /**
+     * Get a version string for an asset based on file modification time (for cache busting).
+     * Falls back to plugin version if file not found.
+     */
     private static function asset_version( $relative_path ): string {
         $full_path = MYVH_PLUGIN_DIR . ltrim( $relative_path, '/\\' );
 
@@ -15,6 +25,10 @@ class MYVH_Asset_Loader {
         return MYVH_VERSION;
     }
 
+    /**
+     * Get the visible hours for the calendar, using defaults or service if available.
+     * @return array [ 'start' => int, 'end' => int ]
+     */
     public static function get_calendar_visible_hours(): array {
 
         $defaults = [
@@ -45,6 +59,9 @@ class MYVH_Asset_Loader {
         ];
     }
 
+    /**
+     * Register hooks to enqueue frontend and admin assets.
+     */
     public static function init(): void {
         add_action( 'wp_enqueue_scripts',    [ self::class, 'enqueue_frontend' ] );
         add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_admin'    ] );
@@ -52,6 +69,9 @@ class MYVH_Asset_Loader {
 
     // ── Frontend ──────────────────────────────────────────────────────────────
 
+    /**
+     * Enqueue frontend assets for public pages and portal shortcode.
+     */
     public static function enqueue_frontend(): void {
 
         self::register_public_calendar_assets();
@@ -60,6 +80,7 @@ class MYVH_Asset_Loader {
 
         $content = get_queried_object()->post_content ?? '';
 
+        // Enqueue portal assets if [myvh_portal] shortcode is present
         if ( has_shortcode( $content, 'myvh_portal' ) ) {
             self::enqueue_portal();
         }
@@ -68,6 +89,9 @@ class MYVH_Asset_Loader {
         // to support per-instance container IDs and REST config.
     }
 
+    /**
+     * Register scripts and styles for the public calendar (not enqueued by default).
+     */
     public static function register_public_calendar_assets(): void {
 
         // Use the plugin-bundled DayPilot build so public calendar works in local/offline environments.
@@ -104,6 +128,10 @@ class MYVH_Asset_Loader {
 
     // ── Admin ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Enqueue admin assets for plugin admin pages.
+     * @param string $hook The current admin page hook
+     */
     public static function enqueue_admin( $hook ): void {
 
         if ( strpos( $hook, 'myvh' ) === false && strpos( $hook, 'my-village-hall' ) === false ) return;
@@ -174,11 +202,12 @@ class MYVH_Asset_Loader {
             wp_enqueue_script(
                 'myvh-calendar-admin',
                 MYVH_PLUGIN_URL . 'assets/js/calendar-admin.js',
-                ['jquery', 'myvh-booking-modal'], // ✅ critical
+                ['jquery', 'myvh-booking-modal'], // critical dependency
                 self::asset_version( 'assets/js/calendar-admin.js' ),
                 true
             );
 
+            // Pass config to JS
             wp_localize_script( 'myvh-calendar-admin', 'myvhCal', [
                 'ajax_url'              => admin_url( 'admin-ajax.php' ),
                 'nonce'                 => wp_create_nonce( 'myvh_calendar' ),
@@ -193,6 +222,9 @@ class MYVH_Asset_Loader {
 
     // ── Portal (frontend, [myvh_portal] shortcode) ────────────────────────────
 
+    /**
+     * Enqueue assets for the portal ([myvh_portal] shortcode) on the frontend.
+     */
     public static function enqueue_portal(): void {
 
         $visible_hours = self::get_calendar_visible_hours();
@@ -201,6 +233,7 @@ class MYVH_Asset_Loader {
         $default_organisation_id = 0;
         $is_client_admin = false;
 
+        // If user is logged in, get customer/org/admin info
         if ( is_user_logged_in() ) {
             global $myvh_container;
 
@@ -298,6 +331,7 @@ class MYVH_Asset_Loader {
             true
         );
 
+        // Pass config to JS for portal app
         wp_localize_script( 'myvh-portal-app', 'myvhPortal', [
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'myvh_portal' ),
@@ -321,6 +355,9 @@ class MYVH_Asset_Loader {
 
     // ── Public calendar ([myvh_public_calendar] shortcode) ────────────────────
 
+    /**
+     * Enqueue assets for the public calendar shortcode.
+     */
     public static function enqueue_public_calendar(): void {
 
         wp_enqueue_script(
@@ -347,6 +384,7 @@ class MYVH_Asset_Loader {
             true
         );
 
+        // Pass config to JS for public calendar
         wp_localize_script( 'myvh-calendar-public', 'myvhCalConfig', [
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'myvh_calendar' ),
