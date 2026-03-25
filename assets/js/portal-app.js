@@ -1,7 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
-
+    // Add a class to the body to indicate the portal is loaded
     document.body.classList.add('myvh-has-portal');
 
+    // Aliases for hash routes to canonical page names
     const routeAliases = {
         'my-bookings': 'bookings',
         'book-room': 'bookings',
@@ -9,23 +10,32 @@ document.addEventListener("DOMContentLoaded", () => {
         'home': 'dashboard'
     };
 
+    /**
+     * Initialize all portal page widgets and logic.
+     * Should be called after each page load or dynamic content update.
+     */
     function initPortalPage() {
+        // Initialize calendar if present
         if (document.getElementById('myvh-calendar') && typeof MYVH_Calendar !== 'undefined') {
             MYVH_Calendar.init();
         }
 
+        // Initialize bookings list if present
         if (document.querySelector('.myvh-bookings-list') && typeof MYVH_Bookings !== 'undefined') {
             MYVH_Bookings.init();
         }
 
+        // Booking edit form: enable/disable submit button based on changes
         const bookingEditForm = document.getElementById('myvh-booking-edit-form');
         if (bookingEditForm) {
             const submitButton = bookingEditForm.querySelector('button[type="submit"]');
             if (submitButton) {
+                // Track all non-hidden fields
                 const trackedFields = Array.from(
                     bookingEditForm.querySelectorAll('input:not([type="hidden"]), textarea, select')
                 );
 
+                // Capture initial state for dirty check
                 const initialState = JSON.stringify(
                     trackedFields.map((field) => ({
                         name: field.name,
@@ -33,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }))
                 );
 
+                // Disable submit if no changes
                 const syncSubmitState = () => {
                     const currentState = JSON.stringify(
                         trackedFields.map((field) => ({
@@ -40,10 +51,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             value: field.value,
                         }))
                     );
-
                     submitButton.disabled = currentState === initialState;
                 };
 
+                // Listen for changes
                 trackedFields.forEach((field) => {
                     field.addEventListener('input', syncSubmitState);
                     field.addEventListener('change', syncSubmitState);
@@ -53,16 +64,21 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
+        // Initialize settings page tabs and dirty state if present
         const settingsPage = document.querySelector('.myvh-client-settings-page');
         if (settingsPage) {
             initSettingsTabs(settingsPage);
             initSettingsDirtyState(settingsPage);
         }
 
+        // Organization billing toggles and invoices page logic
         initOrganisationBillingToggles();
         initInvoicesPage();
     }
 
+    /**
+     * Show/hide organisation billing fields based on toggle input.
+     */
     function initOrganisationBillingToggles() {
         const toggleInputs = Array.from(document.querySelectorAll('.myvh-org-invoice-toggle'));
         if (!toggleInputs.length) {
@@ -76,6 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            // Show/hide fields based on toggle
             const syncVisibility = () => {
                 fields.hidden = !toggleInput.checked;
             };
@@ -85,10 +102,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    /**
+     * Initialize the invoices page: tab switching, filtering, and drilldown for uninvoiced bookings.
+     */
     function initInvoicesPage() {
 
-    const invoicesPage = document.querySelector('.myvh-invoices-page');
-    if (!invoicesPage) return;
+        const invoicesPage = document.querySelector('.myvh-invoices-page');
+        if (!invoicesPage) return;
 
         // Drilldown for uninvoiced bookings by customer/organisation
         invoicesPage.addEventListener('click', function (event) {
@@ -102,6 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             targetDiv.innerHTML = '<p>Loading bookings...</p>';
 
+            // Build AJAX params
             const params = new URLSearchParams({
                 action: 'myvh_portal_get_uninvoiced_bookings',
                 nonce: myvhPortal.nonce
@@ -109,6 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (customerId) params.append('customer_id', customerId);
             if (organisationId) params.append('organisation_id', organisationId);
 
+            // Fetch uninvoiced bookings and render table
             fetch(myvhPortal.ajax_url + '?' + params.toString())
                 .then(r => r.json())
                 .then(res => {
@@ -138,21 +160,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
         });
 
-                // Helper: escape HTML
-                function escapeHtml(str) {
-                    return String(str).replace(/[&<>"']/g, function (s) {
-                        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'})[s];
-                    });
-                }
-                // Helper: format date (YYYY-MM-DD or ISO)
-                function formatDate(dateStr) {
-                    const d = new Date(dateStr);
-                    if (!isNaN(d)) {
-                        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                    }
-                    return dateStr;
-                }
+        // Helper: escape HTML for safe rendering
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, function (s) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'})[s];
+            });
+        }
+        // Helper: format date (YYYY-MM-DD or ISO)
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            if (!isNaN(d)) {
+                return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+            return dateStr;
+        }
 
+        // Tab switching logic for invoices page
         const invoiceTabs = Array.from(invoicesPage.querySelectorAll('.myvh-invoices-tab'));
         const invoicePanels = Array.from(invoicesPage.querySelectorAll('[data-invoices-panel]'));
 
@@ -215,6 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
             activateInvoicesTab(initialTab);
         }
 
+        // Invoice status filter form: update hash for filtering
         const filterForm = invoicesPage.querySelector('#myvh-invoice-filter-form');
         if (filterForm) {
             filterForm.addEventListener('submit', function (event) {
@@ -229,6 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
+        // Select all/clear all checkboxes for uninvoiced bookings
         const checkboxes = Array.from(invoicesPage.querySelectorAll('.myvh-uninvoiced-checkbox'));
         const selectAllButton = invoicesPage.querySelector('#myvh-select-all-uninvoiced');
         const clearAllButton = invoicesPage.querySelector('#myvh-clear-all-uninvoiced');
@@ -250,6 +275,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    /**
+     * Initialize settings page tab switching logic.
+     * Remembers last active tab in localStorage.
+     */
     function initSettingsTabs(settingsPage) {
         const tabs = Array.from(settingsPage.querySelectorAll('.myvh-settings-tab'));
         const panels = Array.from(settingsPage.querySelectorAll('[data-settings-panel]'));
@@ -282,12 +311,14 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
+        // Tab click event
         tabs.forEach((tab) => {
             tab.addEventListener('click', () => {
                 activateTab(tab.dataset.settingsTab || '');
             });
         });
 
+        // Restore last active tab
         let storedTab = '';
         try {
             storedTab = window.localStorage.getItem(storageKey) || '';
@@ -300,6 +331,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    /**
+     * Track dirty state for settings forms and enable/disable submit button accordingly.
+     */
     function initSettingsDirtyState(settingsPage) {
         const forms = Array.from(settingsPage.querySelectorAll('.myvh-settings-form'));
         if (!forms.length) return;
@@ -308,23 +342,25 @@ document.addEventListener("DOMContentLoaded", () => {
             const submitButton = form.querySelector('button[type="submit"]');
             if (!submitButton) return;
 
+            // Only track enabled, non-hidden fields
             const trackedFields = Array.from(form.querySelectorAll('input, select, textarea'))
                 .filter((field) => field.name && field.type !== 'hidden' && !field.disabled);
 
             if (!trackedFields.length) return;
 
+            // Capture current state for dirty check
             const captureState = () => JSON.stringify(
                 trackedFields.map((field) => {
                     if (field.type === 'checkbox' || field.type === 'radio') {
                         return { name: field.name, checked: !!field.checked };
                     }
-
                     return { name: field.name, value: field.value };
                 })
             );
 
             let baselineState = captureState();
 
+            // Update button state based on changes
             const syncDirtyState = () => {
                 const isDirty = captureState() !== baselineState;
                 submitButton.classList.toggle('myvh-settings-save-dirty', isDirty);
@@ -332,11 +368,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 submitButton.disabled = !isDirty;
             };
 
+            // Listen for changes
             trackedFields.forEach((field) => {
                 field.addEventListener('input', syncDirtyState);
                 field.addEventListener('change', syncDirtyState);
             });
 
+            // Reset baseline on form reset
             form.addEventListener('reset', () => {
                 setTimeout(() => {
                     baselineState = captureState();
@@ -344,6 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }, 0);
             });
 
+            // Disable button on submit
             form.addEventListener('submit', () => {
                 submitButton.disabled = true;
             });
@@ -352,6 +391,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    /**
+     * Submit a portal form via AJAX POST.
+     * @param {string} action - The WP AJAX action name
+     * @param {HTMLFormElement} form - The form to submit
+     * @returns {Promise<object>} - The JSON response
+     */
     function postPortalForm(action, form) {
         const formData = new FormData(form);
         formData.append('action', action);
@@ -363,12 +408,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }).then(r => r.json());
     }
 
+    /**
+     * Show a message in a target element, with color for error/success.
+     */
     function showMessage(target, text, isError) {
         if (!target) return;
         target.textContent = text || '';
         target.style.color = isError ? '#b32d2e' : '#2d5a27';
     }
 
+    /**
+     * Load a portal page via AJAX and re-initialize widgets.
+     * @param {string} page - The page slug
+     * @param {object} params - Extra query params
+     */
     function loadPage(page, params = {}) {
 
         const query = new URLSearchParams({
@@ -394,6 +447,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
+    /**
+     * Simple hash-based router for portal pages.
+     * Parses hash, resolves aliases, and loads the correct page.
+     */
     function router() {
 
         let hash = location.hash.replace("#", "") || "dashboard";
@@ -409,16 +466,20 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
+        // Use route alias if present
         page = routeAliases[page] || page;
 
         loadPage(page, params);
     }
 
+    // Listen for hash changes to trigger router
     window.addEventListener("hashchange", router);
 
+    // Delegate form submission handling for all portal forms
     document.getElementById('portal-content').addEventListener('submit', function (e) {
         const form = e.target;
 
+        // Account details form
         if (form.id === 'myvh-account-details-form') {
             e.preventDefault();
 
@@ -439,6 +500,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Password change form
         if (form.id === 'myvh-account-password-form') {
             e.preventDefault();
 
@@ -462,6 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Generic portal action forms (with data-portal-action)
         const portalAction = form.dataset.portalAction;
         if (portalAction) {
             e.preventDefault();
@@ -500,5 +563,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Initial page load
     router();
 });

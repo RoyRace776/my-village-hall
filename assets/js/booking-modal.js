@@ -3,8 +3,11 @@ window.MYVH_BookingModal = (function() {
     let config = {};
     let modal, form;
 
+    /**
+     * Initialize the booking modal with configuration and bind events.
+     * @param {object} userConfig - Configuration overrides and hooks
+     */
     function init(userConfig) {
-
         config = {
             ajax_url: null,
             nonce: 'myvh_calendar',
@@ -44,11 +47,10 @@ window.MYVH_BookingModal = (function() {
         bindEvents();
     }
 
-    // ─────────────────────────────
-    // Events
-    // ─────────────────────────────
+    /**
+     * Bind all modal and form events (submit, cancel, outside click, etc).
+     */
     function bindEvents() {
-
         form.addEventListener("submit", submit);
 
         const cancelButtons = modal.querySelectorAll(".myvh-cancel");
@@ -71,9 +73,10 @@ window.MYVH_BookingModal = (function() {
         bindDependentControls();
     }
 
-    // ─────────────────────────────
-    // Open / Close
-    // ─────────────────────────────
+    /**
+     * Open the modal and populate with data.
+     * @param {object} data - Data to prefill the form
+     */
     function open(data = {}) {
         // Always define submitBtn at the top so it's available in both modes
         const submitBtn = form.querySelector('button[type="submit"]');

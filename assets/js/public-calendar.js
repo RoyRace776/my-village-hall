@@ -73,40 +73,41 @@
             key = String(tags.roomId);
         }
 
-        if (!key) {
-            return '';
-        }
 
-        return roomNameById[key] || '';
-    }
+        /**
+         * My Village Hall – Public Calendar (DayPilot Lite)
+         *
+         * Reads config from the myvhCalConfig object localised by the shortcode PHP class.
+         * Supports month, week and day views.
+         */
+        (function () {
+            'use strict';
 
-    function formatUsesShortWeekday(format) {
-        return typeof format === 'string' && /(^|[^d])ddd([^d]|$)/.test(format);
-    }
-
-    function ensureThreeLetterEnglishWeekdays(format) {
-        if (!formatUsesShortWeekday(format) || !DayPilot || !DayPilot.Locale || !DayPilot.Locale.all) {
-            return;
-        }
-
-        Object.keys(DayPilot.Locale.all).forEach(function(localeId) {
-            if (!/^en($|-)/i.test(localeId)) {
+            // myvhCalConfig is injected by wp_localize_script
+            if (typeof myvhCalConfig === 'undefined') {
                 return;
             }
 
-            var locale = DayPilot.Locale.find(localeId);
+            var cfg     = myvhCalConfig;
+            var wrap    = null;   // .myvh-public-calendar-wrap
+            var dp      = null;   // active DayPilot control
+            var nav     = null;   // DayPilot navigator control
+            var lastEvents = [];
+            var roomNameById = {};
+            var loadRequestSeq = 0;
+            var suppressNavSelect = false;
+            var headerDateFormat = cfg.headerDateFormat || 'd MMM';
+            var current = {
+                mode : 'calendar',
+                detail : cfg.view || 'month',
+                date : DayPilot.Date.today(),
+            };
 
-            if (!locale || !Array.isArray(locale.dayNames) || locale.dayNames.length !== 7) {
-                return;
-            }
-
-            locale.dayNamesShort = locale.dayNames.map(function(dayName) {
-                return String(dayName).slice(0, 3);
-            });
-        });
-    }
-
-    function formatTimeFromISO(isoDatetime) {
+            // Colour map for booking statuses
+            var STATUS_COLOURS = {
+                confirmed : '#2271b1',
+                pending   : '#f0a500',
+            };
         if (!isoDatetime) return '';
         try {
             var date = new Date(isoDatetime);

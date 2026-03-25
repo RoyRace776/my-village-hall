@@ -1,10 +1,11 @@
+// Public calendar logic for My Village Hall
 var MYVH_CalendarPublic = (function() {
 
     var api = null;
 
-    // ─────────────────────────────
-    // UI Controls (view + nav)
-    // ─────────────────────────────
+    /**
+     * Bind UI controls for calendar view and navigation.
+     */
     function bindControls() {
 
         var dayBtn   = document.getElementById('myvh-day');
@@ -23,9 +24,9 @@ var MYVH_CalendarPublic = (function() {
         if (todayBtn) todayBtn.addEventListener('click', function() { api.today(); });
     }
 
-    // ─────────────────────────────
-    // Init
-    // ─────────────────────────────
+    /**
+     * Initialize the public calendar and controls.
+     */
     function init() {
 
         api = MYVH_CalendarCore.init('myvh-calendar', {
@@ -40,7 +41,7 @@ var MYVH_CalendarPublic = (function() {
 
             onEventClick: function(args) {
                 var data = args.e.data;
-                alert((data.text || 'Booking') + '\n' + data.start + ' – ' + data.end);
+                alert((data.text || 'Booking') + '\n' + data.start + '  ' + data.end);
             }
         });
 

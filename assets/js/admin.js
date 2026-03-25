@@ -1,15 +1,25 @@
 jQuery(document).ready(function($) {
 
-    // Helper functions
+    // ==================== Helper functions ====================
+
+    /**
+     * Show a message on the given element, styled by type (success/error).
+     */
     function showMessage(element, message, type) {
         element.removeClass('success error').addClass(type).text(message).fadeIn();
         setTimeout(function() { element.fadeOut(); }, 3000);
     }
 
+    /**
+     * Show a loading spinner next to a button and disable it.
+     */
     function showLoading(button) {
         button.prop('disabled', true).after('<span class="myvh-loading"></span>');
     }
 
+    /**
+     * Remove loading spinner and re-enable the button.
+     */
     function hideLoading(button) {
         button.prop('disabled', false);
         $('.myvh-loading').remove();
@@ -17,6 +27,9 @@ jQuery(document).ready(function($) {
 
     // ==================== ROOMS ====================
 
+    /**
+     * Show/hide organisation billing fields based on toggle state.
+     */
     function syncOrganisationBillingFields() {
         var toggle = $('.myvh-org-invoice-toggle');
         var fields = $('.myvh-org-billing-fields');
@@ -32,10 +45,13 @@ jQuery(document).ready(function($) {
         }
     }
 
+    // Listen for changes to the org invoice toggle
     $('.myvh-org-invoice-toggle').on('change', syncOrganisationBillingFields);
     syncOrganisationBillingFields();
 
-    // Toggle custom room hours
+    /**
+     * Toggle custom room hours fields based on venue hours checkbox.
+     */
     $('#use_venue_hours').on('change', function() {
         if ($(this).is(':checked')) {
             $('#room_hours_section').hide();
@@ -50,7 +66,9 @@ jQuery(document).ready(function($) {
 
     // ==================== RECURRING BOOKINGS ====================
 
-    // Toggle recurring options
+    /**
+     * Show/hide recurring booking options.
+     */
     $('#enable_recurring').on('change', function() {
         if ($(this).is(':checked')) {
             $('#recurring_options').slideDown();
@@ -59,7 +77,9 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Recurrence type change
+    /**
+     * Update recurrence interval and monthly options based on type.
+     */
     $('#recurrence_type').on('change', function() {
         var type = $(this).val();
 
@@ -77,7 +97,7 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // End repeat type change
+    // ...existing code for other admin features...
     $('input[name="recurrence_end_type"]').on('change', function() {
         var type = $(this).val();
         $('#recurrence_end_date').prop('disabled', type !== 'on_date');

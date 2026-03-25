@@ -1,7 +1,24 @@
+
+
+
+
+
+
+
+
+
+
+
+
+// Bookings list and actions for My Village Hall
 var MYVH_Bookings = (function() {
 
     var initialized = false;
 
+    /**
+     * Bind accordion toggle logic for grouped bookings.
+     * Clicking a group header toggles its children.
+     */
     function bindAccordion() {
         document.addEventListener('click', function(e) {
             var header = e.target.closest('.myvh-group-header');
@@ -28,6 +45,9 @@ var MYVH_Bookings = (function() {
         });
     }
 
+    /**
+     * Bind actions for bookings, e.g. cancel button with confirmation.
+     */
     function bindActions() {
         document.addEventListener('click', function(e) {
             var cancelBtn = e.target.closest('.myvh-cancel-booking');
@@ -42,6 +62,9 @@ var MYVH_Bookings = (function() {
         });
     }
 
+    /**
+     * Initialize bookings logic (accordion, actions). Only runs once.
+     */
     function init() {
         if (initialized) {
             return;

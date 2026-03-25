@@ -1,4 +1,5 @@
-﻿window.MYVH_CalendarCore = (function () {
+﻿// Core calendar logic for My Village Hall (shared by admin, portal, public views)
+window.MYVH_CalendarCore = (function () {
 
     let calendar = null;
     let scheduler = null;
@@ -6,10 +7,16 @@
     let currentDetail = "Week";
     let currentContainerId = "myvh-calendar";
 
+    /**
+     * Check if a date format string uses short weekday (ddd).
+     */
     function formatUsesShortWeekday(format) {
         return typeof format === "string" && /(^|[^d])ddd([^d]|$)/.test(format);
     }
 
+    /**
+     * Ensure all English locales use three-letter weekday abbreviations.
+     */
     function ensureThreeLetterEnglishWeekdays(format) {
         if (!formatUsesShortWeekday(format) || !DayPilot || !DayPilot.Locale || !DayPilot.Locale.all) {
             return;
@@ -31,6 +38,9 @@
         });
     }
 
+    /**
+     * Format a time string from an ISO datetime.
+     */
     function formatTimeFromISO(isoDatetime) {
         if (!isoDatetime) return "";
         try {
@@ -44,6 +54,9 @@
         }
     }
 
+    /**
+     * Determine if a booking is public based on tags.
+     */
     function isPublicBooking(tags) {
         if (!tags || !Object.prototype.hasOwnProperty.call(tags, "isPublic")) {
             return true;
@@ -60,6 +73,9 @@
         return String(raw).toLowerCase() !== "false";
     }
 
+    /**
+     * Determine if the current user can view a private booking.
+     */
     function canViewPrivateBooking(tags) {
         if (!tags || !Object.prototype.hasOwnProperty.call(tags, "canViewPrivate")) {
             return false;
@@ -76,6 +92,12 @@
         return String(raw).toLowerCase() === "true";
     }
 
+    /**
+     * Build a tooltip string for a calendar event.
+     * @param {object} event - The event object
+     * @param {string} context - Context (admin, portal, etc)
+     * @returns {string} Tooltip HTML
+     */
     function buildEventTooltip(event, context = "admin") {
         const tooltipParts = [];
         const tags = event && event.tags ? event.tags : {};

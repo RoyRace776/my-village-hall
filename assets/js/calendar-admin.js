@@ -1,9 +1,13 @@
+// Admin calendar logic for My Village Hall
 var MYVH_CalendarAdmin = (function() {
 
     var api = null;
     var nav = null;
     var suppressNavSelect = false;
 
+    /**
+     * Get the navigation select mode (Day/Week/Month) based on detail.
+     */
     function getNavSelectMode(detail) {
         if (detail === 'Day') {
             return 'Day';
@@ -14,6 +18,9 @@ var MYVH_CalendarAdmin = (function() {
         return 'Week';
     }
 
+    /**
+     * Sync the DayPilot navigator with the current calendar state.
+     */
     function syncNavigator() {
         if (!nav || !api?.getState) {
             return;
@@ -34,6 +41,9 @@ var MYVH_CalendarAdmin = (function() {
         }
     }
 
+    /**
+     * Initialize the DayPilot navigator control for calendar navigation.
+     */
     function initNavigator() {
         const navEl = document.getElementById('myvh-calendar-nav-picker');
         if (!navEl || typeof DayPilot === 'undefined') {
@@ -61,18 +71,27 @@ var MYVH_CalendarAdmin = (function() {
         syncNavigator();
     }
 
+    /**
+     * Highlight the active calendar mode button.
+     */
     function setActiveModeButton(mode) {
         document.querySelectorAll('.myvh-mode-btn').forEach(function(button) {
             button.classList.toggle('active', button.dataset.mode === mode);
         });
     }
 
+    /**
+     * Highlight the active calendar detail button.
+     */
     function setActiveDetailButton(detail) {
         document.querySelectorAll('.myvh-detail-btn').forEach(function(button) {
             button.classList.toggle('active', button.dataset.view === detail);
         });
     }
 
+    /**
+     * Parse calendar state from the URL query string.
+     */
     function getStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('cal_mode');
