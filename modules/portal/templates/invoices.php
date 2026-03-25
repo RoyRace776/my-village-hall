@@ -14,10 +14,73 @@ $is_client_admin_view = !empty($is_client_admin);
         </div>
     </div>
 
+
         <?php if ($is_client_admin_view): ?>
             <div class="myvh-settings-tabs myvh-invoices-tabs" role="tablist" aria-label="Invoice actions">
                 <button type="button" class="myvh-settings-tab myvh-invoices-tab is-active" role="tab" aria-selected="true" data-invoices-tab="create">Create Invoices</button>
+                <button type="button" class="myvh-settings-tab myvh-invoices-tab" role="tab" aria-selected="false" data-invoices-tab="by-customer">By Customer</button>
+                <button type="button" class="myvh-settings-tab myvh-invoices-tab" role="tab" aria-selected="false" data-invoices-tab="by-organisation">By Organisation</button>
                 <button type="button" class="myvh-settings-tab myvh-invoices-tab" role="tab" aria-selected="false" data-invoices-tab="list">Invoice List</button>
+            </div>
+        <?php endif; ?>
+        <?php if ($is_client_admin_view): ?>
+            <div class="myvh-card myvh-account-card myvh-settings-group myvh-invoices-panel" data-invoices-panel="by-customer" hidden>
+                <div class="myvh-section-header" style="margin-bottom: 12px;">
+                    <h3>Uninvoiced Bookings by Customer</h3>
+                </div>
+                <?php if (!empty($uninvoiced_by_customer)): ?>
+                    <table class="myvh-invoices-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Email</th>
+                                <th>Uninvoiced Bookings</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($uninvoiced_by_customer as $customer): ?>
+                                <tr>
+                                    <td><?php echo esc_html($customer['CustomerName'] ?? 'Unknown'); ?></td>
+                                    <td><?php echo esc_html($customer['CustomerEmail'] ?? '-'); ?></td>
+                                    <td><?php echo intval($customer['UninvoicedCount']); ?></td>
+                                    <td><button type="button" class="myvh-drilldown-btn" data-customer-id="<?php echo intval($customer['CustomerId']); ?>">View Bookings</button></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p>No customers with uninvoiced bookings found.</p>
+                <?php endif; ?>
+                <div id="myvh-customer-drilldown" style="margin-top:20px;"></div>
+            </div>
+            <div class="myvh-card myvh-account-card myvh-settings-group myvh-invoices-panel" data-invoices-panel="by-organisation" hidden>
+                <div class="myvh-section-header" style="margin-bottom: 12px;">
+                    <h3>Uninvoiced Bookings by Organisation</h3>
+                </div>
+                <?php if (!empty($uninvoiced_by_organisation)): ?>
+                    <table class="myvh-invoices-table">
+                        <thead>
+                            <tr>
+                                <th>Organisation</th>
+                                <th>Uninvoiced Bookings</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($uninvoiced_by_organisation as $org): ?>
+                                <tr>
+                                    <td><?php echo esc_html($org['OrganisationName'] ?? 'Unknown'); ?></td>
+                                    <td><?php echo intval($org['UninvoicedCount']); ?></td>
+                                    <td><button type="button" class="myvh-drilldown-btn" data-organisation-id="<?php echo intval($org['OrganisationId']); ?>">View Bookings</button></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p>No organisations with uninvoiced bookings found.</p>
+                <?php endif; ?>
+                <div id="myvh-organisation-drilldown" style="margin-top:20px;"></div>
             </div>
         <?php endif; ?>
 
@@ -95,7 +158,7 @@ $is_client_admin_view = !empty($is_client_admin);
             </div>
         <?php endif; ?>
 
-        <div class="myvh-card myvh-account-card myvh-settings-group myvh-invoices-panel<?php echo !$is_client_admin_view ? ' is-active' : ''; ?>" data-invoices-panel="list"<?php echo $is_client_admin_view ? ' hidden' : ''; ?>>
+        <div class="myvh-card myvh-account-card myvh-settings-group myvh-invoices-panel" data-invoices-panel="list" hidden>
             <div class="myvh-section-header" style="margin-bottom: 12px;">
                 <h3>Your Invoice List</h3>
             </div>

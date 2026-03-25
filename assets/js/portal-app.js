@@ -86,10 +86,72 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function initInvoicesPage() {
-        const invoicesPage = document.querySelector('.myvh-invoices-page');
-        if (!invoicesPage) {
-            return;
-        }
+
+    const invoicesPage = document.querySelector('.myvh-invoices-page');
+    if (!invoicesPage) return;
+
+        // Drilldown for uninvoiced bookings by customer/organisation
+        invoicesPage.addEventListener('click', function (event) {
+            const drilldownBtn = event.target.closest('.myvh-drilldown-btn');
+            if (!drilldownBtn) return;
+
+            let customerId = drilldownBtn.getAttribute('data-customer-id');
+            let organisationId = drilldownBtn.getAttribute('data-organisation-id');
+            const targetDiv = customerId ? document.getElementById('myvh-customer-drilldown') : document.getElementById('myvh-organisation-drilldown');
+            if (!targetDiv) return;
+
+            targetDiv.innerHTML = '<p>Loading bookings...</p>';
+
+            const params = new URLSearchParams({
+                action: 'myvh_portal_get_uninvoiced_bookings',
+                nonce: myvhPortal.nonce
+            });
+            if (customerId) params.append('customer_id', customerId);
+            if (organisationId) params.append('organisation_id', organisationId);
+
+            fetch(myvhPortal.ajax_url + '?' + params.toString())
+                .then(r => r.json())
+                .then(res => {
+                    if (!res.success || !Array.isArray(res.data.bookings)) {
+                        targetDiv.innerHTML = '<p>No bookings found or error.</p>';
+                        return;
+                    }
+                    if (res.data.bookings.length === 0) {
+                        targetDiv.innerHTML = '<p>No uninvoiced bookings found.</p>';
+                        return;
+                    }
+                    let html = '<table class="myvh-invoices-table"><thead><tr>' +
+                        '<th>Booking</th><th>Description</th><th>Date</th><th>Room</th></tr></thead><tbody>';
+                    res.data.bookings.forEach(b => {
+                        html += '<tr>' +
+                            '<td>#' + (b.Id || '') + '</td>' +
+                            '<td>' + (b.Description ? escapeHtml(b.Description) : '-') + '</td>' +
+                            '<td>' + (b.StartDate ? escapeHtml(formatDate(b.StartDate)) : '-') + '</td>' +
+                            '<td>' + (b.RoomName ? escapeHtml(b.RoomName) : '-') + '</td>' +
+                            '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    targetDiv.innerHTML = html;
+                })
+                .catch(() => {
+                    targetDiv.innerHTML = '<p>Error loading bookings.</p>';
+                });
+        });
+
+                // Helper: escape HTML
+                function escapeHtml(str) {
+                    return String(str).replace(/[&<>"']/g, function (s) {
+                        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'})[s];
+                    });
+                }
+                // Helper: format date (YYYY-MM-DD or ISO)
+                function formatDate(dateStr) {
+                    const d = new Date(dateStr);
+                    if (!isNaN(d)) {
+                        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                    }
+                    return dateStr;
+                }
 
         const invoiceTabs = Array.from(invoicesPage.querySelectorAll('.myvh-invoices-tab'));
         const invoicePanels = Array.from(invoicesPage.querySelectorAll('[data-invoices-panel]'));

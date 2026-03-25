@@ -83,6 +83,17 @@ var MYVH_Calendar = (function() {
         api?.clearSelection?.();
     }
 
+    function openReadOnlyModal(args) {
+        if (!modal || !args || !args.e) {
+            return;
+        }
+
+        modal.open({
+            args: args.e.data,
+            viewOnly: true
+        });
+    }
+
     function ensureSelectableRangeHandlers() {
         const cal = api?.calendar;
         if (cal) {
@@ -219,7 +230,8 @@ var MYVH_Calendar = (function() {
 
             // onEventClick removed: clicking events no longer shows booking
 
-            onTimeRangeSelected: openSelectionModal
+            onTimeRangeSelected: openSelectionModal,
+            onEventClick : openReadOnlyModal
         });
 
         bindControls();

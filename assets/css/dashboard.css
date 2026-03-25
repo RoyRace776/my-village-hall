@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap');
 /* Make add member and pending requests sections as wide as members list */
 .myvh-orgs-page .myvh-org-admin-section > div {
   width: 100%;
@@ -69,7 +70,6 @@
 .myvh-orgs-page .myvh-account-form label[for="myvh-request-message"] textarea {
   min-height: 60px;
 }
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap');
 
 /* ==========================================================================
    My Village Hall – Dashboard
@@ -1564,6 +1564,7 @@ body .site-main:has(#myvh-portal) {
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     font-size: 13px;
   }
@@ -1669,6 +1670,7 @@ body .site-main:has(#myvh-portal) {
   .myvh-booking-details strong {
     font-size: 12px;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
 
   .myvh-status-chip {

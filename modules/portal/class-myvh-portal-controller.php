@@ -25,8 +25,9 @@ class MYVH_Portal_Controller {
         $this->invoice_service = $invoice_service;
     }
 
-    public function register() {
 
+    public function register() {
+        add_action('wp_ajax_myvh_portal_get_uninvoiced_bookings', [$this, 'get_uninvoiced_bookings_for_entity']);
         add_action('wp_ajax_myvh_portal_page', [$this, 'load_page']);
         add_action('wp_ajax_myvh_portal_update_account', [$this, 'update_account']);
         add_action('wp_ajax_myvh_portal_change_password', [$this, 'change_password']);
@@ -47,6 +48,41 @@ class MYVH_Portal_Controller {
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
         add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
     }
+
+    /**
+     * AJAX: Get uninvoiced bookings for a customer or organisation (for drilldown)
+     */
+    public function get_uninvoiced_bookings_for_entity() {
+        check_ajax_referer('myvh_portal', 'nonce');
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Not logged in', 401);
+        }
+
+        $customer_id = intval($_GET['customer_id'] ?? $_POST['customer_id'] ?? 0);
+        $organisation_id = intval($_GET['organisation_id'] ?? $_POST['organisation_id'] ?? 0);
+        $is_client_admin = $this->current_user_is_client_admin();
+        if (!$is_client_admin) {
+            wp_send_json_error('Not allowed', 403);
+        }
+
+        $args = [
+            'orderby' => 'b.StartDate',
+            'order' => 'DESC',
+        ];
+        if ($customer_id) {
+            $args['customer_id'] = $customer_id;
+        }
+        if ($organisation_id) {
+            $args['organisation_id'] = $organisation_id;
+        }
+        if (!$customer_id && !$organisation_id) {
+            wp_send_json_error('Missing customer_id or organisation_id', 400);
+        }
+
+        $bookings = $this->booking_service->get_uninvoiced_bookings($args);
+        wp_send_json_success(['bookings' => $bookings]);
+    }
+
 
     /**
      * AJAX: Get booking details for portal (was in ajax-myvh-get-booking.php)
@@ -158,13 +194,18 @@ class MYVH_Portal_Controller {
                     );
                 }
 
+
                 // Client admins can manually create invoices from uninvoiced bookings.
                 $uninvoiced_bookings = [];
+                $uninvoiced_by_customer = [];
+                $uninvoiced_by_organisation = [];
                 if ($is_client_admin) {
                     $uninvoiced_bookings = $this->booking_service->get_uninvoiced_bookings([
                         'orderby' => 'b.StartDate',
                         'order' => 'DESC',
                     ]);
+                    $uninvoiced_by_customer = $this->booking_service->get_uninvoiced_by_customer();
+                    $uninvoiced_by_organisation = $this->booking_service->get_uninvoiced_by_organisation();
                 }
 
                 // Prepare available statuses for UI filter

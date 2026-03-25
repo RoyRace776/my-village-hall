@@ -7,7 +7,7 @@ window.MYVH_BookingModal = (function() {
 
         config = {
             ajax_url: null,
-            nonce: null,
+            nonce: 'myvh_calendar',
             context: null,
 
             // Data providers (pluggable)
@@ -75,15 +75,15 @@ window.MYVH_BookingModal = (function() {
     // Open / Close
     // ─────────────────────────────
     function open(data = {}) {
-
-        resetForm();
+        // Always define submitBtn at the top so it's available in both modes
+        const submitBtn = form.querySelector('button[type="submit"]');
 
         // If viewOnly and id provided, fetch booking details and populate, then disable all fields
-        if (data.viewOnly && data.id) {
-            setLoading(true);
-            // Hide submit button, show close button
+        if (data.viewOnly && data.args?.id) {
+
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.style.display = 'none';
+
             let closeBtn = form.querySelector('.myvh-modal-close');
             if (!closeBtn) {
                 closeBtn = document.createElement('button');
@@ -95,32 +95,74 @@ window.MYVH_BookingModal = (function() {
             } else {
                 closeBtn.style.display = '';
             }
-            // Fetch booking details from new AJAX endpoint
-            fetch(`${config.ajax_url}?action=myvh_portal_get_booking&booking_id=${encodeURIComponent(data.id)}&nonce=${encodeURIComponent(config.nonce)}`)
+
+            const nonce = config.context === "portal" ? config.nonce : "myvh_calendar";
+
+            setLoading(true);
+
+            fetch(`${config.ajax_url}?action=myvh_calendar_get_booking&booking_id=${encodeURIComponent(data.args.id)}&nonce=${encodeURIComponent(nonce)}`)
                 .then(r => r.json())
                 .then(res => {
-                    if (!res || !res.success || !res.data || !res.data.booking) throw new Error('Booking not found');
+                    console.log('Raw response:', res);  // ← add this
+                    if (!res || !res.success || !res.data.booking) {
+                        throw new Error('Booking not found');
+                    }
+
                     const booking = res.data.booking;
-                    // Populate fields (add more as needed)
-                    setValue('start', booking.StartDate || '');
-                    setValue('end', booking.EndDate || '');
-                    setValue('text', booking.Description || '');
-                    setDisplayedDateTimes(booking.StartDate, booking.EndDate);
-                    // Disable all fields
-                    form.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = true; });
-                    // Hide recurring/addon controls if present
+
+                    // 🔑 IMPORTANT: load dropdowns first
+                    return populateDropdowns()
+                        .then(() => refreshOrganisations(booking['OrganisationId']))
+                        .then(() => booking);
+                })
+                .then((booking) => {
+                    //TODO: This needs tidying up - it’s a mix of old and new code, but the key point is to set values first, then disable fields, and avoid any direct DOM manipulation that conflicts with our controlled approach.
+                    // ✅ Safe field mapping
+                    setValue('room_id', booking['RoomId']);
+                    setValue('customer_id', booking['CustomerId']);
+                    setValue('organisation_id', booking['OrganisationId']);
+                    setValue('description', booking['Description']);
+
+                    // ✅ Use your helper (don’t manually split)
+                    setDisplayedDateTimes(booking['StartDate'], booking['EndDate']);
+
+                    // ❌ REMOVE this (it’s wrong and conflicts)
+                    // form.querySelector("[name=text]").value = booking.Description;
+
+                    // ✅ Disable AFTER values set
+                    form.querySelectorAll('input, select, textarea')
+                        .forEach(el => el.disabled = true);
+
                     const recurringOptions = form.querySelector('#myvh-modal-recurring-options');
                     if (recurringOptions) recurringOptions.style.display = 'none';
-                    // Show modal
+
                     modal.classList.remove('hidden');
                     config.onOpen(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Failed to load booking');
+                })
+                .finally(() => {
+                    setLoading(false);
                 });
+
             return;
         }
 
         // Only normal (add/edit) mode remains
         if (submitBtn) submitBtn.style.display = '';
         form.reset();
+
+        // Populate dropdowns (rooms, customers), then organisations
+        populateDropdowns().then(() => {
+            refreshOrganisations();
+        });
+
+        // Prepopulate start/end and displayed date/times if provided
+        if (data.start) setValue('start', data.start);
+        if (data.end) setValue('end', data.end);
+        if (data.start || data.end) setDisplayedDateTimes(data.start, data.end);
 
         // Re-enable all fields
         form.querySelectorAll("select, input").forEach(el => {
@@ -161,6 +203,19 @@ window.MYVH_BookingModal = (function() {
         }
 
         syncEndDateVisibility();
+
+        // Show modal in add/edit mode
+        modal.classList.remove('hidden');
+    }
+
+    // Add a close() function to hide modal and reset form
+    function close() {
+        modal.classList.add('hidden');
+        form.reset();
+        // Optionally, re-enable all fields
+        form.querySelectorAll("select, input, textarea").forEach(el => {
+            el.disabled = false;
+        });
     }
 
     function bindDependentControls() {
