@@ -3,16 +3,14 @@ if (!defined('ABSPATH')) exit;
 
 class MYVH_Room_Rate_Repository extends MYVH_Repository_Base{
 
-    private $table;
-
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;
-        $this->table = $wpdb->prefix . 'myvh_room_rates';
+        $this->table_name = $wpdb->prefix . 'myvh_room_rates';
     }
 
     public function get_by_room($room_id) {
         $sql = $this->wpdb->prepare(
-            "SELECT * FROM {$this->table} WHERE RoomId = %d",
+            "SELECT * FROM {$this->table_name} WHERE RoomId = %d",
             $room_id
         );
 
@@ -22,7 +20,7 @@ class MYVH_Room_Rate_Repository extends MYVH_Repository_Base{
     public function get_active_room_rate( $room_id, $org_type_id = null ) {
         if ( $org_type_id ) {
             $sql = $this->wpdb->prepare(
-                "SELECT * FROM {$this->table}
+                "SELECT * FROM {$this->table_name}
                  WHERE RoomId = %d
                  AND OrganisationTypeId = %d
                  AND IsActive = 1
@@ -33,7 +31,7 @@ class MYVH_Room_Rate_Repository extends MYVH_Repository_Base{
             );
         } else {
             $sql = $this->wpdb->prepare(
-                "SELECT * FROM {$this->table}
+                "SELECT * FROM {$this->table_name}
                  WHERE RoomId = %d
                  AND OrganisationTypeId IS NULL
                  AND IsActive = 1

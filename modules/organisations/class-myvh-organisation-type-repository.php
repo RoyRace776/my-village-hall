@@ -11,12 +11,9 @@ if (!defined('ABSPATH')) {
 
 class MYVH_Organisation_Type_Repository extends MYVH_Repository_Base{
 
-    /** @var string */
-    private $table;
-
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;
-        $this->table = $wpdb->prefix . 'myvh_organisation_types';
+        $this->table_name = $wpdb->prefix . 'myvh_organisation_types';
     }
 
 }

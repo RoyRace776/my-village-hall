@@ -12,14 +12,11 @@ if (!defined('ABSPATH')) {
 class MYVH_Organisation_Repository extends MYVH_Repository_Base{
 
     /** @var string */
-    private $table;
-
-    /** @var string */
     private $types_table;
 
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb        = $wpdb;
-        $this->table       = $wpdb->prefix . 'myvh_organisations';
+        $this->table_name  = $wpdb->prefix . 'myvh_organisations';
         $this->types_table = $wpdb->prefix . 'myvh_organisation_types';
 
     }
@@ -27,7 +24,7 @@ class MYVH_Organisation_Repository extends MYVH_Repository_Base{
     // ── CRUD ──────────────────────────────────────────────────────────────────
 
     public function get_default() {
-        $sql = "SELECT * FROM {$this->table} WHERE IsDefault = 1 ORDER BY Id ASC LIMIT 1";
+        $sql = "SELECT * FROM {$this->table_name} WHERE IsDefault = 1 ORDER BY Id ASC LIMIT 1";
         return $this->wpdb->get_row( $sql, ARRAY_A );
     }
 
@@ -42,7 +39,7 @@ class MYVH_Organisation_Repository extends MYVH_Repository_Base{
         $order = esc_sql( $args['orderby'] ) . ' ' . ( strtoupper( $args['order'] ) === 'ASC' ? 'ASC' : 'DESC' );
 
         $sql = "SELECT o.*, ot.Name AS OrganisationTypeName
-                FROM {$this->table} o
+                FROM {$this->table_name} o
                 LEFT JOIN {$this->types_table} ot ON o.OrganisationTypeId = ot.Id
                 {$where}
                 ORDER BY {$order}";
@@ -51,11 +48,11 @@ class MYVH_Organisation_Repository extends MYVH_Repository_Base{
     }
 
     public function count_all(): int {
-        return (int) $this->wpdb->get_var( "SELECT COUNT(*) FROM {$this->table}" );
+        return (int) $this->wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_name}" );
     }
 
     public function clear_default_except( ?int $organisation_id = null ): bool {
-        $sql = "UPDATE {$this->table} SET IsDefault = 0";
+        $sql = "UPDATE {$this->table_name} SET IsDefault = 0";
 
         if ( $organisation_id ) {
             $sql .= $this->wpdb->prepare( ' WHERE Id != %d', $organisation_id );
@@ -66,7 +63,7 @@ class MYVH_Organisation_Repository extends MYVH_Repository_Base{
     }
 
     public function has_default(): bool {
-        $count = (int) $this->wpdb->get_var( "SELECT COUNT(*) FROM {$this->table} WHERE IsDefault = 1" );
+        $count = (int) $this->wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_name} WHERE IsDefault = 1" );
         return $count > 0;
     }
 

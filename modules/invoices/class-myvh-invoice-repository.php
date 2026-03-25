@@ -17,41 +17,8 @@ class MYVH_Invoice_Repository extends MYVH_Repository_Base{
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_invoices';
-        $this->ensure_amount_due_column();
-        $this->ensure_billing_columns();
     }
 
-    private function ensure_amount_due_column(): void {
-        $exists = $this->wpdb->get_var(
-            $this->wpdb->prepare( "SHOW COLUMNS FROM {$this->table_name} LIKE %s", 'AmountDue' )
-        );
-        if ( ! $exists ) {
-            $this->wpdb->query( "ALTER TABLE {$this->table_name} ADD COLUMN AmountDue DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER AmountPaid" );
-        }
-    }
-
-    private function ensure_billing_columns(): void {
-        $columns = [
-            'BillingName'             => "ALTER TABLE {$this->table_name} ADD COLUMN BillingName VARCHAR(150) NULL AFTER CustomerId",
-            'BillingOrganisationName' => "ALTER TABLE {$this->table_name} ADD COLUMN BillingOrganisationName VARCHAR(150) NULL AFTER BillingName",
-            'BillingEmail'            => "ALTER TABLE {$this->table_name} ADD COLUMN BillingEmail VARCHAR(150) NULL AFTER BillingOrganisationName",
-            'BillingAddressLine1'     => "ALTER TABLE {$this->table_name} ADD COLUMN BillingAddressLine1 VARCHAR(255) NULL AFTER BillingEmail",
-            'BillingAddressLine2'     => "ALTER TABLE {$this->table_name} ADD COLUMN BillingAddressLine2 VARCHAR(255) NULL AFTER BillingAddressLine1",
-            'BillingTownCity'         => "ALTER TABLE {$this->table_name} ADD COLUMN BillingTownCity VARCHAR(120) NULL AFTER BillingAddressLine2",
-            'BillingPostcode'         => "ALTER TABLE {$this->table_name} ADD COLUMN BillingPostcode VARCHAR(30) NULL AFTER BillingTownCity",
-            'BillingReference'        => "ALTER TABLE {$this->table_name} ADD COLUMN BillingReference VARCHAR(100) NULL AFTER BillingPostcode",
-        ];
-
-        foreach ( $columns as $column_name => $sql ) {
-            $exists = $this->wpdb->get_var(
-                $this->wpdb->prepare( "SHOW COLUMNS FROM {$this->table_name} LIKE %s", $column_name )
-            );
-
-            if ( ! $exists ) {
-                $this->wpdb->query( $sql );
-            }
-        }
-    }
 
     /**
      * Get all invoices with customer information

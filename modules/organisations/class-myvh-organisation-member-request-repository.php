@@ -11,12 +11,9 @@ if (!defined('ABSPATH')) {
 
 class MYVH_Organisation_Member_Request_Repository extends MYVH_Repository_Base{
 
-    /** @var string */
-    private $table;
-
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;
-        $this->table = $wpdb->prefix . 'myvh_organisation_member_requests';
+        $this->table_name = $wpdb->prefix . 'myvh_organisation_member_requests';
 
         $this->ensure_table();
     }
@@ -24,7 +21,7 @@ class MYVH_Organisation_Member_Request_Repository extends MYVH_Repository_Base{
     public function get_pending_by_organisation( int $org_id ): array {
         $sql = $this->wpdb->prepare(
             "SELECT r.*, c.Name AS CustomerName, c.Email AS CustomerEmail
-             FROM {$this->table} r
+             FROM {$this->table_name} r
              JOIN {$this->wpdb->prefix}myvh_customers c ON r.CustomerId = c.Id
              WHERE r.OrganisationId = %d
                AND r.Status = 'pending'
@@ -38,7 +35,7 @@ class MYVH_Organisation_Member_Request_Repository extends MYVH_Repository_Base{
     public function get_pending_by_customer( int $customer_id ): array {
         $sql = $this->wpdb->prepare(
             "SELECT r.*, o.Name AS OrganisationName
-             FROM {$this->table} r
+             FROM {$this->table_name} r
              JOIN {$this->wpdb->prefix}myvh_organisations o ON r.OrganisationId = o.Id
              WHERE r.CustomerId = %d
                AND r.Status = 'pending'
@@ -52,7 +49,7 @@ class MYVH_Organisation_Member_Request_Repository extends MYVH_Repository_Base{
     public function get_pending_for_admin_customer( int $customer_id ): array {
         $sql = $this->wpdb->prepare(
             "SELECT r.*, c.Name AS CustomerName, c.Email AS CustomerEmail, o.Name AS OrganisationName
-             FROM {$this->table} r
+             FROM {$this->table_name} r
              JOIN {$this->wpdb->prefix}myvh_organisation_members m
                ON m.OrganisationId = r.OrganisationId
              JOIN {$this->wpdb->prefix}myvh_customers c
@@ -72,7 +69,7 @@ class MYVH_Organisation_Member_Request_Repository extends MYVH_Repository_Base{
     public function get_pending_request( int $org_id, int $customer_id ) {
         $sql = $this->wpdb->prepare(
             "SELECT *
-             FROM {$this->table}
+             FROM {$this->table_name}
              WHERE OrganisationId = %d
                AND CustomerId = %d
                AND Status = 'pending'
@@ -86,10 +83,10 @@ class MYVH_Organisation_Member_Request_Repository extends MYVH_Repository_Base{
 
     private function ensure_table(): void {
         $exists = $this->wpdb->get_var(
-            $this->wpdb->prepare( 'SHOW TABLES LIKE %s', $this->table )
+            $this->wpdb->prepare( 'SHOW TABLES LIKE %s', $this->table_name )
         );
 
-        if ( $exists === $this->table ) {
+        if ( $exists === $this->table_name ) {
             return;
         }
 
@@ -97,7 +94,7 @@ class MYVH_Organisation_Member_Request_Repository extends MYVH_Repository_Base{
 
         $collate = $this->wpdb->get_charset_collate();
 
-        dbDelta( "CREATE TABLE {$this->table} (
+        dbDelta( "CREATE TABLE {$this->table_name} (
             Id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             OrganisationId       INT UNSIGNED NOT NULL,
             CustomerId           INT UNSIGNED NOT NULL,
