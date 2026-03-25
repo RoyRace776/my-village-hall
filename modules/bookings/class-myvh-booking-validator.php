@@ -21,7 +21,7 @@ class MYVH_Booking_Validator {
         $this->room_rules = $room_rules;
     }
 
-    public function validate($data) {
+    public function validate($data): true|WP_Error {
         if (empty($data['customer_id'])) {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
         }

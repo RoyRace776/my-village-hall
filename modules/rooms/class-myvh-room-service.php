@@ -14,19 +14,19 @@ class MYVH_Room_Service {
         $this->availability = $availability;
     }
 
-    public function get_all($args = []) {
+    public function get_all($args = []): array {
         return $this->repo->get_all($args);
     }
 
-    public function get($id) {
+    public function get($id): ?array {
         return $this->repo->get_by_id($id);
     }
 
-    public function get_all_with_venues() {
+    public function get_all_with_venues(): array {
         return $this->repo->get_all_with_venues();
     }
 
-    public function save($data) {
+    public function save($data): int|WP_Error {
 
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Room name is required', 'my-village-hall'));

@@ -13,7 +13,7 @@ class MYVH_Booking_Controller {
         $this->request_validator = $request_validator;
     }
 
-    public function save() {
+    public function save(): void {
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
@@ -48,11 +48,11 @@ class MYVH_Booking_Controller {
         exit;
     }
 
-    private function get_form_transient_key() {
+    private function get_form_transient_key(): string {
         return 'myvh_booking_form_' . get_current_user_id();
     }
 
-    private function get_form_redirect_url($data, $error_message) {
+    private function get_form_redirect_url($data, $error_message): string {
         $query_args = [
             'page' => 'my-village-hall',
             'error' => $error_message,
@@ -71,7 +71,7 @@ class MYVH_Booking_Controller {
         return add_query_arg($query_args, admin_url('admin.php'));
     }
 
-    private function get_success_redirect_url($data) {
+    private function get_success_redirect_url($data): string {
         $return_to = !empty($data['return_to'])
             ? wp_validate_redirect($data['return_to'], '')
             : '';
@@ -83,7 +83,7 @@ class MYVH_Booking_Controller {
         return admin_url('admin.php?page=my-village-hall&updated=1');
     }
 
-    public function cancel() {
+    public function cancel(): void {
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }

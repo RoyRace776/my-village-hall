@@ -20,34 +20,34 @@ class MYVH_Recurring_Pattern_Service {
         $this->booking_repo = $booking_repo;
     }
 
-    public function get_all($args = []) {
+    public function get_all($args = []): array {
         return $this->repo->get_all($args);
     }
 
-    public function get_by_id($id) {
+    public function get_by_id($id): ?array {
         return $this->repo->get_by_id($id);
     }
 
-    public function get($id) {
+    public function get($id): ?array {
         return $this->repo->get_by_id($id);
     }
 
-    public function get_active_with_bookings() {
+    public function get_active_with_bookings(): array {
         return $this->repo->get_all_active_with_bookings();
     }
 
-    public function get_by_parent_booking($booking_id) {
+    public function get_by_parent_booking($booking_id): ?array {
         return $this->repo->get_by_parent_booking($booking_id);
     }
 
-    public function get_bookings_for_pattern($pattern_id) {
+    public function get_bookings_for_pattern($pattern_id): array {
         return $this->get_booking_repo()->get_by_pattern_id($pattern_id);
     }
 
     /**
      * Save a recurring pattern and immediately create all future bookings
      */
-    public function save($data) {
+    public function save($data): int|WP_Error {
         $this->last_booking_results = null;
 
         if (empty($data['parent_booking_id'])) {
@@ -134,7 +134,7 @@ class MYVH_Recurring_Pattern_Service {
         return $pattern_id;
     }
 
-    public function get_last_booking_results() {
+    public function get_last_booking_results(): ?array {
         return $this->last_booking_results;
     }
 
@@ -145,7 +145,7 @@ class MYVH_Recurring_Pattern_Service {
      * @param array $pattern Pattern data
      * @return array|WP_Error Results or error
      */
-    public function create_recurring_bookings($pattern_id, $pattern = null) {
+    public function create_recurring_bookings($pattern_id, $pattern = null): array|WP_Error {
         $booking_repo = $this->get_booking_repo();
 
         if (!$pattern) {
@@ -255,7 +255,7 @@ class MYVH_Recurring_Pattern_Service {
      * @param array $pattern The pattern data row
      * @return array Array of Y-m-d strings
      */
-    private function calculate_all_occurrence_dates($pattern) {
+    private function calculate_all_occurrence_dates($pattern): array {
         $dates    = [];
         $interval = max(1, intval($pattern['RecurrenceInterval']));
         $type     = $pattern['RecurrenceType'];
@@ -300,7 +300,7 @@ class MYVH_Recurring_Pattern_Service {
      * @param int           $interval        months between occurrences
      * @return array
      */
-    private function calculate_monthly_day_dates($pattern, $max_occurrences, $end_date, $interval) {
+    private function calculate_monthly_day_dates($pattern, $max_occurrences, $end_date, $interval): array {
         $dates    = [];
         $week_num = $pattern['RecurrenceWeek'];   // '1','2','3','4','last'
         $day_name = strtolower($pattern['RecurrenceDay']); // 'thursday' etc.
@@ -350,7 +350,7 @@ class MYVH_Recurring_Pattern_Service {
      * @param array $pattern
      * @return string
      */
-    public static function describe($pattern) {
+    public static function describe($pattern): string {
         $interval = intval($pattern['RecurrenceInterval'] ?? 1);
         $type     = $pattern['RecurrenceType'] ?? '';
 
@@ -385,32 +385,32 @@ class MYVH_Recurring_Pattern_Service {
         return $this->get_booking_repo()->has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id, $end_date);
     }
 
-    public function delete($id) {
+    public function delete($id): int|false {
         return $this->repo->delete($id);
     }
 
-    public function deactivate($id) {
+    public function deactivate($id): int|false {
         return $this->repo->deactivate($id);
     }
 
     /**
      * Cancel all future bookings for a pattern (keeps history, marks cancelled)
      */
-    public function cancel_future_bookings($pattern_id) {
+    public function cancel_future_bookings($pattern_id): int|false {
         return $this->get_booking_repo()->cancel_future_by_pattern($pattern_id);
     }
 
     /**
      * Delete all future bookings for a pattern
      */
-    public function delete_future_bookings($pattern_id) {
+    public function delete_future_bookings($pattern_id): int|false {
         return $this->get_booking_repo()->delete_future_by_pattern($pattern_id);
     }
 
     /**
      * Get or resolve the booking repository
      */
-    private function get_booking_repo() {
+    private function get_booking_repo(): MYVH_Booking_Repository {
         return $this->booking_repo;
     }
 }

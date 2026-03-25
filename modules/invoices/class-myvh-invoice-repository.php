@@ -25,7 +25,7 @@ class MYVH_Invoice_Repository extends MYVH_Repository_Base{
      *
      * @return array|null Array of records or null on failure
      */
-    public function get_all_with_customers() {
+    public function get_all_with_customers(): ?array {
         $sql = "SELECT
                     i.*,
                     c.Name as CustomerName,
@@ -49,7 +49,7 @@ class MYVH_Invoice_Repository extends MYVH_Repository_Base{
      * @param int $customer_id The customer ID
      * @return array|null Array of records or null on failure
      */
-    public function get_by_customer($customer_id) {
+    public function get_by_customer($customer_id): ?array {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM $this->table_name WHERE CustomerId = %d ORDER BY InvoiceDate DESC",
             $customer_id
@@ -70,7 +70,7 @@ class MYVH_Invoice_Repository extends MYVH_Repository_Base{
      * @param int $booking_id The booking ID
      * @return array|null Array of records or null on failure
      */
-    public function get_by_booking($booking_id) {
+    public function get_by_booking($booking_id): ?array {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM $this->table_name WHERE BookingId = %d ORDER BY InvoiceDate DESC",
             $booking_id
@@ -91,7 +91,7 @@ class MYVH_Invoice_Repository extends MYVH_Repository_Base{
      * @param string $status The invoice status
      * @return array|null Array of records or null on failure
      */
-    public function get_by_status($status) {
+    public function get_by_status($status): ?array {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM $this->table_name WHERE Status = %s ORDER BY InvoiceDate DESC",
             $status
@@ -114,7 +114,7 @@ class MYVH_Invoice_Repository extends MYVH_Repository_Base{
      * @param array $statuses Optional array of statuses to filter by
      * @return array|null Array of invoice records with organisation metadata
      */
-    public function get_for_customer_portal($customer_id, $statuses = []) {
+    public function get_for_customer_portal($customer_id, $statuses = []): ?array {
         $customer_id = intval($customer_id);
 
         $where = "(i.CustomerId = %d OR b.OrganisationId IN (
@@ -166,7 +166,7 @@ class MYVH_Invoice_Repository extends MYVH_Repository_Base{
      *
      * @return int The next invoice number
      */
-    public function get_next_invoice_number() {
+    public function get_next_invoice_number(): int {
         $sql = "SELECT MAX(CAST(REGEXP_REPLACE(InvoiceNumber, '[^0-9]', '') AS UNSIGNED)) as MaxNumber FROM $this->table_name";
 
         $result = $this->wpdb->get_var($sql);

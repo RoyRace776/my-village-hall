@@ -25,7 +25,7 @@ class MYVH_Discount_Repository extends MYVH_Repository_Base {
      * @param array $data Associative array of column => value pairs
      * @return int|false The inserted record ID on success, false on failure
      */
-    public function create($data) {
+    public function create($data): int|false {
         $result = $this->wpdb->insert(
             $this->table_name,
             $data,
@@ -46,7 +46,7 @@ class MYVH_Discount_Repository extends MYVH_Repository_Base {
      * @param array $args Optional query arguments (orderby, order, limit, offset)
      * @return array|null Array of records or null on failure
      */
-    public function get_all($args = array()) {
+    public function get_all($args = array()): array {
         $defaults = array(
             'orderby' => 'Id',
             'order' => 'ASC',

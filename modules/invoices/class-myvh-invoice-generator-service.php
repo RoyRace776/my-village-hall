@@ -63,7 +63,7 @@ class MYVH_Invoice_Generator_Service {
      *        - recipient_type: 'booker' or 'organisation_billing' (for future use)
      * @return array|WP_Error Array of created invoice IDs or WP_Error on failure
      */
-    public function generate_invoices_from_bookings($booking_ids, $options = []) {
+    public function generate_invoices_from_bookings($booking_ids, $options = []): array|WP_Error {
         $defaults = [
             'group_by' => 'per_booking',
             'trigger_event' => 'manual',
@@ -129,7 +129,7 @@ class MYVH_Invoice_Generator_Service {
      * @param string $group_by Grouping strategy
      * @return array Array of grouped bookings (each element is an array of bookings)
      */
-    private function group_bookings_for_invoicing($bookings, $group_by) {
+    private function group_bookings_for_invoicing($bookings, $group_by): array {
         $grouped = [];
 
         switch ($group_by) {
@@ -178,7 +178,7 @@ class MYVH_Invoice_Generator_Service {
      * @param array $options Invoice options
      * @return int|WP_Error Invoice ID on success, WP_Error on failure
      */
-    private function create_invoice_from_booking_group($bookings, $options) {
+    private function create_invoice_from_booking_group($bookings, $options): int|WP_Error {
         if (empty($bookings)) {
             return new WP_Error('empty_group', __('Cannot create invoice from empty booking group', 'my-village-hall'));
         }
@@ -290,7 +290,7 @@ class MYVH_Invoice_Generator_Service {
         return $invoice_id;
     }
 
-    private function build_billing_snapshot($booking, $options) {
+    private function build_billing_snapshot($booking, $options): array {
         $group_by = sanitize_key($options['group_by'] ?? 'per_booking');
         $customer_id = intval($booking['CustomerId'] ?? 0);
         $organisation_id = intval($booking['OrganisationId'] ?? 0);

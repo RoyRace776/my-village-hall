@@ -19,7 +19,7 @@ class MYVH_Room_Repository extends MYVH_Repository_Base {
         $this->table_name = $wpdb->prefix . 'myvh_rooms';
     }
     // Custom method preserved
-    public function get_all_with_venues() {
+    public function get_all_with_venues(): array {
         $sql = "SELECT r.*, v.Id as VenueId, v.Name as VenueName FROM $this->table_name r
                 JOIN {$this->wpdb->prefix}myvh_venues v ON r.VenueId = v.Id
                 ORDER BY v.Name, r.Name";

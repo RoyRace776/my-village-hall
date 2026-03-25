@@ -18,15 +18,15 @@ class MYVH_Customer_Service {
         $this->organisation_member_repo = $organisation_member_repo;
     }
 
-    public function get_all($args = []) {
+    public function get_all($args = []): array {
         return $this->repo->get_all($args);
     }
 
-    public function get($id) {
+    public function get($id): ?array {
         return $this->repo->get_by_id($id);
     }
 
-    public function get_with_organisations() {
+    public function get_with_organisations(): array {
         return $this->repo->get_all_with_organisations();
     }
 
@@ -37,19 +37,19 @@ class MYVH_Customer_Service {
     public function get_organisations_for_user_id( int $user_id ): array {
         return $this->repo->get_organisations_for_user_id( $user_id );
     }
-    public function get_by_email($email) {
+    public function get_by_email($email): ?array {
         return $this->repo->get_by_email($email);
     }
 
-    public function get_by_user_id($user_id) {
+    public function get_by_user_id($user_id): ?array {
         return $this->repo->get_by_user_id($user_id);
     }
 
-    public function search($search_term) {
+    public function search($search_term): array {
         return $this->repo->search($search_term);
     }
 
-    public function save($data) {
+    public function save($data): int|WP_Error {
 
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Customer name is required', 'my-village-hall'));
@@ -191,7 +191,7 @@ class MYVH_Customer_Service {
     }
 
 
-    public function delete($id) {
+    public function delete($id): int|WP_Error {
         if ($this->booking_repo->count_by_customer($id) > 0) {
             return new WP_Error('validation', __('Cannot delete customer with existing bookings', 'my-village-hall'));
         }

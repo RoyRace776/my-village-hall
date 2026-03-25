@@ -655,7 +655,7 @@ class MYVH_Installer {
     }
 
     // Set up defaults like organisation types and organisations if they don't already exist
-    public static function set_default_data($wpdb) {
+    public static function set_default_data($wpdb): void {
 
         // Name is unique, so this will fail if the record already exists
         $table_name = $wpdb->prefix . 'myvh_organisation_types';
@@ -675,7 +675,7 @@ class MYVH_Installer {
 
     }
 
-    public static function tidy_up() {
+    public static function tidy_up(): void {
         global $wpdb;
 
         self::drop_tables($wpdb);
@@ -683,7 +683,7 @@ class MYVH_Installer {
         self::delete_all_transients($wpdb);
     }
 
-    private static function drop_tables($wpdb) {
+    private static function drop_tables($wpdb): void {
 
         $tables = [
             'myvh_bookings',
@@ -715,7 +715,7 @@ class MYVH_Installer {
         }
     }
 
-    private static function delete_all_options_by_prefix($wpdb) {
+    private static function delete_all_options_by_prefix($wpdb): void {
 
         $prefix = $wpdb->esc_like('myvh_') . '%';
 
@@ -745,7 +745,7 @@ class MYVH_Installer {
 
     }
 
-    private static function delete_all_transients($wpdb) {
+    private static function delete_all_transients($wpdb): void {
 
         $prefixes = [
             $wpdb->esc_like('_transient_myvh_') . '%',

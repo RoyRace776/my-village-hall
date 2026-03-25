@@ -23,7 +23,7 @@ class MYVH_Container
      * @param string $id Identifier for the binding
      * @param callable|string|null $factory Factory callback or class name
      */
-    public function singleton($id, $factory = null)
+    public function singleton($id, $factory = null): void
     {
         $this->bindings[$id] = $factory ?? $id;
     }
@@ -35,7 +35,7 @@ class MYVH_Container
      * @return object
      * @throws Exception
      */
-    public function get($id)
+    public function get($id): object
     {
         // Return existing instance if already resolved
         if (isset($this->instances[$id])) {
@@ -58,7 +58,7 @@ class MYVH_Container
      * @return object
      * @throws Exception
      */
-    private function resolve($id)
+    private function resolve($id): object
     {
         // If a factory is registered, call it
         if (isset($this->bindings[$id]) && is_callable($this->bindings[$id])) {
@@ -76,7 +76,7 @@ class MYVH_Container
      * @return object
      * @throws Exception
      */
-    private function build($class)
+    private function build($class): object
     {
         $reflection = new ReflectionClass($class);
 

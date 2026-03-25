@@ -23,7 +23,7 @@ class MYVH_Organisation_Repository extends MYVH_Repository_Base{
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
 
-    public function get_default() {
+    public function get_default(): ?array {
         $sql = "SELECT * FROM {$this->table_name} WHERE IsDefault = 1 ORDER BY Id ASC LIMIT 1";
         return $this->wpdb->get_row( $sql, ARRAY_A );
     }
@@ -31,7 +31,7 @@ class MYVH_Organisation_Repository extends MYVH_Repository_Base{
     /**
      * Get all organisations joined with their type name.
      */
-    public function get_all_with_type( array $args = [] ) {
+    public function get_all_with_type( array $args = [] ): array {
         $defaults = [ 'orderby' => 'o.Name', 'order' => 'ASC', 'active_only' => false ];
         $args     = wp_parse_args( $args, $defaults );
 

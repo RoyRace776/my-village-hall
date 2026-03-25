@@ -6,7 +6,7 @@ require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-validator-base.p
 
 class MYVH_Room_Rate_Request_Validator extends MYVH_Request_Validator_Base {
 
-    public function validate(array $data) {
+    public function validate(array $data): true|WP_Error {
         $required = $this->require_field($data, 'room_id', __('Room is required', 'my-village-hall'));
         if (is_wp_error($required)) return $required;
 

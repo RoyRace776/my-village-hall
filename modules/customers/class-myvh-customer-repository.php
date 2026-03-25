@@ -26,7 +26,7 @@ class MYVH_Customer_Repository extends MYVH_Repository_Base {
      *
      * @return array
      */
-    public function get_all_with_organisations() {
+    public function get_all_with_organisations(): array {
         $sql = "SELECT
                     c.*,
                     GROUP_CONCAT(DISTINCT o.Name ORDER BY o.Name SEPARATOR ', ') AS OrganisationNames,
@@ -86,7 +86,7 @@ class MYVH_Customer_Repository extends MYVH_Repository_Base {
         return $this->wpdb->get_results($sql, ARRAY_A) ?? [];
     }
 
-    public function get_customer_id($wp_user) {
+    public function get_customer_id($wp_user): ?int {
         $sql = $this->wpdb->prepare(
             "SELECT Id from {$this->table_name}
             WHERE WPUserId = %d",
@@ -102,7 +102,7 @@ class MYVH_Customer_Repository extends MYVH_Repository_Base {
      * @param string $email The customer email
      * @return array|null The record data or null if not found
      */
-    public function get_by_email($email) {
+    public function get_by_email($email): ?array {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM $this->table_name WHERE Email = %s",
             $email

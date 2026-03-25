@@ -8,7 +8,7 @@ class MYVH_Room_Rate_Repository extends MYVH_Repository_Base{
         $this->table_name = $wpdb->prefix . 'myvh_room_rates';
     }
 
-    public function get_by_room($room_id) {
+    public function get_by_room($room_id): array {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM {$this->table_name} WHERE RoomId = %d",
             $room_id
@@ -17,7 +17,7 @@ class MYVH_Room_Rate_Repository extends MYVH_Repository_Base{
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function get_active_room_rate( $room_id, $org_type_id = null ) {
+    public function get_active_room_rate( $room_id, $org_type_id = null ): ?array {
         if ( $org_type_id ) {
             $sql = $this->wpdb->prepare(
                 "SELECT * FROM {$this->table_name}

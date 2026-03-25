@@ -35,15 +35,15 @@ class MYVH_Organisation_Service {
         return $this->repo->get_all_with_type( [ 'active_only' => $active_only ] );
     }
 
-    public function get( int $id ) {
+    public function get( int $id ): ?array {
         return $this->repo->get_by_id( $id );
     }
 
-    public function get_default() {
+    public function get_default(): ?array {
         return $this->repo->get_default();
     }
 
-    public function save( array $data ) {
+    public function save( array $data ): int|bool|WP_Error {
         if ( empty( $data['name'] ) ) {
             return new WP_Error( 'validation', __( 'Organisation name is required', 'my-village-hall' ) );
         }

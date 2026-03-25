@@ -25,7 +25,7 @@ class MYVH_Recurring_Pattern_Repository extends MYVH_Repository_Base {
      *
      * @return array|null Array of records or null on failure
      */
-    public function get_all_active_with_bookings() {
+    public function get_all_active_with_bookings(): ?array {
         $sql = "SELECT
                     rp.*,
                     b.CustomerId,
@@ -57,7 +57,7 @@ class MYVH_Recurring_Pattern_Repository extends MYVH_Repository_Base {
      * @param int $booking_id The parent booking ID
      * @return array|null The record data or null if not found
      */
-    public function get_by_parent_booking($booking_id) {
+    public function get_by_parent_booking($booking_id): ?array {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM $this->table_name WHERE ParentBookingId = %d",
             $booking_id
@@ -77,7 +77,7 @@ class MYVH_Recurring_Pattern_Repository extends MYVH_Repository_Base {
      *
      * @return array|null Array of records or null on failure
      */
-    public function get_patterns_needing_processing() {
+    public function get_patterns_needing_processing(): ?array {
         $today = date('Y-m-d');
 
         $sql = $this->wpdb->prepare(
@@ -104,7 +104,7 @@ class MYVH_Recurring_Pattern_Repository extends MYVH_Repository_Base {
      * @param int $id The pattern ID
      * @return bool True on success, false on failure
      */
-    public function increment_occurrence_count($id) {
+    public function increment_occurrence_count($id): bool {
         $sql = $this->wpdb->prepare(
             "UPDATE $this->table_name SET OccurrenceCount = OccurrenceCount + 1 WHERE Id = %d",
             $id
@@ -126,7 +126,7 @@ class MYVH_Recurring_Pattern_Repository extends MYVH_Repository_Base {
      * @param int $id The pattern ID
      * @return bool True on success, false on failure
      */
-    public function deactivate($id) {
+    public function deactivate($id): bool {
         return $this->update(array('IsActive' => 0), array('Id' => $id));
     }
 }

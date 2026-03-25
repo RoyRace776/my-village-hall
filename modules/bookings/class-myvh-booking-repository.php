@@ -30,7 +30,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
      * @param array $args orderby, order, booking_id, status, room_id, customer_id
      * @return array
      */
-    public function get_all_with_details($args = []) {
+    public function get_all_with_details($args = []): array {
         $defaults = ['orderby'      => 'b.StartDate',
                      'order'        => 'DESC',
                      'booking_id'   => 0,
@@ -98,7 +98,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
         return $results ?? [];
     }
 
-    public function get_by_pattern_id($pattern_id) {
+    public function get_by_pattern_id($pattern_id): array {
         $sql = $this->wpdb->prepare(
             "SELECT b.*, c.Name as CustomerName, r.Name as RoomName
              FROM {$this->table_name} b
@@ -114,7 +114,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
     /**
      * Cancel all future bookings in a pattern (today and beyond)
      */
-    public function cancel_future_by_pattern($pattern_id) {
+    public function cancel_future_by_pattern($pattern_id): int|false {
         return $this->wpdb->query($this->wpdb->prepare(
             "UPDATE {$this->table_name}
              SET Status = %s
@@ -129,7 +129,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
     /**
      * Delete all future bookings in a pattern (strictly after today)
      */
-    public function delete_future_by_pattern($pattern_id) {
+    public function delete_future_by_pattern($pattern_id): int|false {
         return $this->wpdb->query($this->wpdb->prepare(
             "DELETE FROM {$this->table_name}
              WHERE RecurringPatternId = %d AND StartDate > %s",
@@ -185,7 +185,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
         return (int) $this->wpdb->get_var($sql) > 0;
     }
 
-    private function normalize_time($time) {
+    private function normalize_time($time): string {
         $value = sanitize_text_field((string) $time);
 
         if (preg_match('/^\d{2}:\d{2}$/', $value)) {
@@ -195,7 +195,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
         return $value;
     }
 
-    private function normalize_datetime($value) {
+    private function normalize_datetime($value): string {
         $raw = sanitize_text_field((string) $value);
         if ($raw === '') {
             return '';
@@ -224,7 +224,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
         );
     }
 
-    public function get_conflicts($room_id, $start, $end) {
+    public function get_conflicts($room_id, $start, $end): array {
         $new_start = $this->normalize_datetime($start);
         $new_end = $this->normalize_datetime($end);
 
@@ -248,7 +248,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function get_between($start, $end, $context = null, $filters = []) {
+    public function get_between($start, $end, $context = null, $filters = []): array {
         $defaults = [
             'room_id' => 0,
             'venue_id' => 0,
@@ -292,7 +292,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function get_upcoming_bookings($customer_id) {
+    public function get_upcoming_bookings($customer_id): array {
 
         //$date = new datetime();
         $start = date('Y-m-d');
@@ -307,7 +307,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function move_booking($id, $start, $end, $room) {
+    public function move_booking($id, $start, $end, $room): int|WP_Error {
 
         // DayPilot sends full ISO datetimes: "2025-06-14T09:00:00"
         // Split into date and time parts before storing.
@@ -345,7 +345,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
      * @param array $args Optional query arguments (orderby, order, limit, offset, organisation_id, customer_id)
      * @return array|null Array of uninvoiced bookings with customer/org details
      */
-    public function get_uninvoiced_bookings($args = []) {
+    public function get_uninvoiced_bookings($args = []): array {
         $defaults = [
             'orderby' => 'b.StartDate',
             'order' => 'DESC',
@@ -422,7 +422,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
      *
      * @return array Array of [OrganisationId => count] pairs
      */
-    public function count_uninvoiced_by_organisation() {
+    public function count_uninvoiced_by_organisation(): array {
         $sql = "SELECT
                     b.OrganisationId,
                     o.Name AS OrganisationName,
@@ -453,7 +453,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
      *
      * @return array Array of [CustomerId => count] pairs
      */
-    public function count_uninvoiced_by_customer() {
+    public function count_uninvoiced_by_customer(): array {
         $sql = "SELECT
                     b.CustomerId,
                     c.Name AS CustomerName,
@@ -485,7 +485,7 @@ class MYVH_Booking_Repository extends MYVH_Repository_Base {
      * @param int $booking_id The booking ID to check
      * @return bool True if booking has any non-cancelled invoices, false otherwise
      */
-    public function has_invoiced_items($booking_id) {
+    public function has_invoiced_items($booking_id): bool {
         $sql = $this->wpdb->prepare(
             "SELECT COUNT(DISTINCT i.Id) AS invoice_count
             FROM {$this->wpdb->prefix}myvh_invoice_items ii

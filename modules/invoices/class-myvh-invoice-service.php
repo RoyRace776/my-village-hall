@@ -12,31 +12,31 @@ class MYVH_Invoice_Service {
         $this->payment_repo = $payment_repo;
     }
 
-    public function get_all($args = []) {
+    public function get_all($args = []): array {
         return $this->repo->get_all($args);
     }
 
-    public function get($id) {
+    public function get($id): ?array {
         return $this->repo->get_by_id($id);
     }
 
-    public function get_with_customers() {
+    public function get_with_customers(): ?array {
         return $this->repo->get_all_with_customers();
     }
 
-    public function get_by_customer($customer_id) {
+    public function get_by_customer($customer_id): ?array {
         return $this->repo->get_by_customer($customer_id);
     }
 
-    public function get_by_booking($booking_id) {
+    public function get_by_booking($booking_id): ?array {
         return $this->repo->get_by_booking($booking_id);
     }
 
-    public function get_by_status($status) {
+    public function get_by_status($status): ?array {
         return $this->repo->get_by_status($status);
     }
 
-    public function save($data) {
+    public function save($data): int|WP_Error {
 
         if (empty($data['customer_id'])) {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
@@ -95,7 +95,7 @@ class MYVH_Invoice_Service {
         return $result;
     }
 
-    public function delete($id) {
+    public function delete($id): int|WP_Error {
         if ($this->payment_repo->count_by_invoice($id) > 0) {
             return new WP_Error('validation', __('Cannot delete invoice with existing payments', 'my-village-hall'));
         }
@@ -110,7 +110,7 @@ class MYVH_Invoice_Service {
      * @param array $statuses Optional array of statuses to filter by
      * @return array Invoice records with organisation information
      */
-    public function get_for_portal($customer_id, $statuses = []) {
+    public function get_for_portal($customer_id, $statuses = []): ?array {
         return $this->repo->get_for_customer_portal($customer_id, $statuses);
     }
 
@@ -121,7 +121,7 @@ class MYVH_Invoice_Service {
      * @param string $status New status
      * @return bool|WP_Error
      */
-    public function update_status($id, $status) {
+    public function update_status($id, $status): bool|WP_Error {
         $valid_statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
         if (!in_array($status, $valid_statuses)) {
@@ -138,7 +138,7 @@ class MYVH_Invoice_Service {
      * @param float $amount Payment amount
      * @return bool|WP_Error
      */
-    public function record_payment($id, $amount) {
+    public function record_payment($id, $amount): bool|WP_Error {
         $invoice = $this->repo->get_by_id($id);
 
         if (!$invoice) {

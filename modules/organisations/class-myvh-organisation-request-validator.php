@@ -8,7 +8,7 @@ require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-validator-base.p
 
 class MYVH_Organisation_Request_Validator extends MYVH_Request_Validator_Base {
 
-    public function validate(array $data) {
+    public function validate(array $data): true|WP_Error {
         $required = $this->require_field($data, 'name', __('Organisation name is required', 'my-village-hall'));
         if (is_wp_error($required)) return $required;
 
@@ -26,7 +26,7 @@ class MYVH_Organisation_Request_Validator extends MYVH_Request_Validator_Base {
         return true;
     }
 
-    public function validate_add_member(array $data) {
+    public function validate_add_member(array $data): true|WP_Error {
         $required = $this->require_field($data, 'organisation_id', __('Organisation is required', 'my-village-hall'));
         if (is_wp_error($required)) return $required;
 
@@ -36,14 +36,14 @@ class MYVH_Organisation_Request_Validator extends MYVH_Request_Validator_Base {
         return true;
     }
 
-    public function validate_remove_member(array $data) {
+    public function validate_remove_member(array $data): true|WP_Error {
         $required = $this->require_field($data, 'id', __('Organisation member is required', 'my-village-hall'));
         if (is_wp_error($required)) return $required;
 
         return true;
     }
 
-    public function validate_delete(array $data) {
+    public function validate_delete(array $data): true|WP_Error {
         $required = $this->require_field($data, 'id', __('Organisation is required', 'my-village-hall'));
         if (is_wp_error($required)) return $required;
 

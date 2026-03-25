@@ -19,7 +19,7 @@ class MYVH_Calendar_Service {
         $this->client_admin_service = $client_admin_service;
     }
 
-    public function get_events($start, $end, $context = 'public', $viewer_user_id = 0, $filters = []) {
+    public function get_events($start, $end, $context = 'public', $viewer_user_id = 0, $filters = []): array {
         $bookings = $this->booking_service->get_between($start, $end, $context, $filters);
         $room_names = $this->get_room_names();
         $viewer_scope = $this->resolve_viewer_scope($context, $viewer_user_id);
@@ -34,7 +34,7 @@ class MYVH_Calendar_Service {
         return $events;
     }
 
-    public function get_public_feed_events($start, $end, $viewer_user_id = 0, $filters = [], $default_label = 'Private booking') {
+    public function get_public_feed_events($start, $end, $viewer_user_id = 0, $filters = [], $default_label = 'Private booking'): array {
         $context = $viewer_user_id > 0 ? 'portal' : 'public';
         $status_filters = [BookingStatus::CONFIRMED, BookingStatus::PENDING, BookingStatus::COMPLETED];
         $filters = wp_parse_args($filters, [
@@ -55,7 +55,7 @@ class MYVH_Calendar_Service {
         return $events;
     }
 
-    public function create_event($request, $context = 'admin', $viewer_user_id = 0) {
+    public function create_event($request, $context = 'admin', $viewer_user_id = 0): array|WP_Error {
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
 

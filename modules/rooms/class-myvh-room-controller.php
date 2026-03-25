@@ -14,7 +14,7 @@ class MYVH_Room_Controller {
         $this->request_validator = $request_validator;
     }
 
-    public function save() {
+    public function save(): void {
 
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
@@ -71,7 +71,7 @@ class MYVH_Room_Controller {
         return 'myvh_room_form_' . get_current_user_id();
     }
 
-    public function delete() {
+    public function delete(): void {
 
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));

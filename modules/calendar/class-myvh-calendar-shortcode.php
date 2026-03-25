@@ -23,7 +23,7 @@ class MYVH_Calendar_Shortcode {
     const REST_NAMESPACE = 'myvh/v1';
     const REST_ROUTE     = '/public-events';
 
-    public function init() {
+    public function init(): void {
         add_shortcode( self::TAG, [ $this, 'render' ] );
         add_shortcode( self::TAG_PUBLIC, [ $this, 'render' ] );
         add_action( 'rest_api_init', [ $this, 'register_rest_route' ] );
@@ -31,7 +31,7 @@ class MYVH_Calendar_Shortcode {
 
     // ── REST endpoint ─────────────────────────────────────────────────────────
 
-    public function register_rest_route() {
+    public function register_rest_route(): void {
         register_rest_route( self::REST_NAMESPACE, self::REST_ROUTE, [
             'methods'             => WP_REST_Server::READABLE,
             'callback'            => [ $this, 'get_events' ],

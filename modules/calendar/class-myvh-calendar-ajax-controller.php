@@ -36,7 +36,7 @@ class MYVH_Calendar_Ajax_Controller {
 
     }
 
-    public function get_booking() {
+    public function get_booking(): void {
 
         check_ajax_referer('myvh_calendar', 'nonce');
         if (!is_user_logged_in()) {

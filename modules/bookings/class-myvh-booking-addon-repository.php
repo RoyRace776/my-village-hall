@@ -27,7 +27,7 @@ class MYVH_Booking_Addon_Repository extends MYVH_Repository_Base{
      * @param int $booking_id
      * @return array|null
      */
-    public function get_by_booking_id($booking_id) {
+    public function get_by_booking_id($booking_id): ?array {
         $sql = $this->wpdb->prepare(
             "SELECT ba.*, a.Name as AddonName, a.ChargeType
              FROM {$this->table_name} ba
@@ -52,7 +52,7 @@ class MYVH_Booking_Addon_Repository extends MYVH_Repository_Base{
      * @param int $booking_id
      * @return bool
      */
-    public function delete_by_booking_id($booking_id) {
+    public function delete_by_booking_id($booking_id): bool {
         $result = $this->wpdb->delete(
             $this->table_name,
             array('BookingId' => $booking_id),

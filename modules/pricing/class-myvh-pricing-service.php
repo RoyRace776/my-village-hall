@@ -20,7 +20,7 @@ Class MYVH_Pricing_Service {
         $this->booking_addon_repo = $booking_addons_repo;
     }
 
-    public function calculate_price($booking_id) {
+    public function calculate_price($booking_id): float|WP_Error {
 
         $snapshot = $this->get_charge_snapshot($booking_id);
         if (is_wp_error($snapshot)) {
@@ -36,7 +36,7 @@ Class MYVH_Pricing_Service {
      * @param int $booking_id
      * @return array|WP_Error
      */
-    public function get_charge_snapshot($booking_id) {
+    public function get_charge_snapshot($booking_id): array|WP_Error {
 
         $booking_id = intval($booking_id);
         if ($booking_id <= 0) {

@@ -12,7 +12,7 @@ class MYVH_Booking_Request_Validator extends MYVH_Request_Validator_Base {
      * @param array $data
      * @return true|WP_Error
      */
-    public function validate(array $data) {
+    public function validate(array $data): true|WP_Error {
         $required = $this->require_field($data, 'customer_id', __('Customer is required', 'my-village-hall'));
         if (is_wp_error($required)) return $required;
 

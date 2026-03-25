@@ -10,23 +10,23 @@ class MYVH_Addon_Service {
         $this->repo = $repo;
     }
 
-    public function get_all($args = []) {
+    public function get_all($args = []): array {
         return $this->repo->get_all($args);
     }
 
-    public function get($id) {
+    public function get($id): ?array {
         return $this->repo->get_by_id($id);
     }
 
-    public function get_with_relations() {
+    public function get_with_relations(): array {
         return $this->repo->get_all_with_relations();
     }
 
-    public function get_by_room($room_id) {
+    public function get_by_room($room_id): array {
         return $this->repo->get_by_room($room_id);
     }
 
-    public function save($data) {
+    public function save($data): int|\WP_Error {
 
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Add-on name is required', 'my-village-hall'));

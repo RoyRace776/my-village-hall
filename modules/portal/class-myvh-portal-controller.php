@@ -26,7 +26,7 @@ class MYVH_Portal_Controller {
     }
 
 
-    public function register() {
+    public function register(): void {
         add_action('wp_ajax_myvh_portal_get_uninvoiced_bookings', [$this, 'get_uninvoiced_bookings_for_entity']);
         add_action('wp_ajax_myvh_portal_page', [$this, 'load_page']);
         add_action('wp_ajax_myvh_portal_update_account', [$this, 'update_account']);
@@ -52,7 +52,7 @@ class MYVH_Portal_Controller {
     /**
      * AJAX: Get uninvoiced bookings for a customer or organisation (for drilldown)
      */
-    public function get_uninvoiced_bookings_for_entity() {
+    public function get_uninvoiced_bookings_for_entity(): void {
         check_ajax_referer('myvh_portal', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error('Not logged in', 401);
@@ -87,7 +87,7 @@ class MYVH_Portal_Controller {
     /**
      * AJAX: Get booking details for portal (was in ajax-myvh-get-booking.php)
      */
-    public function get_booking() {
+    public function get_booking(): void {
         check_ajax_referer('myvh_portal', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error('Not logged in', 401);
@@ -116,7 +116,7 @@ class MYVH_Portal_Controller {
         wp_send_json_success(['booking' => $booking]);
     }
 
-    public function load_page() {
+    public function load_page(): void {
 
         if (!is_user_logged_in()) {
             wp_send_json_error('Not logged in', 401);

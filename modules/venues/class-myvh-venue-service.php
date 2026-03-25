@@ -9,15 +9,15 @@ class MYVH_Venue_Service {
         $this->repo = $repo;
     }
 
-    public function get_all() {
+    public function get_all(): array {
         return $this->repo->get_all();
     }
 
-    public function get($id) {
+    public function get($id): ?array {
         return $this->repo->get_by_id($id);
     }
 
-    public function save($data) {
+    public function save($data): int|WP_Error {
 
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Venue name is required', 'my-village-hall'));
@@ -39,7 +39,7 @@ class MYVH_Venue_Service {
         return $this->repo->create($record);
     }
 
-    public function delete($id) {
+    public function delete($id): bool|WP_Error {
         return $this->repo->delete_by_id($id);
     }
 }

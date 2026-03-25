@@ -52,7 +52,7 @@ class MYVH_Booking_Service {
         $this->recurring_pattern_service = $recurring_pattern_service;
     }
 
-    public function save($data) {
+    public function save($data): int|WP_Error {
 
         $this->last_warnings = [];
         $this->booking_repo->begin();
@@ -135,7 +135,7 @@ class MYVH_Booking_Service {
 
     }
 
-    private function update_booking($data, $record) {
+    private function update_booking($data, $record): int|WP_Error {
 
         // Capture the current status BEFORE overwriting the row, so that
         // dispatch_update_event() can compare old vs new correctly.
@@ -207,7 +207,7 @@ class MYVH_Booking_Service {
 
     }
 
-    private function create_booking($data, $record) {
+    private function create_booking($data, $record): int|WP_Error {
         // Before create event already dispatched in save()
         $booking_id = $this->booking_repo->create($record);
         if ($booking_id === false) {
@@ -328,7 +328,7 @@ class MYVH_Booking_Service {
      * @param int $booking_id
      * @return true|WP_Error
      */
-    public function recalculate_booking_charges($booking_id) {
+    public function recalculate_booking_charges($booking_id): true|WP_Error {
         $booking_id = intval($booking_id);
         if ($booking_id <= 0) {
             return new WP_Error('validation', __('Invalid booking id for charge recalculation', 'my-village-hall'));
@@ -352,7 +352,7 @@ class MYVH_Booking_Service {
         return true;
     }
 
-    private function resolve_public_visibility($data, $organisation_id, $booking_id) {
+    private function resolve_public_visibility($data, $organisation_id, $booking_id): int {
         if (array_key_exists('public', $data)) {
             return !empty($data['public']) ? 1 : 0;
         }
@@ -374,7 +374,7 @@ class MYVH_Booking_Service {
         return 0;
     }
 
-    public function get_last_warnings() {
+    public function get_last_warnings(): array {
         return $this->last_warnings;
     }
 
@@ -386,7 +386,7 @@ class MYVH_Booking_Service {
      * @param bool  $replace    If true, delete all existing addons before saving
      */
 
-    public function save_addons($booking_id, $addons, $replace = false) {
+    public function save_addons($booking_id, $addons, $replace = false): void {
         // Delegate to MYVH_Addon_Service (implement a method if needed)
         if (!$this->addon_service) return;
         $this->addon_service->save_booking_addons($booking_id, $addons, $replace);
@@ -398,23 +398,23 @@ class MYVH_Booking_Service {
      * @param int $booking_id
      * @return array
      */
-    public function get_addons_for_booking($booking_id) {
+    public function get_addons_for_booking($booking_id): array {
         if (!$this->addon_service) return [];
         return $this->addon_service->get_addons_for_booking($booking_id);
     }
 
-    public function get_by_id($booking_id) {
+    public function get_by_id($booking_id): ?array {
         return $this->booking_repo->get_by_id($booking_id);
     }
 
-    public function cancel($id) {
+    public function cancel($id): int|false {
         return $this->booking_repo->update(
             ['Status' => BookingStatus::CANCELLED],
             ['Id' => $id]
         );
     }
 
-    public function delete($id) {
+    public function delete($id): true|WP_Error {
         $booking_id = intval($id);
         if ($booking_id <= 0) {
             return new WP_Error('validation', __('Booking ID is required', 'my-village-hall'));
@@ -460,11 +460,11 @@ class MYVH_Booking_Service {
         }
     }
 
-    public function get_all_with_details($args = []) {
+    public function get_all_with_details($args = []): array {
         return $this->booking_repo->get_all_with_details($args);
     }
 
-    public function get_by_id_with_details(int $booking_id) {
+    public function get_by_id_with_details(int $booking_id): ?array {
         if ($booking_id <= 0) {
             return null;
         }
@@ -476,7 +476,7 @@ class MYVH_Booking_Service {
         return $results[0] ?? null;
     }
 
-    public function get_booking_list($filters = []) {
+    public function get_booking_list($filters = []): array {
         $defaults = [
             'status'      => '',
             'room_id'     => 0,
@@ -504,13 +504,13 @@ class MYVH_Booking_Service {
         ];
     }
 
-    public function get_between($start, $end, $context = null, $filters = []) {
+    public function get_between($start, $end, $context = null, $filters = []): array {
 
         $bookings = $this->booking_repo->get_between($start, $end, $context, $filters);
         return $bookings;
     }
 
-    public function move_booking($id, $start, $end, $room) {
+    public function move_booking($id, $start, $end, $room): int|WP_Error {
         $room_id = intval($room);
 
         [$start_date, $start_time] = $this->split_datetime($start);
@@ -599,13 +599,13 @@ class MYVH_Booking_Service {
         return [$date, $time];
     }
 
-    public function get_upcoming_bookings($wp_user) {
+    public function get_upcoming_bookings($wp_user): array {
         $customer_id = $this->customer_repo->get_customer_id($wp_user);
 
         return $this->booking_repo->get_upcoming_bookings($customer_id);
     }
 
-    private function group_bookings($bookings) {
+    private function group_bookings($bookings): array {
         $groups = [];
         $today = date('Y-m-d');
 
@@ -666,7 +666,7 @@ class MYVH_Booking_Service {
         return $groups;
     }
 
-    private function find_next_booking($bookings, $today) {
+    private function find_next_booking($bookings, $today): ?array {
         foreach (array_reverse($bookings) as $b) {
 
             if ($b['StartDate'] >= $today && $b['Status'] !== BookingStatus::CANCELLED) {
@@ -678,7 +678,7 @@ class MYVH_Booking_Service {
         return null;
     }
 
-    private function determine_group_status($members) {
+    private function determine_group_status($members): string {
         $statuses = array_column($members, 'Status');
 
         foreach ($statuses as $status) {
@@ -696,7 +696,7 @@ class MYVH_Booking_Service {
         return $statuses[0] ?? BookingStatus::COMPLETED;
     }
 
-    private function dispatch_update_event($data, $old_status = null) {
+    private function dispatch_update_event($data, $old_status = null): void {
         // TODO: Update this to handle status changes
         $new_status = $data['status'];
         $current_status = $old_status;
@@ -737,7 +737,7 @@ class MYVH_Booking_Service {
 
     }
 
-    private function calculate_chargeable_hours($startdate, $start_time, $enddate, $end_time, $room) {
+    private function calculate_chargeable_hours($startdate, $start_time, $enddate, $end_time, $room): float {
         $start = new DateTime($startdate . ' ' . $start_time);
         $end   = new DateTime($enddate . ' ' . $end_time);
         $interval = $start->diff($end);
@@ -778,7 +778,7 @@ class MYVH_Booking_Service {
      * @param array $args Optional filters (orderby, order, limit, offset, organisation_id, customer_id)
      * @return array Array of uninvoiced bookings with details
      */
-    public function get_uninvoiced_bookings($args = []) {
+    public function get_uninvoiced_bookings($args = []): array {
         return $this->booking_repo->get_uninvoiced_bookings($args);
     }
 
@@ -787,7 +787,7 @@ class MYVH_Booking_Service {
      *
      * @return array Array of [OrganisationId, OrganisationName, UninvoicedCount]
      */
-    public function get_uninvoiced_by_organisation() {
+    public function get_uninvoiced_by_organisation(): array {
         return $this->booking_repo->count_uninvoiced_by_organisation();
     }
 
@@ -796,7 +796,7 @@ class MYVH_Booking_Service {
      *
      * @return array Array of [CustomerId, CustomerName, CustomerEmail, UninvoicedCount]
      */
-    public function get_uninvoiced_by_customer() {
+    public function get_uninvoiced_by_customer(): array {
         return $this->booking_repo->count_uninvoiced_by_customer();
     }
 
@@ -806,7 +806,7 @@ class MYVH_Booking_Service {
      * @param int $booking_id The booking ID to check
      * @return bool True if booking has any non-cancelled invoices
      */
-    public function booking_has_invoices($booking_id) {
+    public function booking_has_invoices($booking_id): bool {
         return $this->booking_repo->has_invoiced_items($booking_id);
     }
 

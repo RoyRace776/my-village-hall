@@ -79,7 +79,7 @@ class MYVH_Availability_Service {
         return true;
     }
 
-    public function get_calendar_visible_hours() {
+    public function get_calendar_visible_hours(): array {
         $defaults = [
             'start' => 8,
             'end' => 22,
@@ -125,7 +125,7 @@ class MYVH_Availability_Service {
         ];
     }
 
-    private function time_to_seconds($time) {
+    private function time_to_seconds($time): ?int {
         $value = trim((string) $time);
 
         if ($value === '') {
@@ -143,7 +143,7 @@ class MYVH_Availability_Service {
             + (int) date('s', $timestamp);
     }
 
-    private function time_to_hour_floor($value) {
+    private function time_to_hour_floor($value): ?int {
         if (!preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', (string) $value, $m)) {
             return null;
         }
@@ -151,7 +151,7 @@ class MYVH_Availability_Service {
         return (int) $m[1];
     }
 
-    private function time_to_hour_ceil($value) {
+    private function time_to_hour_ceil($value): ?int {
         if (!preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', (string) $value, $m)) {
             return null;
         }
@@ -167,7 +167,7 @@ class MYVH_Availability_Service {
         return $hour;
     }
 
-    public function get_time_options($selected = '', $start_hour = 0, $end_hour = 23, $on_hour_only = false) {
+    public function get_time_options($selected = '', $start_hour = 0, $end_hour = 23, $on_hour_only = false): string {
         $options = '';
 
         for ($hour = $start_hour; $hour <= $end_hour; $hour++) {

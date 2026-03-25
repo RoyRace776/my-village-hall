@@ -2,5 +2,5 @@
 
 interface ServiceProvider
 {
-    public function register($container);
+    public function register($container): void;
 }

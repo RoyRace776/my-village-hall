@@ -13,23 +13,23 @@ class MYVH_Repository_Base {
     }
 
     // --- Transaction helpers ---
-    public function begin() { $this->wpdb->query('START TRANSACTION'); }
-    public function commit() { $this->wpdb->query('COMMIT'); }
-    public function rollback() { $this->wpdb->query('ROLLBACK'); }
+    public function begin(): void { $this->wpdb->query('START TRANSACTION'); }
+    public function commit(): void { $this->wpdb->query('COMMIT'); }
+    public function rollback(): void { $this->wpdb->query('ROLLBACK'); }
 
     // --- CRUD ---
-    public function create($data) {
+    public function create($data): int|false {
         $result = $this->wpdb->insert($this->table_name, $data, $this->get_format($data));
         $this->audit('create', $data);
         return $result ? $this->wpdb->insert_id : false;
     }
 
-    public function get_by_id($id) {
+    public function get_by_id($id): ?array {
         $sql = $this->wpdb->prepare("SELECT * FROM {$this->table_name} WHERE Id = %d", $id);
         return $this->wpdb->get_row($sql, ARRAY_A);
     }
 
-    public function get_all($args = []) {
+    public function get_all($args = []): array {
         $sql = "SELECT * FROM {$this->table_name}";
         // Add order, limit, offset if present
         if (!empty($args['orderby'])) {
@@ -44,25 +44,25 @@ class MYVH_Repository_Base {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function update($data, $where) {
+    public function update($data, $where): bool {
         $result = $this->wpdb->update($this->table_name, $data, $where, $this->get_format($data));
         $this->audit('update', $data, $where);
         return $result !== false;
     }
 
-    public function delete_by_id($id) {
+    public function delete_by_id($id): bool {
         $result = $this->wpdb->delete($this->table_name, ['Id' => $id], ['%d']);
         $this->audit('delete', ['Id' => $id]);
         return $result !== false;
     }
 
     //Just for compatibility with existing code that calls delete() instead of delete_by_id()
-    public function delete($id) {
+    public function delete($id): bool {
         return $this->delete_by_id($id);
     }
 
     // --- Query helpers ---
-    public function find($where = [], $order = '', $limit = null, $offset = null) {
+    public function find($where = [], $order = '', $limit = null, $offset = null): array {
         $sql = "SELECT * FROM {$this->table_name}";
         if ($where) {
             $clauses = [];
@@ -78,7 +78,7 @@ class MYVH_Repository_Base {
     }
 
     // --- Table name resolution ---
-    protected function resolve_table_name($table_name = null) {
+    protected function resolve_table_name($table_name = null): string {
 
         if ($table_name) {
             return $this->wpdb->prefix . sanitize_key($table_name);
@@ -92,7 +92,7 @@ class MYVH_Repository_Base {
     }
 
     // --- Format helper ---
-    protected function get_format($data) {
+    protected function get_format($data): array {
         $formats = [];
         foreach ($data as $v) {
             $formats[] = is_int($v) ? '%d' : (is_float($v) ? '%f' : '%s');
@@ -101,50 +101,50 @@ class MYVH_Repository_Base {
     }
 
     // --- Soft delete ---
-    public function soft_delete_by_id($id) {
+    public function soft_delete_by_id($id): bool {
         return $this->update(['IsDeleted' => 1], ['Id' => $id]);
     }
-    public function restore_by_id($id) {
+    public function restore_by_id($id): bool {
         return $this->update(['IsDeleted' => 0], ['Id' => $id]);
     }
-    public function with_deleted() {
+    public function with_deleted(): array {
         $sql = "SELECT * FROM {$this->table_name}";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
-    public function only_deleted() {
+    public function only_deleted(): array {
         $sql = "SELECT * FROM {$this->table_name} WHERE IsDeleted = 1";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
     // --- Audit logging (stub) ---
-    protected function audit($action, $data, $where = null) {
+    protected function audit($action, $data, $where = null): void {
         // Implement audit log logic here (e.g., write to log table)
     }
 
     // --- Pagination ---
-    public function paginate($page = 1, $per_page = 20, $where = []) {
+    public function paginate($page = 1, $per_page = 20, $where = []): array {
         $offset = ($page - 1) * $per_page;
         return $this->find($where, '', $per_page, $offset);
     }
 
     // --- Validation (stub) ---
-    protected function validate($data) {
+    protected function validate($data): bool {
         // Implement schema validation logic here
         return true;
     }
 
     // --- Caching (stub) ---
-    protected function cache_get($key) { return false; }
-    protected function cache_set($key, $value, $ttl = 300) { return true; }
+    protected function cache_get($key): bool { return false; }
+    protected function cache_set($key, $value, $ttl = 300): bool { return true; }
 
     // --- Batch/bulk operations (stub) ---
-    public function bulk_insert($rows) {
+    public function bulk_insert($rows): void {
         foreach ($rows as $row) $this->create($row);
     }
-    public function bulk_update($rows, $key = 'Id') {
+    public function bulk_update($rows, $key = 'Id'): void {
         foreach ($rows as $row) if (isset($row[$key])) $this->update($row, [$key => $row[$key]]);
     }
-    public function bulk_delete($ids) {
+    public function bulk_delete($ids): void {
         foreach ($ids as $id) $this->delete_by_id($id);
     }
 }

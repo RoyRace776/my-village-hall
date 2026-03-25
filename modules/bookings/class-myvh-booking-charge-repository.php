@@ -26,7 +26,7 @@ class MYVH_Booking_Charge_Repository extends MYVH_Repository_Base {
      * @param int $booking_id Booking ID
      * @return array
      */
-    public function get_by_booking_id($booking_id) {
+    public function get_by_booking_id($booking_id): array {
         $sql = $this->wpdb->prepare(
             "SELECT * FROM $this->table_name WHERE BookingId = %d ORDER BY Id ASC",
             $booking_id
@@ -49,7 +49,7 @@ class MYVH_Booking_Charge_Repository extends MYVH_Repository_Base {
      * @param int $booking_id Booking ID
      * @return bool True on success, false on failure
      */
-    public function delete_by_booking_id($booking_id) {
+    public function delete_by_booking_id($booking_id): bool {
         $result = $this->wpdb->delete(
             $this->table_name,
             array('BookingId' => intval($booking_id)),

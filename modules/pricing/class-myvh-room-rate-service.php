@@ -12,19 +12,19 @@ class MYVH_Room_Rate_Service {
         $this->customer_repo = $customer_repo;
     }
 
-    public function get_all() {
+    public function get_all(): array {
         return $this->repo->get_all();
     }
 
-    public function get_by_room($room_id) {
+    public function get_by_room($room_id): array {
         return $this->repo->get_by_room($room_id);
     }
 
-    public function get($id) {
+    public function get($id): ?array {
         return $this->repo->get_by_id($id);
     }
 
-    public function save($data) {
+    public function save($data): int|WP_Error {
 
         if (empty($data['room_id'])) {
             return new WP_Error('validation', __('Room is required', 'my-village-hall'));
