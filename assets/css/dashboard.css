@@ -1,3 +1,49 @@
+.myvh-customer-list-table th {
+  text-align: left;
+}
+/* --- Customer List Table (Portal) --- */
+.myvh-customer-list-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  font-size: 1rem;
+}
+.myvh-customer-list-table th, .myvh-customer-list-table td {
+  padding: 0.7rem 1.2rem 0.7rem 0.7rem;
+  vertical-align: middle;
+}
+.myvh-customer-list-table th {
+  color: var(--muted);
+  font-size: .85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  background: none;
+  border-bottom: 2px solid var(--warm);
+}
+.myvh-customer-list-table td {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(28,26,23,.04);
+}
+.myvh-customer-list-table tr:hover td {
+  background: var(--cream);
+}
+.myvh-action-icon {
+  display: inline-block;
+  color: #444;
+  transition: color .15s;
+  text-decoration: none;
+}
+.myvh-action-icon:hover, .myvh-action-icon:focus {
+  color: var(--accent);
+}
+.myvh-action-icon .dashicons {
+  vertical-align: middle;
+}
+.myvh-orgs-page .myvh-account-grid > .myvh-account-card:nth-child(2) {
+  margin-left: -90px;
+}
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap');
 /* Make add member and pending requests sections as wide as members list */
 .myvh-orgs-page .myvh-org-admin-section > div {

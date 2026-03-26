@@ -118,7 +118,7 @@ $show_register_focus = $query_register || $mode === 'register';
         <button type="submit" class="myvh-login-button">Sign in</button>
 
         <div class="myvh-form-footer">
-            <a href="<?php echo esc_url(wp_lostpassword_url()); ?>">Forgot Password?</a>
+            <a href="<?php echo esc_url(home_url('/password-reset/')); ?>">Forgot Password?</a>
         </div>
 
         <div class="myvh-form-footer myvh-form-footer--secondary">

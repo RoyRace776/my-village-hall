@@ -73,6 +73,9 @@ require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-bootstrap.php';
 
 // Feature modules
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-shortcode.php';
+require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-handler.php';
+require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-shortcode.php';
+require_once MYVH_PLUGIN_DIR . 'modules/email/class-myvh-email-service.php';
 
 // Multisite network dashboard
 require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-dashboard.php';
@@ -581,6 +584,7 @@ class My_Village_Hall {
         return;
 
     }
+    public function render_customer_add_page():    void { $this->render_page( 'customer-add' ); }
     public function render_venues_page():          void { $this->render_page( 'venues' ); }
     public function render_rooms_page():           void { $this->render_page( 'rooms' ); }
     public function render_room_rates_page():      void { $this->render_page( 'room-rates' ); }
@@ -691,6 +695,16 @@ function myvh_init(): My_Village_Hall {
 
     // Frontend calendar shortcode + REST endpoint
     ( new MYVH_Calendar_Shortcode() )->init();
+
+    // Password reset shortcode and handler
+    if ( file_exists( MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-loader.php' ) ) {
+        require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-loader.php';
+        if (!class_exists('MYVH\\Shortcodes\\MYVH_Password_Reset_Loader')) {
+            // Defensive: ensure class is loaded
+            throw new Exception('MYVH_Password_Reset_Loader class not found after require.');
+        }
+        ( new \MYVH\Shortcodes\MYVH_Password_Reset_Loader() )->init();
+    }
 
     // Network dashboard (multisite network-admin only)
     if ( is_multisite() && is_network_admin() ) {

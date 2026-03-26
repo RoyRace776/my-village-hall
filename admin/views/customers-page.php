@@ -30,7 +30,7 @@ if ($edit_customer) {
 
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php _e('Customers', 'my-village-hall'); ?></h1>
-    <a href="<?php echo admin_url('admin.php?page=myvh-customers&add=1'); ?>" class="page-title-action">
+    <a href="<?php echo admin_url('admin.php?page=myvh-customer-add'); ?>" class="page-title-action">
         <?php _e('Add New', 'my-village-hall'); ?>
     </a>
     <hr class="wp-header-end">
@@ -112,49 +112,28 @@ if ($edit_customer) {
             </div>
         </div>
 
-        <!-- ── Add / Edit panel ──────────────────────────────────────────────── -->
-        <?php if (isset($_GET['add']) || $edit_customer): ?>
+        <!-- ── Edit panel only (no add) ─────────────────────────────────────── -->
+        <?php if ($edit_customer): ?>
         <div class="myvh-col-40">
-
-            <!-- Customer details form -->
             <div class="myvh-card">
-                <h2><?php echo $edit_customer
-                    ? __('Edit Customer', 'my-village-hall')
-                    : __('Add Customer', 'my-village-hall'); ?></h2>
-
-                <?php if (!$edit_customer && !empty($default_org['Name'])): ?>
-                    <div class="notice notice-info inline">
-                        <p>
-                            <?php
-                            printf(
-                                __('New customers will automatically be added to the default organisation: %s', 'my-village-hall'),
-                                '<strong>' . esc_html($default_org['Name']) . '</strong>'
-                            );
-                            ?>
-                        </p>
-                    </div>
-                <?php endif; ?>
-
+                <h2><?php _e('Edit Customer', 'my-village-hall'); ?></h2>
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                     <input type="hidden" name="action" value="myvh_save_customer">
                     <?php wp_nonce_field('myvh_save_customer'); ?>
-                    <?php if ($edit_customer): ?>
-                        <input type="hidden" name="customer_id" value="<?php echo $edit_customer['Id']; ?>">
-                    <?php endif; ?>
-
+                    <input type="hidden" name="customer_id" value="<?php echo $edit_customer['Id']; ?>">
                     <table class="form-table">
                         <tr>
                             <th><?php _e('Name', 'my-village-hall'); ?> *</th>
                             <td>
                                 <input type="text" name="name" required class="regular-text"
-                                    value="<?php echo $edit_customer ? esc_attr($edit_customer['Name']) : ''; ?>">
+                                    value="<?php echo esc_attr($edit_customer['Name']); ?>">
                             </td>
                         </tr>
                         <tr>
                             <th><?php _e('Email', 'my-village-hall'); ?> *</th>
                             <td>
                                 <input type="email" name="email" required class="regular-text"
-                                    value="<?php echo $edit_customer ? esc_attr($edit_customer['Email']) : ''; ?>">
+                                    value="<?php echo esc_attr($edit_customer['Email']); ?>">
                             </td>
                         </tr>
                         <tr>

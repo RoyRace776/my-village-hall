@@ -1,13 +1,22 @@
+
 <?php
 if (!defined('ABSPATH')) exit;
+$action = $_GET['action'] ?? '';
+if ($action === 'add') {
+    include __DIR__ . '/organisation-add.php';
+    return;
+}
 ?>
 
 <div class="myvh-dashboard-section myvh-orgs-page">
-    <div class="myvh-account-header">
+    <div class="myvh-account-header" style="display:flex; align-items:end; justify-content:space-between; gap:24px;">
         <div>
             <h2>Organisations</h2>
             <p>View your memberships, request access, and manage organisations you administer.</p>
         </div>
+        <button onclick="window.location.href='<?php echo esc_url(add_query_arg('action', 'add', get_permalink())); ?>'" class="button button-primary myvh-add-org-btn" type="button" style="margin-bottom:4px;">
+            <span class="dashicons dashicons-plus-alt" style="vertical-align:middle; margin-right:4px;"></span> Add Organisation
+        </button>
     </div>
 
     <div class="myvh-account-grid">
