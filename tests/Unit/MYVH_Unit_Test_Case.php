@@ -6,6 +6,8 @@ use Brain\Monkey;
 use Mockery;
 use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
+use MYVH\Tests\stubs\MYVH_Event_Dispatcher;
+use MYVH\Tests\BookingStatus;
 
 /**
  * Base class for all MYVH unit tests.
@@ -18,7 +20,7 @@ abstract class MYVH_Unit_Test_Case extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         Monkey\setUp();
-        \MYVH_Event_Dispatcher::reset();
+        MYVH_Event_Dispatcher::reset();
 
         // Stub the WP functions most commonly used in the booking service so
         // tests that do not care about them don't need to set expectations.
@@ -42,12 +44,12 @@ abstract class MYVH_Unit_Test_Case extends TestCase {
      */
     protected function assertEventDispatched(string $event, ?array $expected_data = null): void {
         $this->assertTrue(
-            \MYVH_Event_Dispatcher::was_dispatched($event),
+            MYVH_Event_Dispatcher::was_dispatched($event),
             "Expected event [{$event}] to have been dispatched."
         );
 
         if ($expected_data !== null) {
-            $calls = \MYVH_Event_Dispatcher::get_dispatched($event);
+            $calls = MYVH_Event_Dispatcher::get_dispatched($event);
             $matched = array_filter($calls, function ($call) use ($expected_data) {
                 foreach ($expected_data as $key => $value) {
                     if (($call['data'][$key] ?? null) !== $value) {
@@ -69,7 +71,7 @@ abstract class MYVH_Unit_Test_Case extends TestCase {
      */
     protected function assertEventNotDispatched(string $event): void {
         $this->assertFalse(
-            \MYVH_Event_Dispatcher::was_dispatched($event),
+            MYVH_Event_Dispatcher::was_dispatched($event),
             "Expected event [{$event}] NOT to have been dispatched."
         );
     }

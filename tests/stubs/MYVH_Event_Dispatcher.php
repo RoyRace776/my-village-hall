@@ -1,4 +1,5 @@
 <?php
+namespace MYVH\Tests\stubs;
 /**
  * Test stub for MYVH_Event_Dispatcher.
  *

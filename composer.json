@@ -14,7 +14,10 @@
         "classmap": [
             "core/",
             "modules/"
-        ]
+        ],
+        "psr-4": {
+            "MYVH\\": "src/"
+        }
     },
     "autoload-dev": {
         "psr-4": {

@@ -195,6 +195,7 @@ class BookingServiceTest extends MYVH_Unit_Test_Case {
             ->andReturn(new WP_Error('validation', 'Room is required'));
 
         $result = $this->service->save($this->minimal_create_data());
+        //printf('Validation error: %s', is_wp_error($result) ? $result->get_error_message() : 'none');
 
         $this->assertInstanceOf(WP_Error::class, $result);
         $this->assertSame('validation', $result->get_error_code());
@@ -530,5 +531,48 @@ class BookingServiceTest extends MYVH_Unit_Test_Case {
         ]));
 
         $this->assertSame($new_id, $result);
+    }
+
+    // ── Data Integrity Tests: delete/cancel ───────────────────────────────
+
+    /** @test */
+    public function delete_removes_all_related_charges_and_addons(): void {
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+        $this->booking_addon_repo->shouldReceive('delete_by_booking_id')->with(77)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(77)->once()->andReturn(1);
+        $this->booking_repo->shouldReceive('delete')->with(77)->once()->andReturn(true);
+
+        $result = $this->service->delete(77);
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function delete_does_not_affect_unrelated_data(): void {
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+        $this->booking_addon_repo->shouldReceive('delete_by_booking_id')->with(88)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(88)->once()->andReturn(1);
+        $this->booking_repo->shouldReceive('delete')->with(88)->once()->andReturn(true);
+        // Should NOT call delete for unrelated booking id 99
+        $this->booking_addon_repo->shouldReceive('delete_by_booking_id')->with(99)->never();
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(99)->never();
+        $this->booking_repo->shouldReceive('delete')->with(99)->never();
+
+        $result = $this->service->delete(88);
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function delete_rolls_back_on_partial_failure(): void {
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('rollback')->once();
+        $this->booking_addon_repo->shouldReceive('delete_by_booking_id')->with(66)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(66)->once()->andReturn(false); // Simulate failure
+        $this->booking_repo->shouldReceive('delete')->with(66)->never();
+
+        $result = $this->service->delete(66);
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('database', $result->get_error_code());
     }
 }

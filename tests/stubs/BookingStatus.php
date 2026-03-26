@@ -1,4 +1,6 @@
 <?php
+namespace MYVH\Tests;
+
 // Test stub — mirrors the real BookingStatus constants.
 
 class BookingStatus {
