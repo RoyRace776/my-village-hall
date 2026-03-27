@@ -2,7 +2,7 @@
 /**
  * DI Container setup
  *
- * Builds the MYVH_Container instance, registers all service providers,
+ * Builds the Container instance, registers all service providers,
  * and returns the configured container so the caller can assign it to
  * $myvh_container.
  *
@@ -21,7 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 global $wpdb;
 global $myvh_container;
 
-$myvh_container = new MYVH_Container();
+use MYVH\Container\Container;
+
+$myvh_container = new Container();
 
 // ── Require service-provider class files ──────────────────────────────────────
 // Each provider is a single class that registers its module's bindings.

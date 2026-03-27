@@ -1,12 +1,12 @@
 <?php
-
+namespace MYVH\Container;
 /**
- * Class MYVH_Container
+ * Class Container
  *
  * Simple dependency injection container for managing class bindings and singletons.
  * Provides automatic resolution of class dependencies using reflection.
  */
-class MYVH_Container
+class Container
 {
     /**
      * @var array Stores class bindings (id => factory or class name)
@@ -78,10 +78,10 @@ class MYVH_Container
      */
     private function build($class): object
     {
-        $reflection = new ReflectionClass($class);
+        $reflection = new \ReflectionClass($class);
 
         if (!$reflection->isInstantiable()) {
-            throw new Exception("Class $class is not instantiable");
+            throw new \Exception("Class $class is not instantiable");
         }
 
         $constructor = $reflection->getConstructor();
@@ -98,7 +98,7 @@ class MYVH_Container
             $type = $param->getType();
 
             if (!$type) {
-                throw new Exception("Cannot resolve {$param->getName()} in {$class}");
+                throw new \Exception("Cannot resolve {$param->getName()} in {$class}");
             }
 
             // Recursively resolve dependency

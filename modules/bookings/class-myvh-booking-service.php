@@ -476,6 +476,19 @@ class MYVH_Booking_Service {
         return $results[0] ?? null;
     }
 
+    public function get_by_id_with_details_for_customer(int $booking_id, int $customer_id): ?array {
+        if ($booking_id <= 0 || $customer_id <= 0) {
+            return null;
+        }
+
+        $results = $this->booking_repo->get_all_with_details([
+            'booking_id' => $booking_id,
+            'customer_id' => $customer_id,
+        ]);
+
+        return $results[0] ?? null;
+    }
+
     public function get_booking_list($filters = []): array {
         $defaults = [
             'status'      => '',
@@ -570,6 +583,70 @@ class MYVH_Booking_Service {
         }
 
         return $return;
+    }
+
+    public function can_delete($booking): array {
+        if (empty($booking) || empty($booking['StartDate']) || empty($booking['StartTime'])) {
+            return [
+                'can_delete' => false,
+                'reason' => 'Booking details are incomplete.',
+            ];
+        }
+
+        $status = strtolower((string) ($booking['Status'] ?? ''));
+        $start_ts = strtotime((string) $booking['StartDate'] . ' ' . (string) $booking['StartTime']);
+        $now_ts = wp_timestamp();
+        $min_notice_hours = max(0, intval(myvh_setting('booking.general.min_notice_hours', 24)));
+        $min_notice_days = (int) ceil($min_notice_hours / 24);
+
+        if (!$start_ts || $start_ts <= $now_ts) {
+            return [
+                'can_delete' => false,
+                'reason' => 'Past bookings cannot be deleted.',
+                'min_notice_hours' => $min_notice_hours,
+                'min_notice_days' => $min_notice_days,
+            ];
+        }
+
+        if ($status === BookingStatus::PENDING || $status === strtolower(BookingStatus::PENDING)) {
+            return [
+                'can_delete' => true,
+                'reason' => '',
+                'min_notice_hours' => $min_notice_hours,
+                'min_notice_days' => $min_notice_days,
+            ];
+        }
+
+        if ($status === BookingStatus::CONFIRMED || $status === strtolower(BookingStatus::CONFIRMED)) {
+            $threshold_ts = $now_ts + ($min_notice_hours * HOUR_IN_SECONDS);
+
+            if ($start_ts > $threshold_ts) {
+                return [
+                    'can_delete' => true,
+                    'reason' => '',
+                    'min_notice_hours' => $min_notice_hours,
+                    'min_notice_days' => $min_notice_days,
+                ];
+            }
+
+            return [
+                'can_delete' => false,
+                'reason' => sprintf(
+                    'Confirmed bookings can only be deleted when more than %d day(s) away.',
+                    $min_notice_days
+                ),
+                'min_notice_hours' => $min_notice_hours,
+                'min_notice_days' => $min_notice_days,
+            ];
+        }
+
+        return [
+            'can_delete' => false,
+            'reason' => 'Only pending or confirmed bookings can be deleted.',
+            'min_notice_hours' => $min_notice_hours,
+            'min_notice_days' => $min_notice_days,
+        ];
+
     }
 
     private function split_datetime($value, $default_date = '') {

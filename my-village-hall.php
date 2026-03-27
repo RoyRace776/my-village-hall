@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Plugin constants ──────────────────────────────────────────────────────────
 
-define( 'MYVH_VERSION',          '0.1.0' );
+define( 'MYVH_VERSION',          '0.2.0' );
 define( 'MYVH_PLUGIN_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'MYVH_PLUGIN_URL',       plugin_dir_url( __FILE__ ) );
 define( 'MYVH_PLUGIN_BASENAME',  plugin_basename( __FILE__ ) );
@@ -34,12 +34,13 @@ define( 'MYVH_PLUGIN_BASENAME',  plugin_basename( __FILE__ ) );
 // files doesn't trigger WordPress's "unexpected output" activation error.
 
 ob_start();
+require_once MYVH_PLUGIN_DIR . 'vendor/autoload.php';
 
 // Load compatibility shims (e.g., wp_timestamp for WP < 5.3)
 require_once MYVH_PLUGIN_DIR . 'core/support/wp-compat.php';
 
 // Core infrastructure
-require_once MYVH_PLUGIN_DIR . 'core/container/class-myvh-container.php';
+//require_once MYVH_PLUGIN_DIR . 'core/container/class-myvh-container.php';
 require_once MYVH_PLUGIN_DIR . 'bootstrap/class-myvh-installer.php';
 require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-asset-loader.php';
 
@@ -55,7 +56,7 @@ require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-services.php';
 // HTTP layer — controllers
 require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-controllers.php';
 
-// Dependency-injection container (returns a configured MYVH_Container instance)
+// Dependency-injection container (returns a configured Container instance)
 global $myvh_container;
 $myvh_container = require MYVH_PLUGIN_DIR . 'bootstrap/myvh-container.php';
 

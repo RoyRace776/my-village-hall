@@ -12,6 +12,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+use MYVH\Container\Container;
 
 require_once MYVH_PLUGIN_DIR . 'modules/events/class-myvh-booking-listener.php';
 require_once MYVH_PLUGIN_DIR . 'core/shortcode/shortcode-interface.php';
@@ -25,7 +26,7 @@ global $myvh_container;
 
 ( new MYVH_Booking_Listener() )->register();
 
-if ( $myvh_container instanceof MYVH_Container ) {
+if ( $myvh_container instanceof Container ) {
     $calendar_ajax = $myvh_container->get( MYVH_Calendar_Ajax_Controller::class );
     $calendar_ajax->register_routes();
 

@@ -38,15 +38,15 @@ class MYVH_Portal_Controller {
         add_action('wp_ajax_myvh_portal_org_add_member', [$this, 'organisation_add_member']);
         add_action('wp_ajax_myvh_portal_org_remove_member', [$this, 'organisation_remove_member']);
         add_action('wp_ajax_myvh_portal_org_set_admin', [$this, 'organisation_set_member_admin']);
-        add_action('wp_ajax_myvh_portal_update_booking', [$this, 'update_booking']);
-        add_action('wp_ajax_myvh_portal_delete_booking', [$this, 'delete_booking']);
+        //add_action('wp_ajax_myvh_portal_update_booking', [$this, 'update_booking']);
+        //add_action('wp_ajax_myvh_portal_delete_booking', [$this, 'delete_booking']);
         add_action('wp_ajax_myvh_portal_add_client_admin', [$this, 'add_client_admin']);
         add_action('wp_ajax_myvh_portal_remove_client_admin', [$this, 'remove_client_admin']);
         add_action('wp_ajax_myvh_portal_save_customer', [$this, 'save_customer']);
         add_action('wp_ajax_myvh_portal_delete_customer', [$this, 'delete_customer']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
-        add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
+        //add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
     }
 
     /**
@@ -84,38 +84,6 @@ class MYVH_Portal_Controller {
     }
 
 
-    /**
-     * AJAX: Get booking details for portal (was in ajax-myvh-get-booking.php)
-     */
-    public function get_booking(): void {
-        check_ajax_referer('myvh_portal', 'nonce');
-        if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in', 401);
-        }
-        $booking_id = intval($_GET['booking_id'] ?? $_POST['booking_id'] ?? 0);
-        if (!$booking_id) {
-            wp_send_json_error('Missing booking_id', 400);
-        }
-        $customer = $this->customer_service->get_by_user_id(get_current_user_id());
-        $is_client_admin = $this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
-        if ($is_client_admin) {
-            $booking = $this->booking_service->get_by_id_with_details($booking_id);
-        } else {
-            $bookings = $this->booking_service->get_all_with_details(['customer_id' => $customer['Id']]);
-            $booking = null;
-            foreach ($bookings as $b) {
-                if (intval($b['Id']) === $booking_id) {
-                    $booking = $b;
-                    break;
-                }
-            }
-        }
-        if (!$booking) {
-            wp_send_json_error('Booking not found or not accessible', 404);
-        }
-        wp_send_json_success(['booking' => $booking]);
-    }
-
     public function load_page(): void {
 
         if (!is_user_logged_in()) {
@@ -143,20 +111,35 @@ class MYVH_Portal_Controller {
 
             case 'booking-view':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
+                $booking = MYVH_Booking_Access::get_accessible_booking(
+                                $booking_id,
+                                intval($customer['Id'] ?? 0),
+                                $is_client_admin,
+                                $this->booking_service
+                            );
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-view.php';
                 break;
 
             case 'booking-edit':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
+                $booking = MYVH_Booking_Access::get_accessible_booking(
+                                $booking_id,
+                                intval($customer['Id'] ?? 0),
+                                $is_client_admin,
+                                $this->booking_service
+                            );
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-edit.php';
                 break;
 
             case 'booking-delete':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
-                $delete_rules = $this->evaluate_booking_delete_rules($booking);
+                $booking = MYVH_Booking_Access::get_accessible_booking(
+                                $booking_id,
+                                intval($customer['Id'] ?? 0),
+                                $is_client_admin,
+                                $this->booking_service
+                            );
+                $delete_rules = $this->booking_service->can_delete($booking);
                 include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-delete.php';
                 break;
 
@@ -593,96 +576,6 @@ class MYVH_Portal_Controller {
         wp_send_json_success(['message' => 'Member status updated']);
     }
 
-    public function update_booking() {
-
-        if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in', 401);
-        }
-
-        check_ajax_referer('myvh_portal', 'nonce');
-
-        $customer = $this->customer_service->get_by_user_id(get_current_user_id());
-        $is_client_admin = $this->current_user_is_client_admin();
-
-        if (empty($customer['Id']) && !$is_client_admin) {
-            wp_send_json_error('Customer profile not found', 400);
-        }
-
-        $booking_id = intval($_POST['booking_id'] ?? 0);
-        if ($booking_id <= 0) {
-            wp_send_json_error('Booking ID is required', 400);
-        }
-
-        $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
-        if (!$booking) {
-            wp_send_json_error('Booking not found', 404);
-        }
-
-        $start_date = sanitize_text_field($_POST['start_date'] ?? $booking['StartDate']);
-        $start_time = sanitize_text_field($_POST['start_time'] ?? substr((string) $booking['StartTime'], 0, 5));
-        $end_time = sanitize_text_field($_POST['end_time'] ?? substr((string) $booking['EndTime'], 0, 5));
-        $description = sanitize_textarea_field($_POST['description'] ?? $booking['Description']);
-
-        $save_result = $this->booking_service->save([
-            'booking_id'       => $booking_id,
-            'customer_id'      => intval($booking['CustomerId'] ?? 0),
-            'organisation_id'  => intval($booking['OrganisationId'] ?? 0),
-            'room_id'          => intval($booking['RoomId']),
-            'status'           => sanitize_text_field($booking['Status']),
-            'start_date'       => $start_date,
-            'end_date'         => $start_date,
-            'start_time'       => $start_time,
-            'end_time'         => $end_time,
-            'description'      => $description,
-            'public'           => !empty($booking['Public']) ? 1 : 0,
-            'is_recurring'     => !empty($booking['RecurringPatternId']),
-        ]);
-
-        if (is_wp_error($save_result)) {
-            wp_send_json_error($save_result->get_error_message(), 400);
-        }
-
-        wp_send_json_success(['message' => 'Booking updated']);
-    }
-
-    public function delete_booking() {
-
-        if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in', 401);
-        }
-
-        check_ajax_referer('myvh_portal', 'nonce');
-
-        $customer = $this->customer_service->get_by_user_id(get_current_user_id());
-        $is_client_admin = $this->current_user_is_client_admin();
-
-        if (empty($customer['Id']) && !$is_client_admin) {
-            wp_send_json_error('Customer profile not found', 400);
-        }
-
-        $booking_id = intval($_POST['booking_id'] ?? 0);
-        if ($booking_id <= 0) {
-            wp_send_json_error('Booking ID is required', 400);
-        }
-
-        $booking = $this->get_accessible_booking($booking_id, intval($customer['Id'] ?? 0), $is_client_admin);
-        if (!$booking) {
-            wp_send_json_error('Booking not found', 404);
-        }
-
-        $delete_rules = $this->evaluate_booking_delete_rules($booking);
-        if (empty($delete_rules['can_delete'])) {
-            wp_send_json_error($delete_rules['reason'] ?? 'This booking cannot be deleted.', 400);
-        }
-
-        $delete_result = $this->booking_service->delete($booking_id);
-        if (is_wp_error($delete_result)) {
-            wp_send_json_error($delete_result->get_error_message(), 400);
-        }
-
-        wp_send_json_success(['message' => 'Booking deleted']);
-    }
-
     public function add_client_admin() {
         $this->require_client_admin_access();
 
@@ -866,38 +759,6 @@ class MYVH_Portal_Controller {
         return $customer;
     }
 
-    private function get_customer_booking($booking_id, $customer_id) {
-        if ($booking_id <= 0 || $customer_id <= 0) {
-            return null;
-        }
-
-        $bookings = $this->booking_service->get_all_with_details([
-            'customer_id' => $customer_id,
-            'orderby'     => 'b.StartDate',
-            'order'       => 'DESC',
-        ]);
-
-        foreach ($bookings as $booking) {
-            if (intval($booking['Id']) === intval($booking_id)) {
-                return $booking;
-            }
-        }
-
-        return null;
-    }
-
-    private function get_accessible_booking($booking_id, $customer_id, bool $is_client_admin) {
-        if ($booking_id <= 0) {
-            return null;
-        }
-
-        if ($is_client_admin) {
-            return $this->booking_service->get_by_id_with_details((int) $booking_id);
-        }
-
-        return $this->get_customer_booking($booking_id, (int) $customer_id);
-    }
-
     private function get_portal_booking_groups($customer, bool $is_client_admin): array {
         if ($is_client_admin) {
             $result = $this->booking_service->get_booking_list();
@@ -931,66 +792,4 @@ class MYVH_Portal_Controller {
         }
     }
 
-    private function evaluate_booking_delete_rules($booking) {
-        if (empty($booking) || empty($booking['StartDate']) || empty($booking['StartTime'])) {
-            return [
-                'can_delete' => false,
-                'reason' => 'Booking details are incomplete.',
-            ];
-        }
-
-        $status = strtolower((string) ($booking['Status'] ?? ''));
-        $start_ts = strtotime((string) $booking['StartDate'] . ' ' . (string) $booking['StartTime']);
-        $now_ts = wp_timestamp();
-        $min_notice_hours = max(0, intval(myvh_setting('booking.general.min_notice_hours', 24)));
-        $min_notice_days = (int) ceil($min_notice_hours / 24);
-
-        if (!$start_ts || $start_ts <= $now_ts) {
-            return [
-                'can_delete' => false,
-                'reason' => 'Past bookings cannot be deleted.',
-                'min_notice_hours' => $min_notice_hours,
-                'min_notice_days' => $min_notice_days,
-            ];
-        }
-
-        if ($status === BookingStatus::PENDING || $status === strtolower(BookingStatus::PENDING)) {
-            return [
-                'can_delete' => true,
-                'reason' => '',
-                'min_notice_hours' => $min_notice_hours,
-                'min_notice_days' => $min_notice_days,
-            ];
-        }
-
-        if ($status === BookingStatus::CONFIRMED || $status === strtolower(BookingStatus::CONFIRMED)) {
-            $threshold_ts = $now_ts + ($min_notice_hours * HOUR_IN_SECONDS);
-
-            if ($start_ts > $threshold_ts) {
-                return [
-                    'can_delete' => true,
-                    'reason' => '',
-                    'min_notice_hours' => $min_notice_hours,
-                    'min_notice_days' => $min_notice_days,
-                ];
-            }
-
-            return [
-                'can_delete' => false,
-                'reason' => sprintf(
-                    'Confirmed bookings can only be deleted when more than %d day(s) away.',
-                    $min_notice_days
-                ),
-                'min_notice_hours' => $min_notice_hours,
-                'min_notice_days' => $min_notice_days,
-            ];
-        }
-
-        return [
-            'can_delete' => false,
-            'reason' => 'Only pending or confirmed bookings can be deleted.',
-            'min_notice_hours' => $min_notice_hours,
-            'min_notice_days' => $min_notice_days,
-        ];
-    }
 }

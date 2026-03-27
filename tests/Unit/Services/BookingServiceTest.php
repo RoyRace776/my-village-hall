@@ -107,6 +107,26 @@ class BookingServiceTest extends MYVH_Unit_Test_Case {
         );
     }
 
+    public function tearDown(): void {
+        unset(
+            $this->service,
+            $this->room_service,
+            $this->booking_repo,
+            $this->booking_charge_repo,
+            $this->booking_addon_repo,
+            $this->addon_repo,
+            $this->addon_service,
+            $this->validator,
+            $this->availability,
+            $this->room_rules,
+            $this->pricing,
+            $this->customer_repo,
+            $this->organisation_repo,
+            $this->recurring_pattern_service
+        );
+        parent::tearDown();
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     /**
@@ -281,22 +301,41 @@ class BookingServiceTest extends MYVH_Unit_Test_Case {
 
     /** @test */
     public function save_uses_pending_status_when_require_approval_setting_is_true(): void {
-        // Override myvh_setting stub to return true for booking.require_approval
-        \Brain\Monkey\Functions\when('myvh_setting')
-            ->justReturn(true);
 
-        $this->wire_happy_create(10);
+    \Brain\Monkey\Functions\when('myvh_setting')
+        ->alias(function ($key, $default = null) {
+            return $key === 'booking.require_approval' ? true : $default;
+        });
 
-        // Pass data WITHOUT an explicit status so the service must default it
-        $data = $this->minimal_create_data();
-        unset($data['status']);
+    $this->booking_repo->shouldReceive('begin')->once();
+    $this->booking_repo->shouldReceive('commit')->once();
 
-        $result = $this->service->save($data);
+    $this->validator->shouldReceive('validate')->once()->andReturn(true);
 
-        // We can't inspect internal state directly, but we can assert the
-        // save succeeded, meaning no WP_Error from an unexpected status value.
-        $this->assertIsInt($result);
-    }
+    $this->room_service->shouldReceive('get')
+        ->with(5)
+        ->once()
+        ->andReturn($this->minimal_room());
+
+    $this->booking_repo->shouldReceive('create')
+        ->once()
+        ->with(Mockery::on(function ($record) {
+            return ($record['Status'] ?? null) === 'pending';
+        }))
+        ->andReturn(10);
+
+    $this->addon_service->shouldReceive('save_booking_addons')->once();
+    $this->pricing->shouldReceive('get_charge_snapshot')->andReturn([]);
+    $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->andReturn(1);
+    $this->booking_charge_repo->shouldReceive('create')->andReturn(1);
+
+    $data = $this->minimal_create_data();
+    unset($data['status']);
+
+    $result = $this->service->save($data);
+
+    $this->assertSame(10, $result);
+}
 
     // ── Tests: recalculate_booking_charges() ─────────────────────────────────
 
