@@ -50,7 +50,7 @@ use WP_Error;
  * calculate_chargeable_hours (via save())
  *   ✓ same-day booking calculates correct hours
  */
-class BookingServiceTest extends Unit_Test_Case {
+class BookingServiceTest extends \MYVH\Tests\Unit\UnitTestCase {
 
     // ── Dependency mocks ────────────────────────────────────────────────────
 
@@ -76,21 +76,21 @@ class BookingServiceTest extends Unit_Test_Case {
     protected function setUp(): void {
         parent::setUp();
 
-        $this->room_service              = $this->mock(\Room_Service::class);
-        $this->booking_repo              = $this->mock(\Booking_Repository::class);
-        $this->booking_charge_repo       = $this->mock(\Booking_Charge_Repository::class);
-        $this->booking_addon_repo        = $this->mock(\Booking_Addon_Repository::class);
-        $this->addon_repo                = $this->mock(\Addon_Repository::class);
-        $this->addon_service             = $this->mock(\Addon_Service::class);
-        $this->validator                 = $this->mock(\Booking_Validator::class);
-        $this->availability              = $this->mock(\Availability_Service::class);
-        $this->room_rules                = $this->mock(\Room_Rules_Service::class);
-        $this->pricing                   = $this->mock(\Pricing_Service::class);
-        $this->customer_repo             = $this->mock(\Customer_Repository::class);
-        $this->organisation_repo         = $this->mock(\Organisation_Repository::class);
-        $this->recurring_pattern_service = $this->mock(\Recurring_Pattern_Service::class);
+        $this->room_service              = $this->mock(\RoomService::class);
+        $this->booking_repo              = $this->mock(\BookingRepository::class);
+        $this->booking_charge_repo       = $this->mock(\BookingChargeRepository::class);
+        $this->booking_addon_repo        = $this->mock(\BookingAddonRepository::class);
+        $this->addon_repo                = $this->mock(\AddonRepository::class);
+        $this->addon_service             = $this->mock(\AddonService::class);
+        $this->validator                 = $this->mock(\BookingValidator::class);
+        $this->availability              = $this->mock(\AvailabilityService::class);
+        $this->room_rules                = $this->mock(\RoomRulesService::class);
+        $this->pricing                   = $this->mock(\PricingService::class);
+        $this->customer_repo             = $this->mock(\CustomerRepository::class);
+        $this->organisation_repo         = $this->mock(\OrganisationRepository::class);
+        $this->recurring_pattern_service = $this->mock(\RecurringPatternService::class);
 
-        $this->service = new \Booking_Service(
+        $this->service = new \BookingService(
             $this->room_service,
             $this->booking_repo,
             $this->booking_charge_repo,

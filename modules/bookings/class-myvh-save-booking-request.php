@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 
 require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-mapper-base.php';
 
-class Save_Booking_Request extends Request_Mapper_Base {
+class SaveBookingRequest extends RequestMapperBase {
 
     /**
      * Normalize the booking save payload into a service-friendly shape.

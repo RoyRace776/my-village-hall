@@ -18,24 +18,24 @@ require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-save-organisati
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-delete-organisation-type-request.php';
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-type-request-validator.php';
 
-class Organisation_Service_Provider {
+class OrganisationServiceProvider {
 
     public function register($container): void {
 
         // ── Repositories ──────────────────────────────────────────────────────
-        $container->singleton( Organisation_Repository::class );
-        $container->singleton( Organisation_Type_Repository::class );
-        $container->singleton( Organisation_Member_Repository::class );
-        $container->singleton( Organisation_Member_Request_Repository::class );
+        $container->singleton( OrganisationRepository::class );
+        $container->singleton( OrganisationTypeRepository::class );
+        $container->singleton( OrganisationMemberRepository::class );
+        $container->singleton( OrganisationMemberRequestRepository::class );
 
         // ── Services ──────────────────────────────────────────────────────────
-        $container->singleton( Organisation_Service::class );
-        $container->singleton( Organisation_Type_Service::class );
-        $container->singleton( Organisation_Request_Validator::class );
-        $container->singleton( Organisation_Type_Request_Validator::class );
+        $container->singleton( OrganisationService::class );
+        $container->singleton( OrganisationTypeService::class );
+        $container->singleton( OrganisationRequestValidator::class );
+        $container->singleton( OrganisationTypeRequestValidator::class );
 
         // ── Controllers ───────────────────────────────────────────────────────
-        $container->singleton( Organisation_Controller::class );
-        $container->singleton( Organisation_Type_Controller::class );
+        $container->singleton( OrganisationController::class );
+        $container->singleton( OrganisationTypeController::class );
     }
 }

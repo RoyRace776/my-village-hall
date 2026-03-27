@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-validator-base.php';
 
-class Organisation_Type_Request_Validator extends Request_Validator_Base {
+class OrganisationTypeRequestValidator extends RequestValidatorBase {
 
     public function validate(array $data) {
         $required = $this->require_field($data, 'name', __('Organisation type name is required', 'my-village-hall'));

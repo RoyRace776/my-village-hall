@@ -1,6 +1,6 @@
 <?php
 
-abstract class Settings_Base {
+abstract class SettingsBase {
 
     protected $option_name = '';
     protected $schema = [];

@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Venue_Repository extends Repository_Base {
+class VenueRepository extends RepositoryBase {
     // Add any custom methods below as needed
 
     /**

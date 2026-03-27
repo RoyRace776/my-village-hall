@@ -11,9 +11,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Invoice_Generator_Service {
+class InvoiceGeneratorService {
 
-    private $invoice_service;
+    private $invoiceService;
     private $invoice_repo;
     private $invoice_item_repo;
     private $booking_repo;
@@ -26,19 +26,19 @@ class Invoice_Generator_Service {
     private $pricing_service;
 
     public function __construct(
-        Invoice_Service $invoice_service,
-        Invoice_Repository $invoice_repo,
-        Invoice_Item_Repository $invoice_item_repo,
-        Booking_Repository $booking_repo,
-        Booking_Service $booking_service,
-        Booking_Charge_Repository $booking_charge_repo,
-        Booking_Addon_Repository $booking_addon_repo,
-        Addon_Repository $addon_repo,
-        Customer_Repository $customer_repo,
-        Organisation_Repository $organisation_repo,
-        Pricing_Service $pricing_service
+        InvoiceService $invoiceService,
+        InvoiceRepository $invoice_repo,
+        InvoiceItemRepository $invoice_item_repo,
+        BookingRepository $booking_repo,
+        BookingService $booking_service,
+        BookingChargeRepository $booking_charge_repo,
+        BookingAddonRepository $booking_addon_repo,
+        AddonRepository $addon_repo,
+        CustomerRepository $customer_repo,
+        OrganisationRepository $organisation_repo,
+        PricingService $pricing_service
     ) {
-        $this->invoice_service = $invoice_service;
+        $this->invoiceService = $invoiceService;
         $this->invoice_repo = $invoice_repo;
         $this->invoice_item_repo = $invoice_item_repo;
         $this->booking_repo = $booking_repo;
@@ -265,7 +265,7 @@ class Invoice_Generator_Service {
             'notes' => sprintf(__('Generated from %d booking(s)', 'my-village-hall'), count($bookings))
         ];
 
-        $invoice_id = $this->invoice_service->save($invoice_data);
+        $invoice_id = $this->invoiceService->save($invoice_data);
 
         if (is_wp_error($invoice_id)) {
             return $invoice_id;

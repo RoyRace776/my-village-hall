@@ -9,11 +9,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Organisation_Type_Service {
+class OrganisationTypeService {
 
     private $repo;
 
-    public function __construct( Organisation_Type_Repository $repo ) {
+    public function __construct( OrganisationTypeRepository $repo ) {
         $this->repo = $repo;
     }
 

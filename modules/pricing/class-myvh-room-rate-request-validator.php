@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 
 require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-validator-base.php';
 
-class Room_Rate_Request_Validator extends Request_Validator_Base {
+class RoomRateRequestValidator extends RequestValidatorBase {
 
     public function validate(array $data): true|WP_Error {
         $required = $this->require_field($data, 'room_id', __('Room is required', 'my-village-hall'));

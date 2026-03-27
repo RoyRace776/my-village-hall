@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) exit;
  * Abstract base class for validating request data.
  * Provides helpers for common validation patterns and error handling.
  */
-abstract class Request_Validator_Base {
+abstract class RequestValidatorBase {
 
     /**
      * Return a WP_Error for validation failures.

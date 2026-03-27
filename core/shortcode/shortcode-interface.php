@@ -1,7 +1,7 @@
 <?php
 namespace MYVH\Shortcodes;
 
-interface Shortcode_Interface
+interface ShortcodeInterface
 {
     public function tag(): string;
 

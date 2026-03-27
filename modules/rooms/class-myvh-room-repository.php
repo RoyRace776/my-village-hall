@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Room_Repository extends Repository_Base {
+class RoomRepository extends RepositoryBase {
 
     /**
      * Constructor

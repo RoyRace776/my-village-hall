@@ -1,6 +1,6 @@
 <?php
 
-class Settings_Page_Renderer {
+class SettingsPageRenderer {
 
     private $settings;
     private $title;

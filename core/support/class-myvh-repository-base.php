@@ -1,6 +1,6 @@
 <?php
 
-class Repository_Base {
+class RepositoryBase {
     /** @var wpdb */
     protected $wpdb;
     /** @var string */

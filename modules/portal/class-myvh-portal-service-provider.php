@@ -11,8 +11,8 @@ if (!defined('ABSPATH')) {
 
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-controller.php';
 
-class Portal_Service_Provider {
+class PortalServiceProvider {
     public function register($container): void {
-        $container->singleton(Portal_Controller::class);
+        $container->singleton(PortalController::class);
     }
 }

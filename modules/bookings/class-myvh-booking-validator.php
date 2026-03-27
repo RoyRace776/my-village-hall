@@ -1,5 +1,5 @@
 <?php
-class Booking_Validator {
+class BookingValidator {
     private $customer_repo;
     private $organisation_repo;
     private $room_service;
@@ -7,12 +7,12 @@ class Booking_Validator {
     private $pricing;
     private $room_rules;
 
-    public function __construct(Customer_Repository $customer_repo,
-                                Organisation_Repository $organisation_repo,
-                                Room_Service $room_service,
-                                Availability_Service $availability,
-                                Pricing_Service $pricing,
-                                Room_Rules_Service $room_rules) {
+    public function __construct(CustomerRepository $customer_repo,
+                                OrganisationRepository $organisation_repo,
+                                RoomService $room_service,
+                                AvailabilityService $availability,
+                                PricingService $pricing,
+                                RoomRulesService $room_rules) {
         $this->customer_repo = $customer_repo;
         $this->organisation_repo = $organisation_repo;
         $this->room_service = $room_service;

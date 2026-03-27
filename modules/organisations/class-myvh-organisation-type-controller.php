@@ -9,14 +9,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Organisation_Type_Controller {
+class OrganisationTypeController {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        Organisation_Type_Service $service,
-        Organisation_Type_Request_Validator $request_validator
+        OrganisationTypeService $service,
+        OrganisationTypeRequestValidator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -29,7 +29,7 @@ class Organisation_Type_Controller {
 
         check_admin_referer( 'myvh_save_org_type' );
 
-        $data = Save_Organisation_Type_Request::from_post( wp_unslash( $_POST ) );
+        $data = SaveOrganisationTypeRequest::from_post( wp_unslash( $_POST ) );
 
         $validation_result = $this->request_validator->validate( $data );
         if ( is_wp_error( $validation_result ) ) {
@@ -55,7 +55,7 @@ class Organisation_Type_Controller {
 
         check_admin_referer( 'myvh_delete_org_type' );
 
-        $data = Delete_Organisation_Type_Request::from_query( $_GET );
+        $data = DeleteOrganisationTypeRequest::from_query( $_GET );
 
         $validation_result = $this->request_validator->validate_delete( $data );
         if ( is_wp_error( $validation_result ) ) {

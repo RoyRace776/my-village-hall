@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 
 require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-mapper-base.php';
 
-class Save_Venue_Request extends Request_Mapper_Base {
+class SaveVenueRequest extends RequestMapperBase {
 
     public static function from_post(array $post): array {
         return [

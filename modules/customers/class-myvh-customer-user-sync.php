@@ -1,12 +1,12 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class Customer_User_Sync {
+class CustomerUserSync {
 
     private $customer_repo;
     private $syncing = false;
 
-    public function __construct(Customer_Repository $customer_repo) {
+    public function __construct(CustomerRepository $customer_repo) {
         $this->customer_repo = $customer_repo;
     }
 

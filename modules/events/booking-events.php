@@ -1,6 +1,6 @@
 <?php
 
-class Booking_Events {
+class BookingEvents {
 
     // Booking lifecycle events
     const BEFORE_CREATE = 'booking.before_create';

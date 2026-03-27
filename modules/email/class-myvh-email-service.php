@@ -2,7 +2,7 @@
 /**
  * Email_Service: Modular, multisite-aware email sending for My Village Hall
  */
-class Email_Service {
+class EmailService {
     protected $site_id;
     protected $log_enabled;
 

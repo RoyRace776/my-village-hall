@@ -1,6 +1,6 @@
 <?php
 
-class Portal_Calendar_Shortcode {
+class PortalCalendarShortcode {
 
     public function register(): void {
         add_shortcode('myvh_portal_calendar', [$this, 'render']);

@@ -1,6 +1,6 @@
 <?php
 
-class Settings_Registry {
+class SettingsRegistry {
 
     private static $groups = [];
 
@@ -20,7 +20,7 @@ class Settings_Registry {
     }
 
 
-    public static function get($key): ?Settings_Base {
+    public static function get($key): ?SettingsBase {
 
         if (!isset(self::$groups[$key])) {
             return null;

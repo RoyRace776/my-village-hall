@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Recurring_Pattern_Repository extends Repository_Base {
+class RecurringPatternRepository extends RepositoryBase {
 
 
     /**

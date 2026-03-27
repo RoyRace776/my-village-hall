@@ -1,6 +1,6 @@
 <?php
 
-Class Pricing_Service {
+class PricingService {
 
     private $room_rate_service;
     private $booking_repo;
@@ -8,11 +8,11 @@ Class Pricing_Service {
     private $organisation_repo;
     private $booking_addon_repo;
 
-    public function __construct(Room_Rate_Service $room_rate_service,
-                                Booking_Repository $booking_repo,
-                                Customer_Repository $customer_repo,
-                                Organisation_Repository $organisation_repo,
-                                Booking_Addon_Repository $booking_addons_repo) {
+    public function __construct(RoomRateService $room_rate_service,
+                                BookingRepository $booking_repo,
+                                CustomerRepository $customer_repo,
+                                OrganisationRepository $organisation_repo,
+                                BookingAddonRepository $booking_addons_repo) {
         $this->room_rate_service = $room_rate_service;
         $this->booking_repo = $booking_repo;
         $this->customer_repo = $customer_repo;

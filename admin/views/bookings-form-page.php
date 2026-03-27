@@ -13,12 +13,12 @@ $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 $booking_id = $edit_id ?: $view_id;
 
-$booking_service           = $myvh_container->get(Booking_Service::class);
-$customer_service          = $myvh_container->get(Customer_Service::class);
-$org_service               = $myvh_container->get(Organisation_Service::class);
-$room_service              = $myvh_container->get(Room_Service::class);
-$addon_service             = $myvh_container->get(Addon_Service::class);
-$recurring_pattern_service = $myvh_container->get(Recurring_Pattern_Service::class);
+$booking_service           = $myvh_container->get(BookingService::class);
+$customer_service          = $myvh_container->get(CustomerService::class);
+$org_service               = $myvh_container->get(OrganisationService::class);
+$room_service              = $myvh_container->get(RoomService::class);
+$addon_service             = $myvh_container->get(AddonService::class);
+$recurring_pattern_service = $myvh_container->get(RecurringPatternService::class);
 
 $form_transient_key = 'myvh_booking_form_' . get_current_user_id();
 $form_data = get_transient($form_transient_key) ?: [];

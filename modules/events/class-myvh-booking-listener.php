@@ -1,6 +1,6 @@
 <?php
 
-class Booking_Listener {
+class BookingListener {
 
     public function register(): void {
         add_action(

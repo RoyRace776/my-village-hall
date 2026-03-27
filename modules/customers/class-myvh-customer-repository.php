@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Customer_Repository extends Repository_Base {
+class CustomerRepository extends RepositoryBase {
 
 
     /**

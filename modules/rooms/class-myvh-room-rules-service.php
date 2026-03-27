@@ -1,5 +1,5 @@
 <?php
-class Room_Rules_Service {
+class RoomRulesService {
 
     /**
      * Check if booking is within room opening hours.

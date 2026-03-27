@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 
 require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-validator-base.php';
 
-class Booking_Request_Validator extends Request_Validator_Base {
+class BookingRequestValidator extends RequestValidatorBase {
 
     /**
      * Lightweight input validation before booking service orchestration.

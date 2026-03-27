@@ -1,9 +1,9 @@
 <?php
 namespace MYVH\Shortcodes;
 /**
- * Password_Reset_Shortcode: Renders password reset forms via shortcode
+ * PasswordResetShortcode: Renders password reset forms via shortcode
  */
-class Password_Reset_Shortcode implements Shortcode_Interface {
+class PasswordResetShortcode implements ShortcodeInterface {
     public function tag(): string { return 'myvh_password_reset'; }
     public function render($atts = [], $content = null): string {
         // If reset link params present, show confirm form; else show request form

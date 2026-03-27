@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class Room_Rate_Repository extends Repository_Base{
+class RoomRateRepository extends RepositoryBase{
 
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;

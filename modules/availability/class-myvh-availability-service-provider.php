@@ -1,8 +1,8 @@
 <?php
 
-class Availability_Service_Provider
+class AvailabilityServiceProvider
 {
     public function register($container): void {
-        $container->singleton(Availability_Service::class);
+        $container->singleton(AvailabilityService::class);
     }
 }

@@ -1,13 +1,13 @@
 <?php
 /**
- * Password_Reset_Handler: Handles custom password reset requests and confirmations
+ * PasswordResetHandler: Handles custom password reset requests and confirmations
  */
-class Password_Reset_Handler {
+class PasswordResetHandler {
     protected $email_service;
     protected $token_ttl = 60 * 60; // 1 hour
 
     public function __construct($email_service = null) {
-        $this->email_service = $email_service ?: new Email_Service();
+        $this->email_service = $email_service ?: new EmailService();
     }
 
     public function init() {

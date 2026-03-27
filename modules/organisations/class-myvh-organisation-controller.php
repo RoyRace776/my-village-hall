@@ -9,14 +9,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Organisation_Controller {
+class OrganisationController {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        Organisation_Service $service,
-        Organisation_Request_Validator $request_validator
+        OrganisationService $service,
+        OrganisationRequestValidator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -29,7 +29,7 @@ class Organisation_Controller {
 
         check_admin_referer( 'myvh_save_organisation' );
 
-        $data = Save_Organisation_Request::from_post( wp_unslash( $_POST ) );
+        $data = SaveOrganisationRequest::from_post( wp_unslash( $_POST ) );
 
         $validation_result = $this->request_validator->validate( $data );
         if ( is_wp_error( $validation_result ) ) {
@@ -55,7 +55,7 @@ class Organisation_Controller {
 
         check_admin_referer( 'myvh_delete_organisation' );
 
-        $data = Delete_Organisation_Request::from_query( $_GET );
+        $data = DeleteOrganisationRequest::from_query( $_GET );
 
         $validation_result = $this->request_validator->validate_delete( $data );
         if ( is_wp_error( $validation_result ) ) {
@@ -76,7 +76,7 @@ class Organisation_Controller {
 
         check_admin_referer( 'myvh_add_org_member' );
 
-        $data = Add_Org_Member_Request::from_post( wp_unslash( $_POST ) );
+        $data = AddOrgMemberRequest::from_post( wp_unslash( $_POST ) );
 
         $validation_result = $this->request_validator->validate_add_member( $data );
         if ( is_wp_error( $validation_result ) ) {
@@ -117,7 +117,7 @@ class Organisation_Controller {
 
         check_admin_referer( 'myvh_remove_org_member' );
 
-        $data = Remove_Org_Member_Request::from_query( $_GET );
+        $data = RemoveOrgMemberRequest::from_query( $_GET );
 
         $validation_result = $this->request_validator->validate_remove_member( $data );
         if ( is_wp_error( $validation_result ) ) {

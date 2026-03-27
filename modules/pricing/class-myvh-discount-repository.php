@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Discount_Repository extends Repository_Base {
+class DiscountRepository extends RepositoryBase {
 
     /**
      * Constructor

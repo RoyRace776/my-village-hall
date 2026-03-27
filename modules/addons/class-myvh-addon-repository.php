@@ -1,6 +1,6 @@
 <?php
 
-class Addon_Repository extends Repository_Base {
+class AddonRepository extends RepositoryBase {
 
     /**
      * Constructor

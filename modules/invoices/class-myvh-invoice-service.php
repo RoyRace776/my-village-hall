@@ -1,13 +1,13 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class Invoice_Service {
+class InvoiceService {
 
     private $repo;
     private $payment_repo;
 
-    public function __construct(Invoice_Repository $repo,
-                                Payment_Repository $payment_repo) {
+    public function __construct(InvoiceRepository $repo,
+                                PaymentRepository $payment_repo) {
         $this->repo         = $repo;
         $this->payment_repo = $payment_repo;
     }

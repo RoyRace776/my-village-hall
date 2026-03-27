@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Organisation_Member_Repository extends Repository_Base{
+class OrganisationMemberRepository extends RepositoryBase{
 
     public function __construct( \wpdb $wpdb ) {
         $this->table_name = $wpdb->prefix . 'myvh_organisation_members';

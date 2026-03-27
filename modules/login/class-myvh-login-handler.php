@@ -1,6 +1,6 @@
 <?php
 
-class Login_Handler {
+class LoginHandler {
 
     private function delete_user_safe(int $user_id): void {
         if (!function_exists('wp_delete_user')) {
@@ -138,7 +138,7 @@ class Login_Handler {
         try {
             global $myvh_container;
 
-            $customer_service = $myvh_container->get(Customer_Service::class);
+            $customer_service = $myvh_container->get(CustomerService::class);
             $existing_customer = $customer_service->get_by_email($email);
 
             if ($existing_customer && !empty($existing_customer['Id'])) {

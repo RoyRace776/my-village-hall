@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class Calendar_Ajax_Controller {
+class CalendarAjaxController {
 
     private $calendar_service;
     private $booking_service;
@@ -10,11 +10,11 @@ class Calendar_Ajax_Controller {
     private $client_admin_service;
 
     public function __construct(
-        Calendar_Service $calendar_service,
-        Booking_Service $booking_service,
-        Room_Repository $room_repository,
-        Customer_Service $customer_service,
-        Client_Admin_Service $client_admin_service) {
+        CalendarService $calendar_service,
+        BookingService $booking_service,
+        RoomRepository $room_repository,
+        CustomerService $customer_service,
+        ClientAdminService $client_admin_service) {
 
         $this->calendar_service = $calendar_service;
         $this->booking_service = $booking_service;

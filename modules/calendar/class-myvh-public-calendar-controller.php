@@ -1,10 +1,10 @@
 <?php
 
-class Public_Calendar_Controller {
+class PublicCalendarController {
 
     private $calendar_service;
 
-    public function __construct(Calendar_Service  $calendar_service) {
+    public function __construct(CalendarService  $calendar_service) {
         $this->calendar_service = $calendar_service;
     }
 
@@ -16,7 +16,7 @@ class Public_Calendar_Controller {
         $bookings = $this->calendar_service
             ->get_events($start, $end);
 
-        $events = Calendar_Event_Transformer::for_public($bookings);
+        $events = CalendarEventTransformer::for_public($bookings);
 
         wp_send_json($events);
     }

@@ -1,6 +1,6 @@
 <?php
 
-class Calendar_Event_Transformer {
+class CalendarEventTransformer {
 
     public static function for_portal($bookings): array {
 

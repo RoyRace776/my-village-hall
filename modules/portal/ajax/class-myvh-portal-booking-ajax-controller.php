@@ -1,11 +1,11 @@
 <?php
 
-class Portal_Booking_Ajax_Controller {
+class PortalBookingAjaxController {
 
 public function __construct(
-    private Get_Booking_Action $get_action,
-    private Update_Booking_Action $update_action,
-    private Delete_Booking_Action $delete_action
+    private GetBookingAction $get_action,
+    private UpdateBookingAction $update_action,
+    private DeleteBookingAction $delete_action
 ) {}
 
 public function register(): void {
@@ -15,7 +15,7 @@ public function register(): void {
 }
 
 public function get(): void {
-    Portal_Auth::require_user();
+    PortalAuth::require_user();
 
     try {
         $booking_id = intval($_REQUEST['booking_id'] ?? 0);
@@ -28,7 +28,7 @@ public function get(): void {
 }
 
 public function update(): void {
-    Portal_Auth::require_user();
+    PortalAuth::require_user();
 
     try {
         $this->update_action->execute($_POST);
@@ -39,7 +39,7 @@ public function update(): void {
 }
 
 public function delete(): void {
-    Portal_Auth::require_user();
+    PortalAuth::require_user();
 
     try {
         $booking_id = intval($_POST['booking_id'] ?? 0);

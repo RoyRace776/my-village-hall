@@ -1,28 +1,28 @@
 <?php
 
-class Portal_Controller {
+class PortalController {
     private $booking_service;
     private $customer_service;
     private $organisation_service;
     private $client_admin_service;
-    private $invoice_generator_service;
-    private $invoice_service;
+    private $invoiceGeneratorService;
+    private $invoiceService;
 
     public function __construct(
-        Booking_Service $booking_service,
-        Customer_Service $customer_service,
-        Organisation_Service $organisation_service,
-        Client_Admin_Service $client_admin_service,
-        Invoice_Generator_Service $invoice_generator_service
+        BookingService $booking_service,
+        CustomerService $customer_service,
+        OrganisationService $organisation_service,
+        ClientAdminService $client_admin_service,
+        InvoiceGeneratorService $invoiceGeneratorService
         ,
-        Invoice_Service $invoice_service
+        InvoiceService $invoiceService
     ) {
         $this->booking_service = $booking_service;
         $this->customer_service = $customer_service;
         $this->organisation_service = $organisation_service;
         $this->client_admin_service = $client_admin_service;
-        $this->invoice_generator_service = $invoice_generator_service;
-        $this->invoice_service = $invoice_service;
+        $this->invoiceGeneratorService = $invoiceGeneratorService;
+        $this->invoiceService = $invoiceService;
     }
 
 
@@ -111,7 +111,7 @@ class Portal_Controller {
 
             case 'booking-view':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = Booking_Access::get_accessible_booking(
+                $booking = BookingAccess::get_accessible_booking(
                                 $booking_id,
                                 intval($customer['Id'] ?? 0),
                                 $is_client_admin,
@@ -122,7 +122,7 @@ class Portal_Controller {
 
             case 'booking-edit':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = Booking_Access::get_accessible_booking(
+                $booking = BookingAccess::get_accessible_booking(
                                 $booking_id,
                                 intval($customer['Id'] ?? 0),
                                 $is_client_admin,
@@ -133,7 +133,7 @@ class Portal_Controller {
 
             case 'booking-delete':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = Booking_Access::get_accessible_booking(
+                $booking = BookingAccess::get_accessible_booking(
                                 $booking_id,
                                 intval($customer['Id'] ?? 0),
                                 $is_client_admin,
@@ -171,7 +171,7 @@ class Portal_Controller {
                 $invoices = [];
                 if ($has_customer) {
                     $customer_id = intval($customer['Id']);
-                    $invoices = $this->invoice_service->get_for_portal(
+                    $invoices = $this->invoiceService->get_for_portal(
                         $customer_id,
                         !empty($selected_statuses) ? $selected_statuses : []
                     );
@@ -229,8 +229,8 @@ class Portal_Controller {
                 }
 
                 $settings_groups = [];
-                foreach (Settings_Registry::groups() as $group_key => $group_meta) {
-                    $settings = Settings_Registry::get($group_key);
+                foreach (SettingsRegistry::groups() as $group_key => $group_meta) {
+                    $settings = SettingsRegistry::get($group_key);
 
                     if (!$settings) {
                         continue;
@@ -689,7 +689,7 @@ class Portal_Controller {
             wp_send_json_error('Settings group is required', 400);
         }
 
-        $settings = Settings_Registry::get($group);
+        $settings = SettingsRegistry::get($group);
 
         if (!$settings) {
             wp_send_json_error('Settings group not found', 404);
@@ -730,7 +730,7 @@ class Portal_Controller {
             'trigger_event' => 'manual'
         ];
 
-        $result = $this->invoice_generator_service->generate_invoices_from_bookings($booking_ids, $options);
+        $result = $this->invoiceGeneratorService->generate_invoices_from_bookings($booking_ids, $options);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message(), 400);

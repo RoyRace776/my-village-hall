@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Invoice_Repository extends Repository_Base{
+class InvoiceRepository extends RepositoryBase{
 
     /**
      * Constructor

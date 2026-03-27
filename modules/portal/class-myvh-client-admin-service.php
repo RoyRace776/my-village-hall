@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Client_Admin_Service {
+class ClientAdminService {
 
     private const OPTION_NAME = 'myvh_client_admin_assignments';
 

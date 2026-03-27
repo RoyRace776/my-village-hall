@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Organisation_Member_Request_Repository extends Repository_Base{
+class OrganisationMemberRequestRepository extends RepositoryBase{
 
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;

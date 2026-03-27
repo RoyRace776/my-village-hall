@@ -1,11 +1,11 @@
 <?php
-class Booking_Access {
+class BookingAccess {
 
     public static function get_accessible_booking(
         int $booking_id,
         int $customer_id,
         bool $is_client_admin,
-        Booking_Service $booking_service
+        BookingService $booking_service
     ) {
         if ($booking_id <= 0) {
             return null;

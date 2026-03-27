@@ -1,6 +1,6 @@
 <?php
 
-class Calendar_Service {
+class CalendarService {
 
     private $booking_service;
     private $room_repository;
@@ -8,10 +8,10 @@ class Calendar_Service {
     private $client_admin_service;
 
     public function __construct(
-        Booking_Service $booking_service,
-        Room_Repository $room_repository,
-        Customer_Service $customer_service,
-        Client_Admin_Service $client_admin_service
+        BookingService $booking_service,
+        RoomRepository $room_repository,
+        CustomerService $customer_service,
+        ClientAdminService $client_admin_service
     ) {
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;

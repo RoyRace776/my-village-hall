@@ -11,8 +11,8 @@ if (!current_user_can('manage_myvh')) {
 global $myvh_container;
 
 $edit_id          = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$customer_service = $myvh_container->get(Customer_Service::class);
-$org_service      = $myvh_container->get(Organisation_Service::class);
+$customer_service = $myvh_container->get(CustomerService::class);
+$org_service      = $myvh_container->get(OrganisationService::class);
 $default_org      = $org_service->get_default();
 $edit_customer    = $edit_id ? $customer_service->get($edit_id) : null;
 $customers        = $customer_service->get_with_organisations();

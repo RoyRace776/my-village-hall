@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class Calendar_Shortcode {
+class CalendarShortcode {
 
     /** Shortcode tag */
     const TAG = 'myvh_calendar';
@@ -81,7 +81,7 @@ class Calendar_Shortcode {
         }
 
         try {
-            $calendar_service = $myvh_container->get( Calendar_Service::class );
+                $calendar_service = $myvh_container->get( CalendarService::class );
             $events = $calendar_service->get_public_feed_events(
                 $start,
                 $end,
@@ -128,7 +128,8 @@ class Calendar_Shortcode {
 
         if ( isset( $myvh_container ) ) {
             try {
-                $availability_service = $myvh_container->get( Availability_Service::class );
+                $availability_service = $myvh_container->get( AvailabilityService::class );
+                    $availability_service = $myvh_container->get( AvailabilityService::class );
                 $service_hours = $availability_service->get_calendar_visible_hours();
 
                 if ( is_array( $service_hours ) ) {
@@ -138,7 +139,7 @@ class Calendar_Shortcode {
                     ];
                 }
 
-                $room_service = $myvh_container->get( Room_Service::class );
+                $room_service = $myvh_container->get( RoomService::class );
                 $rooms = $room_service->get_all_with_venues();
 
                 foreach ( (array) $rooms as $room ) {

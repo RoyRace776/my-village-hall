@@ -1,6 +1,6 @@
 <?php
 
-class Event_Dispatcher {
+class EventDispatcher {
 
     public static function dispatch($event_name, $payload = []): void {
 

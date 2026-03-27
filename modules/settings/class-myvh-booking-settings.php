@@ -1,6 +1,6 @@
 <?php
 
-class Booking_Settings extends Settings_Base {
+class BookingSettings extends SettingsBase {
 
     protected $option_name = 'myvh_booking_settings';
 

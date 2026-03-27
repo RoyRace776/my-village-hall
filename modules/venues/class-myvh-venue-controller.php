@@ -2,14 +2,14 @@
 
 if (!defined('ABSPATH')) exit;
 
-class Venue_Controller {
+class VenueController {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        Venue_Service $service,
-        Venue_Request_Validator $request_validator
+        VenueService $service,
+        VenueRequestValidator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -23,7 +23,7 @@ class Venue_Controller {
 
         check_admin_referer('myvh_save_venue');
 
-        $data = Save_Venue_Request::from_post(wp_unslash($_POST));
+        $data = SaveVenueRequest::from_post(wp_unslash($_POST));
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {

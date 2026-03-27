@@ -1,7 +1,9 @@
 <?php
 namespace MYVH\Shortcodes;
 
-class Portal_Shortcode implements Shortcode_Interface
+use MYVH\Shortcodes\ShortcodeInterface;
+
+class PortalShortcode implements ShortcodeInterface
 {
     public function tag(): string
     {
@@ -14,7 +16,7 @@ class Portal_Shortcode implements Shortcode_Interface
             return \do_shortcode( '[myvh_login]' );
         }
 
-        \Asset_Loader::enqueue_portal();
+        \AssetLoader::enqueue_portal();
 
         \ob_start();
         include MYVH_PLUGIN_DIR . 'modules/portal/templates/portal-shell.php';

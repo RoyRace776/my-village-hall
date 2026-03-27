@@ -1,6 +1,6 @@
 <?php
 
-class Settings_Page {
+class SettingsPage {
 
     public function init() {
 
@@ -16,7 +16,7 @@ class Settings_Page {
     public function menu() {
 
         // Separator (using a disabled submenu as visual separator)
-        My_Village_Hall::add_menu_separator();
+        MyVillageHall::add_menu_separator();
 
         add_submenu_page(
             'my-village-hall',
@@ -39,7 +39,7 @@ class Settings_Page {
             return;
         }
 
-        $groups = Settings_Registry::groups();
+        $groups = SettingsRegistry::groups();
 
         $active_tab = $_GET['tab'] ?? array_key_first($groups);
 
@@ -83,7 +83,7 @@ class Settings_Page {
      */
     private function render_tab($key) {
 
-        $settings = Settings_Registry::get($key);
+        $settings = SettingsRegistry::get($key);
 
         if (!$settings) {
             echo '<p>Invalid settings group.</p>';
@@ -340,7 +340,7 @@ class Settings_Page {
 
         $group = sanitize_text_field($_POST['group'] ?? '');
 
-        $settings = Settings_Registry::get($group);
+        $settings = SettingsRegistry::get($group);
 
         if (!$settings) {
             wp_die('Invalid settings group');

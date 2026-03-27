@@ -1,14 +1,14 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class Addon_Controller {
+class AddonController {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        Addon_Service $service,
-        Addon_Request_Validator $request_validator
+        AddonService $service,
+        AddonRequestValidator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -22,7 +22,7 @@ class Addon_Controller {
 
         check_admin_referer('myvh_save_addon');
 
-        $data = Save_Addon_Request::from_post(wp_unslash($_POST));
+        $data = SaveAddonRequest::from_post(wp_unslash($_POST));
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {

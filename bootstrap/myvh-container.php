@@ -52,18 +52,18 @@ $myvh_container->singleton( \wpdb::class, function () {
 // Order follows the dependency graph (no provider should depend on a later one).
 
 $providers = [
-    Venue_Service_Provider::class,
-    Room_Service_Provider::class,
-    Customer_Service_Provider::class,
-    Organisation_Service_Provider::class,
-    Pricing_Service_Provider::class,
-    Addon_Service_Provider::class,
-    Booking_Service_Provider::class,
-    Availability_Service_Provider::class,
-    Invoice_Service_Provider::class,
-    Payment_Service_Provider::class,
-    Calendar_Service_Provider::class,
-    Portal_Service_Provider::class,
+    VenueServiceProvider::class,
+    RoomServiceProvider::class,
+    CustomerServiceProvider::class,
+    OrganisationServiceProvider::class,
+    PricingServiceProvider::class,
+    AddonServiceProvider::class,
+    BookingServiceProvider::class,
+    AvailabilityServiceProvider::class,
+    InvoiceServiceProvider::class,
+    PaymentServiceProvider::class,
+    CalendarServiceProvider::class,
+    PortalServiceProvider::class,
 ];
 
 foreach ( $providers as $provider ) {

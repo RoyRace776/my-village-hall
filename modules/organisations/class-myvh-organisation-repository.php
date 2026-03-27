@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Organisation_Repository extends Repository_Base{
+class OrganisationRepository extends RepositoryBase{
 
     /** @var string */
     private $types_table;

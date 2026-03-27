@@ -1,17 +1,17 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class Customer_Service {
+class CustomerService {
 
     private $repo;
     private $booking_repo;
     private $organisation_repo;
     private $organisation_member_repo;
 
-    public function __construct(Customer_Repository $repo,
-                                Booking_Repository $booking_repo,
-                                Organisation_Repository $organisation_repo,
-                                Organisation_Member_Repository $organisation_member_repo) {
+    public function __construct(CustomerRepository $repo,
+                                BookingRepository $booking_repo,
+                                OrganisationRepository $organisation_repo,
+                                OrganisationMemberRepository $organisation_member_repo) {
         $this->repo         = $repo;
         $this->booking_repo = $booking_repo;
         $this->organisation_repo = $organisation_repo;

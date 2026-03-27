@@ -1,14 +1,14 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class Invoice_Controller {
+class InvoiceController {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        Invoice_Service $service,
-        Invoice_Request_Validator $request_validator
+        InvoiceService $service,
+        InvoiceRequestValidator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -22,7 +22,7 @@ class Invoice_Controller {
 
         check_admin_referer('myvh_save_invoice');
 
-        $data = Save_Invoice_Request::from_post(wp_unslash($_POST));
+        $data = SaveInvoiceRequest::from_post(wp_unslash($_POST));
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {

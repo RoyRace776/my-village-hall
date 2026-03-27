@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Booking_Charge_Repository extends Repository_Base {
+class BookingChargeRepository extends RepositoryBase {
 
 
     /**

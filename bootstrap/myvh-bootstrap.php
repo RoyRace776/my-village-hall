@@ -1,3 +1,4 @@
+require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-shortcode.php';
 <?php
 /**
  * Event listeners & late wiring
@@ -13,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 use MYVH\Container\Container;
+use MYVH\Shortcodes\PortalShortcode;
 
 require_once MYVH_PLUGIN_DIR . 'modules/events/class-myvh-booking-listener.php';
 require_once MYVH_PLUGIN_DIR . 'core/shortcode/shortcode-interface.php';
@@ -24,24 +26,24 @@ require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-handler.php';
 
 global $myvh_container;
 
-( new Booking_Listener() )->register();
+( new BookingListener() )->register();
 
 if ( $myvh_container instanceof Container ) {
-    $calendar_ajax = $myvh_container->get( Calendar_Ajax_Controller::class );
+    $calendar_ajax = $myvh_container->get( CalendarAjaxController::class );
     $calendar_ajax->register_routes();
 
-    $registry = new MyVH\Infrastructure\Shortcode_Registry();
+    $registry = new MyVH\Infrastructure\ShortcodeRegistry();
     add_action( 'init', [ $registry, 'register' ] );
 
-    $registry->add( $myvh_container->get( \MYVH\Shortcodes\Login_Shortcode::class ) );
-    $registry->add( new \MYVH\Shortcodes\Portal_Shortcode() );
+    $registry->add( $myvh_container->get( \MYVH\Shortcodes\LoginShortcode::class ) );
+    $registry->add( new PortalShortcode() );
 
-    $login_handler = new Login_Handler();
+    $login_handler = new LoginHandler();
     $login_handler->init();
 
-    $portal_controller = $myvh_container->get( Portal_Controller::class );
+    $portal_controller = $myvh_container->get( PortalController::class );
     $portal_controller->register();
 
-    $customer_user_sync = $myvh_container->get( Customer_User_Sync::class );
+    $customer_user_sync = $myvh_container->get( CustomerUserSync::class );
     $customer_user_sync->register();
 }

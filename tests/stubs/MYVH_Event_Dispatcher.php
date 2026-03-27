@@ -1,7 +1,7 @@
 <?php
 namespace MYVH\Tests\stubs;
 /**
- * Test stub for Event_Dispatcher.
+ * Test stub for EventDispatcher.
  *
  * Replaces the real static dispatcher during unit tests so no actual
  * event listeners fire. Calls are recorded and can be asserted against.
@@ -9,15 +9,15 @@ namespace MYVH\Tests\stubs;
  * Usage in tests:
  *
  *   // Assert an event was dispatched
- *   $this->assertEventDispatched(Booking_Events::CREATED);
+ *   $this->assertEventDispatched(BookingEvents::CREATED);
  *
  *   // Assert an event was dispatched with specific data
- *   $this->assertEventDispatched(Booking_Events::CREATED, ['booking_id' => 42]);
+ *   $this->assertEventDispatched(BookingEvents::CREATED, ['booking_id' => 42]);
  *
  *   // Reset between tests (called automatically in Unit_Test_Case::setUp)
- *   Event_Dispatcher::reset();
+ *   EventDispatcher::reset();
  */
-class Event_Dispatcher {
+class EventDispatcher {
 
     private static array $dispatched = [];
 

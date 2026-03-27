@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Payment_Repository extends Repository_Base{
+class PaymentRepository extends RepositoryBase{
 
     /**
      * Constructor

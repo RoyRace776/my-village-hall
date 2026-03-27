@@ -5,7 +5,7 @@ if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village
 global $myvh_container;
 
 $edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$type_service = $myvh_container->get(Organisation_Type_Service::class);
+$type_service = $myvh_container->get(OrganisationTypeService::class);
 $edit_type    = $edit_id ? $type_service->get($edit_id) : null;
 $types        = $type_service->get_all();
 ?>

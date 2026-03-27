@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class Network_Dashboard {
+class NetworkDashboard {
 
     private const CLIENT_ADMINS_PAGE = 'myvh-network-client-admins';
 
@@ -66,14 +66,14 @@ class Network_Dashboard {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
-        if (!class_exists('Client_Admin_Service')) {
+        if (!class_exists('ClientAdminService')) {
             echo '<div class="wrap"><h1>Client Administrators</h1>';
             echo '<div class="notice notice-error"><p>Client admin service is not available.</p></div>';
             echo '</div>';
             return;
         }
 
-        $service = new Client_Admin_Service();
+        $service = new ClientAdminService();
         $sites = get_sites([
             'number' => 0,
             'orderby' => 'domain',

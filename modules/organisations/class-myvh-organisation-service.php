@@ -9,16 +9,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Organisation_Service {
+class OrganisationService {
 
     private $repo;
     private $member_repo;
     private $request_repo;
 
     public function __construct(
-        Organisation_Repository        $repo,
-        Organisation_Member_Repository $member_repo,
-        Organisation_Member_Request_Repository $request_repo
+        OrganisationRepository        $repo,
+        OrganisationMemberRepository $member_repo,
+        OrganisationMemberRequestRepository $request_repo
     ) {
         $this->repo        = $repo;
         $this->member_repo = $member_repo;
