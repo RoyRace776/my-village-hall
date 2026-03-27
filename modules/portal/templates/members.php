@@ -40,7 +40,7 @@ $current_user = wp_get_current_user();
                     break;
                   }
                 }
-                $schedule = Recurring_Pattern_Service::describe($pattern);
+                $schedule = RecurringPatternService::describe($pattern);
                 $group_id = 'rg_' . $pattern['Id'];
                 ?>
                 <div class="myvh-booking-group">

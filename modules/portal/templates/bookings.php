@@ -125,7 +125,7 @@ usort($groups, function ($a, $b) use ($today) {
                     <?php endif; ?>
 
                     <?php
-                    $schedule = Recurring_Pattern_Service::describe($pattern);
+                    $schedule = RecurringPatternService::describe($pattern);
                     $group_id = 'rg_' . $pattern['Id'];
                     ?>
 
