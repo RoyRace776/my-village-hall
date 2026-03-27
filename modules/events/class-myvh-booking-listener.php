@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Booking_Listener {
+class Booking_Listener {
 
     public function register(): void {
         add_action(

@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Repository_Base {
+class Repository_Base {
     /** @var wpdb */
     protected $wpdb;
     /** @var string */
@@ -86,7 +86,7 @@ class MYVH_Repository_Base {
 
         // Default: 'myvh_' + snake_case(class name w/o suffix)
         $class = get_class($this);
-        $short = strtolower(preg_replace('/^MYVH_|_Repository$/', '', $class));
+        $short = strtolower(preg_replace('/^|_Repository$/', '', $class));
         global $wpdb;
         return $wpdb->prefix . 'myvh_' . $short . 's';
     }

@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class MYVH_Organisation_Type_Repository extends MYVH_Repository_Base{
+class Organisation_Type_Repository extends Repository_Base{
 
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;

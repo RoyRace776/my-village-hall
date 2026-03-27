@@ -1,13 +1,13 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Room_Rate_Service {
+class Room_Rate_Service {
 
     private $repo;
     private $customer_repo;
 
-    public function __construct(MYVH_Room_Rate_Repository $repo,
-                                MYVH_Customer_Repository $customer_repo) {
+    public function __construct(Room_Rate_Repository $repo,
+                                Customer_Repository $customer_repo) {
         $this->repo = $repo;
         $this->customer_repo = $customer_repo;
     }

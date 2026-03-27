@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_General_Settings extends MYVH_Settings_Base {
+class General_Settings extends Settings_Base {
 
     protected $option_name = 'myvh_general_settings';
 

@@ -1,14 +1,14 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Room_Controller {
+class Room_Controller {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        MYVH_Room_Service $service,
-        MYVH_Room_Request_Validator $request_validator
+        Room_Service $service,
+        Room_Request_Validator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -23,14 +23,14 @@ class MYVH_Room_Controller {
         check_admin_referer('myvh_save_room');
 
         $posted_data = wp_unslash($_POST);
-        $data = MYVH_Save_Room_Request::from_post($posted_data);
+        $data = Save_Room_Request::from_post($posted_data);
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {
             set_transient($this->get_form_transient_key(), $posted_data, 120);
 
             foreach ($validation_result->get_error_messages() as $msg) {
-                MYVH_Admin_Notices::error($msg);
+                Admin_Notices::error($msg);
             }
 
             $redirect = !empty($data['room_id'])
@@ -48,7 +48,7 @@ class MYVH_Room_Controller {
             set_transient($this->get_form_transient_key(), $posted_data, 120);
 
             foreach ($result->get_error_messages() as $msg) {
-                MYVH_Admin_Notices::error($msg);
+                Admin_Notices::error($msg);
             }
 
             $redirect = !empty($data['room_id'])
@@ -61,7 +61,7 @@ class MYVH_Room_Controller {
 
         delete_transient($this->get_form_transient_key());
 
-        MYVH_Admin_Notices::success(__('Room saved successfully', 'my-village-hall'));
+        Admin_Notices::success(__('Room saved successfully', 'my-village-hall'));
 
         wp_redirect(admin_url('admin.php?page=myvh-rooms&updated=1'));
         exit;
@@ -86,14 +86,14 @@ class MYVH_Room_Controller {
         if (is_wp_error($result)) {
 
             foreach ($result->get_error_messages() as $msg) {
-                MYVH_Admin_Notices::error($msg);
+                Admin_Notices::error($msg);
             }
 
             wp_redirect(admin_url('admin.php?page=myvh-rooms'));
             exit;
         }
 
-        MYVH_Admin_Notices::success(__('Room deleted', 'my-village-hall'));
+        Admin_Notices::success(__('Room deleted', 'my-village-hall'));
 
         wp_redirect(admin_url('admin.php?page=myvh-rooms&deleted=1'));
         exit;

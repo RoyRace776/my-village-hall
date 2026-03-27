@@ -9,16 +9,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class MYVH_Organisation_Service {
+class Organisation_Service {
 
     private $repo;
     private $member_repo;
     private $request_repo;
 
     public function __construct(
-        MYVH_Organisation_Repository        $repo,
-        MYVH_Organisation_Member_Repository $member_repo,
-        MYVH_Organisation_Member_Request_Repository $request_repo
+        Organisation_Repository        $repo,
+        Organisation_Member_Repository $member_repo,
+        Organisation_Member_Request_Repository $request_repo
     ) {
         $this->repo        = $repo;
         $this->member_repo = $member_repo;

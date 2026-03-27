@@ -8,14 +8,14 @@ if (!defined('ABSPATH')) exit;
  * rather than relying on cron jobs. This is more reliable and gives users
  * immediate feedback.
  */
-class MYVH_Recurring_Pattern_Service {
+class Recurring_Pattern_Service {
 
     private $repo;
     private $booking_repo;
     private $last_booking_results = null;
 
-    public function __construct(MYVH_Recurring_Pattern_Repository $repo,
-                                MYVH_Booking_Repository $booking_repo) {
+    public function __construct(Recurring_Pattern_Repository $repo,
+                                Booking_Repository $booking_repo) {
         $this->repo = $repo;
         $this->booking_repo = $booking_repo;
     }
@@ -410,7 +410,7 @@ class MYVH_Recurring_Pattern_Service {
     /**
      * Get or resolve the booking repository
      */
-    private function get_booking_repo(): MYVH_Booking_Repository {
+    private function get_booking_repo(): Booking_Repository {
         return $this->booking_repo;
     }
 }

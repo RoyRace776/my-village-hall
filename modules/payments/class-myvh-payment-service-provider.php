@@ -1,8 +1,8 @@
 <?php
 
-class MYVH_Payment_Service_Provider
+class Payment_Service_Provider
 {
     public function register($container): void {
-        $container->singleton(MYVH_Payment_Repository::class);
+        $container->singleton(Payment_Repository::class);
     }
 }

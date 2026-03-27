@@ -11,7 +11,7 @@
 
 
 // Bookings list and actions for My Village Hall
-var MYVH_Bookings = (function() {
+var Bookings = (function() {
 
     var initialized = false;
 

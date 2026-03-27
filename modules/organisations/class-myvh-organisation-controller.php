@@ -9,14 +9,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class MYVH_Organisation_Controller {
+class Organisation_Controller {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        MYVH_Organisation_Service $service,
-        MYVH_Organisation_Request_Validator $request_validator
+        Organisation_Service $service,
+        Organisation_Request_Validator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -29,7 +29,7 @@ class MYVH_Organisation_Controller {
 
         check_admin_referer( 'myvh_save_organisation' );
 
-        $data = MYVH_Save_Organisation_Request::from_post( wp_unslash( $_POST ) );
+        $data = Save_Organisation_Request::from_post( wp_unslash( $_POST ) );
 
         $validation_result = $this->request_validator->validate( $data );
         if ( is_wp_error( $validation_result ) ) {
@@ -55,7 +55,7 @@ class MYVH_Organisation_Controller {
 
         check_admin_referer( 'myvh_delete_organisation' );
 
-        $data = MYVH_Delete_Organisation_Request::from_query( $_GET );
+        $data = Delete_Organisation_Request::from_query( $_GET );
 
         $validation_result = $this->request_validator->validate_delete( $data );
         if ( is_wp_error( $validation_result ) ) {
@@ -76,7 +76,7 @@ class MYVH_Organisation_Controller {
 
         check_admin_referer( 'myvh_add_org_member' );
 
-        $data = MYVH_Add_Org_Member_Request::from_post( wp_unslash( $_POST ) );
+        $data = Add_Org_Member_Request::from_post( wp_unslash( $_POST ) );
 
         $validation_result = $this->request_validator->validate_add_member( $data );
         if ( is_wp_error( $validation_result ) ) {
@@ -117,7 +117,7 @@ class MYVH_Organisation_Controller {
 
         check_admin_referer( 'myvh_remove_org_member' );
 
-        $data = MYVH_Remove_Org_Member_Request::from_query( $_GET );
+        $data = Remove_Org_Member_Request::from_query( $_GET );
 
         $validation_result = $this->request_validator->validate_remove_member( $data );
         if ( is_wp_error( $validation_result ) ) {

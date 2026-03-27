@@ -10,9 +10,9 @@ add_action('wp_ajax_myvh_portal_get_booking', function() {
     if (!$booking_id) {
         wp_send_json_error('Missing booking_id', 400);
     }
-    $customer_service = $GLOBALS['myvh_container']->get('MYVH_Customer_Service');
-    $client_admin_service = $GLOBALS['myvh_container']->get('MYVH_Client_Admin_Service');
-    $booking_service = $GLOBALS['myvh_container']->get('MYVH_Booking_Service');
+    $customer_service = $GLOBALS['myvh_container']->get('Customer_Service');
+    $client_admin_service = $GLOBALS['myvh_container']->get('Client_Admin_Service');
+    $booking_service = $GLOBALS['myvh_container']->get('Booking_Service');
     $customer = $customer_service->get_by_user_id(get_current_user_id());
     $is_client_admin = $client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
     if ($is_client_admin) {

@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Settings_Page_Renderer {
+class Settings_Page_Renderer {
 
     private $settings;
     private $title;

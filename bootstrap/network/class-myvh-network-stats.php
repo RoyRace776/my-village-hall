@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Network_Stats {
+class Network_Stats {
 
     public function get_overview(): array {
 

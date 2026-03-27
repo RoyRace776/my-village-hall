@@ -24,24 +24,24 @@ require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-handler.php';
 
 global $myvh_container;
 
-( new MYVH_Booking_Listener() )->register();
+( new Booking_Listener() )->register();
 
 if ( $myvh_container instanceof Container ) {
-    $calendar_ajax = $myvh_container->get( MYVH_Calendar_Ajax_Controller::class );
+    $calendar_ajax = $myvh_container->get( Calendar_Ajax_Controller::class );
     $calendar_ajax->register_routes();
 
-    $registry = new MyVH\Infrastructure\MYVH_Shortcode_Registry();
+    $registry = new MyVH\Infrastructure\Shortcode_Registry();
     add_action( 'init', [ $registry, 'register' ] );
 
-    $registry->add( $myvh_container->get( \MYVH\Shortcodes\MYVH_Login_Shortcode::class ) );
-    $registry->add( new \MYVH\Shortcodes\MYVH_Portal_Shortcode() );
+    $registry->add( $myvh_container->get( \MYVH\Shortcodes\Login_Shortcode::class ) );
+    $registry->add( new \MYVH\Shortcodes\Portal_Shortcode() );
 
-    $login_handler = new MYVH_Login_Handler();
+    $login_handler = new Login_Handler();
     $login_handler->init();
 
-    $portal_controller = $myvh_container->get( MYVH_Portal_Controller::class );
+    $portal_controller = $myvh_container->get( Portal_Controller::class );
     $portal_controller->register();
 
-    $customer_user_sync = $myvh_container->get( MYVH_Customer_User_Sync::class );
+    $customer_user_sync = $myvh_container->get( Customer_User_Sync::class );
     $customer_user_sync->register();
 }

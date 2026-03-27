@@ -16,13 +16,13 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     function initPortalPage() {
         // Initialize calendar if present
-        if (document.getElementById('myvh-calendar') && typeof MYVH_Calendar !== 'undefined') {
-            MYVH_Calendar.init();
+        if (document.getElementById('myvh-calendar') && typeof Calendar !== 'undefined') {
+            Calendar.init();
         }
 
         // Initialize bookings list if present
-        if (document.querySelector('.myvh-bookings-list') && typeof MYVH_Bookings !== 'undefined') {
-            MYVH_Bookings.init();
+        if (document.querySelector('.myvh-bookings-list') && typeof Bookings !== 'undefined') {
+            Bookings.init();
         }
 
         // Booking edit form: enable/disable submit button based on changes

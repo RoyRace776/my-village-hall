@@ -21,7 +21,7 @@ function myvh_setting($key, $default = null) {
 
     list($group, $field) = $parts;
 
-    $settings = MYVH_Settings_Registry::get($group);
+    $settings = Settings_Registry::get($group);
 
     if (!$settings) {
         return $default;

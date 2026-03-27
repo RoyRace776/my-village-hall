@@ -1,11 +1,11 @@
 <?php
-class MYVH_Booking_Access {
+class Booking_Access {
 
     public static function get_accessible_booking(
         int $booking_id,
         int $customer_id,
         bool $is_client_admin,
-        MYVH_Booking_Service $booking_service
+        Booking_Service $booking_service
     ) {
         if ($booking_id <= 0) {
             return null;

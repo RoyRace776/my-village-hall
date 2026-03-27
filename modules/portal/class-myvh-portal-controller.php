@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Portal_Controller {
+class Portal_Controller {
     private $booking_service;
     private $customer_service;
     private $organisation_service;
@@ -9,13 +9,13 @@ class MYVH_Portal_Controller {
     private $invoice_service;
 
     public function __construct(
-        MYVH_Booking_Service $booking_service,
-        MYVH_Customer_Service $customer_service,
-        MYVH_Organisation_Service $organisation_service,
-        MYVH_Client_Admin_Service $client_admin_service,
-        MYVH_Invoice_Generator_Service $invoice_generator_service
+        Booking_Service $booking_service,
+        Customer_Service $customer_service,
+        Organisation_Service $organisation_service,
+        Client_Admin_Service $client_admin_service,
+        Invoice_Generator_Service $invoice_generator_service
         ,
-        MYVH_Invoice_Service $invoice_service
+        Invoice_Service $invoice_service
     ) {
         $this->booking_service = $booking_service;
         $this->customer_service = $customer_service;
@@ -111,7 +111,7 @@ class MYVH_Portal_Controller {
 
             case 'booking-view':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = MYVH_Booking_Access::get_accessible_booking(
+                $booking = Booking_Access::get_accessible_booking(
                                 $booking_id,
                                 intval($customer['Id'] ?? 0),
                                 $is_client_admin,
@@ -122,7 +122,7 @@ class MYVH_Portal_Controller {
 
             case 'booking-edit':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = MYVH_Booking_Access::get_accessible_booking(
+                $booking = Booking_Access::get_accessible_booking(
                                 $booking_id,
                                 intval($customer['Id'] ?? 0),
                                 $is_client_admin,
@@ -133,7 +133,7 @@ class MYVH_Portal_Controller {
 
             case 'booking-delete':
                 $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = MYVH_Booking_Access::get_accessible_booking(
+                $booking = Booking_Access::get_accessible_booking(
                                 $booking_id,
                                 intval($customer['Id'] ?? 0),
                                 $is_client_admin,
@@ -229,8 +229,8 @@ class MYVH_Portal_Controller {
                 }
 
                 $settings_groups = [];
-                foreach (MYVH_Settings_Registry::groups() as $group_key => $group_meta) {
-                    $settings = MYVH_Settings_Registry::get($group_key);
+                foreach (Settings_Registry::groups() as $group_key => $group_meta) {
+                    $settings = Settings_Registry::get($group_key);
 
                     if (!$settings) {
                         continue;
@@ -689,7 +689,7 @@ class MYVH_Portal_Controller {
             wp_send_json_error('Settings group is required', 400);
         }
 
-        $settings = MYVH_Settings_Registry::get($group);
+        $settings = Settings_Registry::get($group);
 
         if (!$settings) {
             wp_send_json_error('Settings group not found', 404);

@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Admin_Notices {
+class Admin_Notices {
     private static $transient_key = 'myvh_admin_notices';
 
     public static function add($type = 'success', $message) {
@@ -65,4 +65,4 @@ class MYVH_Admin_Notices {
     }
 }
 
-add_action('admin_notices', ['MYVH_Admin_Notices', 'render']);
+add_action('admin_notices', ['Admin_Notices', 'render']);

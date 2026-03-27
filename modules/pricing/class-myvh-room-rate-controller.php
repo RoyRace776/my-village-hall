@@ -1,14 +1,14 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Room_Rate_Controller {
+class Room_Rate_Controller {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        MYVH_Room_Rate_Service $service,
-        MYVH_Room_Rate_Request_Validator $request_validator
+        Room_Rate_Service $service,
+        Room_Rate_Request_Validator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -21,7 +21,7 @@ class MYVH_Room_Rate_Controller {
 
         check_admin_referer('myvh_save_rate');
 
-        $data = MYVH_Save_Room_Rate_Request::from_post(wp_unslash($_POST));
+        $data = Save_Room_Rate_Request::from_post(wp_unslash($_POST));
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {

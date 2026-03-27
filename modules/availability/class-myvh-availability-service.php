@@ -1,14 +1,14 @@
 <?php
 
-class MYVH_Availability_Service {
+class Availability_Service {
 
     private $booking_repo;
     private $room_repo;
     private $venue_repo;
 
-    public function __construct(MYVH_Booking_Repository $booking_repo,
-                                MYVH_Room_Repository $room_repo,
-                                MYVH_Venue_Repository $venue_repo) {
+    public function __construct(Booking_Repository $booking_repo,
+                                Room_Repository $room_repo,
+                                Venue_Repository $venue_repo) {
         $this->booking_repo = $booking_repo;
         $this->room_repo = $room_repo;
         $this->venue_repo = $venue_repo;

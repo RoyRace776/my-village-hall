@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Network_Dashboard {
+class Network_Dashboard {
 
     private const CLIENT_ADMINS_PAGE = 'myvh-network-client-admins';
 
@@ -66,14 +66,14 @@ class MYVH_Network_Dashboard {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
-        if (!class_exists('MYVH_Client_Admin_Service')) {
+        if (!class_exists('Client_Admin_Service')) {
             echo '<div class="wrap"><h1>Client Administrators</h1>';
             echo '<div class="notice notice-error"><p>Client admin service is not available.</p></div>';
             echo '</div>';
             return;
         }
 
-        $service = new MYVH_Client_Admin_Service();
+        $service = new Client_Admin_Service();
         $sites = get_sites([
             'number' => 0,
             'orderby' => 'domain',
@@ -226,7 +226,7 @@ class MYVH_Network_Dashboard {
     }
 }
 
-// class MYVH_Network_Dashboard {
+// class Network_Dashboard {
 
 //     public function init() {
 //         add_action('network_admin_menu', [$this, 'register_menu']);
@@ -265,7 +265,7 @@ class MYVH_Network_Dashboard {
 
 //     public function render() {
 
-//         $stats = (new MYVH_Network_Stats())->get_overview();
+//         $stats = (new Network_Stats())->get_overview();
 
 //         echo '<div class="wrap"><h1>MYVH Network Dashboard</h1>';
 
@@ -279,7 +279,7 @@ class MYVH_Network_Dashboard {
 //         echo '<canvas id="myvhBookingsChart" height="100"></canvas>';
 
 //         echo '<h2>Tenants</h2>';
-//         $table = new MYVH_Network_Sites_Table();
+//         $table = new Network_Sites_Table();
 //         $table->prepare_items();
 //         $table->display();
 
@@ -289,7 +289,7 @@ class MYVH_Network_Dashboard {
 //     public function ajax_chart() {
 //         check_ajax_referer('myvh_network_nonce', 'nonce');
 
-//         $data = (new MYVH_Network_Stats())->bookings_per_day(30);
+//         $data = (new Network_Stats())->bookings_per_day(30);
 
 //         wp_send_json_success($data);
 //     }

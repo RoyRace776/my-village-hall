@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Addon_Repository extends MYVH_Repository_Base {
+class Addon_Repository extends Repository_Base {
 
     /**
      * Constructor

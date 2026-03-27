@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Calendar_Ajax_Controller {
+class Calendar_Ajax_Controller {
 
     private $calendar_service;
     private $booking_service;
@@ -10,11 +10,11 @@ class MYVH_Calendar_Ajax_Controller {
     private $client_admin_service;
 
     public function __construct(
-        MYVH_Calendar_Service $calendar_service,
-        MYVH_Booking_Service $booking_service,
-        MYVH_Room_Repository $room_repository,
-        MYVH_Customer_Service $customer_service,
-        MYVH_Client_Admin_Service $client_admin_service) {
+        Calendar_Service $calendar_service,
+        Booking_Service $booking_service,
+        Room_Repository $room_repository,
+        Customer_Service $customer_service,
+        Client_Admin_Service $client_admin_service) {
 
         $this->calendar_service = $calendar_service;
         $this->booking_service = $booking_service;

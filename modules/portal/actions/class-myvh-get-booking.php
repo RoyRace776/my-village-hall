@@ -1,11 +1,11 @@
 <?php
 
-class MYVH_Get_Booking_Action {
+class Get_Booking_Action {
 
     public function __construct(
-        private MYVH_Booking_Service $booking_service,
-        private MYVH_Customer_Service $customer_service,
-        private MYVH_Client_Admin_Service $client_admin_service
+        private Booking_Service $booking_service,
+        private Customer_Service $customer_service,
+        private Client_Admin_Service $client_admin_service
     ) {}
 
     public function execute(int $booking_id): array {
@@ -16,7 +16,7 @@ class MYVH_Get_Booking_Action {
             get_current_blog_id()
         );
 
-        $booking = MYVH_Booking_Access::get_accessible_booking(
+        $booking = Booking_Access::get_accessible_booking(
             $booking_id,
             (int) ($customer['Id'] ?? 0),
             $is_admin,

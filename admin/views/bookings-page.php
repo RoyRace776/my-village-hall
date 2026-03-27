@@ -10,10 +10,10 @@ $status_filter   = isset($_GET['status'])      ? sanitize_text_field($_GET['stat
 $room_filter     = isset($_GET['room_id'])     ? intval($_GET['room_id'])               : 0;
 $customer_filter = isset($_GET['customer_id']) ? intval($_GET['customer_id'])           : 0;
 
-$booking_service = $myvh_container->get(MYVH_Booking_Service::class);
-$org_service     = $myvh_container->get(MYVH_Organisation_Service::class);
-$rooms           = $myvh_container->get(MYVH_Room_Service::class)->get_all_with_venues();
-$customers       = $myvh_container->get(MYVH_Customer_Service::class)->get_all();
+$booking_service = $myvh_container->get(Booking_Service::class);
+$org_service     = $myvh_container->get(Organisation_Service::class);
+$rooms           = $myvh_container->get(Room_Service::class)->get_all_with_venues();
+$customers       = $myvh_container->get(Customer_Service::class)->get_all();
 $organisations   = $org_service->get_all();
 
 $result = $booking_service->get_booking_list([
@@ -179,7 +179,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                         }
                     }
 
-                    $schedule = MYVH_Recurring_Pattern_Service::describe($pattern);
+                    $schedule = Recurring_Pattern_Service::describe($pattern);
                     $group_id = 'rg_' . $pattern['Id'];
 
                     // Aggregate status: if any confirmed/pending, show that; otherwise cancelled/completed

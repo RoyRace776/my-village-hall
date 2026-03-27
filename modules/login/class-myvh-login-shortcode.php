@@ -1,7 +1,7 @@
 <?php
 namespace MYVH\Shortcodes;
 
-class MYVH_Login_Shortcode implements MYVH_Shortcode_Interface
+class Login_Shortcode implements Shortcode_Interface
 {
     public function tag(): string
     {

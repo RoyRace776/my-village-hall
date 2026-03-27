@@ -1,14 +1,14 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Room_Service {
+class Room_Service {
 
     private $repo;
     private $availability;
 
     public function __construct(
-        MYVH_Room_Repository $repo,
-        MYVH_Availability_Service $availability
+        Room_Repository $repo,
+        Availability_Service $availability
     ) {
         $this->repo = $repo;
         $this->availability = $availability;

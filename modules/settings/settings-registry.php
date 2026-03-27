@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Settings_Registry {
+class Settings_Registry {
 
     private static $groups = [];
 
@@ -20,7 +20,7 @@ class MYVH_Settings_Registry {
     }
 
 
-    public static function get($key): ?MYVH_Settings_Base {
+    public static function get($key): ?Settings_Base {
 
         if (!isset(self::$groups[$key])) {
             return null;
@@ -48,7 +48,7 @@ class MYVH_Settings_Registry {
 
         foreach (get_declared_classes() as $class) {
 
-            if (!is_subclass_of($class, 'MYVH_Settings_Base')) {
+            if (!is_subclass_of($class, 'Settings_Base')) {
                 continue;
             }
 

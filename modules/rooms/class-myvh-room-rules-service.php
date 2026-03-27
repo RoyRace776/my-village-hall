@@ -1,5 +1,5 @@
 <?php
-class MYVH_Room_Rules_Service {
+class Room_Rules_Service {
 
     /**
      * Check if booking is within room opening hours.

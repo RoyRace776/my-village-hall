@@ -10,8 +10,8 @@ if (!current_user_can('manage_myvh')) {
 global $myvh_container;
 
 $edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$addon_service = $myvh_container->get(MYVH_Addon_Service::class);
-$room_service  = $myvh_container->get(MYVH_Room_Service::class);
+$addon_service = $myvh_container->get(Addon_Service::class);
+$room_service  = $myvh_container->get(Room_Service::class);
 $edit_addon    = $edit_id ? $addon_service->get($edit_id) : null;
 $addons        = $addon_service->get_with_relations();
 $rooms         = $room_service->get_all();

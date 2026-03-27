@@ -13,7 +13,7 @@ if ($action === 'add') {
 
 if ($action === 'edit' && $edit_id) {
     // Show edit customer form (reuse add form, prefill values)
-    $customer_service = $GLOBALS['myvh_container']->get(MYVH_Customer_Service::class);
+    $customer_service = $GLOBALS['myvh_container']->get(Customer_Service::class);
     $edit_customer = $customer_service->get($edit_id);
     ?>
     <div class="myvh-dashboard-section myvh-customers-page">

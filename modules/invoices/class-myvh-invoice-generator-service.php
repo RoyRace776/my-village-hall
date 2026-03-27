@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class MYVH_Invoice_Generator_Service {
+class Invoice_Generator_Service {
 
     private $invoice_service;
     private $invoice_repo;
@@ -26,17 +26,17 @@ class MYVH_Invoice_Generator_Service {
     private $pricing_service;
 
     public function __construct(
-        MYVH_Invoice_Service $invoice_service,
-        MYVH_Invoice_Repository $invoice_repo,
-        MYVH_Invoice_Item_Repository $invoice_item_repo,
-        MYVH_Booking_Repository $booking_repo,
-        MYVH_Booking_Service $booking_service,
-        MYVH_Booking_Charge_Repository $booking_charge_repo,
-        MYVH_Booking_Addon_Repository $booking_addon_repo,
-        MYVH_Addon_Repository $addon_repo,
-        MYVH_Customer_Repository $customer_repo,
-        MYVH_Organisation_Repository $organisation_repo,
-        MYVH_Pricing_Service $pricing_service
+        Invoice_Service $invoice_service,
+        Invoice_Repository $invoice_repo,
+        Invoice_Item_Repository $invoice_item_repo,
+        Booking_Repository $booking_repo,
+        Booking_Service $booking_service,
+        Booking_Charge_Repository $booking_charge_repo,
+        Booking_Addon_Repository $booking_addon_repo,
+        Addon_Repository $addon_repo,
+        Customer_Repository $customer_repo,
+        Organisation_Repository $organisation_repo,
+        Pricing_Service $pricing_service
     ) {
         $this->invoice_service = $invoice_service;
         $this->invoice_repo = $invoice_repo;

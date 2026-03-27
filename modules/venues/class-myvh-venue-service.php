@@ -1,11 +1,11 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Venue_Service {
+class Venue_Service {
 
     private $repo;
 
-    public function __construct(MYVH_Venue_Repository $repo) {
+    public function __construct(Venue_Repository $repo) {
         $this->repo = $repo;
     }
 

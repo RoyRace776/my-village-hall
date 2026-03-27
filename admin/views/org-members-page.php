@@ -5,8 +5,8 @@ if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village
 global $myvh_container;
 
 $org_id      = isset($_GET['organisation_id']) ? intval($_GET['organisation_id']) : 0;
-$org_service = $myvh_container->get(MYVH_Organisation_Service::class);
-$customer_service = $myvh_container->get(MYVH_Customer_Service::class);
+$org_service = $myvh_container->get(Organisation_Service::class);
+$customer_service = $myvh_container->get(Customer_Service::class);
 
 if (!$org_id) {
     // Show a list of all organisations to pick from

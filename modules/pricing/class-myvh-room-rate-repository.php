@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Room_Rate_Repository extends MYVH_Repository_Base{
+class Room_Rate_Repository extends Repository_Base{
 
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;

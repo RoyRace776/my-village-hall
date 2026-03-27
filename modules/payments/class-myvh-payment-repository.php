@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class MYVH_Payment_Repository extends MYVH_Repository_Base{
+class Payment_Repository extends Repository_Base{
 
     /**
      * Constructor

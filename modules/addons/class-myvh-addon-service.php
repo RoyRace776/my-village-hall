@@ -2,11 +2,11 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Addon_Service {
+class Addon_Service {
 
     private $repo;
 
-    public function __construct(MYVH_Addon_Repository $repo) {
+    public function __construct(Addon_Repository $repo) {
         $this->repo = $repo;
     }
 
@@ -80,7 +80,7 @@ class MYVH_Addon_Service {
     public function save_booking_addons($booking_id, $addons, $replace = false) {
         // Assume booking_addon_repo is globally available or injected if refactored
         global $myvh_container;
-        $booking_addon_repo = $myvh_container->get('MYVH_Booking_Addon_Repository');
+        $booking_addon_repo = $myvh_container->get('Booking_Addon_Repository');
         $addon_repo = $this->repo;
         if (!$booking_addon_repo) return;
 
@@ -105,7 +105,7 @@ class MYVH_Addon_Service {
             if ($addon_record && ($addon_record['ChargeType'] ?? '') === 'per_hour') {
                 if ($booking_hours === null) {
                     // Fetch booking details if needed (assume booking_repo is globally available)
-                    $booking_repo = $myvh_container->get('MYVH_Booking_Repository');
+                    $booking_repo = $myvh_container->get('Booking_Repository');
                     $booking = $booking_repo ? $booking_repo->get_by_id($booking_id) : null;
                     if ($booking) {
                         $start = strtotime($booking['StartDate'] . ' ' . $booking['StartTime']);
@@ -139,7 +139,7 @@ class MYVH_Addon_Service {
      */
     public function get_addons_for_booking($booking_id) {
         global $myvh_container;
-        $booking_addon_repo = $myvh_container->get('MYVH_Booking_Addon_Repository');
+        $booking_addon_repo = $myvh_container->get('Booking_Addon_Repository');
         if (!$booking_addon_repo) return [];
         return $booking_addon_repo->get_by_booking_id($booking_id) ?? [];
     }

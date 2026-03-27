@@ -107,7 +107,7 @@ usort($groups, function ($a, $b) {
                 <?php endif; ?>
 
                 <?php
-                $schedule = MYVH_Recurring_Pattern_Service::describe($pattern);
+                $schedule = Recurring_Pattern_Service::describe($pattern);
                 $group_id = 'rg_' . $pattern['Id'];
                 ?>
                 <div class="myvh-booking-group">

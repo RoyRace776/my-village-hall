@@ -1,5 +1,5 @@
 // Portal calendar logic for My Village Hall
-var MYVH_Calendar = (function() {
+var Calendar = (function() {
 
         var api = null;
         var modal = null;
@@ -206,7 +206,7 @@ var MYVH_Calendar = (function() {
          */
         function init() {
 
-            modal = MYVH_BookingModal;
+            modal = BookingModal;
             const isClientAdmin = !!Number(myvhCal.isClientAdmin || 0);
 
             modal.init({
@@ -236,7 +236,7 @@ var MYVH_Calendar = (function() {
                 onSuccess: () => api.reload()
             });
 
-            api = MYVH_CalendarCore.init("myvh-calendar", {
+            api = CalendarCore.init("myvh-calendar", {
 
                 context:    "portal",
                 ajax_url:   myvhCal.ajax_url,

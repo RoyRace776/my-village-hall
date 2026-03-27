@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class MYVH_Booking_Addon_Repository extends MYVH_Repository_Base{
+class Booking_Addon_Repository extends Repository_Base{
 
 
     /**

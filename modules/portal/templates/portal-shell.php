@@ -3,8 +3,8 @@ if (!defined('ABSPATH')) exit;
 
 global $myvh_container;
 
-$client_admin_service = isset($myvh_container) ? $myvh_container->get(MYVH_Client_Admin_Service::class) : null;
-$customer_service = isset($myvh_container) ? $myvh_container->get(MYVH_Customer_Service::class) : null;
+$client_admin_service = isset($myvh_container) ? $myvh_container->get(Client_Admin_Service::class) : null;
+$customer_service = isset($myvh_container) ? $myvh_container->get(Customer_Service::class) : null;
 $current_user_id = get_current_user_id();
 $customer = $customer_service ? $customer_service->get_by_user_id($current_user_id) : null;
 $has_customer = !empty($customer['Id']);

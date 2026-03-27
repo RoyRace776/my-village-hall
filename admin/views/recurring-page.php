@@ -14,16 +14,16 @@ $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 if ($edit_id || $view_id) {
     $pattern_id   = $edit_id ?: $view_id;
     $is_view_mode = !$edit_id;
-    $pattern      = $myvh_container->get(MYVH_Recurring_Pattern_Service::class)->get($pattern_id);
+    $pattern      = $myvh_container->get(Recurring_Pattern_Service::class)->get($pattern_id);
 
     if (!$pattern) {
         wp_die(__('Pattern not found.', 'my-village-hall'));
     }
 
-    $parent_booking  = $myvh_container->get(MYVH_Booking_Service::class)->get_by_id($pattern['ParentBookingId']);
-    $bookings        = $myvh_container->get(MYVH_Recurring_Pattern_Service::class)->get_bookings_for_pattern($pattern_id);
-    $customers       = $myvh_container->get(MYVH_Customer_Service::class)->get_all();
-    $rooms           = $myvh_container->get(MYVH_Room_Service::class)->get_all_with_venues();
+    $parent_booking  = $myvh_container->get(Booking_Service::class)->get_by_id($pattern['ParentBookingId']);
+    $bookings        = $myvh_container->get(Recurring_Pattern_Service::class)->get_bookings_for_pattern($pattern_id);
+    $customers       = $myvh_container->get(Customer_Service::class)->get_all();
+    $rooms           = $myvh_container->get(Room_Service::class)->get_all_with_venues();
     $customer_map    = array_column($customers ?? [], null, 'Id');
     $room_map        = array_column($rooms ?? [], null, 'Id');
 
@@ -80,7 +80,7 @@ if ($edit_id || $view_id) {
                         <!-- View-only table -->
                         <table class="form-table">
                             <tr><th><?php _e('Schedule', 'my-village-hall'); ?></th>
-                                <td><strong><?php echo esc_html(MYVH_Recurring_Pattern_Service::describe($pattern)); ?></strong></td></tr>
+                                <td><strong><?php echo esc_html(Recurring_Pattern_Service::describe($pattern)); ?></strong></td></tr>
                             <tr><th><?php _e('Start Date', 'my-village-hall'); ?></th>
                                 <td><?php echo date('D j M Y', strtotime($pattern['StartDate'])); ?></td></tr>
                             <tr><th><?php _e('Ends', 'my-village-hall'); ?></th>
@@ -407,7 +407,7 @@ if ($edit_id || $view_id) {
 }
 
 // ── LIST VIEW ─────────────────────────────────────────────────────────────────
-$patterns = $myvh_container->get(MYVH_Recurring_Pattern_Service::class)->get_active_with_bookings() ?? [];
+$patterns = $myvh_container->get(Recurring_Pattern_Service::class)->get_active_with_bookings() ?? [];
 ?>
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php _e('Recurring Patterns', 'my-village-hall'); ?></h1>
@@ -473,7 +473,7 @@ $patterns = $myvh_container->get(MYVH_Recurring_Pattern_Service::class)->get_act
                     <?php echo esc_html($p['RoomName']); ?>
                     <br><small style="color:#666;"><?php echo esc_html($p['VenueName']); ?></small>
                 </td>
-                <td><?php echo esc_html(MYVH_Recurring_Pattern_Service::describe($p)); ?></td>
+                <td><?php echo esc_html(Recurring_Pattern_Service::describe($p)); ?></td>
                 <td><small><?php echo esc_html($range); ?></small></td>
                 <td><?php echo intval($p['OccurrenceCount']); ?></td>
                 <td>

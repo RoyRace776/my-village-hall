@@ -5,7 +5,7 @@ require_once MYVH_PLUGIN_DIR . 'modules/events/booking-events.php';
 require_once MYVH_PLUGIN_DIR . 'modules/events/class-myvh-event-dispatcher.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-status.php';
 
-class MYVH_Booking_Service {
+class Booking_Service {
 
     private $room_service;
     private $booking_repo;
@@ -23,19 +23,19 @@ class MYVH_Booking_Service {
     private $last_warnings = [];
 
     public function __construct(
-        MYVH_Room_Service $room_service,
-        MYVH_Booking_Repository $booking_repo,
-        MYVH_Booking_Charge_Repository $booking_charge_repo,
-        MYVH_Booking_Addon_Repository $booking_addon_repo,
-        MYVH_Addon_Repository $addon_repo,
-        MYVH_Addon_Service $addon_service,
-        MYVH_Booking_Validator $validator,
-        MYVH_Availability_Service $availability,
-        MYVH_Room_Rules_Service $room_rules,
-        MYVH_Pricing_Service $pricing,
-        MYVH_Customer_Repository $customer_repo,
-        MYVH_Organisation_Repository $organisation_repo,
-        MYVH_Recurring_Pattern_Service $recurring_pattern_service
+        Room_Service $room_service,
+        Booking_Repository $booking_repo,
+        Booking_Charge_Repository $booking_charge_repo,
+        Booking_Addon_Repository $booking_addon_repo,
+        Addon_Repository $addon_repo,
+        Addon_Service $addon_service,
+        Booking_Validator $validator,
+        Availability_Service $availability,
+        Room_Rules_Service $room_rules,
+        Pricing_Service $pricing,
+        Customer_Repository $customer_repo,
+        Organisation_Repository $organisation_repo,
+        Recurring_Pattern_Service $recurring_pattern_service
     ) {
         $this->room_service = $room_service;
         $this->booking_repo = $booking_repo;
@@ -59,13 +59,13 @@ class MYVH_Booking_Service {
         try {
             // Dispatch before create/update event
             if (!empty($data['booking_id'])) {
-                MYVH_Event_Dispatcher::dispatch(
-                    MYVH_Booking_Events::BEFORE_UPDATE,
+                Event_Dispatcher::dispatch(
+                    Booking_Events::BEFORE_UPDATE,
                     $data
                 );
             } else {
-                MYVH_Event_Dispatcher::dispatch(
-                    MYVH_Booking_Events::BEFORE_CREATE,
+                Event_Dispatcher::dispatch(
+                    Booking_Events::BEFORE_CREATE,
                     $data
                 );
             }
@@ -143,8 +143,8 @@ class MYVH_Booking_Service {
 
         // Dispatch before status change if status is changing
         if (isset($current_record['Status']) && $current_record['Status'] !== $data['status']) {
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::BEFORE_STATUS_CHANGE,
+            Event_Dispatcher::dispatch(
+                Booking_Events::BEFORE_STATUS_CHANGE,
                 [
                     'booking_id' => $data['booking_id'],
                     'old_status' => $current_record['Status'],
@@ -160,8 +160,8 @@ class MYVH_Booking_Service {
         }
 
         // Addons before/after events
-        MYVH_Event_Dispatcher::dispatch(
-            MYVH_Booking_Events::BEFORE_ADDONS_CHANGE,
+        Event_Dispatcher::dispatch(
+            Booking_Events::BEFORE_ADDONS_CHANGE,
             [
                 'booking_id' => $data['booking_id'],
                 'addons' => $data['addons'] ?? [],
@@ -169,8 +169,8 @@ class MYVH_Booking_Service {
             ]
         );
         $this->save_addons(intval($data['booking_id']), $data['addons'] ?? [], true);
-        MYVH_Event_Dispatcher::dispatch(
-            MYVH_Booking_Events::AFTER_ADDONS_CHANGE,
+        Event_Dispatcher::dispatch(
+            Booking_Events::AFTER_ADDONS_CHANGE,
             [
                 'booking_id' => $data['booking_id'],
                 'addons' => $data['addons'] ?? [],
@@ -187,8 +187,8 @@ class MYVH_Booking_Service {
 
         // After status change event
         if (isset($current_record['Status']) && $current_record['Status'] !== $data['status']) {
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::AFTER_STATUS_CHANGE,
+            Event_Dispatcher::dispatch(
+                Booking_Events::AFTER_STATUS_CHANGE,
                 [
                     'booking_id' => $data['booking_id'],
                     'old_status' => $current_record['Status'],
@@ -198,8 +198,8 @@ class MYVH_Booking_Service {
             );
         }
 
-        MYVH_Event_Dispatcher::dispatch(
-            MYVH_Booking_Events::AFTER_UPDATE,
+        Event_Dispatcher::dispatch(
+            Booking_Events::AFTER_UPDATE,
             $data
         );
 
@@ -215,8 +215,8 @@ class MYVH_Booking_Service {
         }
 
         // Addons before/after events
-        MYVH_Event_Dispatcher::dispatch(
-            MYVH_Booking_Events::BEFORE_ADDONS_CHANGE,
+        Event_Dispatcher::dispatch(
+            Booking_Events::BEFORE_ADDONS_CHANGE,
             [
                 'booking_id' => $booking_id,
                 'addons' => $data['addons'] ?? [],
@@ -224,8 +224,8 @@ class MYVH_Booking_Service {
             ]
         );
         $this->save_addons($booking_id, $data['addons'] ?? []);
-        MYVH_Event_Dispatcher::dispatch(
-            MYVH_Booking_Events::AFTER_ADDONS_CHANGE,
+        Event_Dispatcher::dispatch(
+            Booking_Events::AFTER_ADDONS_CHANGE,
             [
                 'booking_id' => $booking_id,
                 'addons' => $data['addons'] ?? [],
@@ -240,8 +240,8 @@ class MYVH_Booking_Service {
             return $charge_result;
         }
 
-        MYVH_Event_Dispatcher::dispatch(
-            MYVH_Booking_Events::CREATED,
+        Event_Dispatcher::dispatch(
+            Booking_Events::CREATED,
             [
                 'booking_id' => $booking_id,
                 'room_id' => $data['room_id'],
@@ -251,8 +251,8 @@ class MYVH_Booking_Service {
         );
 
         if ($data['status'] == BookingStatus::CONFIRMED) {
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::CONFIRMED,
+            Event_Dispatcher::dispatch(
+                Booking_Events::CONFIRMED,
                 [
                     'booking_id' => $booking_id,
                     'room_id' => $data['room_id'],
@@ -264,8 +264,8 @@ class MYVH_Booking_Service {
 
         // Recurring pattern events
         if (!empty($data['is_recurring']) && $this->recurring_pattern_service) {
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::BEFORE_RECURRING,
+            Event_Dispatcher::dispatch(
+                Booking_Events::BEFORE_RECURRING,
                 [
                     'parent_booking_id' => $booking_id,
                     'data' => $data
@@ -302,8 +302,8 @@ class MYVH_Booking_Service {
                     $this->last_warnings[] = implode(' ', $booking_results['errors']);
                 }
             }
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::AFTER_RECURRING,
+            Event_Dispatcher::dispatch(
+                Booking_Events::AFTER_RECURRING,
                 [
                     'parent_booking_id' => $booking_id,
                     'data' => $data
@@ -311,8 +311,8 @@ class MYVH_Booking_Service {
             );
         }
 
-        MYVH_Event_Dispatcher::dispatch(
-            MYVH_Booking_Events::AFTER_CREATE,
+        Event_Dispatcher::dispatch(
+            Booking_Events::AFTER_CREATE,
             $data + ['booking_id' => $booking_id]
         );
 
@@ -387,7 +387,7 @@ class MYVH_Booking_Service {
      */
 
     public function save_addons($booking_id, $addons, $replace = false): void {
-        // Delegate to MYVH_Addon_Service (implement a method if needed)
+        // Delegate to Addon_Service (implement a method if needed)
         if (!$this->addon_service) return;
         $this->addon_service->save_booking_addons($booking_id, $addons, $replace);
     }
@@ -422,8 +422,8 @@ class MYVH_Booking_Service {
 
         $this->booking_repo->begin();
         try {
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::BEFORE_DELETE,
+            Event_Dispatcher::dispatch(
+                Booking_Events::BEFORE_DELETE,
                 ['booking_id' => $booking_id]
             );
 
@@ -443,12 +443,12 @@ class MYVH_Booking_Service {
                 return new WP_Error('database', __('Failed to delete booking', 'my-village-hall'));
             }
 
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::DELETED,
+            Event_Dispatcher::dispatch(
+                Booking_Events::DELETED,
                 ['booking_id' => $booking_id]
             );
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::AFTER_DELETE,
+            Event_Dispatcher::dispatch(
+                Booking_Events::AFTER_DELETE,
                 ['booking_id' => $booking_id]
             );
 
@@ -779,8 +779,8 @@ class MYVH_Booking_Service {
         $current_status = $old_status;
 
         if ($new_status==BookingStatus::CONFIRMED && $current_status<>BookingStatus::CONFIRMED) {
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::CONFIRMED,
+            Event_Dispatcher::dispatch(
+                Booking_Events::CONFIRMED,
                 [
                     'booking_id' => $data['booking_id'],
                     'room_id' => $data['room_id'],
@@ -791,8 +791,8 @@ class MYVH_Booking_Service {
         }
 
         if ($new_status==BookingStatus::CANCELLED && $current_status<>BookingStatus::CANCELLED) {
-            MYVH_Event_Dispatcher::dispatch(
-                MYVH_Booking_Events::CANCELLED,
+            Event_Dispatcher::dispatch(
+                Booking_Events::CANCELLED,
                 [
                     'booking_id' => $data['booking_id'],
                     'room_id' => $data['room_id'],
@@ -802,8 +802,8 @@ class MYVH_Booking_Service {
             );
         }
 
-        MYVH_Event_Dispatcher::dispatch(
-            MYVH_Booking_Events::UPDATED,
+        Event_Dispatcher::dispatch(
+            Booking_Events::UPDATED,
             [
                 'booking_id' => $data['booking_id'],
                 'room_id' => $data['room_id'],

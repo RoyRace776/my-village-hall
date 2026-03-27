@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-mapper-base.php';
 
-class MYVH_Save_Organisation_Type_Request extends MYVH_Request_Mapper_Base {
+class Save_Organisation_Type_Request extends Request_Mapper_Base {
 
     public static function from_post(array $post): array {
         return [

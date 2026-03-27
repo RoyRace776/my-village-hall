@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Calendar_Event_Transformer {
+class Calendar_Event_Transformer {
 
     public static function for_portal($bookings): array {
 

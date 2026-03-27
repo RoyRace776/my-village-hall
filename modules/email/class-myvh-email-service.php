@@ -1,8 +1,8 @@
 <?php
 /**
- * MYVH_Email_Service: Modular, multisite-aware email sending for My Village Hall
+ * Email_Service: Modular, multisite-aware email sending for My Village Hall
  */
-class MYVH_Email_Service {
+class Email_Service {
     protected $site_id;
     protected $log_enabled;
 

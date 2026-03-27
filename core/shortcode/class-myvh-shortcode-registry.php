@@ -2,7 +2,7 @@
 
 namespace MYVH\Infrastructure;
 
-class MYVH_Shortcode_Registry
+class Shortcode_Registry
 {
     private $shortcodes = [];
 

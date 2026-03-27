@@ -1,5 +1,5 @@
 // Admin calendar logic for My Village Hall
-var MYVH_CalendarAdmin = (function() {
+var CalendarAdmin = (function() {
 
     var api = null;
     var nav = null;
@@ -219,7 +219,7 @@ var MYVH_CalendarAdmin = (function() {
     // ─────────────────────────────
     function init() {
 
-        const modal = MYVH_BookingModal;
+        const modal = BookingModal;
 
         modal.init({
             ajax_url: myvhCal.ajax_url,
@@ -244,7 +244,7 @@ var MYVH_CalendarAdmin = (function() {
         // IMPORTANT: use initCalendar (alias to init)
         const restoredState = getStateFromUrl();
 
-        api = MYVH_CalendarCore.init("myvh-calendar", {
+        api = CalendarCore.init("myvh-calendar", {
             ajax_url: myvhCal.ajax_url,
             nonce: myvhCal.nonce,
             editable: true,
@@ -316,5 +316,5 @@ var MYVH_CalendarAdmin = (function() {
 
 // SINGLE initialisation
 document.addEventListener("DOMContentLoaded", function() {
-    MYVH_CalendarAdmin.init();
+    CalendarAdmin.init();
 });

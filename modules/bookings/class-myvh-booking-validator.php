@@ -1,5 +1,5 @@
 <?php
-class MYVH_Booking_Validator {
+class Booking_Validator {
     private $customer_repo;
     private $organisation_repo;
     private $room_service;
@@ -7,12 +7,12 @@ class MYVH_Booking_Validator {
     private $pricing;
     private $room_rules;
 
-    public function __construct(MYVH_Customer_Repository $customer_repo,
-                                MYVH_Organisation_Repository $organisation_repo,
-                                MYVH_Room_Service $room_service,
-                                MYVH_Availability_Service $availability,
-                                MYVH_Pricing_Service $pricing,
-                                MYVH_Room_Rules_Service $room_rules) {
+    public function __construct(Customer_Repository $customer_repo,
+                                Organisation_Repository $organisation_repo,
+                                Room_Service $room_service,
+                                Availability_Service $availability,
+                                Pricing_Service $pricing,
+                                Room_Rules_Service $room_rules) {
         $this->customer_repo = $customer_repo;
         $this->organisation_repo = $organisation_repo;
         $this->room_service = $room_service;

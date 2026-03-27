@@ -6,7 +6,7 @@
  * Configurable rules for automatic invoice generation
  * Two global rule sets: Single Bookings and Recurring Bookings
  */
-class MYVH_Auto_Invoicing_Settings extends MYVH_Settings_Base {
+class Auto_Invoicing_Settings extends Settings_Base {
 
     protected $option_name = 'myvh_auto_invoicing_settings';
 

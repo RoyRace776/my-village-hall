@@ -1,14 +1,14 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Customer_Controller {
+class Customer_Controller {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        MYVH_Customer_Service $service,
-        MYVH_Customer_Request_Validator $request_validator
+        Customer_Service $service,
+        Customer_Request_Validator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -22,7 +22,7 @@ class MYVH_Customer_Controller {
 
         check_admin_referer('myvh_save_customer');
 
-        $data = MYVH_Save_Customer_Request::from_post(wp_unslash($_POST));
+        $data = Save_Customer_Request::from_post(wp_unslash($_POST));
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {

@@ -7,7 +7,7 @@ if (!is_user_logged_in()) {
 }
 
 global $myvh_container;
-$addon_service = $myvh_container->get(MYVH_Addon_Service::class);
+$addon_service = $myvh_container->get(Addon_Service::class);
 $all_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
 $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empty($a['IsActive'])));
 ?>

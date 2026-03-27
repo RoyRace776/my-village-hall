@@ -1,5 +1,5 @@
 ﻿// Core calendar logic for My Village Hall (shared by admin, portal, public views)
-window.MYVH_CalendarCore = (function () {
+window.CalendarCore = (function () {
 
     let calendar = null;
     let scheduler = null;

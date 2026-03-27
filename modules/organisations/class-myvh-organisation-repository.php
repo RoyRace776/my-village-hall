@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class MYVH_Organisation_Repository extends MYVH_Repository_Base{
+class Organisation_Repository extends Repository_Base{
 
     /** @var string */
     private $types_table;

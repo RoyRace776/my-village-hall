@@ -1,13 +1,13 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Invoice_Service {
+class Invoice_Service {
 
     private $repo;
     private $payment_repo;
 
-    public function __construct(MYVH_Invoice_Repository $repo,
-                                MYVH_Payment_Repository $payment_repo) {
+    public function __construct(Invoice_Repository $repo,
+                                Payment_Repository $payment_repo) {
         $this->repo         = $repo;
         $this->payment_repo = $payment_repo;
     }

@@ -1,5 +1,5 @@
 // Public calendar logic for My Village Hall
-var MYVH_CalendarPublic = (function() {
+var CalendarPublic = (function() {
 
     var api = null;
 
@@ -29,7 +29,7 @@ var MYVH_CalendarPublic = (function() {
      */
     function init() {
 
-        api = MYVH_CalendarCore.init('myvh-calendar', {
+        api = CalendarCore.init('myvh-calendar', {
 
             context:    'public',
             ajax_url:    myvhCalConfig.ajax_url,

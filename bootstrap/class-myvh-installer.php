@@ -1,9 +1,9 @@
 <?php
 /**
- * MYVH_Installer
+ * Installer
  *
  * Handles all database table creation and schema migrations.
- * Called once during plugin activation via MYVH_Installer::run().
+ * Called once during plugin activation via Installer::run().
  *
  * Tables are created with WordPress's dbDelta() function, which compares
  * the desired schema against existing tables and applies only the
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class MYVH_Installer {
+class Installer {
 
     /**
      * Entry point: create all tables then apply foreign-key constraints.

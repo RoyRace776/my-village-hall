@@ -10,9 +10,9 @@ if (!current_user_can('manage_myvh')) {
 global $myvh_container;
 
 $edit_id           = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$room_rate_service = $myvh_container->get(MYVH_Room_Rate_Service::class);
-$room_service      = $myvh_container->get(MYVH_Room_Service::class);
-$org_type_service  = $myvh_container->get(MYVH_Organisation_Type_Service::class);
+$room_rate_service = $myvh_container->get(Room_Rate_Service::class);
+$room_service      = $myvh_container->get(Room_Service::class);
+$org_type_service  = $myvh_container->get(Organisation_Type_Service::class);
 $edit_rate         = $edit_id ? $room_rate_service->get($edit_id) : null;
 $rates             = $room_rate_service->get_all();
 $rooms             = $room_service->get_all_with_venues();

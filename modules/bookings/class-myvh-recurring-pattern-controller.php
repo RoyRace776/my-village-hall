@@ -1,11 +1,11 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-class MYVH_Recurring_Pattern_Controller {
+class Recurring_Pattern_Controller {
 
     private $service;
 
-    public function __construct(MYVH_Recurring_Pattern_Service $service) {
+    public function __construct(Recurring_Pattern_Service $service) {
         $this->service = $service;
     }
 

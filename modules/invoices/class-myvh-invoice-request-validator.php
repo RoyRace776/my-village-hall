@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 
 require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-validator-base.php';
 
-class MYVH_Invoice_Request_Validator extends MYVH_Request_Validator_Base {
+class Invoice_Request_Validator extends Request_Validator_Base {
 
     public function validate(array $data): true|WP_Error {
         $required = $this->require_field($data, 'customer_id', __('Customer is required', 'my-village-hall'));

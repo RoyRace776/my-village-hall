@@ -92,7 +92,7 @@ ob_end_clean();
  *
  * Singleton that owns WordPress hook registration, admin menu setup,
  * asset enqueueing, and page rendering.  Database installation lives
- * in MYVH_Installer (called during activation).
+ * in Installer (called during activation).
  *
  * @since 0.1.0
  */
@@ -134,11 +134,11 @@ class My_Village_Hall {
         add_action( 'admin_menu',     [ $this, 'register_admin_menu' ] );
         add_action( 'admin_menu',     [ $this, 'ensure_invoices_menu_item' ], 99 );
 
-        MYVH_Asset_Loader::init();
+        Asset_Loader::init();
 
         // 2. Settings
-        MYVH_Settings_Registry::auto_register( MYVH_PLUGIN_DIR . 'modules/settings' );
-        ( new MYVH_Settings_Page() )->init();
+        Settings_Registry::auto_register( MYVH_PLUGIN_DIR . 'modules/settings' );
+        ( new Settings_Page() )->init();
 
         // 3. Form-submission handlers (admin-post actions)
         $this->register_admin_post_actions();
@@ -154,45 +154,45 @@ class My_Village_Hall {
     private function register_admin_post_actions(): void {
 
         // Bookings
-        $this->on_admin_post( 'myvh_save_booking',   MYVH_Booking_Controller::class, 'save' );
-        $this->on_admin_post( 'myvh_cancel_booking', MYVH_Booking_Controller::class, 'cancel' );
+        $this->on_admin_post( 'myvh_save_booking',   Booking_Controller::class, 'save' );
+        $this->on_admin_post( 'myvh_cancel_booking', Booking_Controller::class, 'cancel' );
 
         // Recurring patterns
-        $this->on_admin_post( 'myvh_save_recurring_pattern',       MYVH_Recurring_Pattern_Controller::class, 'save' );
-        $this->on_admin_post( 'myvh_delete_recurring_pattern',     MYVH_Recurring_Pattern_Controller::class, 'delete' );
-        $this->on_admin_post( 'myvh_deactivate_recurring_pattern', MYVH_Recurring_Pattern_Controller::class, 'deactivate' );
-        $this->on_admin_post( 'myvh_delete_future_bookings',       MYVH_Recurring_Pattern_Controller::class, 'delete_future_bookings' );
-        $this->on_admin_post( 'myvh_process_patterns',             MYVH_Recurring_Pattern_Controller::class, 'process_patterns' );
+        $this->on_admin_post( 'myvh_save_recurring_pattern',       Recurring_Pattern_Controller::class, 'save' );
+        $this->on_admin_post( 'myvh_delete_recurring_pattern',     Recurring_Pattern_Controller::class, 'delete' );
+        $this->on_admin_post( 'myvh_deactivate_recurring_pattern', Recurring_Pattern_Controller::class, 'deactivate' );
+        $this->on_admin_post( 'myvh_delete_future_bookings',       Recurring_Pattern_Controller::class, 'delete_future_bookings' );
+        $this->on_admin_post( 'myvh_process_patterns',             Recurring_Pattern_Controller::class, 'process_patterns' );
 
         // Venues & Rooms
-        $this->on_admin_post( 'myvh_save_venue',   MYVH_Venue_Controller::class, 'save' );
-        $this->on_admin_post( 'myvh_delete_venue', MYVH_Venue_Controller::class, 'delete' );
-        $this->on_admin_post( 'myvh_save_room',    MYVH_Room_Controller::class,  'save' );
-        $this->on_admin_post( 'myvh_delete_room',  MYVH_Room_Controller::class,  'delete' );
+        $this->on_admin_post( 'myvh_save_venue',   Venue_Controller::class, 'save' );
+        $this->on_admin_post( 'myvh_delete_venue', Venue_Controller::class, 'delete' );
+        $this->on_admin_post( 'myvh_save_room',    Room_Controller::class,  'save' );
+        $this->on_admin_post( 'myvh_delete_room',  Room_Controller::class,  'delete' );
 
         // Customers
-        $this->on_admin_post( 'myvh_save_customer',          MYVH_Customer_Controller::class,       'save' );
-        $this->on_admin_post( 'myvh_delete_customer',        MYVH_Customer_Controller::class,       'delete' );
+        $this->on_admin_post( 'myvh_save_customer',          Customer_Controller::class,       'save' );
+        $this->on_admin_post( 'myvh_delete_customer',        Customer_Controller::class,       'delete' );
 
         // Organisations
-        $this->on_admin_post( 'myvh_save_organisation',   MYVH_Organisation_Controller::class,      'save' );
-        $this->on_admin_post( 'myvh_delete_organisation', MYVH_Organisation_Controller::class,      'delete' );
-        $this->on_admin_post( 'myvh_add_org_member',      MYVH_Organisation_Controller::class,      'add_member' );
-        $this->on_admin_post( 'myvh_remove_org_member',   MYVH_Organisation_Controller::class,      'remove_member' );
-        $this->on_admin_post( 'myvh_save_org_type',       MYVH_Organisation_Type_Controller::class, 'save' );
-        $this->on_admin_post( 'myvh_delete_org_type',     MYVH_Organisation_Type_Controller::class, 'delete' );
+        $this->on_admin_post( 'myvh_save_organisation',   Organisation_Controller::class,      'save' );
+        $this->on_admin_post( 'myvh_delete_organisation', Organisation_Controller::class,      'delete' );
+        $this->on_admin_post( 'myvh_add_org_member',      Organisation_Controller::class,      'add_member' );
+        $this->on_admin_post( 'myvh_remove_org_member',   Organisation_Controller::class,      'remove_member' );
+        $this->on_admin_post( 'myvh_save_org_type',       Organisation_Type_Controller::class, 'save' );
+        $this->on_admin_post( 'myvh_delete_org_type',     Organisation_Type_Controller::class, 'delete' );
 
         // Pricing
-        $this->on_admin_post( 'myvh_save_rate',   MYVH_Room_Rate_Controller::class, 'save' );
-        $this->on_admin_post( 'myvh_delete_rate', MYVH_Room_Rate_Controller::class, 'delete' );
-        $this->on_admin_post( 'myvh_save_addon',  MYVH_Addon_Controller::class,     'save' );
-        $this->on_admin_post( 'myvh_delete_addon', MYVH_Addon_Controller::class,    'delete' );
+        $this->on_admin_post( 'myvh_save_rate',   Room_Rate_Controller::class, 'save' );
+        $this->on_admin_post( 'myvh_delete_rate', Room_Rate_Controller::class, 'delete' );
+        $this->on_admin_post( 'myvh_save_addon',  Addon_Controller::class,     'save' );
+        $this->on_admin_post( 'myvh_delete_addon', Addon_Controller::class,    'delete' );
 
         // Invoices & Payments
-        $this->on_admin_post( 'myvh_save_invoice',           MYVH_Invoice_Controller::class, 'save' );
-        $this->on_admin_post( 'myvh_delete_invoice',         MYVH_Invoice_Controller::class, 'delete' );
-        $this->on_admin_post( 'myvh_update_invoice_status',  MYVH_Invoice_Controller::class, 'update_status' );
-        $this->on_admin_post( 'myvh_record_payment',         MYVH_Invoice_Controller::class, 'record_payment' );
+        $this->on_admin_post( 'myvh_save_invoice',           Invoice_Controller::class, 'save' );
+        $this->on_admin_post( 'myvh_delete_invoice',         Invoice_Controller::class, 'delete' );
+        $this->on_admin_post( 'myvh_update_invoice_status',  Invoice_Controller::class, 'update_status' );
+        $this->on_admin_post( 'myvh_record_payment',         Invoice_Controller::class, 'record_payment' );
     }
 
     /**
@@ -210,23 +210,23 @@ class My_Village_Hall {
 
     /**
      * Runs on plugin activation.
-     * Delegates actual table creation to MYVH_Installer.
+     * Delegates actual table creation to Installer.
      */
 
 
     public function activate(): void {
-        MYVH_Installer::run();
+        Installer::run();
         update_option( 'myvh_version', MYVH_VERSION );
         flush_rewrite_rules();
     }
 
     /** Runs on plugin deactivation. */
     public function deactivate($network_wide): void {
-        $general_settings = new MYVH_General_Settings();
+        $general_settings = new General_Settings();
         $delete_on_deactivate = (bool) $general_settings->get('delete_on_deactivate');
 
         if ($delete_on_deactivate) {
-            MYVH_Installer::tidy_up();
+            Installer::tidy_up();
         }
         flush_rewrite_rules();
     }
@@ -467,7 +467,7 @@ class My_Village_Hall {
             exit;
         }
 
-        if ( ! class_exists( 'MYVH_Client_Admin_Service' ) ) {
+        if ( ! class_exists( 'Client_Admin_Service' ) ) {
             echo '<div class="wrap"><h1>' . esc_html__( 'Client Administrators', 'my-village-hall' ) . '</h1>';
             echo '<div class="notice notice-error"><p>' . esc_html__( 'Client admin service is not available.', 'my-village-hall' ) . '</p></div>';
             echo '</div>';
@@ -484,7 +484,7 @@ class My_Village_Hall {
             return;
         }
 
-        $service = new MYVH_Client_Admin_Service();
+        $service = new Client_Admin_Service();
         $blog_id = get_current_blog_id();
 
         if ( $_SERVER['REQUEST_METHOD'] === 'POST' && ! empty( $_POST['myvh_client_admin_action'] ) ) {
@@ -695,21 +695,21 @@ function myvh_init(): My_Village_Hall {
     $plugin = My_Village_Hall::get_instance();
 
     // Frontend calendar shortcode + REST endpoint
-    ( new MYVH_Calendar_Shortcode() )->init();
+    ( new Calendar_Shortcode() )->init();
 
     // Password reset shortcode and handler
     if ( file_exists( MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-loader.php' ) ) {
         require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-loader.php';
-        if (!class_exists('MYVH\\Shortcodes\\MYVH_Password_Reset_Loader')) {
+        if (!class_exists('MYVH\\Shortcodes\\Password_Reset_Loader')) {
             // Defensive: ensure class is loaded
-            throw new Exception('MYVH_Password_Reset_Loader class not found after require.');
+            throw new Exception('Password_Reset_Loader class not found after require.');
         }
-        ( new \MYVH\Shortcodes\MYVH_Password_Reset_Loader() )->init();
+        ( new \MYVH\Shortcodes\Password_Reset_Loader() )->init();
     }
 
     // Network dashboard (multisite network-admin only)
     if ( is_multisite() && is_network_admin() ) {
-        ( new MYVH_Network_Dashboard() )->init();
+        ( new Network_Dashboard() )->init();
     }
 
     return $plugin;

@@ -1,6 +1,6 @@
 <?php
 
-Class MYVH_Pricing_Service {
+Class Pricing_Service {
 
     private $room_rate_service;
     private $booking_repo;
@@ -8,11 +8,11 @@ Class MYVH_Pricing_Service {
     private $organisation_repo;
     private $booking_addon_repo;
 
-    public function __construct(MYVH_Room_Rate_Service $room_rate_service,
-                                MYVH_Booking_Repository $booking_repo,
-                                MYVH_Customer_Repository $customer_repo,
-                                MYVH_Organisation_Repository $organisation_repo,
-                                MYVH_Booking_Addon_Repository $booking_addons_repo) {
+    public function __construct(Room_Rate_Service $room_rate_service,
+                                Booking_Repository $booking_repo,
+                                Customer_Repository $customer_repo,
+                                Organisation_Repository $organisation_repo,
+                                Booking_Addon_Repository $booking_addons_repo) {
         $this->room_rate_service = $room_rate_service;
         $this->booking_repo = $booking_repo;
         $this->customer_repo = $customer_repo;

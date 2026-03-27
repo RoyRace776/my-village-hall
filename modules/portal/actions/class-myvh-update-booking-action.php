@@ -1,10 +1,10 @@
 <?php
-class MYVH_Update_Booking_Action {
+class Update_Booking_Action {
 
     public function __construct(
-        private MYVH_Booking_Service $booking_service,
-        private MYVH_Customer_Service $customer_service,
-        private MYVH_Client_Admin_Service $client_admin_service
+        private Booking_Service $booking_service,
+        private Customer_Service $customer_service,
+        private Client_Admin_Service $client_admin_service
     ) {}
 
     public function execute(array $input): void {
@@ -24,7 +24,7 @@ class MYVH_Update_Booking_Action {
             throw new Exception('Booking ID is required');
         }
 
-        $booking = MYVH_Booking_Access::get_accessible_booking(
+        $booking = Booking_Access::get_accessible_booking(
             $booking_id,
             (int) ($customer['Id'] ?? 0),
             $is_admin,

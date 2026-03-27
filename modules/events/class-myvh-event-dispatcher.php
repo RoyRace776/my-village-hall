@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Event_Dispatcher {
+class Event_Dispatcher {
 
     public static function dispatch($event_name, $payload = []): void {
 

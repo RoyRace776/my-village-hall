@@ -1,6 +1,6 @@
 <?php
 
-abstract class MYVH_Settings_Base {
+abstract class Settings_Base {
 
     protected $option_name = '';
     protected $schema = [];

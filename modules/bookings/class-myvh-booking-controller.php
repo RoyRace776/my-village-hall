@@ -1,13 +1,13 @@
 <?php
 
-class MYVH_Booking_Controller {
+class Booking_Controller {
 
     private $service;
     private $request_validator;
 
     public function __construct(
-        MYVH_Booking_Service $service,
-        MYVH_Booking_Request_Validator $request_validator
+        Booking_Service $service,
+        Booking_Request_Validator $request_validator
     ) {
         $this->service = $service;
         $this->request_validator = $request_validator;
@@ -21,7 +21,7 @@ class MYVH_Booking_Controller {
         check_admin_referer('myvh_save_booking');
 
         $posted_data = wp_unslash($_POST);
-        $data = MYVH_Save_Booking_Request::from_post($posted_data);
+        $data = Save_Booking_Request::from_post($posted_data);
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {
@@ -39,7 +39,7 @@ class MYVH_Booking_Controller {
         }
 
         foreach ($this->service->get_last_warnings() as $warning) {
-            MYVH_Admin_Notices::warning($warning);
+            Admin_Notices::warning($warning);
         }
 
         delete_transient($this->get_form_transient_key());

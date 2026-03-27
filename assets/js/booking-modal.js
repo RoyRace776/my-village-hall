@@ -1,4 +1,4 @@
-window.MYVH_BookingModal = (function() {
+window.BookingModal = (function() {
 
     let config = {};
     let modal, form;
@@ -40,7 +40,7 @@ window.MYVH_BookingModal = (function() {
         form  = document.getElementById("myvh-booking-form");
 
         if (!modal || !form) {
-            console.error("MYVH_BookingModal: modal or form not found");
+            console.error("BookingModal: modal or form not found");
             return;
         }
 

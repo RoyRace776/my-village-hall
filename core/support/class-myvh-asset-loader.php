@@ -1,12 +1,12 @@
 <?php
 
 /**
- * Class MYVH_Asset_Loader
+ * Class Asset_Loader
  *
  * Handles registration and enqueuing of plugin assets (JS, CSS) for both frontend and admin.
  * Provides helpers for asset versioning and dynamic configuration for calendar/portal features.
  */
-class MYVH_Asset_Loader {
+class Asset_Loader {
 
     /**
      * Get a version string for an asset based on file modification time (for cache busting).
@@ -43,7 +43,7 @@ class MYVH_Asset_Loader {
         }
 
         try {
-            $availability_service = $myvh_container->get( MYVH_Availability_Service::class );
+            $availability_service = $myvh_container->get( Availability_Service::class );
             $visible_hours = $availability_service->get_calendar_visible_hours();
         } catch ( Throwable $e ) {
             return $defaults;
@@ -85,7 +85,7 @@ class MYVH_Asset_Loader {
             self::enqueue_portal();
         }
 
-        // Public calendar assets are enqueued directly by MYVH_Calendar_Shortcode::render()
+        // Public calendar assets are enqueued directly by Calendar_Shortcode::render()
         // to support per-instance container IDs and REST config.
     }
 
@@ -238,8 +238,8 @@ class MYVH_Asset_Loader {
             global $myvh_container;
 
             if ( isset( $myvh_container ) ) {
-                $client_admin_service = $myvh_container->get( MYVH_Client_Admin_Service::class );
-                $customer_service = $myvh_container->get( MYVH_Customer_Service::class );
+                $client_admin_service = $myvh_container->get( Client_Admin_Service::class );
+                $customer_service = $myvh_container->get( Customer_Service::class );
                 $customer = $customer_service->get_by_user_id( get_current_user_id() );
                 $organisations = $customer_service->get_organisations_for_user_id( get_current_user_id() );
                 $is_client_admin = $client_admin_service->can_administer_blog( get_current_user_id(), get_current_blog_id() );

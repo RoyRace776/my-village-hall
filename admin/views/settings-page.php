@@ -1,6 +1,6 @@
 <?php
 
-class MYVH_Settings_Page {
+class Settings_Page {
 
     public function init() {
 
@@ -39,7 +39,7 @@ class MYVH_Settings_Page {
             return;
         }
 
-        $groups = MYVH_Settings_Registry::groups();
+        $groups = Settings_Registry::groups();
 
         $active_tab = $_GET['tab'] ?? array_key_first($groups);
 
@@ -83,7 +83,7 @@ class MYVH_Settings_Page {
      */
     private function render_tab($key) {
 
-        $settings = MYVH_Settings_Registry::get($key);
+        $settings = Settings_Registry::get($key);
 
         if (!$settings) {
             echo '<p>Invalid settings group.</p>';
@@ -340,7 +340,7 @@ class MYVH_Settings_Page {
 
         $group = sanitize_text_field($_POST['group'] ?? '');
 
-        $settings = MYVH_Settings_Registry::get($group);
+        $settings = Settings_Registry::get($group);
 
         if (!$settings) {
             wp_die('Invalid settings group');

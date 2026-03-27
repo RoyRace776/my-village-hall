@@ -1,11 +1,11 @@
 <?php
 
-class MYVH_Portal_Booking_Ajax_Controller {
+class Portal_Booking_Ajax_Controller {
 
 public function __construct(
-    private MYVH_Get_Booking_Action $get_action,
-    private MYVH_Update_Booking_Action $update_action,
-    private MYVH_Delete_Booking_Action $delete_action
+    private Get_Booking_Action $get_action,
+    private Update_Booking_Action $update_action,
+    private Delete_Booking_Action $delete_action
 ) {}
 
 public function register(): void {
@@ -15,7 +15,7 @@ public function register(): void {
 }
 
 public function get(): void {
-    MYVH_Portal_Auth::require_user();
+    Portal_Auth::require_user();
 
     try {
         $booking_id = intval($_REQUEST['booking_id'] ?? 0);
@@ -28,7 +28,7 @@ public function get(): void {
 }
 
 public function update(): void {
-    MYVH_Portal_Auth::require_user();
+    Portal_Auth::require_user();
 
     try {
         $this->update_action->execute($_POST);
@@ -39,7 +39,7 @@ public function update(): void {
 }
 
 public function delete(): void {
-    MYVH_Portal_Auth::require_user();
+    Portal_Auth::require_user();
 
     try {
         $booking_id = intval($_POST['booking_id'] ?? 0);

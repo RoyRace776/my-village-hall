@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) exit;
  * Abstract base class for mapping request data to sanitized values.
  * Provides static helpers for extracting and sanitizing various types from arrays.
  */
-abstract class MYVH_Request_Mapper_Base {
+abstract class Request_Mapper_Base {
 
     /**
      * Get an integer value from array data.
