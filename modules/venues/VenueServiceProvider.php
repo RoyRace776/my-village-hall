@@ -1,7 +1,7 @@
 <?php
 
-require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-save-venue-request.php';
-require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-request-validator.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/SaveVenueRequest.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/VenueRequestValidator.php';
 
 class VenueServiceProvider
 {

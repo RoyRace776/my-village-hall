@@ -28,15 +28,15 @@ $myvh_container = new Container();
 // ── Require service-provider class files ──────────────────────────────────────
 // Each provider is a single class that registers its module's bindings.
 
-require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-service-provider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/VenueServiceProvider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/customers/class-myvh-customer-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-pricing-service-provider.php';
-require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-service-provider.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-service-provider.php';
-require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-service-provider.php';
-require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-service-provider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/AddonServiceProvider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingServiceProvider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/availability/AvailabilityServiceProvider.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/InvoiceServiceProvider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/payments/class-myvh-payment-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-service-provider.php';
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-service-provider.php';

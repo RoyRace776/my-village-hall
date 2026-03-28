@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) exit;
 
 require_once MYVH_PLUGIN_DIR . 'modules/events/booking-events.php';
 require_once MYVH_PLUGIN_DIR . 'modules/events/class-myvh-event-dispatcher.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-status.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingStatus.php';
 
 class BookingService {
 

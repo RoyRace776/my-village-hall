@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-validator-base.php';
+require_once MYVH_PLUGIN_DIR . 'core/support/RequestValidatorBase.php';
 
 class OrganisationRequestValidator extends RequestValidatorBase {
 

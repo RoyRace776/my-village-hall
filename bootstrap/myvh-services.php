@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ── 1. Venues & Rooms ─────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/VenueService.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-service.php';
 
 // ── 2. Customers  ─────────────────────────────────────────────────────
@@ -36,16 +36,16 @@ require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-ty
 // ── 3. Pricing ────────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-pricing-service.php';
-require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/AddonService.php';
 
 // ── 4. Bookings ───────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-service.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-validator.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-service.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/availability/AvailabilityService.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingValidator.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingService.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/RecurringPatternService.php';
 
 // ── 5. Invoices ───────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-service.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/InvoiceService.php';
 
 // ── 6. Calendar ───────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-service.php';

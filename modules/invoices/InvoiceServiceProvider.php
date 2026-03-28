@@ -1,7 +1,7 @@
 <?php
 
-require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-save-invoice-request.php';
-require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-request-validator.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/SaveInvoiceRequest.php';
+require_once MYVH_PLUGIN_DIR . 'modules/invoices/InvoiceRequestValidator.php';
 require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-generator-service.php';
 
 class InvoiceServiceProvider

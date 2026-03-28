@@ -1,18 +1,18 @@
 <?php
 
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-addon-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-discount-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-charge-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-save-booking-request.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingRepository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingAddonRepository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingDiscountRepository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingChargeRepository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/SaveBookingRequest.php';
 require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-request-validator.php';
 
-require_once MYVH_PLUGIN_DIR . 'modules/availability/class-myvh-availability-service.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-validator.php';
+require_once MYVH_PLUGIN_DIR . 'modules/availability/AvailabilityService.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingValidator.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-rules-service.php';
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-pricing-service.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-service.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingService.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingController.php';
 
 class BookingServiceProvider
 {

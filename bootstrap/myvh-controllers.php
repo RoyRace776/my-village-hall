@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ── Venues & Rooms ────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/VenueController.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-controller.php';
 
 // ── Customers ────────────────────────────────────────────────────────
@@ -30,11 +30,11 @@ require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-ty
 
 // ── Pricing ───────────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-controller.php';
-require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/AddonController.php';
 
 // ── Bookings ──────────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-controller.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-controller.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingController.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/RecurringPatternController.php';
 
 // ── Invoices & Payments ───────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/invoices/class-myvh-invoice-controller.php';

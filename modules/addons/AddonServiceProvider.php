@@ -1,7 +1,7 @@
 <?php
 
-require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-save-addon-request.php';
-require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-request-validator.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/SaveAddonRequest.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/AddonRequestValidator.php';
 
 class AddonServiceProvider
 {

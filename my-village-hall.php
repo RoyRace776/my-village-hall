@@ -41,11 +41,11 @@ require_once MYVH_PLUGIN_DIR . 'core/support/wp-compat.php';
 
 // Core infrastructure
 //require_once MYVH_PLUGIN_DIR . 'core/container/class-myvh-container.php';
-require_once MYVH_PLUGIN_DIR . 'bootstrap/class-myvh-installer.php';
-require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-asset-loader.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/Installer.php';
+require_once MYVH_PLUGIN_DIR . 'core/support/AssetLoader.php';
 
 // Admin utilities
-require_once MYVH_PLUGIN_DIR . 'admin/class-myvh-admin-notices.php';
+require_once MYVH_PLUGIN_DIR . 'admin/AdminNotices.php';
 
 // Data layer — repositories (class definitions only; no instantiation here)
 require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-repositories.php';
@@ -74,14 +74,14 @@ require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-bootstrap.php';
 
 // Feature modules
 require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-shortcode.php';
-require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-handler.php';
-require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-shortcode.php';
+require_once MYVH_PLUGIN_DIR . 'modules/login/PasswordResetHandler.php';
+require_once MYVH_PLUGIN_DIR . 'modules/login/PasswordResetShortcode.php';
 require_once MYVH_PLUGIN_DIR . 'modules/email/class-myvh-email-service.php';
 
 // Multisite network dashboard
-require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-dashboard.php';
-require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-sites-table.php';
-require_once MYVH_PLUGIN_DIR . 'bootstrap/network/class-myvh-network-stats.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/network/NetworkDashboard.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/network/NetworkSitesTable.php';
+require_once MYVH_PLUGIN_DIR . 'bootstrap/network/NetworkStats.php';
 
 ob_end_clean();
 
@@ -698,8 +698,8 @@ function myvh_init(): MyVillageHall {
     ( new CalendarShortcode() )->init();
 
     // Password reset shortcode and handler
-    if ( file_exists( MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-loader.php' ) ) {
-        require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-password-reset-loader.php';
+    if ( file_exists( MYVH_PLUGIN_DIR . 'modules/login/PasswordResetLoader.php' ) ) {
+        require_once MYVH_PLUGIN_DIR . 'modules/login/PasswordResetLoader.php';
         if (!class_exists('MYVH\\Shortcodes\\PasswordResetLoader')) {
             // Defensive: ensure class is loaded
             throw new Exception('PasswordResetLoader class not found after require.');

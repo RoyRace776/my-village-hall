@@ -21,10 +21,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-require_once MYVH_PLUGIN_DIR . '/core/support/class-myvh-repository-base.php';
+require_once MYVH_PLUGIN_DIR . '/core/support/RepositoryBase.php';
 
 // ── 1. Venues & Rooms ─────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/venues/class-myvh-venue-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/venues/VenueRepository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/rooms/class-myvh-room-repository.php';
 
 // ── 2. Customers ─────────────────────────────────────────────────────
@@ -37,15 +37,15 @@ require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-me
 require_once MYVH_PLUGIN_DIR . 'modules/organisations/class-myvh-organisation-member-request-repository.php';
 
 // ── 3. Bookings ───────────────────────────────────────────────────────────────
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-recurring-pattern-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-addon-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-charge-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/bookings/class-myvh-booking-discount-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingRepository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/RecurringPatternRepository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingAddonRepository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingChargeRepository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/bookings/BookingDiscountRepository.php';
 
 // ── 4. Pricing ────────────────────────────────────────────────────────────────
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-room-rate-repository.php';
-require_once MYVH_PLUGIN_DIR . 'modules/addons/class-myvh-addon-repository.php';
+require_once MYVH_PLUGIN_DIR . 'modules/addons/AddonRepository.php';
 require_once MYVH_PLUGIN_DIR . 'modules/pricing/class-myvh-discount-repository.php';
 
 // ── 5. Invoices & Payments ────────────────────────────────────────────────────

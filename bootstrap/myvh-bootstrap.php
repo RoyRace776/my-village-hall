@@ -19,10 +19,10 @@ use MYVH\Shortcodes\PortalShortcode;
 require_once MYVH_PLUGIN_DIR . 'modules/events/class-myvh-booking-listener.php';
 require_once MYVH_PLUGIN_DIR . 'core/shortcode/shortcode-interface.php';
 require_once MYVH_PLUGIN_DIR . 'core/shortcode/class-myvh-shortcode-registry.php';
-require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-shortcode.php';
+require_once MYVH_PLUGIN_DIR . 'modules/login/LoginShortcode.php';
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-shortcode.php';
 require_once MYVH_PLUGIN_DIR . 'modules/portal/class-myvh-portal-controller.php';
-require_once MYVH_PLUGIN_DIR . 'modules/login/class-myvh-login-handler.php';
+require_once MYVH_PLUGIN_DIR . 'modules/login/LoginHandler.php';
 
 global $myvh_container;
 
