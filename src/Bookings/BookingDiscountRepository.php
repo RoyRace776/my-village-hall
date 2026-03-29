@@ -2,7 +2,7 @@
 
 namespace MYVH\Bookings;
 
-use RepositoryBase;
+use MYVH\Core\Support\RepositoryBase;
 use wpdb;
 
 /**

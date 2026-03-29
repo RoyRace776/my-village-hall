@@ -1,9 +1,11 @@
 <?php
 namespace MYVH\Addons;
 
+use MYVH\Core\Support\RequestValidatorBase;
+
 if (!defined('ABSPATH')) exit;
 
-class AddonRequestValidator extends \RequestValidatorBase {
+class AddonRequestValidator extends RequestValidatorBase {
 
     public function validate(array $data): bool|\WP_Error {
         $required = $this->require_field($data, 'name', __('Add-on name is required', 'my-village-hall'));

@@ -16,6 +16,28 @@
  *
  * @package MyVillageHall
  */
+use MYVH\Venues\VenueController;
+use MYVH\Rooms\RoomController;
+use MYVH\Bookings\BookingController;
+use MYVH\Bookings\RecurringPatternController;
+use MYVH\Customers\CustomerController;
+use MYVH\Organisations\OrganisationController;
+use MYVH\Organisations\OrganisationTypeController;
+use MYVH\Pricing\RoomRateController;
+use MYVH\Addons\AddonController;
+use MYVH\Invoices\InvoiceController;
+use MYVH\Settings\GeneralSettings;
+use MYVH\Calendar\CalendarShortcode;
+use MYVH\Portal\ClientAdminService;
+use MYVH\Bootstrap\Network\NetworkDashboard;
+use MYVH\Bootstrap\Installer;
+use MYVH\Login\PasswordResetLoader;
+use MYVH\Core\Support\AssetLoader;
+use MYVH\Settings\SettingsRegistry;
+use MYVH\Settings\SettingsPage;
+
+use Exception;
+
 
 // Prevent direct file access — WordPress must load this file.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -36,52 +58,16 @@ define( 'MYVH_PLUGIN_BASENAME',  plugin_basename( __FILE__ ) );
 ob_start();
 require_once MYVH_PLUGIN_DIR . 'vendor/autoload.php';
 
-// Load compatibility shims (e.g., wp_timestamp for WP < 5.3)
-require_once MYVH_PLUGIN_DIR . 'core/support/wp-compat.php';
-
-// Core infrastructure
-//require_once MYVH_PLUGIN_DIR . 'core/container/class-myvh-container.php';
-require_once MYVH_PLUGIN_DIR . 'bootstrap/Installer.php';
-require_once MYVH_PLUGIN_DIR . 'core/support/AssetLoader.php';
-
-// Admin utilities
-require_once MYVH_PLUGIN_DIR . 'admin/AdminNotices.php';
-
-// Data layer — repositories (class definitions only; no instantiation here)
-require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-repositories.php';
-
-// Service layer
-require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-services.php';
-
-// HTTP layer — controllers
-require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-controllers.php';
-
 // Dependency-injection container (returns a configured Container instance)
 global $myvh_container;
-$myvh_container = require MYVH_PLUGIN_DIR . 'bootstrap/myvh-container.php';
+$myvh_container = require MYVH_PLUGIN_DIR . 'src/Core/Support/myvh-container.php';
 
 
-// Settings module
-require_once MYVH_PLUGIN_DIR . 'modules/settings/settings-helper.php';
-require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-settings-base.php';
-require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-general-settings.php';
-require_once MYVH_PLUGIN_DIR . 'modules/settings/class-myvh-booking-settings.php';
-require_once MYVH_PLUGIN_DIR . 'modules/settings/settings-registry.php';
-require_once MYVH_PLUGIN_DIR . 'admin/views/settings-page.php';
+//require_once MYVH_PLUGIN_DIR . 'admin/views/settings-page.php';
 
 // Bootstrap event listeners and any remaining wiring
-require_once MYVH_PLUGIN_DIR . 'bootstrap/myvh-bootstrap.php';
+require_once MYVH_PLUGIN_DIR . 'src/Bootstrap/myvh-bootstrap.php';
 
-// Feature modules
-require_once MYVH_PLUGIN_DIR . 'modules/calendar/class-myvh-calendar-shortcode.php';
-require_once MYVH_PLUGIN_DIR . 'modules/login/PasswordResetHandler.php';
-require_once MYVH_PLUGIN_DIR . 'modules/login/PasswordResetShortcode.php';
-require_once MYVH_PLUGIN_DIR . 'modules/email/class-myvh-email-service.php';
-
-// Multisite network dashboard
-require_once MYVH_PLUGIN_DIR . 'bootstrap/network/NetworkDashboard.php';
-require_once MYVH_PLUGIN_DIR . 'bootstrap/network/NetworkSitesTable.php';
-require_once MYVH_PLUGIN_DIR . 'bootstrap/network/NetworkStats.php';
 
 ob_end_clean();
 
@@ -137,7 +123,7 @@ class MyVillageHall {
         AssetLoader::init();
 
         // 2. Settings
-        SettingsRegistry::auto_register( MYVH_PLUGIN_DIR . 'modules/settings' );
+        SettingsRegistry::auto_register( MYVH_PLUGIN_DIR . 'src/Settings' );
         ( new SettingsPage() )->init();
 
         // 3. Form-submission handlers (admin-post actions)
@@ -692,20 +678,17 @@ add_action( 'wp_initialize_site', function ( $new_site ) {
  */
 function myvh_init(): MyVillageHall {
 
-    $plugin = MyVillageHall::get_instance();
+    $plugin = \MyVillageHall::get_instance();
 
     // Frontend calendar shortcode + REST endpoint
     ( new CalendarShortcode() )->init();
 
     // Password reset shortcode and handler
-    if ( file_exists( MYVH_PLUGIN_DIR . 'modules/login/PasswordResetLoader.php' ) ) {
-        require_once MYVH_PLUGIN_DIR . 'modules/login/PasswordResetLoader.php';
-        if (!class_exists('MYVH\\Shortcodes\\PasswordResetLoader')) {
-            // Defensive: ensure class is loaded
-            throw new Exception('PasswordResetLoader class not found after require.');
-        }
-        ( new \MYVH\Shortcodes\PasswordResetLoader() )->init();
+    if (!class_exists('MYVH\Login\PasswordResetLoader')) {
+        // Defensive: ensure class is loaded
+        throw new Exception('PasswordResetLoader class not found.');
     }
+    ( new PasswordResetLoader() )->init();
 
     // Network dashboard (multisite network-admin only)
     if ( is_multisite() && is_network_admin() ) {

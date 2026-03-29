@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
+use MYVH\Core\Support\RepositoryBase;
+
 class PaymentRepository extends RepositoryBase{
 
     /**

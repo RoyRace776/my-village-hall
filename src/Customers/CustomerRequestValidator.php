@@ -1,9 +1,10 @@
 <?php
 namespace MYVH\Customers;
+use MYVH\Core\Support\RequestValidatorBase;
 
 if (!defined('ABSPATH')) exit;
 
-class CustomerRequestValidator extends \RequestValidatorBase {
+class CustomerRequestValidator extends RequestValidatorBase {
 
     public function validate(array $data): true|\WP_Error {
         $required = $this->require_field($data, 'name', __('Customer name is required', 'my-village-hall'));

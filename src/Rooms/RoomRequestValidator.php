@@ -1,9 +1,11 @@
 <?php
 namespace MYVH\Rooms;
 
+use MYVH\Core\Support\RequestValidatorBase;
+
 if (!defined('ABSPATH')) exit;
 
-class RoomRequestValidator extends \RequestValidatorBase {
+class RoomRequestValidator extends RequestValidatorBase {
 
     public function validate(array $data): true|\WP_Error {
         $required = $this->require_field($data, 'name', __('Room name is required', 'my-village-hall'));

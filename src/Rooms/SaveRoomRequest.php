@@ -1,9 +1,11 @@
 <?php
 namespace MYVH\Rooms;
 
+use MYVH\Core\Support\RequestMapperBase;
+
 if (!defined('ABSPATH')) exit;
 
-class SaveRoomRequest extends \RequestMapperBase {
+class SaveRoomRequest extends RequestMapperBase {
 
     public static function from_post(array $post): array {
         return [

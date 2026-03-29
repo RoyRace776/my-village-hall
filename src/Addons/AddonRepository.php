@@ -1,7 +1,8 @@
 <?php
 namespace MYVH\Addons;
+use MYVH\Core\Support\RepositoryBase;
 
-class AddonRepository extends \RepositoryBase {
+class AddonRepository extends RepositoryBase {
 
     /**
      * Constructor

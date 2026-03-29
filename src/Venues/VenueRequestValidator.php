@@ -1,10 +1,10 @@
 <?php
 namespace MYVH\Venues;
 
+use MYVH\Core\Support\RequestValidatorBase;
+use WP_Error;
 
 if (!defined('ABSPATH')) exit;
-
-require_once MYVH_PLUGIN_DIR . 'core/support/RequestValidatorBase.php';
 
 class VenueRequestValidator extends RequestValidatorBase {
 

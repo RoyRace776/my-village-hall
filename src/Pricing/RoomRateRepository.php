@@ -1,9 +1,11 @@
 <?php
 namespace MYVH\Pricing;
 
+use MYVH\Core\Support\RepositoryBase;
+
 if (!defined('ABSPATH')) exit;
 
-class RoomRateRepository extends \RepositoryBase{
+class RoomRateRepository extends RepositoryBase{
 
     public function __construct( \wpdb $wpdb ) {
         $this->wpdb  = $wpdb;

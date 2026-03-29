@@ -1,4 +1,5 @@
 <?php
+namespace MYVH\Settings;
 
 class SettingsPage {
 
@@ -16,7 +17,7 @@ class SettingsPage {
     public function menu() {
 
         // Separator (using a disabled submenu as visual separator)
-        MyVillageHall::add_menu_separator();
+        \MyVillageHall::add_menu_separator();
 
         add_submenu_page(
             'my-village-hall',

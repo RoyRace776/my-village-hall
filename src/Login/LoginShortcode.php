@@ -32,7 +32,7 @@ class LoginShortcode implements ShortcodeInterface
 
         ob_start();
 
-        include MYVH_PLUGIN_DIR . 'modules/login/login.php';
+        include MYVH_PLUGIN_DIR . 'templates/Login/login.php';
 
         return ob_get_clean();
     }

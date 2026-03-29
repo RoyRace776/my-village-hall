@@ -1,9 +1,11 @@
 <?php
 namespace MYVH\Addons;
 
+use MYVH\Core\Support\RequestMapperBase;
+
 if (!defined('ABSPATH')) exit;
 
-class SaveAddonRequest extends \RequestMapperBase {
+class SaveAddonRequest extends RequestMapperBase {
 
     public static function from_post(array $post): array {
         return [

@@ -1,6 +1,9 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+use MYVH\Portal\ClientAdminService;
+use MYVH\Customers\CustomerService;
+
 global $myvh_container;
 
 $client_admin_service = isset($myvh_container) ? $myvh_container->get(ClientAdminService::class) : null;

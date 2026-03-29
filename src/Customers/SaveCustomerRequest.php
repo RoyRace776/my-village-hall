@@ -1,9 +1,10 @@
 <?php
 namespace MYVH\Customers;
+use MYVH\Core\Support\RequestMapperBase;
 
 if (!defined('ABSPATH')) exit;
 
-class SaveCustomerRequest extends \MYVH\Core\Support\RequestMapperBase {
+class SaveCustomerRequest extends RequestMapperBase {
 
     public static function from_post(array $post): array {
         return [

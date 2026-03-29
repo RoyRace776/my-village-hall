@@ -1,6 +1,10 @@
 <?php
 namespace MYVH\Rooms;
 
+use MYVH\Availability\AvailabilityService;
+
+use WP_Error;
+
 if (!defined('ABSPATH')) exit;
 
 class RoomService {
@@ -10,7 +14,7 @@ class RoomService {
 
     public function __construct(
         RoomRepository $repo,
-        \MYVH\Availability\AvailabilityService $availability
+        AvailabilityService $availability
     ) {
         $this->repo = $repo;
         $this->availability = $availability;
@@ -28,14 +32,14 @@ class RoomService {
         return $this->repo->get_all_with_venues();
     }
 
-    public function save($data): int|\WP_Error {
+    public function save($data): int|WP_Error {
 
         if (empty($data['name'])) {
-            return new \WP_Error('validation', __('Room name is required', 'my-village-hall'));
+            return new WP_Error('validation', __('Room name is required', 'my-village-hall'));
         }
 
         if (empty($data['venue_id'])) {
-            return new \WP_Error('validation', __('Venue is required', 'my-village-hall'));
+            return new WP_Error('validation', __('Venue is required', 'my-village-hall'));
         }
 
         $venue_id = intval($data['venue_id']);
@@ -53,7 +57,7 @@ class RoomService {
         }
 
         if (!$hours_allowed) {
-            return new \WP_Error(
+            return new WP_Error(
                 'validation',
                 __('Room opening/closing hours must be within the venue opening hours', 'my-village-hall')
             );
@@ -81,7 +85,7 @@ class RoomService {
         $return = $this->repo->delete_by_id($id);
 
         if (!$return) {
-            return new \WP_Error('delete', __('Room delete failed', 'my-village-hall'));
+            return new WP_Error('delete', __('Room delete failed', 'my-village-hall'));
         }
 
         return $return;

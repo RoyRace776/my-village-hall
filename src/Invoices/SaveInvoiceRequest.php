@@ -5,8 +5,6 @@ use MYVH\Core\Support\RequestMapperBase;
 
 if (!defined('ABSPATH')) exit;
 
-require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-mapper-base.php';
-
 class SaveInvoiceRequest extends RequestMapperBase {
 
     public static function from_post(array $post): array {

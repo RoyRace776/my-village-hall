@@ -1,5 +1,7 @@
 <?php
 namespace MYVH\Pricing;
+
+use MYVH\Core\Support\RepositoryBase;
 /**
  * Repository class for myvh_discounts table
  *
@@ -10,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class DiscountRepository extends \RepositoryBase {
+class DiscountRepository extends RepositoryBase {
 
     /**
      * Constructor

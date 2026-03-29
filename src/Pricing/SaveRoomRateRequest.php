@@ -1,9 +1,11 @@
 <?php
 namespace MYVH\Pricing;
 
+use MYVH\Core\Support\RequestMapperBase;
+
 if (!defined('ABSPATH')) exit;
 
-class SaveRoomRateRequest extends \RequestMapperBase {
+class SaveRoomRateRequest extends RequestMapperBase {
 
     public static function from_post(array $post): array {
         return [

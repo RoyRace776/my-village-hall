@@ -1,11 +1,13 @@
 <?php
 namespace MYVH\Rooms;
 
+use MYVH\Core\Support\RepositoryBase;
+
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class RoomRepository extends \RepositoryBase {
+class RoomRepository extends RepositoryBase {
 
     /**
      * Constructor

@@ -1,6 +1,8 @@
 <?php
 namespace MYVH\Venues;
 
+use MYVH\Core\Support\RepositoryBase;
+
 /**
  * Repository class for myvh_venues table
  *

@@ -5,6 +5,7 @@ namespace MYVH\Tests\Unit\Services;
 use Mockery;
 use MYVH\Tests\Unit\Unit_Test_Case;
 use WP_Error;
+use \MYVH\Tests\Unit\UnitTestCase;
 
 /**
  * Unit tests for Booking_Service.
@@ -50,7 +51,7 @@ use WP_Error;
  * calculate_chargeable_hours (via save())
  *   ✓ same-day booking calculates correct hours
  */
-class BookingServiceTest extends \MYVH\Tests\Unit\UnitTestCase {
+class BookingServiceTest extends UnitTestCase {
 
     // ── Dependency mocks ────────────────────────────────────────────────────
 

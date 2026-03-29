@@ -18,7 +18,7 @@ class InvoiceRepository extends RepositoryBase{
     /**
      * Constructor
      */
-    public function __construct( \wpdb $wpdb ) {
+    public function __construct( wpdb $wpdb ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_invoices';
     }

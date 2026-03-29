@@ -7,8 +7,6 @@ use WP_Error;
 
 if (!defined('ABSPATH')) exit;
 
-require_once MYVH_PLUGIN_DIR . 'core/support/RequestValidatorBase.php';
-
 class InvoiceRequestValidator extends RequestValidatorBase {
 
     public function validate(array $data): true|WP_Error {

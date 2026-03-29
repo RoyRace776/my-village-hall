@@ -10,7 +10,6 @@ class OrganisationMemberRequestRepository extends RepositoryBase {
     public function __construct(wpdb $wpdb) {
         $this->wpdb  = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_organisation_member_requests';
-        $this->ensure_table();
     }
     public function get_pending_by_organisation(int $org_id): array {
         $sql = $this->wpdb->prepare(
@@ -66,28 +65,5 @@ class OrganisationMemberRequestRepository extends RepositoryBase {
             $customer_id
         );
         return $this->wpdb->get_row($sql, ARRAY_A);
-    }
-    private function ensure_table(): void {
-        $exists = $this->wpdb->get_var(
-            $this->wpdb->prepare('SHOW TABLES LIKE %s', $this->table_name)
-        );
-        if ($exists === $this->table_name) {
-            return;
-        }
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        $collate = $this->wpdb->get_charset_collate();
-        dbDelta("CREATE TABLE {$this->table_name} (
-            Id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            OrganisationId       INT UNSIGNED NOT NULL,
-            CustomerId           INT UNSIGNED NOT NULL,
-            Status               VARCHAR(20) NOT NULL DEFAULT 'pending',
-            RequestMessage       VARCHAR(500) NULL,
-            ReviewedByCustomerId INT UNSIGNED NULL,
-            ReviewedAt           DATETIME NULL,
-            Created              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uq_org_customer_pending (OrganisationId, CustomerId, Status),
-            INDEX idx_org_status (OrganisationId, Status),
-            INDEX idx_customer_status (CustomerId, Status)
-        ) {$collate};");
     }
 }

@@ -1,9 +1,9 @@
 <?php
 namespace MYVH\Venues;
 
-if (!defined('ABSPATH')) exit;
+use MYVH\Core\Support\RequestMapperBase;
 
-require_once MYVH_PLUGIN_DIR . 'core/support/class-myvh-request-mapper-base.php';
+if (!defined('ABSPATH')) exit;
 
 class SaveVenueRequest extends RequestMapperBase {
 
