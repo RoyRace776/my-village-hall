@@ -12,9 +12,9 @@ class PasswordResetShortcode implements ShortcodeInterface {
         $is_confirm = !empty($_GET['myvh_reset']) && !empty($_GET['uid']) && !empty($_GET['token']);
         ob_start();
         if ($is_confirm) {
-            include MYVH_PLUGIN_DIR . 'modules/login/password-reset-confirm-form.php';
+            include MYVH_PLUGIN_DIR . 'templates/Login/password-reset-confirm-form.php';
         } else {
-            include MYVH_PLUGIN_DIR . 'modules/login/password-reset-form.php';
+            include MYVH_PLUGIN_DIR . 'templates/Login/password-reset-form.php';
         }
         return ob_get_clean();
     }

@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+use MYVH\Customers\CustomerService;
+
 $customers = is_array($customers ?? null) ? $customers : [];
 $action = $_GET['action'] ?? '';
 $edit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;

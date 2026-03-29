@@ -49,7 +49,7 @@ class SettingsRegistry {
 
         foreach (get_declared_classes() as $class) {
 
-            if (!is_subclass_of($class, 'Settings_Base')) {
+            if (!is_subclass_of($class, 'MYVH\Settings\SettingsBase')) {
                 continue;
             }
 

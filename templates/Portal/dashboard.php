@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+use MYVH\Bookings\RecurringPatternService;
+
 $current_user = wp_get_current_user();
 $customer = $customer ?? null;
 $is_client_admin = !empty($is_client_admin);

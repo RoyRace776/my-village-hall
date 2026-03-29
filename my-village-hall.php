@@ -63,8 +63,6 @@ global $myvh_container;
 $myvh_container = require MYVH_PLUGIN_DIR . 'src/Core/Support/myvh-container.php';
 
 
-//require_once MYVH_PLUGIN_DIR . 'admin/views/settings-page.php';
-
 // Bootstrap event listeners and any remaining wiring
 require_once MYVH_PLUGIN_DIR . 'src/Bootstrap/myvh-bootstrap.php';
 

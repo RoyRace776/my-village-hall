@@ -112,12 +112,12 @@ class PortalController {
 
             case 'bookings':
                 $groups = $this->get_portal_booking_groups($customer, $is_client_admin);
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/bookings.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/bookings.php';
                 break;
 
             case 'bookings-new':
                 $can_create_booking = $is_client_admin || $has_customer;
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/bookings-new.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/bookings-new.php';
                 break;
 
             case 'booking-view':
@@ -128,7 +128,7 @@ class PortalController {
                                 $is_client_admin,
                                 $this->booking_service
                             );
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-view.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/booking-view.php';
                 break;
 
             case 'booking-edit':
@@ -139,7 +139,7 @@ class PortalController {
                                 $is_client_admin,
                                 $this->booking_service
                             );
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-edit.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/booking-edit.php';
                 break;
 
             case 'booking-delete':
@@ -151,12 +151,12 @@ class PortalController {
                                 $this->booking_service
                             );
                 $delete_rules = $this->booking_service->can_delete($booking);
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/booking-delete.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/booking-delete.php';
                 break;
 
             case 'calendar':
                 $can_create_booking = $is_client_admin || $has_customer;
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/calendar.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/calendar.php';
                 break;
 
                 // Duplicate case 'invoices' removed
@@ -205,10 +205,10 @@ class PortalController {
                 // Prepare available statuses for UI filter
                 $available_statuses = $valid_statuses;
 
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/invoices.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/invoices.php';
                 break;
             case 'account':
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/account.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/account.php';
                 break;
 
             case 'client-admins':
@@ -218,7 +218,7 @@ class PortalController {
 
                 $client_admins = $this->client_admin_service->get_assigned_users_for_blog(get_current_blog_id());
                 $accessible_sites = $this->client_admin_service->get_accessible_sites_for_user(get_current_user_id());
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/client-admins.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/client-admins.php';
                 break;
 
             case 'customers':
@@ -231,7 +231,7 @@ class PortalController {
                     'order' => 'ASC',
                 ]);
 
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/customers.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/customers.php';
                 break;
 
             case 'settings':
@@ -255,7 +255,7 @@ class PortalController {
                     ];
                 }
 
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/settings.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/settings.php';
                 break;
 
             case 'organisations':
@@ -297,12 +297,12 @@ class PortalController {
                     }
                 }
 
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/organisations.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/organisations.php';
                 break;
 
             default:
                 $groups = $this->get_portal_booking_groups($customer, $is_client_admin);
-                include MYVH_PLUGIN_DIR . 'modules/portal/templates/dashboard.php';
+                include MYVH_PLUGIN_DIR . 'templates/Portal/dashboard.php';
         }
 
         wp_die();

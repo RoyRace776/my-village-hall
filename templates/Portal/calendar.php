@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+use MYVH\Addons\AddonService;
+
 if (!is_user_logged_in()) {
     echo '<p>Please log in to view the calendar.</p>';
     return;

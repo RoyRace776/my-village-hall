@@ -1,6 +1,9 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+use MYVH\Bookings\BookingStatus;
+use MYVH\Bookings\RecurringPatternService;
+
 $is_client_admin = !empty($is_client_admin);
 $customer = $customer ?? null;
 $groups = array_values($groups ?? []);

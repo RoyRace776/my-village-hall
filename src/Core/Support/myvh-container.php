@@ -24,8 +24,7 @@ use wpdb;
  * $myvh_container.
  *
  * Service providers are responsible for binding concrete implementations
- * to the container (repositories, services, controllers).  Each provider
- * lives alongside the module it serves under modules/{domain}/.
+ * to the container (repositories, services, controllers).
  *
  * Usage (from my-village-hall.php):
  *   $myvh_container = require MYVH_PLUGIN_DIR . 'bootstrap/myvh-container.php';
