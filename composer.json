@@ -11,10 +11,6 @@
         "mockery/mockery": "^1.6"
     },
     "autoload": {
-        "classmap": [
-            "core/",
-            "modules/"
-        ],
         "psr-4": {
             "MYVH\\": "src/"
         }
