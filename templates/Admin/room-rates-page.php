@@ -7,6 +7,10 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+use MYVH\Rooms\RoomService;
+use MYVH\Pricing\RoomRateService;
+use MYVH\Organisations\OrganisationTypeService;
+
 global $myvh_container;
 
 $edit_id           = isset($_GET['edit']) ? intval($_GET['edit']) : 0;

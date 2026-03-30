@@ -4,6 +4,9 @@ if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village
 
 global $myvh_container;
 
+use MYVH\Organisations\OrganisationService;
+use MYVH\Organisations\OrganisationTypeService;
+
 $edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $org_service  = $myvh_container->get(OrganisationService::class);
 $type_service = $myvh_container->get(OrganisationTypeService::class);

@@ -6,6 +6,14 @@ if (!current_user_can('manage_myvh')) {
 }
 global $myvh_container;
 
+use MYVH\Bookings\BookingService;
+use MYVH\Bookings\BookingStatus;
+use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationService;
+use MYVH\Bookings\RecurringPatternService;
+use MYVH\Rooms\RoomService;
+
+
 $status_filter   = isset($_GET['status'])      ? sanitize_text_field($_GET['status'])  : 'all';
 $room_filter     = isset($_GET['room_id'])     ? intval($_GET['room_id'])               : 0;
 $customer_filter = isset($_GET['customer_id']) ? intval($_GET['customer_id'])           : 0;

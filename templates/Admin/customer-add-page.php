@@ -2,6 +2,8 @@
 if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village-hall'));
 
+use MYVH\Organisations\OrganisationService;
+
 global $myvh_container;
 $org_service = $myvh_container->get(OrganisationService::class);
 $default_org = $org_service->get_default();

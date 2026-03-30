@@ -9,11 +9,13 @@ if (!current_user_can('manage_myvh')) {
 
 global $myvh_container;
 
+use MYVH\Venues\VenueService;
+use MYVH\Availability\AvailabilityService;
+
 $action   = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $venue_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 $venue_service = $myvh_container->get(VenueService::class);
-$availability_service = $myvh_container->get(AvailabilityService::class);
 $availability_service = $myvh_container->get(AvailabilityService::class);
 $venue  = $venue_id ? $venue_service->get($venue_id) : null;
 $venues = $venue_service->get_all();

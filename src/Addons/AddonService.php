@@ -1,14 +1,23 @@
 <?php
 namespace MYVH\Addons;
 
+use MYVH\Bookings\BookingAddonRepository;
+use MYVH\Bookings\BookingRepository;
+
 if (!defined('ABSPATH')) exit;
 
 class AddonService {
 
     private $repo;
+    private $booking_addon_repo;
+    private $booking_repo;
 
-    public function __construct(AddonRepository $repo) {
+    public function __construct(AddonRepository $repo,
+                                BookingAddonRepository $booking_addon_repo,
+                                BookingRepository $booking_repo) {
         $this->repo = $repo;
+        $this->booking_addon_repo = $booking_addon_repo;
+        $this->booking_repo = $booking_repo;
     }
 
     public function get_all($args = []): array {
@@ -79,9 +88,7 @@ class AddonService {
      * @param bool  $replace    If true, delete all existing addons before saving
      */
     public function save_booking_addons($booking_id, $addons, $replace = false) {
-        // Assume booking_addon_repo is globally available or injected if refactored
-        global $myvh_container;
-        $booking_addon_repo = $myvh_container->get('BookingAddonRepository');
+        $booking_addon_repo = $this->booking_addon_repo;
         $addon_repo = $this->repo;
         if (!$booking_addon_repo) return;
 
@@ -106,7 +113,7 @@ class AddonService {
             if ($addon_record && ($addon_record['ChargeType'] ?? '') === 'per_hour') {
                 if ($booking_hours === null) {
                     // Fetch booking details if needed (assume booking_repo is globally available)
-                    $booking_repo = $myvh_container->get('BookingRepository');
+                    $booking_repo = $this->booking_repo;
                     $booking = $booking_repo ? $booking_repo->get_by_id($booking_id) : null;
                     if ($booking) {
                         $start = strtotime($booking['StartDate'] . ' ' . $booking['StartTime']);
@@ -139,9 +146,6 @@ class AddonService {
      * @return array
      */
     public function get_addons_for_booking($booking_id) {
-        global $myvh_container;
-        $booking_addon_repo = $myvh_container->get('Booking_AddonRepository');
-        if (!$booking_addon_repo) return [];
-        return $booking_addon_repo->get_by_booking_id($booking_id) ?? [];
+        return $this->booking_addon_repo->get_by_booking_id($booking_id) ?? [];
     }
 }

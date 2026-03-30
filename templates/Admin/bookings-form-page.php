@@ -8,6 +8,12 @@ if (!current_user_can('manage_myvh')) {
 }
 
 global $myvh_container;
+use MYVH\Bookings\BookingService;
+use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationService;
+use MYVH\Rooms\RoomService;
+use MYVH\Addons\AddonService;
+use MYVH\Bookings\RecurringPatternService;
 
 $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;

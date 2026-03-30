@@ -9,10 +9,13 @@ if (!current_user_can('manage_myvh')) {
 
 global $myvh_container;
 
+use MYVH\Rooms\RoomService;
+use MYVH\Venues\VenueService;
+use MYVH\Availability\AvailabilityService;
+
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $room_service  = $myvh_container->get(RoomService::class);
 $venue_service = $myvh_container->get(VenueService::class);
-$availability_service = $myvh_container->get(AvailabilityService::class);
 $availability_service = $myvh_container->get(AvailabilityService::class);
 
 $edit_room = $edit_id ? $room_service->get($edit_id) : null;

@@ -3,6 +3,7 @@ namespace MYVH\Core\Support;
 
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Availability\AvailabilityService;
 
 class AssetLoader {
 
@@ -41,7 +42,7 @@ class AssetLoader {
         }
 
         try {
-            $availability_service = $myvh_container->get( \MYVH\Availability\AvailabilityService::class );
+            $availability_service = $myvh_container->get( AvailabilityService::class );
             $visible_hours = $availability_service->get_calendar_visible_hours();
         } catch ( \Throwable $e ) {
             return $defaults;

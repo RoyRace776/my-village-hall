@@ -8,6 +8,8 @@ if (!current_user_can('manage_myvh')) {
 }
 
 global $myvh_container;
+use MYVH\Addons\AddonService;
+use MYVH\Rooms\RoomService;
 
 $edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $addon_service = $myvh_container->get(AddonService::class);

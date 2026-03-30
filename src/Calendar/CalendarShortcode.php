@@ -91,7 +91,7 @@ class CalendarShortcode {
         }
 
         try {
-                $calendar_service = $myvh_container->get( CalendarService::class );
+            $calendar_service = $myvh_container->get( CalendarService::class );
             $events = $calendar_service->get_public_feed_events(
                 $start,
                 $end,

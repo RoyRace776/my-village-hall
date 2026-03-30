@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+use MYVH\Addons\AddonService;
+
 global $myvh_container;
 $addon_service = $myvh_container->get(AddonService::class);
 $all_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);

@@ -3,6 +3,7 @@ if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village-hall'));
 
 global $myvh_container;
+use MYVH\Organisations\OrganisationTypeService;
 
 $edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $type_service = $myvh_container->get(OrganisationTypeService::class);

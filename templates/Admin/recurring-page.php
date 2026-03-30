@@ -5,6 +5,12 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 
+use MYVH\Bookings\BookingService;
+use MYVH\Bookings\BookingStatus;
+use MYVH\Customers\CustomerService;
+use MYVH\Bookings\RecurringPatternService;
+use MYVH\Rooms\RoomService;
+
 global $myvh_container;
 
 $edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;

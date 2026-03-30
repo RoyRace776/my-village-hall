@@ -3,6 +3,8 @@ if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village-hall'));
 
 global $myvh_container;
+use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationService;
 
 $org_id      = isset($_GET['organisation_id']) ? intval($_GET['organisation_id']) : 0;
 $org_service = $myvh_container->get(OrganisationService::class);

@@ -7,6 +7,8 @@ if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }
 //TODO: Update to make password mandatory when creating or editing customer
+use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationService;
 
 global $myvh_container;
 
