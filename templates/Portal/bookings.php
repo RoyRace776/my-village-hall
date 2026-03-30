@@ -87,6 +87,16 @@ usort($groups, function ($a, $b) use ($today) {
 
     <?php else: ?>
 
+
+        <!-- Client-side status filter checkboxes -->
+        <div class="myvh-bookings-status-checkboxes" style="margin-bottom: 16px;">
+            <strong><?php _e('Show statuses:', 'my-village-hall'); ?></strong>
+            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="pending" checked> <?php _e('Pending', 'my-village-hall'); ?></label>
+            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="confirmed" checked> <?php _e('Confirmed', 'my-village-hall'); ?></label>
+            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="cancelled" checked> <?php _e('Cancelled', 'my-village-hall'); ?></label>
+            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="completed" checked> <?php _e('Completed', 'my-village-hall'); ?></label>
+        </div>
+
         <div class="myvh-bookings-list">
 
             <?php $last_group_year = null; ?>
@@ -174,7 +184,7 @@ usort($groups, function ($a, $b) use ($today) {
                                 $last_child_year = $child_year;
                                 ?>
 
-                                <div class="myvh-booking-card myvh-child <?php echo $is_past ? 'is-past' : ''; ?>">
+                                <div class="myvh-booking-card myvh-child <?php echo $is_past ? 'is-past' : ''; ?>" data-status="<?php echo esc_attr($b['Status']); ?>">
                                     <div class="myvh-booking-main myvh-booking-main-inline">
                                         <div class="myvh-booking-date">
                                             <strong>
@@ -230,7 +240,7 @@ usort($groups, function ($a, $b) use ($today) {
                         <div class="myvh-year-divider"><span><?php echo esc_html($group_year); ?></span></div>
                     <?php endif; ?>
 
-                    <div class="myvh-booking-card <?php echo $is_past ? 'is-past' : ''; ?>">
+                    <div class="myvh-booking-card <?php echo $is_past ? 'is-past' : ''; ?>" data-status="<?php echo esc_attr($b['Status']); ?>">
                         <div class="myvh-booking-main">
                             <div class="myvh-booking-date">
                                 <strong>

@@ -2,7 +2,8 @@
 var Calendar = (function() {
 
         var api = null;
-        var modal = null;
+        var createModal = null;
+        var viewModal = null;
         var nav = null;
         var suppressNavSelect = false;
 
@@ -80,13 +81,15 @@ var Calendar = (function() {
          * Open the booking modal for a selected range.
          */
         function openSelectionModal(args) {
-            if (!modal || !args) {
+            console.log("openSelectionModal", args);
+            if (!createModal || !args) {
+                console.log("createModal is null");
                 return;
             }
 
             const isClientAdmin = !!Number(myvhCal.isClientAdmin || 0);
 
-            modal.open({
+            createModal.open({
                 start: args.start.toString(),
                 end: args.end.toString(),
                 customer_id: isClientAdmin ? '' : (myvhCal.currentCustomerId || ''),
@@ -99,12 +102,14 @@ var Calendar = (function() {
         /**
          * Open the booking modal in read-only mode for an event.
          */
+        // TODO: Change this to use the view modal form rather than the create form in view only mode
         function openReadOnlyModal(args) {
-            if (!modal || !args || !args.e) {
+            console.log("openReadOnlyModal", args);
+            if (!viewModal || !args || !args.e) {
                 return;
             }
 
-            modal.open({
+            viewModal.open({
                 args: args.e.data,
                 viewOnly: true
             });
@@ -206,10 +211,40 @@ var Calendar = (function() {
          */
         function init() {
 
-            modal = BookingModal;
+            // TODO: switch this to use the create modal and a separate view modal rather than using the create modal in view only mode
+            createModal = BookingModalCreate;
+            viewModal = BookingModalView;
             const isClientAdmin = !!Number(myvhCal.isClientAdmin || 0);
 
-            modal.init({
+            createModal.init({
+                ajax_url: myvhCal.ajax_url,
+                nonce: myvhCal.nonce,
+                context: 'portal',
+
+                loadRooms: () =>
+                    fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}&context=portal`)
+                        .then(r => r.json()),
+
+                loadCustomers: () =>
+                    fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
+                        .then(r => r.json()),
+
+                loadOrganisations: (customerId) =>
+                    fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}&customer_id=${encodeURIComponent(customerId || '')}`)
+                        .then(r => r.json()),
+
+                lockCustomer: !isClientAdmin,
+                lockOrganisation: !isClientAdmin,
+                hideCustomer: !isClientAdmin,
+                lockAddonPrices: true,
+                requireOrganisation: true,
+
+                onClose: () => api?.clearSelection?.(),
+                onSuccess: () => api.reload()
+            });
+
+
+            viewModal.init({
                 ajax_url: myvhCal.ajax_url,
                 nonce: myvhCal.nonce,
                 context: 'portal',

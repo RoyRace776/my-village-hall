@@ -11,15 +11,40 @@
 
 
 // Bookings list and actions for My Village Hall
+
 var Bookings = (function() {
 
     var initialized = false;
 
     /**
-     * Bind accordion toggle logic for grouped bookings.
-     * Clicking a group header toggles its children.
+     * Filter bookings table rows by selected statuses.
      */
-    function bindAccordion() {
+    function filterByStatus() {
+        var checked = Array.from(document.querySelectorAll('.myvh-status-filter:checked')).map(function(cb) {
+            return cb.value;
+        });
+        var rows = document.querySelectorAll('#myvh-bookings-table tbody tr');
+        rows.forEach(function(row) {
+            var status = row.getAttribute('data-status');
+            if (!status || checked.indexOf(status) !== -1) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    /**
+     * Bind status filter checkboxes for client-side filtering.
+     */
+    function bindStatusFilters() {
+        var boxes = document.querySelectorAll('.myvh-status-filter');
+        boxes.forEach(function(cb) {
+            cb.addEventListener('change', filterByStatus);
+        });
+        // Initial filter
+        filterByStatus();
+    }
         document.addEventListener('click', function(e) {
             var header = e.target.closest('.myvh-group-header');
             if (!header) {
@@ -69,10 +94,10 @@ var Bookings = (function() {
         if (initialized) {
             return;
         }
-
         initialized = true;
         bindAccordion();
         bindActions();
+        bindStatusFilters();
     }
 
     return {

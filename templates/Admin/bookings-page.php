@@ -122,6 +122,15 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                 <?php endif; ?>
             </div>
         </form>
+
+        <!-- Client-side status filter checkboxes -->
+        <div class="myvh-bookings-status-checkboxes" style="margin-top: 10px;">
+            <strong><?php _e('Show statuses:', 'my-village-hall'); ?></strong>
+            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="pending" checked> <?php _e('Pending', 'my-village-hall'); ?></label>
+            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="confirmed" checked> <?php _e('Confirmed', 'my-village-hall'); ?></label>
+            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="cancelled" checked> <?php _e('Cancelled', 'my-village-hall'); ?></label>
+            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="completed" checked> <?php _e('Completed', 'my-village-hall'); ?></label>
+        </div>
     </div>
 
     <div class="myvh-card">
@@ -197,7 +206,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                     ?>
 
                     <!-- GROUP HEADER ROW -->
-                    <tr class="myvh-booking-group-header" data-group="<?php echo esc_attr($group_id); ?>">
+                    <tr class="myvh-booking-group-header" data-group="<?php echo esc_attr($group_id); ?>" data-status="<?php echo esc_attr($group_status); ?>">
                         <td>
                             <button type="button" class="myvh-group-toggle" data-group="<?php echo esc_attr($group_id); ?>" aria-expanded="false">
                                 <i class="toggle-icon">▶</i>
@@ -264,7 +273,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                         $sc      = $status_colors[$b['Status']] ?? '#777';
                     ?>
                     <tr class="myvh-recurring-child <?php echo $is_past ? 'myvh-child-past' : ''; ?>"
-                        data-group="<?php echo esc_attr($group_id); ?>">
+                        data-group="<?php echo esc_attr($group_id); ?>" data-status="<?php echo esc_attr($b['Status']); ?>">
                         <td>
                             <?php echo date('D j M Y', strtotime($b['StartDate'])); ?>
                             <?php if ($b['StartDate'] === $today): ?>
@@ -325,7 +334,7 @@ $recurring_group_count = count(array_filter($groups, fn($g) => $g['type'] === 'r
                     $is_past = $b['StartDate'] < $today;
                     $sc      = $status_colors[$b['Status']] ?? '#777';
                 ?>
-                    <tr <?php if ($is_past) echo 'style="opacity:0.6;"'; ?>>
+                    <tr <?php if ($is_past) echo 'style="opacity:0.6;"'; ?> data-status="<?php echo esc_attr($b['Status']); ?>">
                         <td>
                             <strong><?php echo date('D j M Y', strtotime($b['StartDate'])); ?></strong>
                             <?php if ($b['StartDate'] === $today): ?>

@@ -159,8 +159,6 @@ class PortalController {
                 include MYVH_PLUGIN_DIR . 'templates/Portal/calendar.php';
                 break;
 
-                // Duplicate case 'invoices' removed
-
             case 'invoices':
                 // Get invoice filters from request
                 $selected_statuses = [];

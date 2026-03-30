@@ -191,8 +191,16 @@ class AssetLoader {
             );
 
             wp_enqueue_script(
-                'myvh-booking-modal',
-                MYVH_PLUGIN_URL . 'assets/js/booking-modal.js',
+                'myvh-booking-modal-create',
+                MYVH_PLUGIN_URL . 'assets/js/booking-modal-create.js',
+                ['myvh-calendar-core'], // optional but safe
+                '1.0',
+                true
+            );
+
+            wp_enqueue_script(
+                'myvh-booking-modal-view',
+                MYVH_PLUGIN_URL . 'assets/js/booking-modal-view.js',
                 ['myvh-calendar-core'], // optional but safe
                 '1.0',
                 true
@@ -201,7 +209,7 @@ class AssetLoader {
             wp_enqueue_script(
                 'myvh-calendar-admin',
                 MYVH_PLUGIN_URL . 'assets/js/calendar-admin.js',
-                ['jquery', 'myvh-booking-modal'], // critical dependency
+                ['jquery', 'myvh-booking-modal-create', 'myvh-booking-modal-view'], // critical dependency
                 self::asset_version( 'assets/js/calendar-admin.js' ),
                 true
             );
@@ -291,8 +299,16 @@ class AssetLoader {
         );
 
         wp_enqueue_script(
-            'myvh-booking-modal',
-            MYVH_PLUGIN_URL . 'assets/js/booking-modal.js',
+            'myvh-booking-modal-create',
+            MYVH_PLUGIN_URL . 'assets/js/booking-modal-create.js',
+            ['myvh-calendar-core'], // optional but safe
+            '1.0',
+            true
+        );
+
+        wp_enqueue_script(
+            'myvh-booking-modal-view',
+            MYVH_PLUGIN_URL . 'assets/js/booking-modal-view.js',
             ['myvh-calendar-core'], // optional but safe
             '1.0',
             true
@@ -301,7 +317,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-calendar-portal',
             MYVH_PLUGIN_URL . 'assets/js/calendar-portal.js',
-            [ 'myvh-booking-modal' ],
+            [ 'myvh-booking-modal-create', 'myvh-booking-modal-view' ], // critical dependencies
             self::asset_version( 'assets/js/calendar-portal.js' ),
             true
         );
