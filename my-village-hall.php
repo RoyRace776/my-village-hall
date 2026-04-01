@@ -598,9 +598,9 @@ class MyVillageHall {
 
         if ( $has_detail_view
              && ( isset( $_GET['add'] ) || isset( $_GET['edit'] ) || isset( $_GET['view'] ) ) ) {
-            include MYVH_PLUGIN_DIR . "/admin/views/{$page}-form-page.php";
+            include MYVH_PLUGIN_DIR . "templates/Admin/{$page}-form-page.php";
         } else {
-            include MYVH_PLUGIN_DIR . "/admin/views/{$page}-page.php";
+            include MYVH_PLUGIN_DIR . "templates/Admin/{$page}-page.php";
         }
     }
 }

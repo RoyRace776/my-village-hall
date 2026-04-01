@@ -2,6 +2,17 @@
 
 namespace MYVH\Bookings;
 
+use MYVH\Availability\AvailabilityService;
+use MYVH\Rooms\RoomRulesService;
+use MYVH\Pricing\PricingService;
+use MYVH\Customers\CustomerRepository;
+use MYVH\Organisations\OrganisationRepository;
+use MYVH\Bookings\Services\BookingAutoConfirm;
+use MYVH\Rooms\RoomService;
+use MYVH\Addons\AddonRepository;
+use MYVH\Addons\AddonService;
+
+
 class BookingServiceProvider
 {
     public function register($container): void
@@ -11,29 +22,15 @@ class BookingServiceProvider
         $container->singleton(BookingDiscountRepository::class);
         $container->singleton(BookingChargeRepository::class);
 
-        $container->singleton(\MYVH\Availability\AvailabilityService::class);
+        $container->singleton(AvailabilityService::class);
         $container->singleton(BookingValidator::class);
         $container->singleton(BookingRequestValidator::class);
-        $container->singleton(\MYVH\Rooms\RoomRulesService::class);
-        $container->singleton(\MYVH\Pricing\PricingService::class);
+        $container->singleton(RoomRulesService::class);
+        $container->singleton(PricingService::class);
 
-        $container->singleton(BookingService::class, function($container) {
-            return new BookingService(
-                $container->get(\MYVH\Rooms\RoomService::class),
-                $container->get(BookingRepository::class),
-                $container->get(BookingChargeRepository::class),
-                $container->get(BookingAddonRepository::class),
-                $container->get(\MYVH\Addons\AddonRepository::class),
-                $container->get(\MYVH\Addons\AddonService::class),
-                $container->get(BookingValidator::class),
-                $container->get(\MYVH\Availability\AvailabilityService::class),
-                $container->get(\MYVH\Rooms\RoomRulesService::class),
-                $container->get(\MYVH\Pricing\PricingService::class),
-                $container->get(\MYVH\Customers\CustomerRepository::class),
-                $container->get(\MYVH\Organisations\OrganisationRepository::class),
-                $container->get(RecurringPatternService::class)
-            );
-        });
+        $container->singleton(BookingService::class);
+        $container->singleton(BookingStatus::class);
         $container->singleton(BookingController::class);
+        $container->singleton(BookingAutoConfirm::class);
     }
 }

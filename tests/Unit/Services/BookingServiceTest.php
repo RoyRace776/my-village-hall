@@ -69,7 +69,7 @@ class BookingServiceTest extends UnitTestCase {
     private $organisation_repo;
     private $recurring_pattern_service;
 
-    /** @var \Booking_Service */
+    /** @var \MYVH\Bookings\BookingService */
     private $service;
 
     // ── Setup ────────────────────────────────────────────────────────────────
@@ -77,21 +77,21 @@ class BookingServiceTest extends UnitTestCase {
     protected function setUp(): void {
         parent::setUp();
 
-        $this->room_service              = $this->mock(\RoomService::class);
-        $this->booking_repo              = $this->mock(\BookingRepository::class);
-        $this->booking_charge_repo       = $this->mock(\BookingChargeRepository::class);
-        $this->booking_addon_repo        = $this->mock(\BookingAddonRepository::class);
-        $this->addon_repo                = $this->mock(\AddonRepository::class);
-        $this->addon_service             = $this->mock(\AddonService::class);
-        $this->validator                 = $this->mock(\BookingValidator::class);
-        $this->availability              = $this->mock(\AvailabilityService::class);
-        $this->room_rules                = $this->mock(\RoomRulesService::class);
-        $this->pricing                   = $this->mock(\PricingService::class);
-        $this->customer_repo             = $this->mock(\CustomerRepository::class);
-        $this->organisation_repo         = $this->mock(\OrganisationRepository::class);
-        $this->recurring_pattern_service = $this->mock(\RecurringPatternService::class);
+        $this->room_service              = $this->mock(\MYVH\Rooms\RoomService::class);
+        $this->booking_repo              = $this->mock(\MYVH\Bookings\BookingRepository::class);
+        $this->booking_charge_repo       = $this->mock(\MYVH\Bookings\BookingChargeRepository::class);
+        $this->booking_addon_repo        = $this->mock(\MYVH\Bookings\BookingAddonRepository::class);
+        $this->addon_repo                = $this->mock(\MYVH\Addons\AddonRepository::class);
+        $this->addon_service             = $this->mock(\MYVH\Addons\AddonService::class);
+        $this->validator                 = $this->mock(\MYVH\Bookings\BookingValidator::class);
+        $this->availability              = $this->mock(\MYVH\Availability\AvailabilityService::class);
+        $this->room_rules                = $this->mock(\MYVH\Rooms\RoomRulesService::class);
+        $this->pricing                   = $this->mock(\MYVH\Pricing\PricingService::class);
+        $this->customer_repo             = $this->mock(\MYVH\Customers\CustomerRepository::class);
+        $this->organisation_repo         = $this->mock(\MYVH\Organisations\OrganisationRepository::class);
+        $this->recurring_pattern_service = $this->mock(\MYVH\Bookings\RecurringPatternService::class);
 
-        $this->service = new \BookingService(
+        $this->service = new \MYVH\Bookings\BookingService(
             $this->room_service,
             $this->booking_repo,
             $this->booking_charge_repo,

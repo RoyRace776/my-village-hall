@@ -36,6 +36,10 @@ class CustomerService {
         return $this->repo->get_by_id($id);
     }
 
+    public function get_by_id($id): array {
+        return $this->repo->get_by_id($id);
+    }
+
     public function get_with_organisations(): array {
         return $this->repo->get_all_with_organisations();
     }
@@ -87,6 +91,11 @@ class CustomerService {
             'AddressLine1'   => sanitize_text_field($data['address_line1'] ?? ''),
             'EmailVerified'  => isset($data['email_verified']) ? 1 : 0,
         ];
+
+        // Only allow client admins to set AllowAutoConfirm
+        if (current_user_can('manage_myvh_client_admin') && array_key_exists('allow_auto_confirm', $data)) {
+            $record['AllowAutoConfirm'] = (int)($data['allow_auto_confirm'] ?? 0);
+        }
 
         // Link to WordPress user when provided
         if (!empty($data['user_id'])) {

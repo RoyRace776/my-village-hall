@@ -51,6 +51,17 @@ $available_orgs = [];
                                 <input type="tel" name="phone" class="regular-text" value="">
                             </td>
                         </tr>
+                        <?php if (current_user_can('manage_myvh_client_admin')): ?>
+                        <tr>
+                            <th><?php _e('Options', 'my-village-hall'); ?></th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" name="allow_auto_confirm" value="1">
+                                    <?php _e('Allow Auto Confirm', 'my-village-hall'); ?>
+                                </label>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
                     </table>
                     <p class="submit">
                         <button class="button button-primary"><?php _e('Add Customer', 'my-village-hall'); ?></button>

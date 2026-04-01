@@ -167,6 +167,13 @@ if ($edit_customer) {
                                         <?php checked($edit_customer && $edit_customer['EmailVerified']); ?>>
                                     <?php _e('Email verified', 'my-village-hall'); ?>
                                 </label>
+                                <?php if (current_user_can('manage_myvh_client_admin')): ?>
+                                <br>
+                                <label>
+                                    <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked($edit_customer && !empty($edit_customer['AllowAutoConfirm'])); ?>>
+                                    <?php _e('Allow Auto Confirm', 'my-village-hall'); ?>
+                                </label>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     </table>

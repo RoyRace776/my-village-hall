@@ -1,5 +1,7 @@
+
 <?php
 if (!defined('ABSPATH')) exit;
+if (!isset($is_client_admin)) $is_client_admin = false;
 
 ?>
 <div class="myvh-dashboard-section myvh-customers-page">
@@ -45,6 +47,14 @@ if (!defined('ABSPATH')) exit;
                     Mark email as verified
                 </span>
             </label>
+            <?php if (!empty($is_client_admin)): ?>
+            <label class="myvh-account-field">
+                <span>
+                    <input type="checkbox" name="allow_auto_confirm" value="1">
+                    Allow Auto Confirm
+                </span>
+            </label>
+            <?php endif; ?>
 
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Create Customer</button>

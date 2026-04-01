@@ -424,6 +424,15 @@ class BookingService {
         );
     }
 
+    public function update_status($id, $status): int|false {
+        return $this->booking_repo->update(
+            ['Status' => $status],
+            ['Id' => $id]
+        );
+
+        //TODO: Dispatch status change events here or in the controller, and consider if old vs new status comparison is needed for BEFORE/AFTER status change events
+    }
+
     public function delete($id): true|WP_Error {
         $booking_id = intval($id);
         if ($booking_id <= 0) {

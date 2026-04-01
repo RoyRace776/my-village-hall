@@ -3,6 +3,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use MYVH\Bookings\BookingStatus;
+
 if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
 }

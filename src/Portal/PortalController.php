@@ -232,6 +232,29 @@ class PortalController {
                 include MYVH_PLUGIN_DIR . 'templates/Portal/customers.php';
                 break;
 
+            case 'customer-edit':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $customer_id = intval($_GET['id'] ?? 0);
+
+                if (!$customer_id) {
+                    wp_send_json_error('Invalid customer ID', 400);
+                }
+
+                $customer = $this->customer_service->get($customer_id);
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/customer-edit.php';
+                break;
+
+                case 'customer-add':
+                    if (!$is_client_admin) {
+                        wp_send_json_error('Permission denied', 403);
+                    }
+
+                    include MYVH_PLUGIN_DIR . 'templates/Portal/customer-add.php';
+                    break;
             case 'settings':
                 if (!$is_client_admin) {
                     wp_send_json_error('Permission denied', 403);
@@ -645,6 +668,7 @@ class PortalController {
             'address_line1' => $address_line1,
             'post_code' => $post_code,
             'email_verified' => $email_verified,
+            'allow_auto_confirm' => !empty($_POST['allow_auto_confirm']),
         ];
 
         if ($customer_id > 0) {

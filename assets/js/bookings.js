@@ -45,6 +45,11 @@ var Bookings = (function() {
         // Initial filter
         filterByStatus();
     }
+
+    /**
+     * Bind group header toggles for expanding/collapsing booking groups.
+     */
+    function bindGroupToggles() {
         document.addEventListener('click', function(e) {
             var header = e.target.closest('.myvh-group-header');
             if (!header) {

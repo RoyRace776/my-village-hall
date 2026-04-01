@@ -28,6 +28,9 @@ class OrganisationService {
     public function get(int $id): ?array {
         return $this->repo->get_by_id($id);
     }
+    public function get_by_id(int $id): ?array {
+        return $this->repo->get_by_id($id);
+    }
     public function get_default(): ?array {
         return $this->repo->get_default();
     }
