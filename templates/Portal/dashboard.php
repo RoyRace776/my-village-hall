@@ -8,25 +8,7 @@ $customer = $customer ?? null;
 $is_client_admin = !empty($is_client_admin);
 
 $groups = array_values($groups ?? []);
-$now_ts = current_time('timestamp');
-$min_notice_hours = max(0, intval(myvh_setting('booking.general.min_notice_hours', 24)));
-
-$can_delete_booking = static function(array $booking) use ($now_ts, $min_notice_hours): bool {
-  $status = strtolower((string)($booking['Status'] ?? ''));
-  $start_ts = strtotime((string)($booking['StartDate'] ?? '') . ' ' . (string)($booking['StartTime'] ?? ''));
-
-  if (!$start_ts || $start_ts <= $now_ts) {
-    return false;
-  }
-
-  if ($status === 'pending') {
-    return true;
-  }
-
-  if ($status === 'confirmed') {
-    return $start_ts > ($now_ts + ($min_notice_hours * HOUR_IN_SECONDS));
-  }
-
+$can_delete_booking = $can_delete_booking ?? static function(array $booking): bool {
   return false;
 };
 

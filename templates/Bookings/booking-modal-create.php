@@ -31,6 +31,7 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
     <form id="myvh-booking-form-create">
         <input type="hidden" name="start">
         <input type="hidden" name="end">
+        <input type="hidden" name="booking_id">
 
         <div class="myvh-modal-group myvh-modal-group-main">
             <h3>Booking Details</h3>
@@ -67,6 +68,17 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
                     <tr>
                         <th>Description</th>
                         <td><input type="text" name="text" placeholder="Optional"></td>
+                    </tr>
+                    <tr id="myvh-modal-status-row" style="display:none;">
+                        <th>Status</th>
+                        <td>
+                            <select name="status">
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </td>
                     </tr>
                     <tr>
                         <th>Visibility</th>

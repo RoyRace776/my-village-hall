@@ -3,6 +3,8 @@ window.BookingModalView = (function() {
     // TODO take out references to view only mode
     let config = {};
     let modal, form;
+    let currentBookingId = 0;
+    let currentCanEdit = false;
 
     /**
      * Initialize the booking modal with configuration and bind events.
@@ -29,6 +31,7 @@ window.BookingModalView = (function() {
 
             // Hooks
             onSuccess: () => {},
+            onEdit: () => {},
             onOpen: () => {},
             onClose: () => {},
             beforeSubmit: () => true, // allow validation hook
@@ -52,13 +55,30 @@ window.BookingModalView = (function() {
      * Bind all modal and form events (submit, cancel, outside click, etc).
      */
     function bindEvents() {
-        form.addEventListener("submit", submit);
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+        });
 
         const cancelButtons = modal.querySelectorAll(".myvh-cancel");
         cancelButtons.forEach((button) => {
             button.addEventListener("click", function (event) {
                 event.preventDefault();
                 close();
+            });
+        });
+
+        const editButtons = modal.querySelectorAll(".myvh-edit-booking");
+        editButtons.forEach((button) => {
+            button.addEventListener("click", function(event) {
+                event.preventDefault();
+
+                if (!currentCanEdit || !currentBookingId) {
+                    return;
+                }
+
+                const bookingId = currentBookingId;
+                close();
+                config.onEdit({ bookingId: bookingId });
             });
         });
 
@@ -69,8 +89,6 @@ window.BookingModalView = (function() {
             }
         });
 
-        bindRecurringControls();
-        bindAddonControls();
         bindDependentControls();
     }
 
@@ -79,32 +97,24 @@ window.BookingModalView = (function() {
      * @param {object} data - Data to prefill the form
      */
     function open(data = {}) {
-        // Always define submitBtn at the top so it's available in both modes
-        const submitBtn = form.querySelector('button[type="submit"]');
+        const bookingId = data.bookingId || data.args?.id || data.id;
+        if (!bookingId) {
+            return;
+        }
 
-        // If viewOnly and id provided, fetch booking details and populate, then disable all fields
-        if (data.viewOnly && data.args?.id) {
+        currentBookingId = Number(bookingId) || 0;
+        currentCanEdit = false;
+        updateEditButtons(false, 'Loading booking permissions...');
 
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.style.display = 'none';
+        const nonce = config.context === "portal" ? config.nonce : "myvh_calendar";
 
-            let closeBtn = form.querySelector('.myvh-modal-close');
-            if (!closeBtn) {
-                closeBtn = document.createElement('button');
-                closeBtn.type = 'button';
-                closeBtn.className = 'myvh-modal-close myvh-button';
-                closeBtn.textContent = 'Close';
-                closeBtn.addEventListener('click', close);
-                form.appendChild(closeBtn);
-            } else {
-                closeBtn.style.display = '';
-            }
+        setLoading(true);
+        form.querySelectorAll('button[type="submit"]').forEach(button => {
+            button.style.display = 'none';
+        });
+        modal.classList.remove('hidden');
 
-            const nonce = config.context === "portal" ? config.nonce : "myvh_calendar";
-
-            setLoading(true);
-
-            fetch(`${config.ajax_url}?action=myvh_calendar_get_booking&booking_id=${encodeURIComponent(data.args.id)}&nonce=${encodeURIComponent(nonce)}`)
+        fetch(`${config.ajax_url}?action=myvh_calendar_get_booking&booking_id=${encodeURIComponent(bookingId)}&nonce=${encodeURIComponent(nonce)}`)
                 .then(r => r.json())
                 .then(res => {
                     console.log('Raw response:', res);  // ← add this
@@ -112,112 +122,66 @@ window.BookingModalView = (function() {
                         throw new Error('Booking not found');
                     }
 
-                    const booking = res.data.booking;
+                    const payload = {
+                        booking: res.data.booking,
+                        canEdit: !!res.data.can_edit,
+                        editReason: res.data.edit_reason || ''
+                    };
 
-                    // 🔑 IMPORTANT: load dropdowns first
-                    return populateDropdowns()
-                        .then(() => refreshOrganisations(booking['OrganisationId']))
-                        .then(() => booking);
+                    return payload;
                 })
-                .then((booking) => {
-                    //TODO: This needs tidying up - it’s a mix of old and new code, but the key point is to set values first, then disable fields, and avoid any direct DOM manipulation that conflicts with our controlled approach.
-                    // ✅ Safe field mapping
-                    setValue('room_id', booking['RoomId']);
-                    setValue('customer_id', booking['CustomerId']);
-                    setValue('organisation_id', booking['OrganisationId']);
+                .then((payload) => {
+                    const booking = payload.booking;
+
+                    setSelectDisplayOption('room_id', booking['RoomId'], booking['RoomName'], {
+                        allowMultiday: booking['AllowMultiDayBookings']
+                    });
+                    setSelectDisplayOption('customer_id', booking['CustomerId'], booking['CustomerName']);
+                    setSelectDisplayOption('organisation_id', booking['OrganisationId'], booking['OrganisationName']);
+                    setValue('status', formatStatus(booking['Status']));
                     setValue('description', booking['Description']);
+                    setValue('public', !!booking['Public']);
+                    currentCanEdit = !!payload.canEdit;
+                    updateEditButtons(currentCanEdit, payload.editReason);
 
-                    // ✅ Use your helper (don’t manually split)
-                    setDisplayedDateTimes(booking['StartDate'], booking['EndDate']);
+                    const startDateTime = `${booking['StartDate'] || ''} ${booking['StartTime'] || ''}`.trim();
+                    const endDate = booking['EndDate'] || booking['StartDate'] || '';
+                    const endDateTime = `${endDate} ${booking['EndTime'] || ''}`.trim();
+                    setDisplayedDateTimes(startDateTime, endDateTime);
+                    syncEndDateVisibilityFromBooking(booking['StartDate'], endDate);
 
-                    // ❌ REMOVE this (it’s wrong and conflicts)
-                    // form.querySelector("[name=text]").value = booking.Description;
-
-                    // ✅ Disable AFTER values set
                     form.querySelectorAll('input, select, textarea')
                         .forEach(el => el.disabled = true);
-
-                    const recurringOptions = form.querySelector('#myvh-modal-recurring-options');
-                    if (recurringOptions) recurringOptions.style.display = 'none';
-
-                    modal.classList.remove('hidden');
                     config.onOpen(data);
                 })
                 .catch(err => {
                     console.error(err);
                     alert('Failed to load booking');
+                    close();
                 })
                 .finally(() => {
                     setLoading(false);
                 });
-
-            return;
-        }
-
-        // Only normal (add/edit) mode remains
-        if (submitBtn) submitBtn.style.display = '';
-        form.reset();
-
-        // Populate dropdowns (rooms, customers), then organisations
-        populateDropdowns().then(() => {
-            refreshOrganisations();
-        });
-
-        // Prepopulate start/end and displayed date/times if provided
-        if (data.start) setValue('start', data.start);
-        if (data.end) setValue('end', data.end);
-        if (data.start || data.end) setDisplayedDateTimes(data.start, data.end);
-
-        // Re-enable all fields
-        form.querySelectorAll("select, input").forEach(el => {
-            el.disabled = false;
-        });
-
-        const recurringOptions = form.querySelector("#myvh-modal-recurring-options");
-        if (recurringOptions) {
-            recurringOptions.style.display = "none";
-        }
-
-        const maxOccurrences = form.querySelector("[name=max_occurrences]");
-        const recurrenceEndDate = form.querySelector("[name=recurrence_end_date]");
-
-        if (maxOccurrences) {
-            maxOccurrences.disabled = true;
-        }
-
-        if (recurrenceEndDate) {
-            recurrenceEndDate.disabled = false;
-        }
-
-        syncRecurringType();
-
-        form.querySelectorAll(".myvh-modal-addon-row").forEach(row => {
-            toggleAddonRow(row, false);
-        });
-
-        const orgSelect = form.querySelector("[name=organisation_id]");
-        if (orgSelect) {
-            orgSelect.innerHTML = '<option value="">Select...</option>';
-            orgSelect.disabled = true;
-        }
-
-        const publicCheckbox = form.querySelector("[name=public]");
-        if (publicCheckbox) {
-            publicCheckbox.checked = false;
-        }
-
-        syncEndDateVisibility();
-
-        // Show modal in add/edit mode
-        modal.classList.remove('hidden');
     }
 
     // Add a close() function to hide modal and reset form
     function close() {
         modal.classList.add('hidden');
         form.reset();
-        // Optionally, re-enable all fields
+        currentBookingId = 0;
+        currentCanEdit = false;
+        updateEditButtons(false, '');
         form.querySelectorAll("select, input, textarea").forEach(el => {
+            if (el.name === 'room_id' || el.name === 'customer_id' || el.name === 'organisation_id' || el.name === 'public') {
+                el.disabled = true;
+                return;
+            }
+
+            if (el.id === 'myvh-modal-start-date' || el.id === 'myvh-modal-start-time' || el.id === 'myvh-modal-end-date' || el.id === 'myvh-modal-end-time') {
+                el.disabled = true;
+                return;
+            }
+
             el.disabled = false;
         });
     }
@@ -430,6 +394,15 @@ window.BookingModalView = (function() {
         return { date, time };
     }
 
+    function formatStatus(value) {
+        const raw = String(value || '').trim();
+        if (!raw) {
+            return '';
+        }
+
+        return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    }
+
     function roomAllowsMultiday() {
         const roomSelect = form.querySelector("[name=room_id]");
         if (!roomSelect) return false;
@@ -447,6 +420,13 @@ window.BookingModalView = (function() {
         row.style.display = roomAllowsMultiday() ? "" : "none";
     }
 
+    function syncEndDateVisibilityFromBooking(startDate, endDate) {
+        const row = form.querySelector("#myvh-modal-end-date-row");
+        if (!row) return;
+
+        row.style.display = (startDate && endDate && startDate !== endDate) ? "" : "none";
+    }
+
     function setAndLock(field, value) {
         const el = form.querySelector(`[name=${field}]`);
         if (!el) return;
@@ -459,8 +439,38 @@ window.BookingModalView = (function() {
     function setValue(field, value) {
         const el = form.querySelector(`[name=${field}]`);
         if (el && value !== undefined) {
-            el.value = value;
+            if (el.type === 'checkbox') {
+                el.checked = !!value && String(value) !== '0';
+            } else {
+                el.value = value;
+            }
         }
+    }
+
+    function setSelectDisplayOption(field, value, label, options = {}) {
+        const el = form.querySelector(`[name=${field}]`);
+        if (!el) return;
+
+        const text = String(label || value || '-');
+        el.innerHTML = '';
+
+        const opt = document.createElement('option');
+        opt.value = value || '';
+        opt.text = text;
+
+        if (options.allowMultiday !== undefined) {
+            opt.dataset.allowMultiday = String(options.allowMultiday ? 1 : 0);
+        }
+
+        el.appendChild(opt);
+        el.value = value || '';
+    }
+
+    function updateEditButtons(canEdit, reason = '') {
+        modal.querySelectorAll('.myvh-edit-booking').forEach((button) => {
+            button.disabled = !canEdit;
+            button.title = canEdit ? '' : (reason || 'Editing not available');
+        });
     }
 
     // ─────────────────────────────
@@ -561,70 +571,6 @@ window.BookingModalView = (function() {
     }
 
     // ─────────────────────────────
-    // Submit
-    // ─────────────────────────────
-    function submit(e) {
-
-        e.preventDefault();
-
-        if (!config.beforeSubmit(form)) {
-            return;
-        }
-
-        const formData = buildSubmitFormData();
-
-        setLoading(true);
-        formData.append("action", "myvh_create_event");
-        formData.append("nonce", config.nonce);
-        if (config.context) {
-            formData.append("context", config.context);
-        }
-
-        fetch(config.ajax_url, {
-            method: "POST",
-            body: formData
-        })
-        .then(r => r.json())
-        .then(res => {
-
-            if (!res.success) {
-                alert(res.data || "Failed to create booking");
-                return;
-            }
-
-            close();
-            config.onSuccess(res.data);
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Unexpected error creating booking");
-        })
-        .finally(() => {
-            setLoading(false);
-        });
-    }
-
-    function buildSubmitFormData() {
-
-        const formData = new FormData(form);
-        const publicCheckbox = form.querySelector("[name=public]");
-
-        // Always send explicit visibility for modal creates, even when unchecked.
-        if (publicCheckbox) {
-            formData.set("public", publicCheckbox.checked ? "1" : "0");
-        }
-
-        // Disabled controls are excluded from FormData, but locked fields are intentional selections.
-        form.querySelectorAll("[name][data-locked=true]").forEach(el => {
-            if (!formData.has(el.name)) {
-                formData.append(el.name, el.value);
-            }
-        });
-
-        return formData;
-    }
-
-    // ─────────────────────────────
     // UX helpers
     // ─────────────────────────────
     function setLoading(state) {
@@ -633,15 +579,14 @@ window.BookingModalView = (function() {
 
         if (btn) {
             btn.disabled = state;
-            btn.textContent = state ? "Saving..." : "Create Booking";
+            btn.textContent = state ? "Loading..." : "View Booking";
         }
 
-        form.querySelectorAll("input, select").forEach(el => {
-            // Only toggle fields that aren't intentionally locked
-            if (!el.dataset.locked) {
+        if (state) {
+            form.querySelectorAll("input, select").forEach(el => {
                 el.disabled = state;
-            }
-        });
+            });
+        }
     }
 
     // ─────────────────────────────

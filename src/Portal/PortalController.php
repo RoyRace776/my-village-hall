@@ -112,6 +112,10 @@ class PortalController {
 
             case 'bookings':
                 $groups = $this->get_portal_booking_groups($customer, $is_client_admin);
+                $can_delete_booking = function(array $booking): bool {
+                    $delete_rules = $this->booking_service->can_delete($booking);
+                    return !empty($delete_rules['can_delete']);
+                };
                 include MYVH_PLUGIN_DIR . 'templates/Portal/bookings.php';
                 break;
 
@@ -128,6 +132,9 @@ class PortalController {
                                 $is_client_admin,
                                 $this->booking_service
                             );
+                $delete_rules = !empty($booking)
+                    ? $this->booking_service->can_delete($booking)
+                    : ['can_delete' => false, 'reason' => 'Booking not found or you do not have permission to delete it.'];
                 include MYVH_PLUGIN_DIR . 'templates/Portal/booking-view.php';
                 break;
 
@@ -248,13 +255,14 @@ class PortalController {
                 include MYVH_PLUGIN_DIR . 'templates/Portal/customer-edit.php';
                 break;
 
-                case 'customer-add':
-                    if (!$is_client_admin) {
-                        wp_send_json_error('Permission denied', 403);
-                    }
+            case 'customer-add':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
 
-                    include MYVH_PLUGIN_DIR . 'templates/Portal/customer-add.php';
-                    break;
+                include MYVH_PLUGIN_DIR . 'templates/Portal/customer-add.php';
+                break;
+
             case 'settings':
                 if (!$is_client_admin) {
                     wp_send_json_error('Permission denied', 403);
@@ -323,6 +331,10 @@ class PortalController {
 
             default:
                 $groups = $this->get_portal_booking_groups($customer, $is_client_admin);
+                $can_delete_booking = function(array $booking): bool {
+                    $delete_rules = $this->booking_service->can_delete($booking);
+                    return !empty($delete_rules['can_delete']);
+                };
                 include MYVH_PLUGIN_DIR . 'templates/Portal/dashboard.php';
         }
 

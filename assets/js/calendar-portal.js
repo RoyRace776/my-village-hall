@@ -109,7 +109,16 @@ var Calendar = (function() {
                 return;
             }
 
+            const bookingId = args.e.id
+                ? args.e.id()
+                : (args.e.data?.id || args.e.data?.Id);
+
+            if (!bookingId) {
+                return;
+            }
+
             viewModal.open({
+                bookingId: bookingId,
                 args: args.e.data,
                 viewOnly: true
             });
@@ -268,6 +277,9 @@ var Calendar = (function() {
                 requireOrganisation: true,
 
                 onClose: () => api?.clearSelection?.(),
+                onEdit: ({ bookingId }) => {
+                    createModal.open({ editMode: true, bookingId: bookingId });
+                },
                 onSuccess: () => api.reload()
             });
 

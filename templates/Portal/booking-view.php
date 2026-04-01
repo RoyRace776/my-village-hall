@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) exit;
 <div class="myvh-dashboard-section">
     <div class="myvh-account-header">
         <div>
-            <h2>View Booking</h2>
+            <h2>View My Booking</h2>
             <p>Review booking details.</p>
         </div>
         <a href="#bookings" class="myvh-button">Back to <?php echo !empty($is_client_admin) ? 'Bookings' : 'My Bookings'; ?></a>
@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) exit;
                 <p>Booking not found or you do not have permission to view it.</p>
             </div>
         <?php else: ?>
+            <?php $can_delete = !empty($delete_rules['can_delete']); ?>
             <div class="myvh-card myvh-account-card">
                 <div class="myvh-account-card-head">
                     <h3><?php echo esc_html($booking['RoomName'] ?? 'Booking'); ?></h3>
@@ -48,7 +49,11 @@ if (!defined('ABSPATH')) exit;
 
                 <div class="myvh-account-actions" style="margin-top:12px;">
                     <a href="#booking-edit?booking_id=<?php echo intval($booking['Id']); ?>" class="myvh-button myvh-button-primary">Edit Booking</a>
-                    <a href="#booking-delete?booking_id=<?php echo intval($booking['Id']); ?>" class="myvh-button">Delete Booking</a>
+                    <?php if ($can_delete): ?>
+                        <a href="#booking-delete?booking_id=<?php echo intval($booking['Id']); ?>" class="myvh-button">Delete Booking</a>
+                    <?php else: ?>
+                        <span class="myvh-muted"><?php echo esc_html($delete_rules['reason'] ?? 'This booking cannot be deleted.'); ?></span>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endif; ?>

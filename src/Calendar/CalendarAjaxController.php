@@ -73,7 +73,12 @@ class CalendarAjaxController {
         if (!$booking) {
             wp_send_json_error('Booking not found or not accessible', 404);
         }
-        wp_send_json_success(['booking' => $booking]);
+        $edit_rules = $this->booking_service->can_edit($booking);
+        wp_send_json_success([
+            'booking' => $booking,
+            'can_edit' => !empty($edit_rules['can_edit']),
+            'edit_reason' => $edit_rules['reason'] ?? '',
+        ]);
     }
 
     public function get_customers(): void {

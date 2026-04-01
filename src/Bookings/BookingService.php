@@ -668,6 +668,13 @@ class BookingService {
 
     }
 
+    public function can_edit($booking): array {
+        return [
+            'can_edit' => true,
+            'reason' => '',
+        ];
+    }
+
     private function split_datetime($value, $default_date = '') {
         $raw = trim((string) $value);
 

@@ -3,6 +3,9 @@ window.BookingModalCreate = (function() {
     // TODO take out references to view only mode
     let config = {};
     let modal, form;
+    let roomsCache = null;
+    let customersCache = null;
+    const organisationsCache = {};
 
     /**
      * Initialize the booking modal with configuration and bind events.
@@ -34,6 +37,8 @@ window.BookingModalCreate = (function() {
             onClose: () => {},
             beforeSubmit: () => true, // allow validation hook
             lockAddonPrices: false,
+            editMode: false,
+            editBookingId: 0,
 
             ...userConfig
         };
@@ -75,6 +80,13 @@ window.BookingModalCreate = (function() {
         bindDependentControls();
     }
 
+    function resetEditState() {
+        config.editMode = false;
+        config.editBookingId = 0;
+        setValue('booking_id', '');
+        updateModalMode(false);
+    }
+
     /**
      * Open the modal and populate with data.
      * @param {object} data - Data to prefill the form
@@ -83,6 +95,7 @@ window.BookingModalCreate = (function() {
         console.log("BookingModalCreate open called with data:", data);
         // Always define submitBtn at the top so it's available in both modes
         const submitBtn = form.querySelector('button[type="submit"]');
+        const editBookingId = data.bookingId || data.args?.id || 0;
 
         // If viewOnly and id provided, fetch booking details and populate, then disable all fields
         if (data.viewOnly && data.args?.id) {
@@ -156,7 +169,94 @@ window.BookingModalCreate = (function() {
             return;
         }
 
+        if (data.editMode && editBookingId) {
+            resetEditState();
+            config.editMode = true;
+            config.editBookingId = Number(editBookingId) || 0;
+            setValue('booking_id', config.editBookingId);
+            updateModalMode(true);
+
+            form.reset();
+            setValue('booking_id', config.editBookingId);
+            modal.classList.remove('hidden');
+
+            setLoading(true);
+
+            fetch(`${config.ajax_url}?action=myvh_calendar_get_booking&booking_id=${encodeURIComponent(config.editBookingId)}&nonce=${encodeURIComponent(config.nonce)}`)
+                .then(r => r.json())
+                .then(res => {
+                    if (!res || !res.success || !res.data.booking) {
+                        throw new Error('Booking not found');
+                    }
+
+                    const booking = res.data.booking;
+
+                    return populateDropdowns()
+                        .then(() => {
+                            setValue('customer_id', booking['CustomerId']);
+                            return refreshOrganisations(booking['OrganisationId']);
+                        })
+                        .then(() => booking);
+                })
+                .then((booking) => {
+                    const startDateTime = `${booking['StartDate'] || ''} ${booking['StartTime'] || ''}`.trim();
+                    const endDate = booking['EndDate'] || booking['StartDate'] || '';
+                    const endDateTime = `${endDate} ${booking['EndTime'] || ''}`.trim();
+
+                    setValue('room_id', booking['RoomId']);
+                    setValue('customer_id', booking['CustomerId']);
+                    setValue('organisation_id', booking['OrganisationId']);
+                    setValue('text', booking['Description'] || '');
+                    setValue('status', String(booking['Status'] || 'pending').toLowerCase());
+                    setValue('start', startDateTime);
+                    setValue('end', endDateTime);
+                    setDisplayedDateTimes(startDateTime, endDateTime);
+
+                    const publicCheckbox = form.querySelector("[name=public]");
+                    if (publicCheckbox) {
+                        publicCheckbox.checked = !!booking['Public'];
+                    }
+
+                    form.querySelectorAll("select, input, textarea").forEach(el => {
+                        if (!el.dataset.locked) {
+                            el.disabled = false;
+                        }
+                    });
+
+                    const recurringOptions = form.querySelector("#myvh-modal-recurring-options");
+                    if (recurringOptions) {
+                        recurringOptions.style.display = "none";
+                    }
+
+                    const maxOccurrences = form.querySelector("[name=max_occurrences]");
+                    const recurrenceEndDate = form.querySelector("[name=recurrence_end_date]");
+
+                    if (maxOccurrences) {
+                        maxOccurrences.disabled = true;
+                    }
+
+                    if (recurrenceEndDate) {
+                        recurrenceEndDate.disabled = false;
+                    }
+
+                    syncRecurringType();
+                    syncEndDateVisibility();
+                    config.onOpen(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Failed to load booking');
+                    close();
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+
+            return;
+        }
+
         // Only normal (add/edit) mode remains
+        resetEditState();
         if (submitBtn) submitBtn.style.display = '';
         form.reset();
 
@@ -218,6 +318,7 @@ window.BookingModalCreate = (function() {
     function close() {
         modal.classList.add('hidden');
         form.reset();
+        resetEditState();
         // Optionally, re-enable all fields
         form.querySelectorAll("select, input, textarea").forEach(el => {
             el.disabled = false;
@@ -461,41 +562,95 @@ window.BookingModalCreate = (function() {
     function setValue(field, value) {
         const el = form.querySelector(`[name=${field}]`);
         if (el && value !== undefined) {
+            if (el.type === 'checkbox') {
+                el.checked = !!value && String(value) !== '0';
+                return;
+            }
+
             el.value = value;
+        }
+    }
+
+    function updateModalMode(isEdit) {
+        const title = modal.querySelector('h2');
+        const hint = modal.querySelector('.myvh-account-hint');
+        const submitButtons = modal.querySelectorAll('button[type="submit"]');
+        const statusRow = form.querySelector('#myvh-modal-status-row');
+
+        if (title) {
+            title.textContent = isEdit ? 'Edit Booking' : 'Create Booking';
+        }
+
+        if (hint) {
+            hint.textContent = isEdit
+                ? 'Update the booking details below.'
+                : 'Complete the details below to create a booking.';
+        }
+
+        submitButtons.forEach((button) => {
+            button.style.display = '';
+            button.textContent = isEdit ? 'Update Booking' : 'Create Booking';
+        });
+
+        if (statusRow) {
+            statusRow.style.display = isEdit ? '' : 'none';
         }
     }
 
     // ─────────────────────────────
     // Dropdowns
     // ─────────────────────────────
-    function populateDropdown(select, loader) {
+    function populateDropdown(select, loader, cacheKey = '') {
 
         if (!select || !loader) return Promise.resolve();
+
+        if (cacheKey === 'rooms' && Array.isArray(roomsCache)) {
+            renderOptions(select, roomsCache);
+            return Promise.resolve();
+        }
+
+        if (cacheKey === 'customers' && Array.isArray(customersCache)) {
+            renderOptions(select, customersCache);
+            return Promise.resolve();
+        }
 
         select.innerHTML = '<option value="">Loading...</option>';
 
         return loader().then(data => {
+            const items = Array.isArray(data) ? data : [];
 
-            select.innerHTML = '<option value="">Select...</option>';
+            if (cacheKey === 'rooms') {
+                roomsCache = items;
+            }
 
-            data.forEach(item => {
-                const opt = document.createElement("option");
-                opt.value = item.id || item.Id;
-                opt.text  = item.name || item.Name;
-                const allowMultiday = item.allow_multiday ?? item.AllowMultiDayBookings;
-                if (allowMultiday !== undefined) {
-                    opt.dataset.allowMultiday = String(allowMultiday);
-                }
-                select.appendChild(opt);
-            });
+            if (cacheKey === 'customers') {
+                customersCache = items;
+            }
+
+            renderOptions(select, items);
+        });
+    }
+
+    function renderOptions(select, data) {
+        select.innerHTML = '<option value="">Select...</option>';
+
+        data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id || item.Id;
+            opt.text  = item.name || item.Name;
+            const allowMultiday = item.allow_multiday ?? item.AllowMultiDayBookings;
+            if (allowMultiday !== undefined) {
+                opt.dataset.allowMultiday = String(allowMultiday);
+            }
+            select.appendChild(opt);
         });
     }
 
     function populateDropdowns() {
 
         return Promise.all([
-            populateDropdown(form.querySelector("[name=room_id]"), config.loadRooms),
-            populateDropdown(form.querySelector("[name=customer_id]"), config.loadCustomers)
+            populateDropdown(form.querySelector("[name=room_id]"), config.loadRooms, 'rooms'),
+            populateDropdown(form.querySelector("[name=customer_id]"), config.loadCustomers, 'customers')
         ]);
     }
 
@@ -522,36 +677,17 @@ window.BookingModalCreate = (function() {
         organisationSelect.disabled = true;
         organisationSelect.innerHTML = '<option value="">Loading...</option>';
 
+        if (organisationsCache[customerId]) {
+            return Promise.resolve().then(() => {
+                renderOrganisationOptions(organisationSelect, organisationsCache[customerId], requireOrganisation, preferredOrgId, lockOrganisation);
+            });
+        }
+
         return Promise.resolve(config.loadOrganisations ? config.loadOrganisations(customerId) : [])
             .then(data => {
                 const organisations = Array.isArray(data) ? data : [];
-                organisationSelect.innerHTML = requireOrganisation
-                    ? ''
-                    : '<option value="">Select...</option>';
-
-                organisations.forEach(item => {
-                    const opt = document.createElement("option");
-                    opt.value = item.id || item.Id;
-                    opt.text = item.name || item.Name;
-                    const defaultPublic = item.default_public ?? item.DefaultPublic;
-                    if (defaultPublic !== undefined) {
-                        opt.dataset.defaultPublic = String(defaultPublic);
-                    }
-                    organisationSelect.appendChild(opt);
-                });
-
-                if (preferredOrgId && organisations.some(item => String(item.id || item.Id) === String(preferredOrgId))) {
-                    organisationSelect.value = String(preferredOrgId);
-                } else if (organisations.length >= 1 && requireOrganisation) {
-                    organisationSelect.value = String(organisations[0].id || organisations[0].Id);
-                } else if (organisations.length === 1) {
-                    organisationSelect.value = String(organisations[0].id || organisations[0].Id);
-                } else {
-                    organisationSelect.value = "";
-                }
-
-                organisationSelect.disabled = lockOrganisation || organisations.length === 0;
-                applyPublicDefaultFromOrganisation();
+                organisationsCache[customerId] = organisations;
+                renderOrganisationOptions(organisationSelect, organisations, requireOrganisation, preferredOrgId, lockOrganisation);
             })
             .catch(() => {
                 organisationSelect.innerHTML = requireOrganisation
@@ -560,6 +696,36 @@ window.BookingModalCreate = (function() {
                 organisationSelect.disabled = true;
                 applyPublicDefaultFromOrganisation();
             });
+    }
+
+    function renderOrganisationOptions(organisationSelect, organisations, requireOrganisation, preferredOrgId, lockOrganisation) {
+        organisationSelect.innerHTML = requireOrganisation
+            ? ''
+            : '<option value="">Select...</option>';
+
+        organisations.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id || item.Id;
+            opt.text = item.name || item.Name;
+            const defaultPublic = item.default_public ?? item.DefaultPublic;
+            if (defaultPublic !== undefined) {
+                opt.dataset.defaultPublic = String(defaultPublic);
+            }
+            organisationSelect.appendChild(opt);
+        });
+
+        if (preferredOrgId && organisations.some(item => String(item.id || item.Id) === String(preferredOrgId))) {
+            organisationSelect.value = String(preferredOrgId);
+        } else if (organisations.length >= 1 && requireOrganisation) {
+            organisationSelect.value = String(organisations[0].id || organisations[0].Id);
+        } else if (organisations.length === 1) {
+            organisationSelect.value = String(organisations[0].id || organisations[0].Id);
+        } else {
+            organisationSelect.value = "";
+        }
+
+        organisationSelect.disabled = lockOrganisation || organisations.length === 0;
+        applyPublicDefaultFromOrganisation();
     }
 
     // ─────────────────────────────
@@ -576,7 +742,8 @@ window.BookingModalCreate = (function() {
         const formData = buildSubmitFormData();
 
         setLoading(true);
-        formData.append("action", "myvh_create_event");
+        const action = config.editMode ? "myvh_update_event" : "myvh_create_event";
+        formData.append("action", action);
         formData.append("nonce", config.nonce);
         if (config.context) {
             formData.append("context", config.context);
@@ -590,7 +757,7 @@ window.BookingModalCreate = (function() {
         .then(res => {
 
             if (!res.success) {
-                alert(res.data || "Failed to create booking");
+                alert(res.data || "Failed to save booking");
                 return;
             }
 
@@ -599,7 +766,7 @@ window.BookingModalCreate = (function() {
         })
         .catch(err => {
             console.error(err);
-            alert("Unexpected error creating booking");
+            alert("Unexpected error saving booking");
         })
         .finally(() => {
             setLoading(false);
@@ -631,12 +798,10 @@ window.BookingModalCreate = (function() {
     // ─────────────────────────────
     function setLoading(state) {
 
-        const btn = form.querySelector("button[type=submit]");
-
-        if (btn) {
+        form.querySelectorAll("button[type=submit]").forEach(btn => {
             btn.disabled = state;
-            btn.textContent = state ? "Saving..." : "Create Booking";
-        }
+            btn.textContent = state ? "Saving..." : (config.editMode ? "Update Booking" : "Create Booking");
+        });
 
         form.querySelectorAll("input, select").forEach(el => {
             // Only toggle fields that aren't intentionally locked

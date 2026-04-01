@@ -148,14 +148,18 @@ class CalendarService {
     public function update_event($request) {
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
+        $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
+        $existing_booking = $booking_id > 0 ? $this->booking_service->get_by_id($booking_id) : null;
+        $current_status = sanitize_text_field((string)($existing_booking['Status'] ?? BookingStatus::PENDING));
 
         $data = [
-            'booking_id' => sanitize_text_field($request['booking_id'] ?? $request['id'] ?? ''),
+            'booking_id' => $booking_id,
             'start_date' => $start_date,
             'start_time' => $start_time,
             'end_date' => $end_date,
             'end_time' => $end_time,
             'description' => sanitize_text_field($request['text'] ?? ''),
+            'status' => sanitize_text_field($request['status'] ?? $current_status),
             'room_id' => intval($request['room_id'] ?? 0),
             'customer_id' => intval($request['customer_id'] ?? 0),
             'organisation_id' => intval($request['organisation_id'] ?? 0),
