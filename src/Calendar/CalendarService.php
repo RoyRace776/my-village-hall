@@ -252,6 +252,7 @@ class CalendarService {
         $room_id_raw = isset($booking['RoomId']) ? (string) $booking['RoomId'] : '';
         $room_id = (int) $room_id_raw;
         $resource_id = $room_id_raw !== '' ? $room_id_raw : (string) $room_id;
+        $status = strtolower( sanitize_text_field( (string) ( $booking['Status'] ?? '' ) ) );
         $room_name = $room_names[$room_id] ?? '';
         $description = isset($booking['Description']) ? (string) $booking['Description'] : '';
         $is_public = !empty($booking['Public']);
@@ -282,6 +283,7 @@ class CalendarService {
             'tags' => [
                 'roomId' => $resource_id,
                 'roomName' => $room_name,
+                'status' => $status,
                 'description' => $safe_description,
                 'isPublic' => $is_public,
                 'organisationId' => $organisation_id,
@@ -337,6 +339,7 @@ class CalendarService {
 
     private function map_booking_to_public_feed_event($booking, $room_meta, $viewer_scope, $default_label, $context) {
         $room_id = isset($booking['RoomId']) ? (int) $booking['RoomId'] : 0;
+        $status = strtolower( sanitize_text_field( (string) ( $booking['Status'] ?? '' ) ) );
         $room_name = $room_meta[$room_id]['name'] ?? (string) ($booking['RoomName'] ?? '');
         $venue_name = $room_meta[$room_id]['venue'] ?? (string) ($booking['VenueName'] ?? '');
         $description = isset($booking['Description']) ? (string) $booking['Description'] : '';
@@ -366,7 +369,7 @@ class CalendarService {
                 'roomId' => $room_id,
                 'room' => $room_name,
                 'venue' => $venue_name,
-                'status' => $booking['Status'] ?? '',
+                'status' => $status,
                 'isPublic' => $is_public,
                 'canViewPrivate' => $can_view_private,
                 'description' => $description,

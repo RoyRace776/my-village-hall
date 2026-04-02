@@ -28,10 +28,13 @@
     };
 
     // ── Colour map ────────────────────────────────────────────────────────────
-    var STATUS_COLOURS = {
+    var DEFAULT_STATUS_COLOURS = {
         confirmed : '#2271b1',
         pending   : '#f0a500',
+        cancelled : '#9aa0a6',
+        completed : '#2d8f45',
     };
+    var STATUS_COLOURS = Object.assign({}, DEFAULT_STATUS_COLOURS, (cfg.statusColors && typeof cfg.statusColors === 'object') ? cfg.statusColors : {});
 
     function buildRoomIndex() {
         roomNameById = {};
@@ -73,41 +76,14 @@
             key = String(tags.roomId);
         }
 
+        if (key !== null && Object.prototype.hasOwnProperty.call(roomNameById, key)) {
+            return roomNameById[key];
+        }
 
-        /**
-         * My Village Hall – Public Calendar (DayPilot Lite)
-         *
-         * Reads config from the myvhCalConfig object localised by the shortcode PHP class.
-         * Supports month, week and day views.
-         */
-        (function () {
-            'use strict';
+        return '';
+    }
 
-            // myvhCalConfig is injected by wp_localize_script
-            if (typeof myvhCalConfig === 'undefined') {
-                return;
-            }
-
-            var cfg     = myvhCalConfig;
-            var wrap    = null;   // .myvh-public-calendar-wrap
-            var dp      = null;   // active DayPilot control
-            var nav     = null;   // DayPilot navigator control
-            var lastEvents = [];
-            var roomNameById = {};
-            var loadRequestSeq = 0;
-            var suppressNavSelect = false;
-            var headerDateFormat = cfg.headerDateFormat || 'd MMM';
-            var current = {
-                mode : 'calendar',
-                detail : cfg.view || 'month',
-                date : DayPilot.Date.today(),
-            };
-
-            // Colour map for booking statuses
-            var STATUS_COLOURS = {
-                confirmed : '#2271b1',
-                pending   : '#f0a500',
-            };
+    function formatTimeFromISO(isoDatetime) {
         if (!isoDatetime) return '';
         try {
             var date = new Date(isoDatetime);
@@ -463,8 +439,8 @@
                         } else {
                             var event   = cell.event;
                             var span    = cell.span;
-                            var color   = event.backColor || '#2271b1';
-                            var textColor = event.fontColor || '#fff';
+                                var accentColor = event.barColor || event.borderColor || event.backColor || '#2271b1';
+                                var textColor = event.fontColor || '#1f2933';
                             var title   = event.text || 'Booking';
                             var tooltip = event.toolTip ? String(event.toolTip).replace(/\n/g, '&#10;') : '';
                             var startT  = formatTimeFromISO(event.start);
@@ -473,7 +449,7 @@
 
                             html += '<td class="myvh-tt-event-cell"'
                                   + ' rowspan="' + span + '"'
-                                  + ' style="background:' + escHtml(color) + ';color:' + escHtml(textColor) + ';"'
+                                    + ' style="background:#ffffff;color:' + escHtml(textColor) + ';border-left:4px solid ' + escHtml(accentColor) + ';"'
                                   + ' data-event-id="' + escHtml(String(event.id || '')) + '"'
                                   + ' title="' + escHtml(tooltip) + '">';
                             html += '<div class="myvh-tt-event-inner">'
@@ -710,6 +686,9 @@
             dp.events.list = data.map(function (e) {
                 var normalized = normalizeEventRange(e.start, e.end);
 
+                var status = String((e.tags && e.tags.status) || '').toLowerCase();
+                var accentColor = STATUS_COLOURS[status] || STATUS_COLOURS.confirmed;
+
                 return {
                     id    : e.id,
                     start : normalized.start,
@@ -718,9 +697,10 @@
                     resource: e.resource,
                     tags  : e.tags,
                     toolTip: buildEventTooltip(e),
-                    backColor : STATUS_COLOURS[e.tags && e.tags.status] || STATUS_COLOURS.confirmed,
-                    fontColor : '#ffffff',
-                    borderColor: 'darker',
+                    backColor : '#ffffff',
+                    fontColor : '#1f2933',
+                    borderColor: accentColor,
+                    barColor: accentColor,
                 };
             });
             dp.update();

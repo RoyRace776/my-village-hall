@@ -6,6 +6,40 @@ window.CalendarCore = (function () {
     let currentMode = "Calendar";
     let currentDetail = "Week";
     let currentContainerId = "myvh-calendar";
+    const DEFAULT_STATUS_COLORS = {
+        confirmed: "#2271b1",
+        pending: "#f0a500",
+        cancelled: "#9aa0a6",
+        completed: "#2d8f45",
+    };
+
+    function getStatusColors(opts = {}) {
+        if (!opts.statusColors || typeof opts.statusColors !== "object") {
+            return DEFAULT_STATUS_COLORS;
+        }
+
+        return {
+            ...DEFAULT_STATUS_COLORS,
+            ...opts.statusColors,
+        };
+    }
+
+    function applyEventStatusColors(events, statusColors) {
+        return (events || []).map(function(event) {
+            const tags = event && event.tags ? event.tags : {};
+            const status = String(tags.status || "").toLowerCase();
+            const fallbackColor = statusColors.confirmed || DEFAULT_STATUS_COLORS.confirmed;
+            const accentColor = statusColors[status] || fallbackColor;
+
+            return {
+                ...event,
+                backColor: "#ffffff",
+                fontColor: "#1f2933",
+                borderColor: accentColor,
+                barColor: accentColor,
+            };
+        });
+    }
 
     /**
      * Check if a date format string uses short weekday (ddd).
@@ -175,7 +209,9 @@ window.CalendarCore = (function () {
         }
     }
 
-    function loadEvents(ajax_url, nonce, context = "admin") {
+    function loadEvents(ajax_url, nonce, context = "admin", opts = {}) {
+        const statusColors = getStatusColors(opts);
+
         if (calendar) {
             const start = calendar.visibleStart();
             const end = calendar.visibleEnd();
@@ -188,7 +224,7 @@ window.CalendarCore = (function () {
                 events.forEach(e => {
                     e.toolTip = buildEventTooltip(e, context);
                 });
-                calendar.events.list = events;
+                calendar.events.list = applyEventStatusColors(events, statusColors);
                 calendar.update();
             }).catch(err => console.error("Failed to load calendar events", err));
         }
@@ -205,7 +241,7 @@ window.CalendarCore = (function () {
                 events.forEach(e => {
                     e.toolTip = buildEventTooltip(e, context);
                 });
-                scheduler.events.list = events;
+                scheduler.events.list = applyEventStatusColors(events, statusColors);
                 scheduler.update();
             }).catch(err => console.error("Failed to load scheduler events", err));
         }
@@ -244,10 +280,10 @@ window.CalendarCore = (function () {
         calendar.onEventResized = args => opts.onEventResized?.(args);
         calendar.onTimeRangeSelected = args => opts.onTimeRangeSelected?.(args);
 
-        calendar.onViewChange = () => loadEvents(opts.ajax_url, opts.nonce, opts.context);
+        calendar.onViewChange = () => loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
 
         calendar.init();
-        loadEvents(opts.ajax_url, opts.nonce, opts.context);
+        loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
     }
 
     function createMonthCalendar(containerId, opts) {
@@ -266,7 +302,7 @@ window.CalendarCore = (function () {
         });
 
         calendar.init();
-        loadEvents(opts.ajax_url, opts.nonce, opts.context);
+        loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
     }
 
     function buildGroupedSchedulerResources(rooms) {
@@ -500,7 +536,7 @@ window.CalendarCore = (function () {
             .then(res => {
                 const rooms = Array.isArray(res?.data) ? res.data : Object.values(res?.data || res || {});
                 flatRooms = buildGroupedSchedulerResources(rooms).filter(r => !r.tags || r.tags.type !== "venue");
-                loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
             })
             .catch(err => console.error("Failed to load rooms for timetable", err));
     }
@@ -583,7 +619,7 @@ window.CalendarCore = (function () {
 
                 scheduler.resources = buildGroupedSchedulerResources(rooms);
                 scheduler.init();
-                loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
             })
             .catch(err => {
                 console.error("Failed to load rooms", err);
@@ -681,13 +717,13 @@ window.CalendarCore = (function () {
                 if (calendar) {
                     calendar.startDate = start;
                     calendar.update();
-                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
                 }
 
                 if (scheduler) {
                     scheduler.startDate = currentDetail === "Month" ? start.firstDayOfMonth() : start;
                     scheduler.update();
-                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
                 }
             },
 
@@ -724,7 +760,7 @@ window.CalendarCore = (function () {
                         calendar.startDate = calendar.startDate.addDays(currentDetail === "Day" ? 1 : 7);
                     }
                     calendar.update();
-                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
                 }
 
                 if (scheduler) {
@@ -734,7 +770,7 @@ window.CalendarCore = (function () {
                         scheduler.startDate = scheduler.startDate.addDays(currentDetail === "Day" ? 1 : 7);
                     }
                     scheduler.update();
-                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
                 }
             },
 
@@ -746,7 +782,7 @@ window.CalendarCore = (function () {
                         calendar.startDate = calendar.startDate.addDays(currentDetail === "Day" ? -1 : -7);
                     }
                     calendar.update();
-                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
                 }
 
                 if (scheduler) {
@@ -756,7 +792,7 @@ window.CalendarCore = (function () {
                         scheduler.startDate = scheduler.startDate.addDays(currentDetail === "Day" ? -1 : -7);
                     }
                     scheduler.update();
-                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
                 }
             },
 
@@ -766,7 +802,7 @@ window.CalendarCore = (function () {
                         ? DayPilot.Date.today().firstDayOfMonth()
                         : DayPilot.Date.today();
                     calendar.update();
-                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
                 }
 
                 if (scheduler) {
@@ -774,12 +810,12 @@ window.CalendarCore = (function () {
                         ? DayPilot.Date.today().firstDayOfMonth()
                         : DayPilot.Date.today();
                     scheduler.update();
-                    loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                    loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
                 }
             },
 
             reload() {
-                loadEvents(opts.ajax_url, opts.nonce, opts.context);
+                loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
             }
         };
     }

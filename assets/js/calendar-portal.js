@@ -292,6 +292,7 @@ var Calendar = (function() {
                 visibleStartHour: Number(myvhCal.visibleStartHour || 0),
                 visibleEndHour: Number(myvhCal.visibleEndHour || 24),
                 schedulerOrientation: String(myvhCal.schedulerOrientation || 'horizontal').toLowerCase(),
+                statusColors: (myvhCal && myvhCal.statusColors) ? myvhCal.statusColors : null,
 
                 editable:   false,
                 selectable: true,

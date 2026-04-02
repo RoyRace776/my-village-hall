@@ -3,6 +3,7 @@ namespace MYVH\Calendar;
 
 use MYVH\Rooms\RoomService;
 use MYVH\Availability\AvailabilityService;
+use MYVH\Calendar\CalendarStatusColours;
 
 use WP_REST_Server;
 use WP_REST_Request;
@@ -194,6 +195,7 @@ class CalendarShortcode {
             'visibleStartHour'    => (int) $visible_hours['start'],
             'visibleEndHour'      => (int) $visible_hours['end'],
             'schedulerOrientation' => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
+            'statusColors'        => CalendarStatusColours::map(),
             'nonce'               => wp_create_nonce( 'wp_rest' ),
             'i18n'                => [
                 'today'    => __( 'Today',    'my-village-hall' ),

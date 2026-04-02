@@ -166,6 +166,21 @@
 
 .myvh_admin_cal_event_inner { color: inherit; font-weight: 500; }
 
+.myvh_admin_cal_event,
+.myvh_admin_cal_event_inner,
+body .calendar_default_event,
+body .month_default_event,
+body .scheduler_default_event,
+body .calendar_default_event_inner,
+body .month_default_event_inner,
+body .scheduler_default_event_inner {
+    background: #ffffff !important;
+    color: #1f2933 !important;
+    border-style: solid !important;
+    border-width: 0 0 0 4px !important;
+    box-sizing: border-box;
+}
+
 /* Week/Day: time axis */
 .myvh_admin_cal_rowheader {
     background: #f6f7f7;
@@ -619,11 +634,12 @@ body .scheduler_default_event_inner {
     vertical-align: top;
     overflow: hidden;
     cursor: default;
-    transition: filter 0.1s;
+    transition: box-shadow 0.12s ease, transform 0.12s ease;
 }
 
 .myvh-tt-event-cell:hover {
-    filter: brightness(1.08);
+    box-shadow: inset 0 0 0 9999px rgba(34, 113, 177, 0.04);
+    transform: translateY(-1px);
 }
 
 .myvh-tt-event-inner {

@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Core\Support;
 
+use MYVH\Calendar\CalendarStatusColours;
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Availability\AvailabilityService;
@@ -223,6 +224,7 @@ class AssetLoader {
                 'visibleStartHour'      => $visible_hours['start'],
                 'visibleEndHour'        => $visible_hours['end'],
                 'schedulerOrientation'  => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
+                'statusColors'          => CalendarStatusColours::map(),
             ] );
         }
     }
@@ -365,6 +367,7 @@ class AssetLoader {
             'visibleStartHour'      => $visible_hours['start'],
             'visibleEndHour'        => $visible_hours['end'],
             'schedulerOrientation'  => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
+            'statusColors'          => CalendarStatusColours::map(),
         ] );
     }
 
@@ -404,6 +407,7 @@ class AssetLoader {
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'myvh_calendar' ),
             'view'    => 'month',
+            'statusColors' => CalendarStatusColours::map(),
         ] );
     }
 }
