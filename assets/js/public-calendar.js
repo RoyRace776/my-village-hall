@@ -29,8 +29,10 @@
 
     // ── Colour map ────────────────────────────────────────────────────────────
     var STATUS_COLOURS = {
-        confirmed : '#2271b1',
-        pending   : '#f0a500',
+        confirmed : '#46b450',
+        pending   : '#2271b1',
+        cancelled : '#dc3232',
+        completed : '#777777',
     };
 
     function buildRoomIndex() {

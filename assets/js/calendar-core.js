@@ -7,6 +7,14 @@ window.CalendarCore = (function () {
     let currentDetail = "Week";
     let currentContainerId = "myvh-calendar";
 
+    // ── Colour map for booking statuses ──────────────────────────────────────
+    const STATUS_COLOURS = {
+        confirmed : "#46b450",
+        pending   : "#2271b1",
+        cancelled : "#dc3232",
+        completed : "#777777",
+    };
+
     /**
      * Check if a date format string uses short weekday (ddd).
      */
@@ -175,6 +183,12 @@ window.CalendarCore = (function () {
         }
     }
 
+    function applyStatusColour(e) {
+        e.backColor = STATUS_COLOURS[e.tags?.status] ?? STATUS_COLOURS.confirmed;
+        e.fontColor = "#ffffff";
+        e.borderColor = "darker";
+    }
+
     function loadEvents(ajax_url, nonce, context = "admin") {
         if (calendar) {
             const start = calendar.visibleStart();
@@ -187,6 +201,7 @@ window.CalendarCore = (function () {
             fetch(url).then(r => r.json()).then(events => {
                 events.forEach(e => {
                     e.toolTip = buildEventTooltip(e, context);
+                    applyStatusColour(e);
                 });
                 calendar.events.list = events;
                 calendar.update();
@@ -204,6 +219,7 @@ window.CalendarCore = (function () {
             fetch(url).then(r => r.json()).then(events => {
                 events.forEach(e => {
                     e.toolTip = buildEventTooltip(e, context);
+                    applyStatusColour(e);
                 });
                 scheduler.events.list = events;
                 scheduler.update();

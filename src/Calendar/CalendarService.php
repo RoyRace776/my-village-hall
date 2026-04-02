@@ -283,6 +283,7 @@ class CalendarService {
                 'organisationId' => $organisation_id,
                 'canViewPrivate' => $can_view_private,
                 'privateLabel' => $default_label,
+                'status' => isset($booking['Status']) ? (string) $booking['Status'] : '',
             ],
         ];
 
