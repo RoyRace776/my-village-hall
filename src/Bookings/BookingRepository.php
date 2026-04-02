@@ -22,6 +22,36 @@ class BookingRepository extends RepositoryBase
         $this->table_name = $wpdb->prefix . 'myvh_bookings';
     }
 
+    // This is the new get function that returns a Booking object instead of an array.
+    // Over time, we should make the old get_by_id function protected and update all internal calls to use this new get() method, which provides better type safety and encapsulation.
+    public function get(int $id): Booking
+    {
+
+        $row = $this->get_by_id($id);
+
+        if (!$row) {
+            throw new \RuntimeException("Booking {$id} not found.");
+        }
+
+        return Booking::fromArray($row);
+    }
+
+    public function getAll(): array
+    {
+        $rows = $this->get_all();
+        $rows = $rows ?? [];
+
+        $bookings = [];
+        $bookings = array_map(
+            function (array $row): Booking {
+                return Booking::fromArray($row);
+            },
+            $rows
+        );
+
+        return $bookings;
+    }
+
     /**
      * Get all bookings belonging to a recurring pattern
      */

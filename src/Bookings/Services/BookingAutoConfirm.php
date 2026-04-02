@@ -2,24 +2,25 @@
 
 namespace MYVH\Bookings\Services;
 
-use MYVH\Bookings\BookingService;
-use MYVH\Customers\CustomerService;
-use MYVH\Organisations\OrganisationService;
+use MYVH\Bookings\BookingRepository;
+use MYVH\Customers\CustomerRepository;
+use MYVH\Organisations\OrganisationRepository;
 use MYVH\Bookings\BookingStatus;
+use MYVH\Bookings\Booking;
 
 class BookingAutoConfirm
 {
-    private $booking_service;
-    private $customer_service;
-    private $organisation_service;
+    private $booking_repo;
+    private $customer_repo;
+    private $organisation_repo;
 
-    public function __construct(BookingService $booking_service,
-                                CustomerService $customer_service,
-                                OrganisationService $organisation_service)
+    public function __construct(BookingRepository $booking_repo,
+                                CustomerRepository $customer_repo,
+                                OrganisationRepository $organisation_repo)
     {
-        $this->booking_service = $booking_service;
-        $this->customer_service = $customer_service;
-        $this->organisation_service = $organisation_service;
+        $this->booking_repo = $booking_repo;
+        $this->customer_repo = $customer_repo;
+        $this->organisation_repo = $organisation_repo;
     }
 
     public function auto_confirm($booking_id) : string
@@ -27,13 +28,13 @@ class BookingAutoConfirm
         // TODO: Auto-confirm logic can be implemented here, e.g. based on booking date or other criteria
         // For now, we'll just return the booking with status set to confirmed
         //$booking['Status'] = self::CONFIRMED;
-        $booking = $this->booking_service->get_by_id($booking_id);
+        $booking = $this->booking_repo->get($booking_id);
 
-        $org = $this->organisation_service->get_by_id($booking['OrganisationId']);
-        $customer = $this->customer_service->get_by_id($booking['CustomerId']);
+        $org = $this->organisation_repo->get_by_id($booking->organisationId());
+        $customer = $this->customer_repo->get_by_id($booking->customerId());
 
         if ($org['AllowAutoConfirm'] || $customer['AllowAutoConfirm']) {
-             $this->booking_service->update_status($booking_id, BookingStatus::CONFIRMED);
+             $this->booking_repo->update(['Status' => BookingStatus::CONFIRMED], ['Id' => $booking_id]);
              do_action('myvh_event_booking.confirmed', ['booking_id' => $booking_id]);
 
         }
