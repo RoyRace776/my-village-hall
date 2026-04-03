@@ -39,6 +39,6 @@ class BookingAutoConfirm
 
         }
 
-        return $booking['Status'];
+        return $booking->status();
     }
 }
