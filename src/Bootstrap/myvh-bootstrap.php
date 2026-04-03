@@ -13,7 +13,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 use MYVH\Container\Container;
-use MYVH\Portal\PortalShortcode;
 use MYVH\Events\BookingListener;
 use MYVH\Core\Shortcode\ShortcodeRegistry;
 
@@ -30,7 +29,7 @@ if ( $myvh_container instanceof Container ) {
     add_action( 'init', [ $registry, 'register' ] );
 
     $registry->add( $myvh_container->get( MYVH\Login\LoginShortcode::class ) );
-    $registry->add( new PortalShortcode() );
+    $registry->add( $myvh_container->get( MYVH\Portal\PortalShortcode::class ) );
 
     $login_handler = new MYVH\Login\LoginHandler();
     $login_handler->init();

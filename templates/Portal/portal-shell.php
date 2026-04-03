@@ -1,18 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-use MYVH\Portal\ClientAdminService;
-use MYVH\Customers\CustomerService;
-
-global $myvh_container;
-
-$client_admin_service = isset($myvh_container) ? $myvh_container->get(ClientAdminService::class) : null;
-$customer_service = isset($myvh_container) ? $myvh_container->get(CustomerService::class) : null;
-$current_user_id = get_current_user_id();
-$customer = $customer_service ? $customer_service->get_by_user_id($current_user_id) : null;
-$has_customer = !empty($customer['Id']);
-$is_client_admin = $client_admin_service ? $client_admin_service->can_administer_blog($current_user_id, get_current_blog_id()) : false;
-$accessible_sites = $client_admin_service ? $client_admin_service->get_accessible_sites_for_user($current_user_id) : [];
+// $accessible_sites, $is_client_admin, and $has_customer are resolved by
+// PortalBootstrapDataService and unpacked by PortalShortcode::render().
 ?>
 
 <div id="myvh-portal">

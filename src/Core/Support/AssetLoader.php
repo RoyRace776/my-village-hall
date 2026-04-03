@@ -2,9 +2,6 @@
 namespace MYVH\Core\Support;
 
 use MYVH\Calendar\CalendarStatusColours;
-use MYVH\Customers\CustomerService;
-use MYVH\Portal\ClientAdminService;
-use MYVH\Availability\AvailabilityService;
 
 class AssetLoader {
 
@@ -26,40 +23,6 @@ class AssetLoader {
     }
 
     /**
-     * Get the visible hours for the calendar, using defaults or service if available.
-     * @return array [ 'start' => int, 'end' => int ]
-     */
-    public static function get_calendar_visible_hours(): array {
-
-        $defaults = [
-            'start' => 8,
-            'end' => 22,
-        ];
-
-        global $myvh_container;
-
-        if ( ! isset( $myvh_container ) ) {
-            return $defaults;
-        }
-
-        try {
-            $availability_service = $myvh_container->get( AvailabilityService::class );
-            $visible_hours = $availability_service->get_calendar_visible_hours();
-        } catch ( \Throwable $e ) {
-            return $defaults;
-        }
-
-        if ( empty( $visible_hours ) || ! is_array( $visible_hours ) ) {
-            return $defaults;
-        }
-
-        return [
-            'start' => isset( $visible_hours['start'] ) ? (int) $visible_hours['start'] : $defaults['start'],
-            'end'   => isset( $visible_hours['end'] ) ? (int) $visible_hours['end'] : $defaults['end'],
-        ];
-    }
-
-    /**
      * Register hooks to enqueue frontend and admin assets.
      */
     public static function init(): void {
@@ -70,23 +33,15 @@ class AssetLoader {
     // ── Frontend ──────────────────────────────────────────────────────────────
 
     /**
-     * Enqueue frontend assets for public pages and portal shortcode.
+     * Enqueue frontend assets.
+     *
+     * Portal assets are enqueued by PortalShortcode::render() so that
+     * PortalBootstrapDataService data is already available for wp_localize_script.
+     * Public calendar assets are enqueued by CalendarShortcode::render() to
+     * support per-instance container IDs and REST config.
      */
     public static function enqueue_frontend(): void {
-
         self::register_public_calendar_assets();
-
-        if ( ! is_singular() ) return;
-
-        $content = get_queried_object()->post_content ?? '';
-
-        // Enqueue portal assets if [myvh_portal] shortcode is present
-        if ( has_shortcode( $content, 'myvh_portal' ) ) {
-            self::enqueue_portal();
-        }
-
-        // Public calendar assets are enqueued directly by Calendar_Shortcode::render()
-        // to support per-instance container IDs and REST config.
     }
 
     /**
@@ -166,8 +121,6 @@ class AssetLoader {
         // Calendar page only
         if ( strpos( $hook, 'myvh-calendar' ) !== false ) {
 
-            $visible_hours = self::get_calendar_visible_hours();
-
             wp_enqueue_style(
                 'myvh-calendar-theme',
                 MYVH_PLUGIN_URL . 'assets/css/calendar.css',
@@ -215,48 +168,22 @@ class AssetLoader {
                 true
             );
 
-            // Pass config to JS
-            wp_localize_script( 'myvh-calendar-admin', 'myvhCal', [
-                'ajax_url'              => admin_url( 'admin-ajax.php' ),
-                'nonce'                 => wp_create_nonce( 'myvh_calendar' ),
-                'headerDateFormat'      => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
-                'maxBookingDaysAhead'   => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
-                'visibleStartHour'      => $visible_hours['start'],
-                'visibleEndHour'        => $visible_hours['end'],
-                'schedulerOrientation'  => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
-                'statusColors'          => CalendarStatusColours::map(),
-            ] );
+            // wp_localize_script for myvhCal is called from MyVillageHall::render_calendar_page()
+            // after AvailabilityService resolves visible hours.
         }
     }
 
     // ── Portal (frontend, [myvh_portal] shortcode) ────────────────────────────
 
     /**
-     * Enqueue assets for the portal ([myvh_portal] shortcode) on the frontend.
+     * Enqueue styles and scripts for the [myvh_portal] shortcode.
+     *
+     * This method only handles asset registration/enqueueing.
+     * wp_localize_script calls are made by PortalShortcode::render() after
+     * PortalBootstrapDataService has resolved all request-specific values,
+     * ensuring database reads happen once and at the appropriate time.
      */
-    public static function enqueue_portal(): void {
-
-        $visible_hours = self::get_calendar_visible_hours();
-
-        $current_customer_id = 0;
-        $default_organisation_id = 0;
-        $is_client_admin = false;
-
-        // If user is logged in, get customer/org/admin info
-        if ( is_user_logged_in() ) {
-            global $myvh_container;
-
-            if ( isset( $myvh_container ) ) {
-                $client_admin_service = $myvh_container->get( ClientAdminService::class );
-                $customer_service = $myvh_container->get( CustomerService::class );
-                $customer = $customer_service->get_by_user_id( get_current_user_id() );
-                $organisations = $customer_service->get_organisations_for_user_id( get_current_user_id() );
-                $is_client_admin = $client_admin_service->can_administer_blog( get_current_user_id(), get_current_blog_id() );
-
-                $current_customer_id = ! empty( $customer['Id'] ) ? (int) $customer['Id'] : 0;
-                $default_organisation_id = ! empty( $organisations[0]['Id'] ) ? (int) $organisations[0]['Id'] : 0;
-            }
-        }
+    public static function enqueue_portal_assets(): void {
 
         // Google Fonts (filterable so the theme can suppress the duplicate)
         $fonts_url = apply_filters(
@@ -347,28 +274,6 @@ class AssetLoader {
             MYVH_VERSION,
             true
         );
-
-        // Pass config to JS for portal app
-        wp_localize_script( 'myvh-portal-app', 'myvhPortal', [
-            'ajax_url' => admin_url( 'admin-ajax.php' ),
-            'nonce'   => wp_create_nonce( 'myvh_portal' ),
-            'isClientAdmin' => $is_client_admin ? 1 : 0,
-        ] );
-
-        // myvhCal used by calendar-core.js via calendar-portal.js
-        wp_localize_script( 'myvh-calendar-portal', 'myvhCal', [
-            'ajax_url'              => admin_url( 'admin-ajax.php' ),
-            'nonce'                 => wp_create_nonce( 'myvh_calendar' ),
-            'headerDateFormat'      => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
-            'maxBookingDaysAhead'   => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
-            'currentCustomerId'     => $current_customer_id,
-            'defaultOrganisationId' => $default_organisation_id,
-            'isClientAdmin'         => $is_client_admin ? 1 : 0,
-            'visibleStartHour'      => $visible_hours['start'],
-            'visibleEndHour'        => $visible_hours['end'],
-            'schedulerOrientation'  => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
-            'statusColors'          => CalendarStatusColours::map(),
-        ] );
     }
 
     // ── Public calendar ([myvh_public_calendar] shortcode) ────────────────────

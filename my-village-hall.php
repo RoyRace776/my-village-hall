@@ -28,6 +28,8 @@ use MYVH\Addons\AddonController;
 use MYVH\Invoices\InvoiceController;
 use MYVH\Settings\GeneralSettings;
 use MYVH\Calendar\CalendarShortcode;
+use MYVH\Calendar\CalendarStatusColours;
+use MYVH\Availability\AvailabilityService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Bootstrap\Network\NetworkDashboard;
 use MYVH\Bootstrap\Installer;
@@ -436,7 +438,43 @@ class MyVillageHall {
     // A private helper keeps things DRY.
 
     public function render_bookings_page():        void { $this->render_page( 'bookings',        true ); }
-    public function render_calendar_page():        void { $this->render_page( 'calendar' ); }
+    public function render_calendar_page(): void {
+
+        // Resolve visible hours here so AssetLoader stays free of database calls.
+        // Scripts are registered as footer scripts, so wp_localize_script is valid
+        // anywhere before wp_footer fires — including inside a page render callback.
+        $visible_hours = [ 'start' => 8, 'end' => 22 ];
+
+        global $myvh_container;
+
+        if ( isset( $myvh_container ) ) {
+            try {
+                $availability_service = $myvh_container->get( AvailabilityService::class );
+                $hours = $availability_service->get_calendar_visible_hours();
+                if ( ! empty( $hours ) && is_array( $hours ) ) {
+                    $visible_hours = [
+                        'start' => (int) ( $hours['start'] ?? 8 ),
+                        'end'   => (int) ( $hours['end']   ?? 22 ),
+                    ];
+                }
+            } catch ( \Throwable $e ) {
+                // fall back to defaults
+            }
+        }
+
+        wp_localize_script( 'myvh-calendar-admin', 'myvhCal', [
+            'ajax_url'             => admin_url( 'admin-ajax.php' ),
+            'nonce'                => wp_create_nonce( 'myvh_calendar' ),
+            'headerDateFormat'     => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+            'maxBookingDaysAhead'  => (int) myvh_setting( 'booking.general.max_booking_days', 365 ),
+            'visibleStartHour'     => $visible_hours['start'],
+            'visibleEndHour'       => $visible_hours['end'],
+            'schedulerOrientation' => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
+            'statusColors'         => CalendarStatusColours::map(),
+        ] );
+
+        $this->render_page( 'calendar' );
+    }
     public function render_customers_page():       void { $this->render_page( 'customers' ); }
     public function render_organisations_page():   void { $this->render_page( 'organisations' ); }
     public function render_org_types_page():       void { $this->render_page( 'org-types' ); }
