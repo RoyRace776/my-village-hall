@@ -65,6 +65,7 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_approve_org_request', [$this, 'approve_organisation_membership_request']);
         add_action('wp_ajax_myvh_portal_reject_org_request', [$this, 'reject_organisation_membership_request']);
         add_action('wp_ajax_myvh_portal_add_organisation', [$this, 'add_organisation']);
+        add_action('wp_ajax_myvh_portal_save_org_type_assignment', [$this, 'save_organisation_type_assignment']);
         add_action('wp_ajax_myvh_portal_save_org_billing', [$this, 'save_organisation_billing']);
         add_action('wp_ajax_myvh_portal_org_add_member', [$this, 'organisation_add_member']);
         add_action('wp_ajax_myvh_portal_org_remove_member', [$this, 'organisation_remove_member']);
@@ -292,6 +293,9 @@ class PortalController {
                     wp_send_json_error('Customer profile not found', 400);
                 }
 
+                $organisation_types = $is_client_admin ? $this->organisation_type_service->get_all() : [];
+                $default_organisation_type_id = $this->get_default_organisation_type_id($organisation_types);
+
                 include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-add.php';
                 break;
 
@@ -374,6 +378,7 @@ class PortalController {
                 $manageable_organisations = [];
                 $organisation_members = [];
                 $organisation_pending_requests = [];
+                $organisation_types = $is_client_admin ? $this->organisation_type_service->get_all() : [];
                 $requestable_organisations = $this->organisation_service->get_all(true);
 
                 if ( !empty($customer['Id']) ) {
@@ -593,10 +598,14 @@ class PortalController {
             return;
         }
 
+        $allow_type_changes = $this->current_user_is_client_admin();
         $payload = SaveOrganisationRequest::from_post(wp_unslash($_POST), false);
+        if ($allow_type_changes) {
+            $payload['organisation_type_id'] = intval($_POST['organisation_type_id'] ?? 0);
+        }
         $payload['is_active'] = 1;
 
-        $saved = $this->organisation_service->save($payload, false);
+        $saved = $this->organisation_service->save($payload, $allow_type_changes);
 
         if (is_wp_error($saved)) {
             wp_send_json_error($saved->get_error_message(), 400);
@@ -622,6 +631,52 @@ class PortalController {
             'message' => 'Organisation created',
             'organisation_id' => $organisation_id,
         ]);
+    }
+
+    public function save_organisation_type_assignment() {
+        $this->require_client_admin_access();
+
+        $organisation_id = intval($_POST['organisation_id'] ?? 0);
+        if ($organisation_id <= 0) {
+            wp_send_json_error('Organisation is required', 400);
+        }
+
+        $existing = $this->organisation_service->get_by_id($organisation_id);
+        if (empty($existing['Id'])) {
+            wp_send_json_error('Organisation not found', 404);
+        }
+
+        $payload = [
+            'organisation_id' => $organisation_id,
+            'name' => $existing['Name'] ?? '',
+            'contact_email' => $existing['ContactEmail'] ?? '',
+            'contact_phone' => $existing['ContactPhone'] ?? '',
+            'website_url' => $existing['WebsiteUrl'] ?? null,
+            'organisation_type_id' => intval($_POST['organisation_type_id'] ?? 0),
+            'invoice_organisation_bookings' => !empty($existing['InvoiceOrganisationBookings']) ? 1 : 0,
+            'billing_contact_name' => $existing['BillingContactName'] ?? '',
+            'billing_email' => $existing['BillingEmail'] ?? '',
+            'billing_address_line1' => $existing['BillingAddressLine1'] ?? '',
+            'billing_address_line2' => $existing['BillingAddressLine2'] ?? '',
+            'billing_town_city' => $existing['BillingTownCity'] ?? '',
+            'billing_postcode' => $existing['BillingPostcode'] ?? '',
+            'billing_reference' => $existing['BillingReference'] ?? '',
+            'is_active' => !empty($existing['IsActive']) ? 1 : 0,
+            'is_default' => !empty($existing['IsDefault']) ? 1 : 0,
+            'default_public' => !empty($existing['DefaultPublic']) ? 1 : 0,
+        ];
+
+        $saved = $this->organisation_service->save($payload, true);
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Organisation update failed', 400);
+        }
+
+        wp_send_json_success(['message' => 'Organisation type updated']);
     }
 
     public function save_organisation_billing() {
@@ -1042,6 +1097,16 @@ class PortalController {
         ]);
 
         return $result['groups'];
+    }
+
+    private function get_default_organisation_type_id(array $organisation_types): int {
+        foreach ($organisation_types as $organisation_type) {
+            if (!empty($organisation_type['IsDefault'])) {
+                return (int) ($organisation_type['Id'] ?? 0);
+            }
+        }
+
+        return 0;
     }
 
     private function current_user_is_client_admin(): bool {

@@ -1,6 +1,12 @@
 
 <?php
 if (!defined('ABSPATH')) exit;
+
+$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$organisation_type_lookup = [];
+foreach ($organisation_types as $organisation_type) {
+    $organisation_type_lookup[(int) ($organisation_type['Id'] ?? 0)] = $organisation_type['Name'] ?? '';
+}
 ?>
 
 <div class="myvh-dashboard-section myvh-orgs-page">
@@ -111,12 +117,44 @@ if (!defined('ABSPATH')) exit;
                     $members = $organisation_members[$org_id] ?? [];
                     $requests = $organisation_pending_requests[$org_id] ?? [];
                     $message_id = 'myvh-org-admin-message-' . $org_id;
+                    $current_type_name = $organisation_type_lookup[(int) ($org['OrganisationTypeId'] ?? 0)] ?? 'Unassigned';
                 ?>
                 <div class="myvh-card myvh-account-card">
                     <div class="myvh-account-card-head">
                         <h3><?php echo esc_html($org['Name']); ?></h3>
                         <span>Approve requests, add and remove members, and manage admin status.</span>
                     </div>
+
+                    <?php if ($is_client_admin && !empty($organisation_types)): ?>
+                        <div class="myvh-orgs-subsection">
+                            <h4>Organisation Type</h4>
+
+                            <?php if (!empty($org['IsSystem'])): ?>
+                                <p class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>. System organisations cannot change type.</p>
+                            <?php else: ?>
+                                <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_type_assignment" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                    <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
+
+                                    <label class="myvh-account-field" for="myvh-org-type-<?php echo esc_attr($org_id); ?>">
+                                        <span>Organisation type</span>
+                                        <select id="myvh-org-type-<?php echo esc_attr($org_id); ?>" name="organisation_type_id">
+                                            <option value="">Select an organisation type...</option>
+                                            <?php foreach ($organisation_types as $organisation_type): ?>
+                                                <option value="<?php echo esc_attr((int) $organisation_type['Id']); ?>" <?php selected((int) ($org['OrganisationTypeId'] ?? 0), (int) $organisation_type['Id']); ?>>
+                                                    <?php echo esc_html($organisation_type['Name'] ?? ''); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <small class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>.</small>
+                                    </label>
+
+                                    <div class="myvh-account-actions">
+                                        <button type="submit" class="button myvh-cal-btn">Save Organisation Type</button>
+                                    </div>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="myvh-orgs-subsection">
                         <h4>Invoicing Details</h4>

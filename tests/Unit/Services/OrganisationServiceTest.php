@@ -44,7 +44,7 @@ class OrganisationServiceTest extends UnitTestCase {
     public function non_admin_create_uses_default_type(): void {
         $this->type_repo->shouldReceive('get_default')
             ->once()
-            ->andReturn(['Id' => 7, 'Name' => 'Community Group']);
+            ->andReturnUsing(static fn(): array => ['Id' => 7, 'Name' => 'Community Group']);
 
         $this->repo->shouldReceive('count_all')->once()->andReturn(1);
         $this->repo->shouldReceive('has_default')->once()->andReturn(true);
@@ -73,7 +73,7 @@ class OrganisationServiceTest extends UnitTestCase {
         $this->repo->shouldReceive('get_by_id')
             ->once()
             ->with(10)
-            ->andReturn([
+            ->andReturnUsing(static fn(): array => [
                 'Id' => 10,
                 'Name' => 'Example Org',
                 'OrganisationTypeId' => 2,
@@ -101,7 +101,7 @@ class OrganisationServiceTest extends UnitTestCase {
         $this->repo->shouldReceive('get_by_id')
             ->once()
             ->with(2)
-            ->andReturn([
+            ->andReturnUsing(static fn(): array => [
                 'Id' => 2,
                 'Name' => 'Personal booking',
                 'OrganisationTypeId' => 1,
@@ -123,5 +123,48 @@ class OrganisationServiceTest extends UnitTestCase {
 
         $this->assertInstanceOf(WP_Error::class, $result);
         $this->assertSame('forbidden', $result->get_error_code());
+    }
+
+    /** @test */
+    public function admin_can_change_organisation_type_on_edit(): void {
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(10)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 10,
+                'Name' => 'Example Org',
+                'OrganisationTypeId' => 2,
+                'IsSystem' => 0,
+                'IsActive' => 1,
+                'IsDefault' => 0,
+                'DefaultPublic' => 0,
+            ]);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->withArgs(function (array $record, array $where): bool {
+                return $record['OrganisationTypeId'] === 3
+                    && $record['Name'] === 'Example Org'
+                    && $where['Id'] === 10;
+            })
+            ->andReturn(true);
+
+        $this->repo->shouldReceive('has_default')
+            ->once()
+            ->andReturn(true);
+
+        $result = $this->service->save([
+            'organisation_id' => 10,
+            'name' => 'Example Org',
+            'organisation_type_id' => 3,
+            'contact_email' => 'hello@example.org',
+            'contact_phone' => '01234567',
+            'invoice_organisation_bookings' => 0,
+            'is_active' => 1,
+            'is_default' => 0,
+            'default_public' => 0,
+        ], true);
+
+        $this->assertTrue($result);
     }
 }

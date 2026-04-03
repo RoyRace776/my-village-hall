@@ -1,5 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
+
+$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$default_organisation_type_id = isset($default_organisation_type_id) ? (int) $default_organisation_type_id : 0;
 ?>
 <div class="myvh-dashboard-section myvh-orgs-page">
     <div class="myvh-account-header">
@@ -14,6 +17,21 @@ if (!defined('ABSPATH')) exit;
                 <span>Organisation Name</span>
                 <input id="myvh-org-add-name" type="text" name="name" required>
             </label>
+
+            <?php if ($is_client_admin && !empty($organisation_types)): ?>
+                <label class="myvh-account-field" for="myvh-org-add-type">
+                    <span>Organisation Type</span>
+                    <select id="myvh-org-add-type" name="organisation_type_id">
+                        <option value="">Select an organisation type...</option>
+                        <?php foreach ($organisation_types as $organisation_type): ?>
+                            <option value="<?php echo esc_attr((int) $organisation_type['Id']); ?>" <?php selected($default_organisation_type_id, (int) $organisation_type['Id']); ?>>
+                                <?php echo esc_html($organisation_type['Name'] ?? ''); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="myvh-muted">Need another type? Manage them from the Organisation Types page.</small>
+                </label>
+            <?php endif; ?>
 
             <label class="myvh-account-field" for="myvh-org-add-email">
                 <span>Contact Email</span>
