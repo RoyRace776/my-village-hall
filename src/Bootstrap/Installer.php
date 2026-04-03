@@ -46,6 +46,7 @@ class Installer {
         self::ensure_room_colour_column( $wpdb );
         self::ensure_organisation_system_column( $wpdb );
         self::ensure_organisation_type_flag_columns( $wpdb );
+        self::ensure_addon_archive_column( $wpdb );
         self::add_foreign_keys( $wpdb );
         self::set_default_data( $wpdb );
     }
@@ -85,6 +86,18 @@ class Installer {
         if ( ! $is_default_col ) {
             $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsDefault TINYINT(1) NOT NULL DEFAULT 0 AFTER IsSystem" );
         }
+    }
+
+    private static function ensure_addon_archive_column( wpdb $wpdb ): void {
+        $table = $wpdb->prefix . 'myvh_addons';
+        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'ArchivedAt'" );
+
+        if ( $column ) {
+            return;
+        }
+
+        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN ArchivedAt DATETIME NULL AFTER Created" );
+        $wpdb->query( "ALTER TABLE {$table} ADD INDEX idx_archived (ArchivedAt)" );
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -293,10 +306,12 @@ class Installer {
             IsActive        TINYINT(1)    DEFAULT 1,
             DisplayOrder    INT UNSIGNED  DEFAULT 0,
             Created         TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+            ArchivedAt      DATETIME      DEFAULT NULL,
             INDEX idx_room           (RoomId),
             INDEX idx_venue          (VenueId),
             INDEX idx_active         (IsActive),
-            INDEX idx_order          (DisplayOrder)
+            INDEX idx_order          (DisplayOrder),
+            INDEX idx_archived       (ArchivedAt)
         ) {$collate};" );
 
         // ── Booking Charges ───────────────────────────────────────────────────

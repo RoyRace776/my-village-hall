@@ -1,6 +1,9 @@
 <?php
 namespace MYVH\Portal;
 
+use MYVH\Addons\AddonRequestValidator;
+use MYVH\Addons\AddonService;
+use MYVH\Addons\SaveAddonRequest;
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
 use MYVH\Organisations\OrganisationTypeService;
@@ -23,6 +26,8 @@ use MYVH\Settings\SettingsRegistry;
 use Throwable;
 
 class PortalController {
+    private $addon_service;
+    private $addon_request_validator;
     private $booking_service;
     private $customer_service;
     private $organisation_service;
@@ -37,6 +42,8 @@ class PortalController {
     private $venue_service;
 
     public function __construct(
+        AddonService $addon_service,
+        AddonRequestValidator $addon_request_validator,
         BookingService $booking_service,
         CustomerService $customer_service,
         OrganisationService $organisation_service,
@@ -50,6 +57,8 @@ class PortalController {
         RoomRateRequestValidator $room_rate_request_validator,
         VenueService $venue_service
     ) {
+        $this->addon_service = $addon_service;
+        $this->addon_request_validator = $addon_request_validator;
         $this->booking_service = $booking_service;
         $this->customer_service = $customer_service;
         $this->organisation_service = $organisation_service;
@@ -91,6 +100,8 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_delete_room', [$this, 'delete_room']);
         add_action('wp_ajax_myvh_portal_save_room_rate', [$this, 'save_room_rate']);
         add_action('wp_ajax_myvh_portal_delete_room_rate', [$this, 'delete_room_rate']);
+        add_action('wp_ajax_myvh_portal_save_addon', [$this, 'save_addon']);
+        add_action('wp_ajax_myvh_portal_delete_addon', [$this, 'delete_addon']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
         //add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
@@ -353,6 +364,44 @@ class PortalController {
                 $rooms = $this->room_service->get_all_with_venues();
                 $organisation_types = $this->organisation_type_service->get_all();
                 include MYVH_PLUGIN_DIR . 'templates/Portal/room-rates.php';
+                break;
+
+            case 'addons':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $addons = $this->addon_service->get_with_relations();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/addons.php';
+                break;
+
+            case 'addon-add':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $rooms = $this->room_service->get_all_with_venues();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/addon-add.php';
+                break;
+
+            case 'addon-edit':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $addon_id = intval($_GET['id'] ?? 0);
+
+                if (!$addon_id) {
+                    wp_send_json_error('Invalid add-on ID', 400);
+                }
+
+                $addon = $this->addon_service->get($addon_id);
+                if (!$addon) {
+                    wp_send_json_error('Add-on not found', 404);
+                }
+
+                $rooms = $this->room_service->get_all_with_venues();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/addon-edit.php';
                 break;
 
             case 'room-rate-add':
@@ -1105,6 +1154,59 @@ class PortalController {
         }
 
         wp_send_json_success(['message' => 'Room rate deleted']);
+    }
+
+    public function save_addon() {
+        $this->require_client_admin_access();
+
+        $payload = SaveAddonRequest::from_post(wp_unslash($_POST));
+        $validation = $this->addon_request_validator->validate($payload);
+
+        if (is_wp_error($validation)) {
+            wp_send_json_error($validation->get_error_message(), 400);
+        }
+
+        try {
+            $saved = $this->addon_service->save($payload);
+        } catch (Throwable $throwable) {
+            wp_send_json_error($throwable->getMessage(), 400);
+        }
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Add-on save failed', 400);
+        }
+
+        wp_send_json_success([
+            'message' => !empty($payload['addon_id']) ? 'Add-on updated' : 'Add-on created',
+            'addon_id' => !empty($payload['addon_id']) ? (int) $payload['addon_id'] : (int) $saved,
+            'redirect' => 'addons',
+        ]);
+    }
+
+    public function delete_addon() {
+        $this->require_client_admin_access();
+
+        $addon_id = intval($_POST['addon_id'] ?? 0);
+
+        if ($addon_id <= 0) {
+            wp_send_json_error('Add-on ID is required', 400);
+        }
+
+        $deleted = $this->addon_service->delete($addon_id);
+
+        if (is_wp_error($deleted)) {
+            wp_send_json_error($deleted->get_error_message(), 400);
+        }
+
+        if (!$deleted) {
+            wp_send_json_error('Failed to archive add-on', 400);
+        }
+
+        wp_send_json_success(['message' => 'Add-on archived']);
     }
 
     public function save_client_settings() {

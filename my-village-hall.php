@@ -303,7 +303,7 @@ class MyVillageHall {
         );
 
         add_submenu_page(
-            null,
+            '',
             __( 'Add Organisation', 'my-village-hall' ),
             __( 'Add Organisation', 'my-village-hall' ),
             'manage_options',

@@ -36,6 +36,7 @@ if (!defined('ABSPATH')) exit;
             <a href="#organisation-types">Organisation Types</a>
             <a href="#rooms">Rooms</a>
             <a href="#room-rates">Room Rates</a>
+            <a href="#addons">Add-ons</a>
             <a href="#settings">Settings</a>
         <?php endif; ?>
 
