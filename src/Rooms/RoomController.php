@@ -63,6 +63,18 @@ class RoomController {
             exit;
         }
 
+        if (!$result) {
+            set_transient($this->get_form_transient_key(), $posted_data, 120);
+            \MYVH\Admin\AdminNotices::error(__('Room save failed', 'my-village-hall'));
+
+            $redirect = !empty($data['room_id'])
+                ? admin_url('admin.php?page=myvh-rooms&edit=' . intval($data['room_id']))
+                : admin_url('admin.php?page=myvh-rooms&add=1');
+
+            wp_redirect($redirect);
+            exit;
+        }
+
         delete_transient($this->get_form_transient_key());
 
         \MYVH\Admin\AdminNotices::success(__('Room saved successfully', 'my-village-hall'));

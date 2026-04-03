@@ -43,6 +43,7 @@ $accessible_sites = $client_admin_service ? $client_admin_service->get_accessibl
         <?php if ($is_client_admin): ?>
             <a href="#client-admins">Client Admins</a>
             <a href="#customers">Customers</a>
+            <a href="#rooms">Rooms</a>
             <a href="#settings">Settings</a>
         <?php endif; ?>
 

@@ -43,8 +43,21 @@ class Installer {
         $collate = $wpdb->get_charset_collate();
 
         self::create_tables( $wpdb, $collate );
+        self::ensure_room_colour_column( $wpdb );
         self::add_foreign_keys( $wpdb );
         self::set_default_data( $wpdb );
+    }
+
+    private static function ensure_room_colour_column( wpdb $wpdb ): void {
+        $table = $wpdb->prefix . 'myvh_rooms';
+        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'Colour'" );
+
+        if ( $column ) {
+            return;
+        }
+
+        // Fallback for installs where dbDelta did not add the new column.
+        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN Colour VARCHAR(7) NULL AFTER Name" );
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -76,6 +89,7 @@ class Installer {
             Id                      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             VenueId                 INT UNSIGNED NOT NULL,
             Name                    VARCHAR(100) NOT NULL,
+            Colour                  VARCHAR(7),
             Description             VARCHAR(255),
             BufferBefore            INT UNSIGNED DEFAULT 0,
             BufferAfter             INT UNSIGNED DEFAULT 0,

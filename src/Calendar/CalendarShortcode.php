@@ -2,6 +2,7 @@
 namespace MYVH\Calendar;
 
 use MYVH\Rooms\RoomService;
+use MYVH\Rooms\RoomColour;
 use MYVH\Availability\AvailabilityService;
 use MYVH\Calendar\CalendarStatusColours;
 
@@ -174,6 +175,8 @@ class CalendarShortcode {
                         'name' => sanitize_text_field( (string) ( $room['Name'] ?? '' ) ),
                         'venueId' => $venue_id,
                         'venue' => sanitize_text_field( (string) ( $room['VenueName'] ?? '' ) ),
+                        'colour' => RoomColour::resolve($room['Colour'] ?? '', $room_id),
+                        'roomColour' => RoomColour::resolve($room['Colour'] ?? '', $room_id),
                     ];
                 }
             } catch ( Throwable $e ) {

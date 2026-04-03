@@ -34,6 +34,9 @@ class RoomService {
 
     public function save($data): int|WP_Error {
 
+        // Defensive migration guard: ensures save works even if installer did not run yet.
+        $this->repo->ensure_colour_column_exists();
+
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Room name is required', 'my-village-hall'));
         }
@@ -65,20 +68,41 @@ class RoomService {
 
         $record = [
             'Name'         => sanitize_text_field($data['name']),
+            'Colour'       => RoomColour::resolve($data['room_colour'] ?? ($data['room_color'] ?? ''), intval($data['room_id'] ?? 0)),
             'VenueId'      => $venue_id,
             'Capacity'     => intval($data['capacity']),
             'Description'  => sanitize_textarea_field($data['description']),
             'OpeningTime'  => $opening_time,
             'ClosingTime'  => $closing_time,
-            'AllowMultiDayBookings' => isset($data['allow-multi-day-bookings']) ? 1 : 0,
-            'CalcClosedHours' => isset($data['calc-closed-hours']) ? 1 : 0
+            'AllowMultiDayBookings' => !empty($data['allow-multi-day-bookings']) ? 1 : 0,
+            'CalcClosedHours' => !empty($data['calc-closed-hours']) ? 1 : 0
         ];
 
         if (!empty($data['room_id'])) {
-            return $this->repo->update($record, ['Id' => intval($data['room_id'])]);
+            $updated = $this->repo->update($record, ['Id' => intval($data['room_id'])]);
+            if (!$updated) {
+                $db_error = $this->repo->last_error();
+                $message = __('Room update failed', 'my-village-hall');
+                if ($db_error !== '') {
+                    $message .= ': ' . $db_error;
+                }
+                return new WP_Error('save', $message);
+            }
+
+            return intval($data['room_id']);
         }
 
-        return $this->repo->create($record);
+        $created = $this->repo->create($record);
+        if (!$created) {
+            $db_error = $this->repo->last_error();
+            $message = __('Room create failed', 'my-village-hall');
+            if ($db_error !== '') {
+                $message .= ': ' . $db_error;
+            }
+            return new WP_Error('save', $message);
+        }
+
+        return (int) $created;
     }
 
     public function delete($id) {

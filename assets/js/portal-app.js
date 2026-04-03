@@ -92,8 +92,64 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Organization billing toggles and invoices page logic
+        initRoomColourPreviews();
         initOrganisationBillingToggles();
         initInvoicesPage();
+    }
+
+    /**
+     * Enhance room colour picker UX with live preview and swatch quick-select.
+     */
+    function initRoomColourPreviews() {
+        const colourInputs = Array.from(document.querySelectorAll('input[data-room-colour-input]'));
+        if (!colourInputs.length) {
+            return;
+        }
+
+        const updatePreview = (input) => {
+            const wrapper = input.closest('.myvh-account-field');
+            if (!wrapper) {
+                return;
+            }
+
+            const value = String(input.value || '').toLowerCase();
+            const preview = wrapper.querySelector('[data-room-colour-preview]');
+            const label = wrapper.querySelector('[data-room-colour-code]');
+
+            if (preview) {
+                preview.style.backgroundColor = value;
+            }
+
+            if (label) {
+                label.textContent = value;
+            }
+        };
+
+        colourInputs.forEach((input) => {
+            updatePreview(input);
+            input.addEventListener('input', () => updatePreview(input));
+            input.addEventListener('change', () => updatePreview(input));
+
+            const wrapper = input.closest('.myvh-account-field');
+            if (!wrapper) {
+                return;
+            }
+
+            const swatches = Array.from(wrapper.querySelectorAll('.myvh-room-colour-swatch[data-room-colour-choice]'));
+            swatches.forEach((swatch) => {
+                swatch.addEventListener('click', () => {
+                    const swatchColour = String(swatch.getAttribute('data-room-colour-choice') || '').trim().toLowerCase();
+                    if (!swatchColour) {
+                        return;
+                    }
+
+                    input.value = swatchColour;
+                    updatePreview(input);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.focus();
+                });
+            });
+        });
     }
 
     /**
@@ -468,6 +524,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /**
+     * Navigate using hash and force router when destination hash is unchanged.
+     * @param {string} targetHash - Hash route with or without leading #
+     */
+    function navigateToHash(targetHash) {
+        if (!targetHash) {
+            return;
+        }
+
+        const normalized = targetHash.charAt(0) === '#' ? targetHash : ('#' + targetHash);
+
+        if (window.location.hash === normalized) {
+            router();
+            return;
+        }
+
+        window.location.hash = normalized;
+    }
+
+    /**
      * Simple hash-based router for portal pages.
      * Parses hash, resolves aliases, and loads the correct page.
      */
@@ -494,6 +569,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Listen for hash changes to trigger router
     window.addEventListener("hashchange", router);
+
+    // Ensure in-content hash links still work when clicking the same route twice.
+    document.getElementById('portal-content').addEventListener('click', function (e) {
+        const link = e.target.closest('a[href^="#"]');
+        if (!link) {
+            return;
+        }
+
+        const href = link.getAttribute('href') || '';
+        if (!href || href === '#') {
+            return;
+        }
+
+        e.preventDefault();
+        navigateToHash(href);
+    });
 
     // Delegate form submission handling for all portal forms
     document.getElementById('portal-content').addEventListener('submit', function (e) {
@@ -574,7 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     showMessage(message, res.data?.message || 'Saved', false);
 
                     if (reloadPage) {
-                        setTimeout(() => loadPage(reloadPage), 200);
+                        setTimeout(() => navigateToHash(reloadPage), 200);
                     }
                 })
                 .catch(() => {

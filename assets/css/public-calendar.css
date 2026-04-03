@@ -168,8 +168,6 @@ body .scheduler_default_event,
 body .calendar_default_event_inner,
 body .month_default_event_inner,
 body .scheduler_default_event_inner {
-    background: #ffffff !important;
-    color: #1f2933 !important;
     border-style: solid !important;
     border-width: 0 0 0 4px !important;
     box-sizing: border-box;

@@ -6,12 +6,32 @@ window.CalendarCore = (function () {
     let currentMode = "Calendar";
     let currentDetail = "Week";
     let currentContainerId = "myvh-calendar";
+    const DEFAULT_EVENT_BACKGROUND = "#f7f3ee";
     const DEFAULT_STATUS_COLORS = {
         confirmed: "#2271b1",
         pending: "#f0a500",
         cancelled: "#9aa0a6",
         completed: "#2d8f45",
     };
+
+    function normaliseHexColour(value) {
+        const text = String(value || "").trim().toLowerCase();
+        return /^#[0-9a-f]{6}$/.test(text) ? text : "";
+    }
+
+    function getReadableTextColour(backgroundColour) {
+        const hex = normaliseHexColour(backgroundColour);
+        if (!hex) {
+            return "#1f2933";
+        }
+
+        const red = parseInt(hex.slice(1, 3), 16);
+        const green = parseInt(hex.slice(3, 5), 16);
+        const blue = parseInt(hex.slice(5, 7), 16);
+        const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+
+        return brightness < 145 ? "#ffffff" : "#1f2933";
+    }
 
     function getStatusColors(opts = {}) {
         if (!opts.statusColors || typeof opts.statusColors !== "object") {
@@ -30,11 +50,13 @@ window.CalendarCore = (function () {
             const status = String(tags.status || "").toLowerCase();
             const fallbackColor = statusColors.confirmed || DEFAULT_STATUS_COLORS.confirmed;
             const accentColor = statusColors[status] || fallbackColor;
+            const roomColour = normaliseHexColour(tags.roomColour || tags.colour || event.backColor);
+            const backgroundColour = roomColour || DEFAULT_EVENT_BACKGROUND;
 
             return {
                 ...event,
-                backColor: "#ffffff",
-                fontColor: "#1f2933",
+                backColor: backgroundColour,
+                fontColor: getReadableTextColour(backgroundColour),
                 borderColor: accentColor,
                 barColor: accentColor,
             };

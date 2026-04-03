@@ -3,6 +3,7 @@ namespace MYVH\Calendar;
 
 use MYVH\Bookings\BookingService;
 use MYVH\Rooms\RoomRepository;
+use MYVH\Rooms\RoomColour;
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Bookings\BookingStatus;
@@ -30,14 +31,13 @@ class CalendarService {
 
     public function get_events($start, $end, $context = 'public', $viewer_user_id = 0, $filters = []): array {
         $bookings = $this->booking_service->get_between($start, $end, $context, $filters);
-        $room_names = $this->get_room_names();
+        $room_meta = $this->get_room_metadata();
         $viewer_scope = $this->resolve_viewer_scope($context, $viewer_user_id);
         $default_label = $this->get_private_booking_label();
         $events = [];
 
         foreach ((array) $bookings as $booking) {
-            $event = $this->map_booking_to_event($booking, $context, $room_names, $viewer_scope, $default_label);
-            $events[] = $event;
+            $events[] = $this->map_booking_to_event($booking, $context, $room_meta, $viewer_scope, $default_label);
         }
 
         return $events;
@@ -178,17 +178,6 @@ class CalendarService {
         return ['id' => $id];
     }
 
-    private function get_room_names() {
-        $room_meta = $this->get_room_metadata();
-        $room_names = [];
-
-        foreach ($room_meta as $room_id => $meta) {
-            $room_names[$room_id] = $meta['name'];
-        }
-
-        return $room_names;
-    }
-
     private function get_room_metadata() {
         $rooms = $this->room_repository->get_all_with_venues();
         $room_meta = [];
@@ -202,6 +191,7 @@ class CalendarService {
             $room_meta[$room_id] = [
                 'name' => isset($room['Name']) ? (string) $room['Name'] : '',
                 'venue' => isset($room['VenueName']) ? (string) $room['VenueName'] : '',
+                'colour' => RoomColour::resolve($room['Colour'] ?? '', $room_id),
             ];
         }
 
@@ -248,12 +238,13 @@ class CalendarService {
         return $scope;
     }
 
-    private function map_booking_to_event($booking, $context, $room_names, $viewer_scope, $default_label) {
+    private function map_booking_to_event($booking, $context, $room_meta, $viewer_scope, $default_label) {
         $room_id_raw = isset($booking['RoomId']) ? (string) $booking['RoomId'] : '';
         $room_id = (int) $room_id_raw;
         $resource_id = $room_id_raw !== '' ? $room_id_raw : (string) $room_id;
         $status = strtolower( sanitize_text_field( (string) ( $booking['Status'] ?? '' ) ) );
-        $room_name = $room_names[$room_id] ?? '';
+        $room_name = $room_meta[$room_id]['name'] ?? '';
+        $room_colour = $room_meta[$room_id]['colour'] ?? RoomColour::fallback($room_id);
         $description = isset($booking['Description']) ? (string) $booking['Description'] : '';
         $is_public = !empty($booking['Public']);
         $booking_customer_id = isset($booking['CustomerId']) ? (int) $booking['CustomerId'] : 0;
@@ -283,6 +274,7 @@ class CalendarService {
             'tags' => [
                 'roomId' => $resource_id,
                 'roomName' => $room_name,
+                'roomColour' => $room_colour,
                 'status' => $status,
                 'description' => $safe_description,
                 'isPublic' => $is_public,
@@ -342,6 +334,7 @@ class CalendarService {
         $status = strtolower( sanitize_text_field( (string) ( $booking['Status'] ?? '' ) ) );
         $room_name = $room_meta[$room_id]['name'] ?? (string) ($booking['RoomName'] ?? '');
         $venue_name = $room_meta[$room_id]['venue'] ?? (string) ($booking['VenueName'] ?? '');
+        $room_colour = $room_meta[$room_id]['colour'] ?? RoomColour::fallback($room_id);
         $description = isset($booking['Description']) ? (string) $booking['Description'] : '';
         $is_public = !empty($booking['Public']) || !empty($booking['IsPublic']);
         $booking_customer_id = isset($booking['CustomerId']) ? (int) $booking['CustomerId'] : 0;
@@ -368,6 +361,7 @@ class CalendarService {
             'tags' => [
                 'roomId' => $room_id,
                 'room' => $room_name,
+                'roomColour' => $room_colour,
                 'venue' => $venue_name,
                 'status' => $status,
                 'isPublic' => $is_public,

@@ -46,7 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Plugin constants ──────────────────────────────────────────────────────────
 
-define( 'MYVH_VERSION',          '0.2.0' );
+define( 'MYVH_VERSION',          '0.2.2' );
 define( 'MYVH_PLUGIN_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'MYVH_PLUGIN_URL',       plugin_dir_url( __FILE__ ) );
 define( 'MYVH_PLUGIN_BASENAME',  plugin_basename( __FILE__ ) );
@@ -225,6 +225,11 @@ class MyVillageHall {
             false,
             dirname( MYVH_PLUGIN_BASENAME ) . '/languages'
         );
+
+        if ( get_option( 'myvh_version' ) !== MYVH_VERSION ) {
+            Installer::run();
+            update_option( 'myvh_version', MYVH_VERSION );
+        }
 
     }
 

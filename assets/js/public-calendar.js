@@ -34,7 +34,27 @@
         cancelled : '#9aa0a6',
         completed : '#2d8f45',
     };
+    var DEFAULT_EVENT_BACKGROUND = '#f7f3ee';
     var STATUS_COLOURS = Object.assign({}, DEFAULT_STATUS_COLOURS, (cfg.statusColors && typeof cfg.statusColors === 'object') ? cfg.statusColors : {});
+
+    function normaliseHexColour(value) {
+        var text = String(value || '').trim().toLowerCase();
+        return /^#[0-9a-f]{6}$/.test(text) ? text : '';
+    }
+
+    function getReadableTextColour(backgroundColour) {
+        var hex = normaliseHexColour(backgroundColour);
+        if (!hex) {
+            return '#1f2933';
+        }
+
+        var red = parseInt(hex.slice(1, 3), 16);
+        var green = parseInt(hex.slice(3, 5), 16);
+        var blue = parseInt(hex.slice(5, 7), 16);
+        var brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+
+        return brightness < 145 ? '#ffffff' : '#1f2933';
+    }
 
     function buildRoomIndex() {
         roomNameById = {};
@@ -439,8 +459,9 @@
                         } else {
                             var event   = cell.event;
                             var span    = cell.span;
-                                var accentColor = event.barColor || event.borderColor || event.backColor || '#2271b1';
-                                var textColor = event.fontColor || '#1f2933';
+                                var accentColor = event.barColor || event.borderColor || '#2271b1';
+                                var backgroundColor = event.backColor || DEFAULT_EVENT_BACKGROUND;
+                                var textColor = event.fontColor || getReadableTextColour(backgroundColor);
                             var title   = event.text || 'Booking';
                             var tooltip = event.toolTip ? String(event.toolTip).replace(/\n/g, '&#10;') : '';
                             var startT  = formatTimeFromISO(event.start);
@@ -449,7 +470,7 @@
 
                             html += '<td class="myvh-tt-event-cell"'
                                   + ' rowspan="' + span + '"'
-                                    + ' style="background:#ffffff;color:' + escHtml(textColor) + ';border-left:4px solid ' + escHtml(accentColor) + ';"'
+                                      + ' style="background:' + escHtml(backgroundColor) + ';color:' + escHtml(textColor) + ';border-left:4px solid ' + escHtml(accentColor) + ';"'
                                   + ' data-event-id="' + escHtml(String(event.id || '')) + '"'
                                   + ' title="' + escHtml(tooltip) + '">';
                             html += '<div class="myvh-tt-event-inner">'
@@ -686,8 +707,11 @@
             dp.events.list = data.map(function (e) {
                 var normalized = normalizeEventRange(e.start, e.end);
 
-                var status = String((e.tags && e.tags.status) || '').toLowerCase();
+                var tags = e.tags || {};
+                var status = String(tags.status || '').toLowerCase();
                 var accentColor = STATUS_COLOURS[status] || STATUS_COLOURS.confirmed;
+                var roomColour = normaliseHexColour(tags.roomColour || tags.colour || e.backColor);
+                var backgroundColour = roomColour || DEFAULT_EVENT_BACKGROUND;
 
                 return {
                     id    : e.id,
@@ -695,10 +719,10 @@
                     end   : normalized.end,
                     text  : e.text,
                     resource: e.resource,
-                    tags  : e.tags,
+                    tags  : tags,
                     toolTip: buildEventTooltip(e),
-                    backColor : '#ffffff',
-                    fontColor : '#1f2933',
+                    backColor : backgroundColour,
+                    fontColor : getReadableTextColour(backgroundColour),
                     borderColor: accentColor,
                     barColor: accentColor,
                 };

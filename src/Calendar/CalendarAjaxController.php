@@ -3,6 +3,7 @@ namespace MYVH\Calendar;
 
 use MYVH\Bookings\BookingService;
 use MYVH\Rooms\RoomRepository;
+use MYVH\Rooms\RoomColour;
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
 
@@ -166,6 +167,8 @@ class CalendarAjaxController {
                 "id"   => $room['Id'],
                 "venue_id" => !empty($room['VenueId']) ? (int) $room['VenueId'] : 0,
                 "venue" => $room['VenueName'] ?? '',
+                "colour" => RoomColour::resolve($room['Colour'] ?? '', (int) ($room['Id'] ?? 0)),
+                "roomColour" => RoomColour::resolve($room['Colour'] ?? '', (int) ($room['Id'] ?? 0)),
                 "allow_multiday" => !empty($room['AllowMultiDayBookings']) ? 1 : 0
             ];
         }

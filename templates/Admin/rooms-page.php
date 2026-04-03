@@ -10,6 +10,7 @@ if (!current_user_can('manage_myvh')) {
 global $myvh_container;
 
 use MYVH\Rooms\RoomService;
+use MYVH\Rooms\RoomColour;
 use MYVH\Venues\VenueService;
 use MYVH\Availability\AvailabilityService;
 
@@ -30,6 +31,7 @@ if (!is_array($form_data)) {
 }
 
 $form_name = $form_data['name'] ?? ($edit_room['Name'] ?? '');
+$form_room_colour = $form_data['room_colour'] ?? RoomColour::resolve($edit_room['Colour'] ?? '', intval($edit_room['Id'] ?? 0));
 $form_venue_id = isset($form_data['venue_id']) ? intval($form_data['venue_id']) : intval($edit_room['VenueId'] ?? 0);
 $form_capacity = $form_data['capacity'] ?? ($edit_room['Capacity'] ?? '');
 $form_description = $form_data['description'] ?? ($edit_room['Description'] ?? '');
@@ -63,6 +65,7 @@ $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($e
                         <tr>
                             <th><?php _e('Room Name', 'my-village-hall'); ?></th>
                             <th><?php _e('Venue', 'my-village-hall'); ?></th>
+                            <th><?php _e('Colour', 'my-village-hall'); ?></th>
                             <th><?php _e('Capacity', 'my-village-hall'); ?></th>
                             <th><?php _e('Hours', 'my-village-hall'); ?></th>
                             <th><?php _e('Actions', 'my-village-hall'); ?></th>
@@ -71,7 +74,7 @@ $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($e
                     <tbody>
                         <?php if (empty($rooms)): ?>
                             <tr>
-                                <td colspan="5"><?php _e('No rooms found. Please add a room to get started.', 'my-village-hall'); ?></td>
+                                <td colspan="6"><?php _e('No rooms found. Please add a room to get started.', 'my-village-hall'); ?></td>
                             </tr>
                         <?php else: ?>
                             <?php
@@ -82,7 +85,7 @@ $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($e
                                     $current_venue = $room['VenueName'];
                             ?>
                                 <tr style="background-color: #f0f0f0;">
-                                    <td colspan="5"><strong><?php echo esc_html($room['VenueName']); ?></strong></td>
+                                    <td colspan="6"><strong><?php echo esc_html($room['VenueName']); ?></strong></td>
                                 </tr>
                             <?php endif; ?>
                                 <tr>
@@ -93,6 +96,9 @@ $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($e
                                         <?php endif; ?>
                                     </td>
                                     <td><?php echo esc_html($room['VenueName']); ?></td>
+                                    <td>
+                                        <span style="display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid #c3c4c7;background:<?php echo esc_attr(RoomColour::resolve($room['Colour'] ?? '', intval($room['Id'] ?? 0))); ?>;"></span>
+                                    </td>
                                     <td>
                                         <?php if ($room['Capacity']): ?>
                                             <?php echo esc_html($room['Capacity']); ?> people
@@ -181,6 +187,14 @@ $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($e
                                 <input type="number" name="capacity" min="0" class="small-text"
                                     value="<?php echo esc_attr($form_capacity); ?>">
                                 <span class="description"><?php _e('people', 'my-village-hall'); ?></span>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Room Colour', 'my-village-hall'); ?> *</th>
+                            <td>
+                                <input type="color" name="room_colour" value="<?php echo esc_attr($form_room_colour); ?>" required>
+                                <span class="description"><?php echo esc_html($form_room_colour); ?></span>
                             </td>
                         </tr>
 
