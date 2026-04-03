@@ -668,8 +668,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     showMessage(message, res.data?.message || 'Saved', false);
 
-                    if (reloadPage) {
-                        setTimeout(() => navigateToHash(reloadPage), 200);
+                    const redirectRoute = res.data?.redirect || reloadPage;
+                    if (redirectRoute) {
+                        setTimeout(() => navigateToHash(redirectRoute), 200);
                     }
                 })
                 .catch(() => {

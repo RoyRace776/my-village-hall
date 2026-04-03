@@ -11,6 +11,8 @@ use MYVH\Organisations\OrganisationService;
 use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\PortalController;
+use MYVH\Pricing\RoomRateRequestValidator;
+use MYVH\Pricing\RoomRateService;
 use MYVH\Rooms\RoomRequestValidator;
 use MYVH\Rooms\RoomService;
 use MYVH\Tests\Unit\UnitTestCase;
@@ -26,6 +28,8 @@ class PortalControllerTest extends UnitTestCase {
     private $invoice_service;
     private $room_service;
     private $room_request_validator;
+    private $room_rate_service;
+    private $room_rate_request_validator;
     private $venue_service;
     private PortalController $controller;
 
@@ -41,6 +45,8 @@ class PortalControllerTest extends UnitTestCase {
         $this->invoice_service = $this->mock(InvoiceService::class);
         $this->room_service = $this->mock(RoomService::class);
         $this->room_request_validator = $this->mock(RoomRequestValidator::class);
+        $this->room_rate_service = $this->mock(RoomRateService::class);
+        $this->room_rate_request_validator = $this->mock(RoomRateRequestValidator::class);
         $this->venue_service = $this->mock(VenueService::class);
 
         $this->controller = new PortalController(
@@ -53,6 +59,8 @@ class PortalControllerTest extends UnitTestCase {
             $this->invoice_service,
             $this->room_service,
             $this->room_request_validator,
+            $this->room_rate_service,
+            $this->room_rate_request_validator,
             $this->venue_service
         );
 

@@ -79,7 +79,13 @@ class RoomController {
 
         \MYVH\Admin\AdminNotices::success(__('Room saved successfully', 'my-village-hall'));
 
-        wp_redirect(admin_url('admin.php?page=myvh-rooms&updated=1'));
+        $is_update = !empty($data['room_id']);
+        if ($is_update) {
+            wp_redirect(admin_url('admin.php?page=myvh-rooms&updated=1'));
+            exit;
+        }
+
+        wp_redirect(admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . intval($result) . '&room_created=1'));
         exit;
     }
 

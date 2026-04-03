@@ -24,21 +24,22 @@ class RoomRateController {
         check_admin_referer('myvh_save_rate');
 
         $data = SaveRoomRateRequest::from_post(wp_unslash($_POST));
+        $room_context = !empty($data['room_id']) ? '&room_id=' . intval($data['room_id']) : '';
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {
-            wp_redirect(admin_url('admin.php?page=myvh-room-rates&add=1&error=' . urlencode($validation_result->get_error_message())));
+            wp_redirect(admin_url('admin.php?page=myvh-room-rates&add=1' . $room_context . '&error=' . urlencode($validation_result->get_error_message())));
             exit;
         }
 
         $result = $this->service->save($data);
 
         if (is_wp_error($result)) {
-            wp_redirect(admin_url('admin.php?page=myvh-room-rates&add=1&error=' . urlencode($result->get_error_message())));
+            wp_redirect(admin_url('admin.php?page=myvh-room-rates&add=1' . $room_context . '&error=' . urlencode($result->get_error_message())));
             exit;
         }
 
-        wp_redirect(admin_url('admin.php?page=myvh-room-rates&updated=1'));
+        wp_redirect(admin_url('admin.php?page=myvh-room-rates&updated=1' . $room_context));
         exit;
     }
 

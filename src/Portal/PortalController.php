@@ -10,6 +10,9 @@ use MYVH\Organisations\OrganisationService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Invoices\InvoiceGeneratorService;
 use MYVH\Invoices\InvoiceService;
+use MYVH\Pricing\RoomRateRequestValidator;
+use MYVH\Pricing\RoomRateService;
+use MYVH\Pricing\SaveRoomRateRequest;
 use MYVH\Portal\Support\BookingAccess;
 use MYVH\Rooms\RoomService;
 use MYVH\Rooms\RoomRequestValidator;
@@ -29,6 +32,8 @@ class PortalController {
     private $invoiceService;
     private $room_service;
     private $room_request_validator;
+    private $room_rate_service;
+    private $room_rate_request_validator;
     private $venue_service;
 
     public function __construct(
@@ -41,6 +46,8 @@ class PortalController {
         InvoiceService $invoiceService,
         RoomService $room_service,
         RoomRequestValidator $room_request_validator,
+        RoomRateService $room_rate_service,
+        RoomRateRequestValidator $room_rate_request_validator,
         VenueService $venue_service
     ) {
         $this->booking_service = $booking_service;
@@ -52,6 +59,8 @@ class PortalController {
         $this->invoiceService = $invoiceService;
         $this->room_service = $room_service;
         $this->room_request_validator = $room_request_validator;
+        $this->room_rate_service = $room_rate_service;
+        $this->room_rate_request_validator = $room_rate_request_validator;
         $this->venue_service = $venue_service;
     }
 
@@ -80,6 +89,8 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_delete_org_type', [$this, 'delete_organisation_type']);
         add_action('wp_ajax_myvh_portal_save_room', [$this, 'save_room']);
         add_action('wp_ajax_myvh_portal_delete_room', [$this, 'delete_room']);
+        add_action('wp_ajax_myvh_portal_save_room_rate', [$this, 'save_room_rate']);
+        add_action('wp_ajax_myvh_portal_delete_room_rate', [$this, 'delete_room_rate']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
         //add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
@@ -331,6 +342,49 @@ class PortalController {
                 $room = $this->room_service->get($room_id);
                 $venues = $this->venue_service->get_all();
                 include MYVH_PLUGIN_DIR . 'templates/Portal/room-edit.php';
+                break;
+
+            case 'room-rates':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $rates = $this->room_rate_service->get_all();
+                $rooms = $this->room_service->get_all_with_venues();
+                $organisation_types = $this->organisation_type_service->get_all();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/room-rates.php';
+                break;
+
+            case 'room-rate-add':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $rooms = $this->room_service->get_all_with_venues();
+                $organisation_types = $this->organisation_type_service->get_all();
+                $selected_room_id = intval($_GET['room_id'] ?? 0);
+                include MYVH_PLUGIN_DIR . 'templates/Portal/room-rate-add.php';
+                break;
+
+            case 'room-rate-edit':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $rate_id = intval($_GET['id'] ?? 0);
+
+                if (!$rate_id) {
+                    wp_send_json_error('Invalid rate ID', 400);
+                }
+
+                $rate = $this->room_rate_service->get($rate_id);
+                if (!$rate) {
+                    wp_send_json_error('Room rate not found', 404);
+                }
+
+                $rooms = $this->room_service->get_all_with_venues();
+                $organisation_types = $this->organisation_type_service->get_all();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/room-rate-edit.php';
                 break;
 
             case 'organisation-types':
@@ -972,6 +1026,9 @@ class PortalController {
         wp_send_json_success([
             'message' => !empty($payload['room_id']) ? 'Room updated' : 'Room created',
             'room_id' => !empty($payload['room_id']) ? (int) $payload['room_id'] : (int) $saved,
+            'redirect' => !empty($payload['room_id'])
+                ? 'rooms'
+                : ('room-rate-add?room_id=' . (int) $saved),
         ]);
     }
 
@@ -995,6 +1052,59 @@ class PortalController {
         }
 
         wp_send_json_success(['message' => 'Room deleted']);
+    }
+
+    public function save_room_rate() {
+        $this->require_client_admin_access();
+
+        $payload = SaveRoomRateRequest::from_post(wp_unslash($_POST));
+        $validation = $this->room_rate_request_validator->validate($payload);
+
+        if (is_wp_error($validation)) {
+            wp_send_json_error($validation->get_error_message(), 400);
+        }
+
+        try {
+            $saved = $this->room_rate_service->save($payload);
+        } catch (Throwable $throwable) {
+            wp_send_json_error($throwable->getMessage(), 400);
+        }
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Room rate save failed', 400);
+        }
+
+        wp_send_json_success([
+            'message' => !empty($payload['rate_id']) ? 'Room rate updated' : 'Room rate created',
+            'rate_id' => !empty($payload['rate_id']) ? (int) $payload['rate_id'] : (int) $saved,
+            'redirect' => !empty($payload['rate_id']) ? 'room-rates' : 'room-rates',
+        ]);
+    }
+
+    public function delete_room_rate() {
+        $this->require_client_admin_access();
+
+        $rate_id = intval($_POST['rate_id'] ?? 0);
+
+        if ($rate_id <= 0) {
+            wp_send_json_error('Room rate ID is required', 400);
+        }
+
+        $deleted = $this->room_rate_service->delete($rate_id);
+
+        if (is_wp_error($deleted)) {
+            wp_send_json_error($deleted->get_error_message(), 400);
+        }
+
+        if (!$deleted) {
+            wp_send_json_error('Failed to delete room rate', 400);
+        }
+
+        wp_send_json_success(['message' => 'Room rate deleted']);
     }
 
     public function save_client_settings() {

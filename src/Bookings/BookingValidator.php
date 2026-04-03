@@ -7,6 +7,7 @@ use MYVH\Organisations\OrganisationRepository;
 use MYVH\Rooms\RoomService;
 use MYVH\Availability\AvailabilityService;
 use MYVH\Pricing\PricingService;
+use MYVH\Pricing\RoomRateService;
 use MYVH\Rooms\RoomRulesService;
 use WP_Error;
 use DateTime;
@@ -18,6 +19,7 @@ class BookingValidator
     private $room_service;
     private $availability;
     private $pricing;
+    private $room_rate_service;
     private $room_rules;
 
     public function __construct(
@@ -26,6 +28,7 @@ class BookingValidator
         RoomService $room_service,
         AvailabilityService $availability,
         PricingService $pricing,
+        RoomRateService $room_rate_service,
         RoomRulesService $room_rules
     ) {
         $this->customer_repo = $customer_repo;
@@ -33,10 +36,11 @@ class BookingValidator
         $this->room_service = $room_service;
         $this->availability = $availability;
         $this->pricing = $pricing;
+        $this->room_rate_service = $room_rate_service;
         $this->room_rules = $room_rules;
     }
 
-    public function validate($data): true|WP_Error {
+    public function validate($data): bool|WP_Error {
         if (empty($data['customer_id'])) {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
         }
@@ -67,6 +71,19 @@ class BookingValidator
                     'validation',
                     __('Selected organisation is not linked to this customer.', 'my-village-hall')
                 );
+            }
+        }
+
+        $customer = $this->customer_repo->get_by_id($customer_id);
+        if (empty($customer['Id'])) {
+            return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
+        }
+
+        $organisation = [];
+        if ($organisation_id > 0) {
+            $organisation = $this->organisation_repo->get_by_id($organisation_id);
+            if (empty($organisation['Id'])) {
+                return new WP_Error('validation', __('Organisation is required', 'my-village-hall'));
             }
         }
 
@@ -141,11 +158,13 @@ class BookingValidator
             );
         }
 
-        // Pricing/rate validation (optional, can be expanded)
-        // $rate_check = $this->pricing->get_charge_snapshot($data['booking_id'] ?? 0);
-        // if (is_wp_error($rate_check)) {
-        //     return $rate_check;
-        // }
+        $room_rate = $this->room_rate_service->get_booking_rate(intval($data['room_id']), $customer, $organisation);
+        if (!$room_rate) {
+            return new WP_Error(
+                'validation',
+                __('This room cannot be booked because no room rate is configured.', 'my-village-hall')
+            );
+        }
 
         return true;
     }
