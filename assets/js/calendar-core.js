@@ -204,6 +204,32 @@ window.CalendarCore = (function () {
         return "Week";
     }
 
+    function parseVisibleHour(value, fallback = null) {
+        if (value === null || typeof value === "undefined" || value === "") {
+            return fallback;
+        }
+
+        if (typeof value === "number") {
+            return Number.isFinite(value) ? value : fallback;
+        }
+
+        const raw = String(value).trim();
+
+        // Supports "8", "08", "08:00", "08:30", and "0830" formats.
+        const hhmm = raw.match(/^(\d{1,2})(?::?(\d{2}))?$/);
+        if (hhmm) {
+            const hour = Number(hhmm[1]);
+            const minutes = typeof hhmm[2] !== "undefined" ? Number(hhmm[2]) : 0;
+
+            if (Number.isFinite(hour) && Number.isFinite(minutes)) {
+                return hour + (minutes / 60);
+            }
+        }
+
+        const numeric = Number(raw);
+        return Number.isFinite(numeric) ? numeric : fallback;
+    }
+
     function getSchedulerStartDate(detail, value) {
         const date = toDayPilotDate(value) || DayPilot.Date.today();
         if (detail === "Month") {
@@ -272,8 +298,8 @@ window.CalendarCore = (function () {
     function createDayWeekCalendar(containerId, opts, detail) {
         destroy();
 
-        const visibleStartHour = Number.isFinite(Number(opts.visibleStartHour)) ? Number(opts.visibleStartHour) : null;
-        const visibleEndHour = Number.isFinite(Number(opts.visibleEndHour)) ? Number(opts.visibleEndHour) : null;
+        const visibleStartHour = parseVisibleHour(opts.visibleStartHour, null);
+        const visibleEndHour = parseVisibleHour(opts.visibleEndHour, null);
 
         calendar = new DayPilot.Calendar(containerId);
         calendar.viewType = detail;
@@ -291,6 +317,13 @@ window.CalendarCore = (function () {
         if (visibleEndHour !== null) {
             calendar.businessEndsHour = visibleEndHour;
             calendar.dayEndsHour = visibleEndHour;
+        }
+
+        if (visibleStartHour !== null || visibleEndHour !== null) {
+            // DayPilot can still render a full 24h axis unless non-business
+            // hours are explicitly hidden.
+            calendar.showNonBusiness = false;
+            calendar.heightSpec = "BusinessHoursNoScroll";
         }
 
         calendar.eventMoveHandling = opts.editable ? "Update" : "Disabled";
@@ -389,8 +422,8 @@ window.CalendarCore = (function () {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const startHour = Number.isFinite(Number(opts.visibleStartHour)) ? Number(opts.visibleStartHour) : 8;
-        const endHour = Number.isFinite(Number(opts.visibleEndHour)) ? Number(opts.visibleEndHour) : 22;
+        const startHour = parseVisibleHour(opts.visibleStartHour, 8);
+        const endHour = parseVisibleHour(opts.visibleEndHour, 22);
         const totalSlots = Math.max(1, endHour - startHour);
         let flatRooms = [];
 
@@ -565,6 +598,8 @@ window.CalendarCore = (function () {
 
     function createScheduler(containerId, opts, detail) {
         const schedulerOrientation = String(opts.schedulerOrientation || "horizontal").trim().toLowerCase();
+        const visibleStartHour = parseVisibleHour(opts.visibleStartHour, null);
+        const visibleEndHour = parseVisibleHour(opts.visibleEndHour, null);
 
         if (schedulerOrientation === "vertical") {
             createVerticalTimetable(containerId, opts, detail);
@@ -595,6 +630,20 @@ window.CalendarCore = (function () {
                 args.row.html = `<div style="padding-left:14px;color:#50575e;">${String(args.row.name || "")}</div>`;
             }
         };
+
+        if (visibleStartHour !== null) {
+            config.businessBeginsHour = visibleStartHour;
+            config.dayBeginsHour = visibleStartHour;
+        }
+
+        if (visibleEndHour !== null) {
+            config.businessEndsHour = visibleEndHour;
+            config.dayEndsHour = visibleEndHour;
+        }
+
+        if (visibleStartHour !== null || visibleEndHour !== null) {
+            config.showNonBusiness = false;
+        }
 
         const schedulerDayHeaderFormat = "ddd d";
 
