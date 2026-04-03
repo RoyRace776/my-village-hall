@@ -1,11 +1,6 @@
 
 <?php
 if (!defined('ABSPATH')) exit;
-$action = $_GET['action'] ?? '';
-if ($action === 'add') {
-    include __DIR__ . '/organisation-add.php';
-    return;
-}
 ?>
 
 <div class="myvh-dashboard-section myvh-orgs-page">
@@ -14,9 +9,9 @@ if ($action === 'add') {
             <h2>Organisations</h2>
             <p>View your memberships, request access, and manage organisations you administer.</p>
         </div>
-        <button onclick="window.location.href='<?php echo esc_url(add_query_arg('action', 'add', get_permalink())); ?>'" class="button button-primary myvh-add-org-btn" type="button" style="margin-bottom:4px;">
+        <a href="#organisation-add" class="button button-primary myvh-add-org-btn" style="margin-bottom:4px;">
             <span class="dashicons dashicons-plus-alt" style="vertical-align:middle; margin-right:4px;"></span> Add Organisation
-        </button>
+        </a>
     </div>
 
     <div class="myvh-account-grid">

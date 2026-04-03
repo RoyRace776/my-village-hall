@@ -302,6 +302,15 @@ class MyVillageHall {
             'manage_options', 'myvh-organisations', [ $this, 'render_organisations_page' ]
         );
 
+        add_submenu_page(
+            null,
+            __( 'Add Organisation', 'my-village-hall' ),
+            __( 'Add Organisation', 'my-village-hall' ),
+            'manage_options',
+            'myvh-organisation-add',
+            [ $this, 'render_organisation_add_page' ]
+        );
+
         add_submenu_page( 'my-village-hall',
             __( 'Organisation Types', 'my-village-hall' ),
             __( 'Org Types',          'my-village-hall' ),
@@ -476,7 +485,14 @@ class MyVillageHall {
         $this->render_page( 'calendar' );
     }
     public function render_customers_page():       void { $this->render_page( 'customers' ); }
-    public function render_organisations_page():   void { $this->render_page( 'organisations' ); }
+    public function render_organisations_page():   void {
+        if ( isset( $_GET['add'] ) ) {
+            wp_safe_redirect( admin_url( 'admin.php?page=myvh-organisation-add' ) );
+            exit;
+        }
+
+        $this->render_page( 'organisations' );
+    }
     public function render_org_types_page():       void { $this->render_page( 'org-types' ); }
     public function render_org_members_page():     void { $this->render_page( 'org-members' ); }
     public function render_client_admins_network_page(): void {
@@ -613,6 +629,7 @@ class MyVillageHall {
 
     }
     public function render_customer_add_page():    void { $this->render_page( 'customer-add' ); }
+    public function render_organisation_add_page(): void { $this->render_page( 'organisation-add' ); }
     public function render_venues_page():          void { $this->render_page( 'venues' ); }
     public function render_rooms_page():           void { $this->render_page( 'rooms' ); }
     public function render_room_rates_page():      void { $this->render_page( 'room-rates' ); }

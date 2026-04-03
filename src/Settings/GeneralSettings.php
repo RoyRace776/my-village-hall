@@ -4,6 +4,8 @@ namespace MYVH\Settings;
 class GeneralSettings extends SettingsBase {
 
     protected $option_name = 'myvh_general_settings';
+    protected $required_capability = 'manage_options';
+    protected $hide_from_client_admin = true;
 
     public function tab(): array {
         return [

@@ -21,14 +21,19 @@ class OrganisationController {
         }
         check_admin_referer('myvh_save_organisation');
         $data = SaveOrganisationRequest::from_post(wp_unslash($_POST));
+        $is_edit = !empty($data['organisation_id']);
+        $error_redirect = $is_edit
+            ? admin_url('admin.php?page=myvh-organisations&edit=' . intval($data['organisation_id']))
+            : admin_url('admin.php?page=myvh-organisation-add');
+
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {
-            wp_redirect(admin_url('admin.php?page=myvh-organisations&error=' . urlencode($validation_result->get_error_message())));
+            wp_redirect($error_redirect . '&error=' . urlencode($validation_result->get_error_message()));
             exit;
         }
         $result = $this->service->save($data);
         if (is_wp_error($result)) {
-            wp_redirect(admin_url('admin.php?page=myvh-organisations&error=' . urlencode($result->get_error_message())));
+            wp_redirect($error_redirect . '&error=' . urlencode($result->get_error_message()));
             exit;
         }
         wp_redirect(admin_url('admin.php?page=myvh-organisations&updated=1'));

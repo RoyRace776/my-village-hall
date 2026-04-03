@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) exit;
         <a href="#bookings"><?php echo $is_client_admin ? 'Bookings' : 'My Bookings'; ?></a>
         <a href="#calendar">Calendar</a>
         <a href="#invoices">Invoices</a>
-        <?php if ($has_customer): ?>
+        <?php if ($has_customer||$is_client_admin): ?>
             <a href="#organisations">Organisations</a>
         <?php endif; ?>
         <a href="#account">Account</a>

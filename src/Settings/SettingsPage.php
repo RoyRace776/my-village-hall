@@ -41,8 +41,17 @@ class SettingsPage {
         }
 
         $groups = SettingsRegistry::groups();
+        $visible_groups = $this->filter_accessible_groups($groups);
 
-        $active_tab = $_GET['tab'] ?? array_key_first($groups);
+        if (empty($visible_groups)) {
+            echo '<div class="wrap"><p>' . esc_html__('No settings groups are available for your user account.', 'my-village-hall') . '</p></div>';
+            return;
+        }
+
+        $requested_tab = sanitize_key($_GET['tab'] ?? '');
+        $active_tab = isset($visible_groups[$requested_tab])
+            ? $requested_tab
+            : array_key_first($visible_groups);
 
         ?>
 
@@ -57,7 +66,7 @@ class SettingsPage {
 
             <h2 class="nav-tab-wrapper myvh-settings-tabs">
 
-                <?php foreach ($groups as $key => $group): ?>
+                <?php foreach ($visible_groups as $key => $group): ?>
 
                     <a href="?page=myvh-settings&tab=<?php echo esc_attr($key); ?>"
                        class="nav-tab <?php echo ($active_tab === $key) ? 'nav-tab-active' : ''; ?>">
@@ -88,6 +97,11 @@ class SettingsPage {
 
         if (!$settings) {
             echo '<p>Invalid settings group.</p>';
+            return;
+        }
+
+        if (!$settings->user_can_access()) {
+            echo '<p>' . esc_html__('You do not have permission to access this settings group.', 'my-village-hall') . '</p>';
             return;
         }
 
@@ -328,6 +342,18 @@ class SettingsPage {
 
     }
 
+    private function filter_accessible_groups(array $groups): array {
+        $user_id = (int) get_current_user_id();
+
+        return array_filter(
+            $groups,
+            static function ($group_key) use ($user_id): bool {
+                return SettingsRegistry::user_can_access_group($group_key, $user_id);
+            },
+            ARRAY_FILTER_USE_KEY
+        );
+    }
+
     /**
      * Save settings
      */
@@ -345,6 +371,10 @@ class SettingsPage {
 
         if (!$settings) {
             wp_die('Invalid settings group');
+        }
+
+        if (!$settings->user_can_access()) {
+            wp_die('Unauthorized settings group access');
         }
 
         $settings->save($_POST);

@@ -507,6 +507,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         Object.keys(params || {}).forEach((key) => {
+            if (key === 'action' || key === 'page' || key === 'nonce') {
+                return;
+            }
+
             if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
                 query.set(key, params[key]);
             }

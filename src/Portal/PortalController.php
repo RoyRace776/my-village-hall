@@ -3,6 +3,7 @@ namespace MYVH\Portal;
 
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
+use MYVH\Organisations\SaveOrganisationRequest;
 use MYVH\Organisations\OrganisationService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Invoices\InvoiceGeneratorService;
@@ -58,6 +59,7 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_request_org_membership', [$this, 'request_organisation_membership']);
         add_action('wp_ajax_myvh_portal_approve_org_request', [$this, 'approve_organisation_membership_request']);
         add_action('wp_ajax_myvh_portal_reject_org_request', [$this, 'reject_organisation_membership_request']);
+        add_action('wp_ajax_myvh_portal_add_organisation', [$this, 'add_organisation']);
         add_action('wp_ajax_myvh_portal_save_org_billing', [$this, 'save_organisation_billing']);
         add_action('wp_ajax_myvh_portal_org_add_member', [$this, 'organisation_add_member']);
         add_action('wp_ajax_myvh_portal_org_remove_member', [$this, 'organisation_remove_member']);
@@ -278,6 +280,14 @@ class PortalController {
                 include MYVH_PLUGIN_DIR . 'templates/Portal/customer-add.php';
                 break;
 
+            case 'organisation-add':
+                if (empty($customer['Id'])) {
+                    wp_send_json_error('Customer profile not found', 400);
+                }
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-add.php';
+                break;
+
             case 'rooms':
                 if (!$is_client_admin) {
                     wp_send_json_error('Permission denied', 403);
@@ -318,10 +328,16 @@ class PortalController {
                 }
 
                 $settings_groups = [];
+                $current_user_id = get_current_user_id();
+
                 foreach (SettingsRegistry::groups() as $group_key => $group_meta) {
                     $settings = SettingsRegistry::get($group_key);
 
                     if (!$settings) {
+                        continue;
+                    }
+
+                    if (!$settings->is_visible_to_client_admin($current_user_id)) {
                         continue;
                     }
 
@@ -553,6 +569,43 @@ class PortalController {
         }
 
         wp_send_json_success(['message' => 'Request rejected']);
+    }
+
+    public function add_organisation() {
+        $customer = $this->get_authenticated_customer();
+        if (!$customer) {
+            return;
+        }
+
+        $payload = SaveOrganisationRequest::from_post(wp_unslash($_POST));
+        $payload['is_active'] = 1;
+
+        $saved = $this->organisation_service->save($payload);
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        $organisation_id = (int) $saved;
+
+        if ($organisation_id <= 0) {
+            wp_send_json_error('Organisation save failed', 400);
+        }
+
+        $membership = $this->organisation_service->add_member($organisation_id, (int) $customer['Id'], true);
+
+        if (is_wp_error($membership) || !$membership) {
+            $this->organisation_service->delete($organisation_id);
+            $message = is_wp_error($membership)
+                ? $membership->get_error_message()
+                : 'Organisation membership assignment failed';
+            wp_send_json_error($message, 400);
+        }
+
+        wp_send_json_success([
+            'message' => 'Organisation created',
+            'organisation_id' => $organisation_id,
+        ]);
     }
 
     public function save_organisation_billing() {
@@ -839,6 +892,12 @@ class PortalController {
 
         if (!$settings) {
             wp_send_json_error('Settings group not found', 404);
+        }
+
+        $current_user_id = get_current_user_id();
+
+        if (!$settings->is_visible_to_client_admin($current_user_id) || !$settings->user_can_access($current_user_id)) {
+            wp_send_json_error('Permission denied for this settings group', 403);
         }
 
         $input = wp_unslash($_POST);

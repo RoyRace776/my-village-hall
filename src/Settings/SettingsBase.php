@@ -8,10 +8,22 @@ abstract class SettingsBase {
     protected $settings = null;
 
     /**
-     * 'site'    → stored per-site (default, works in single-site too)
-     * 'network' → stored once for the whole network
+     * 'site'    -> stored per-site (default, works in single-site too)
+     * 'network' -> stored once for the whole network
      */
     protected $multisite_scope = 'site';
+
+    /**
+     * Optional capability required to manage this settings group.
+     * Empty string means any already-authorized context can access.
+     */
+    protected $required_capability = '';
+
+    /**
+     * If true, hide this settings group from client-admin portal users unless
+     * they also satisfy the required capability.
+     */
+    protected $hide_from_client_admin = false;
 
     /**
      * Return schema
@@ -20,6 +32,37 @@ abstract class SettingsBase {
         return $this->schema;
     }
 
+    public function get_required_capability(): string {
+        return (string) $this->required_capability;
+    }
+
+    public function should_hide_from_client_admin(): bool {
+        return (bool) $this->hide_from_client_admin;
+    }
+
+    public function user_can_access(int $user_id = 0): bool {
+        $capability = $this->get_required_capability();
+
+        if ($capability === '') {
+            return true;
+        }
+
+        $user_id = $user_id > 0 ? $user_id : (int) get_current_user_id();
+
+        if ($user_id <= 0) {
+            return false;
+        }
+
+        return user_can($user_id, $capability);
+    }
+
+    public function is_visible_to_client_admin(int $user_id = 0): bool {
+        if (!$this->should_hide_from_client_admin()) {
+            return true;
+        }
+
+        return $this->user_can_access($user_id);
+    }
 
     /**
      * Load settings from database
@@ -46,7 +89,6 @@ abstract class SettingsBase {
         $this->settings = $with_defaults;
     }
 
-
     /**
      * Apply schema defaults
      */
@@ -67,16 +109,12 @@ abstract class SettingsBase {
                     } else {
                         $settings[$key] = null;
                     }
-
                 }
-
             }
-
         }
 
         return $settings;
     }
-
 
     /**
      * Get single setting
@@ -88,7 +126,6 @@ abstract class SettingsBase {
         return $this->settings[$key] ?? null;
     }
 
-
     /**
      * Get all settings
      */
@@ -98,7 +135,6 @@ abstract class SettingsBase {
 
         return $this->settings;
     }
-
 
     /**
      * Save settings
@@ -132,9 +168,7 @@ abstract class SettingsBase {
                 }
 
                 $clean[$key] = $value;
-
             }
-
         }
 
         $clean = $this->apply_defaults($clean);
@@ -159,21 +193,21 @@ abstract class SettingsBase {
         return $scope === 'network' ? 'network' : 'site';
     }
 
-    protected function get_option( $default = [] ) {
-        if ( $this->get_multisite_scope() === 'network' && is_multisite() ) {
-            return get_site_option( $this->option_name, $default );
+    protected function get_option($default = []) {
+        if ($this->get_multisite_scope() === 'network' && is_multisite()) {
+            return get_site_option($this->option_name, $default);
         }
 
         // Backward compatibility: if values were previously saved at network scope,
         // continue reading them until this site writes its own local settings.
-        $site_value = get_option( $this->option_name, null );
-        if ( $site_value !== null ) {
+        $site_value = get_option($this->option_name, null);
+        if ($site_value !== null) {
             return $site_value;
         }
 
-        if ( is_multisite() ) {
-            $network_value = get_site_option( $this->option_name, null );
-            if ( $network_value !== null ) {
+        if (is_multisite()) {
+            $network_value = get_site_option($this->option_name, null);
+            if ($network_value !== null) {
                 return $network_value;
             }
         }
@@ -181,11 +215,11 @@ abstract class SettingsBase {
         return $default;
     }
 
-
-    protected function update_option( $value ): bool {
-        if ( $this->get_multisite_scope() === 'network' && is_multisite() ) {
-            return update_site_option( $this->option_name, $value );
+    protected function update_option($value): bool {
+        if ($this->get_multisite_scope() === 'network' && is_multisite()) {
+            return update_site_option($this->option_name, $value);
         }
-        return update_option( $this->option_name, $value );
+
+        return update_option($this->option_name, $value);
     }
 }
