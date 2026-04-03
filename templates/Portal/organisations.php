@@ -171,11 +171,12 @@ if (!defined('ABSPATH')) exit;
                                     <span>Billing reference</span>
                                     <input type="text" name="billing_reference" value="<?php echo esc_attr($org['BillingReference'] ?? ''); ?>" placeholder="PO number or internal reference">
                                 </label>
+
+                                <div class="myvh-account-actions">
+                                    <button type="submit" class="button myvh-cal-btn">Save Invoicing Details</button>
+                                </div>
                             </div>
 
-                            <div class="myvh-account-actions">
-                                <button type="submit" class="button myvh-cal-btn">Save Invoicing Details</button>
-                            </div>
                         </form>
                     </div>
 

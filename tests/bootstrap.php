@@ -27,6 +27,8 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 if (!defined('ABSPATH'))         define('ABSPATH', '/tmp/wordpress/');
 if (!defined('MYVH_PLUGIN_DIR')) define('MYVH_PLUGIN_DIR', dirname(__DIR__) . '/');
 
+require_once __DIR__ . '/Unit/MYVH_Unit_Test_Case.php';
+
 // Stubs must be loaded before any service class is autoloaded,
 // so PHP never tries to require_once the real implementations.
 //require_once __DIR__ . '/stubs/class-myvh-booking-status.php';

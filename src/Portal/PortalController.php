@@ -3,7 +3,9 @@ namespace MYVH\Portal;
 
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Organisations\SaveOrganisationRequest;
+use MYVH\Organisations\SaveOrganisationTypeRequest;
 use MYVH\Organisations\OrganisationService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Invoices\InvoiceGeneratorService;
@@ -21,6 +23,7 @@ class PortalController {
     private $booking_service;
     private $customer_service;
     private $organisation_service;
+    private $organisation_type_service;
     private $client_admin_service;
     private $invoiceGeneratorService;
     private $invoiceService;
@@ -32,6 +35,7 @@ class PortalController {
         BookingService $booking_service,
         CustomerService $customer_service,
         OrganisationService $organisation_service,
+        OrganisationTypeService $organisation_type_service,
         ClientAdminService $client_admin_service,
         InvoiceGeneratorService $invoiceGeneratorService,
         InvoiceService $invoiceService,
@@ -42,6 +46,7 @@ class PortalController {
         $this->booking_service = $booking_service;
         $this->customer_service = $customer_service;
         $this->organisation_service = $organisation_service;
+        $this->organisation_type_service = $organisation_type_service;
         $this->client_admin_service = $client_admin_service;
         $this->invoiceGeneratorService = $invoiceGeneratorService;
         $this->invoiceService = $invoiceService;
@@ -70,6 +75,8 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_remove_client_admin', [$this, 'remove_client_admin']);
         add_action('wp_ajax_myvh_portal_save_customer', [$this, 'save_customer']);
         add_action('wp_ajax_myvh_portal_delete_customer', [$this, 'delete_customer']);
+        add_action('wp_ajax_myvh_portal_save_org_type', [$this, 'save_organisation_type']);
+        add_action('wp_ajax_myvh_portal_delete_org_type', [$this, 'delete_organisation_type']);
         add_action('wp_ajax_myvh_portal_save_room', [$this, 'save_room']);
         add_action('wp_ajax_myvh_portal_delete_room', [$this, 'delete_room']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
@@ -320,6 +327,15 @@ class PortalController {
                 $room = $this->room_service->get($room_id);
                 $venues = $this->venue_service->get_all();
                 include MYVH_PLUGIN_DIR . 'templates/Portal/room-edit.php';
+                break;
+
+            case 'organisation-types':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $organisation_types = $this->organisation_type_service->get_all();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-types.php';
                 break;
 
             case 'settings':
@@ -577,10 +593,10 @@ class PortalController {
             return;
         }
 
-        $payload = SaveOrganisationRequest::from_post(wp_unslash($_POST));
+        $payload = SaveOrganisationRequest::from_post(wp_unslash($_POST), false);
         $payload['is_active'] = 1;
 
-        $saved = $this->organisation_service->save($payload);
+        $saved = $this->organisation_service->save($payload, false);
 
         if (is_wp_error($saved)) {
             wp_send_json_error($saved->get_error_message(), 400);
@@ -825,6 +841,53 @@ class PortalController {
         }
 
         wp_send_json_success(['message' => 'Customer deleted']);
+    }
+
+    public function save_organisation_type() {
+        $this->require_client_admin_access();
+
+        $payload = SaveOrganisationTypeRequest::from_post(wp_unslash($_POST));
+
+        try {
+            $saved = $this->organisation_type_service->save($payload);
+        } catch (Throwable $throwable) {
+            wp_send_json_error($throwable->getMessage(), 400);
+        }
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Organisation type save failed', 400);
+        }
+
+        wp_send_json_success([
+            'message' => !empty($payload['org_type_id']) ? 'Organisation type updated' : 'Organisation type created',
+            'org_type_id' => !empty($payload['org_type_id']) ? (int) $payload['org_type_id'] : (int) $saved,
+        ]);
+    }
+
+    public function delete_organisation_type() {
+        $this->require_client_admin_access();
+
+        $org_type_id = intval($_POST['org_type_id'] ?? 0);
+
+        if ($org_type_id <= 0) {
+            wp_send_json_error('Organisation type ID is required', 400);
+        }
+
+        $deleted = $this->organisation_type_service->delete($org_type_id);
+
+        if (is_wp_error($deleted)) {
+            wp_send_json_error($deleted->get_error_message(), 400);
+        }
+
+        if (!$deleted) {
+            wp_send_json_error('Failed to delete organisation type', 400);
+        }
+
+        wp_send_json_success(['message' => 'Organisation type deleted']);
     }
 
     public function save_room() {

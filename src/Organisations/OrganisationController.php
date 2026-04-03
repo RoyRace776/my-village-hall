@@ -20,7 +20,7 @@ class OrganisationController {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
         check_admin_referer('myvh_save_organisation');
-        $data = SaveOrganisationRequest::from_post(wp_unslash($_POST));
+        $data = SaveOrganisationRequest::from_post(wp_unslash($_POST), true);
         $is_edit = !empty($data['organisation_id']);
         $error_redirect = $is_edit
             ? admin_url('admin.php?page=myvh-organisations&edit=' . intval($data['organisation_id']))
@@ -31,7 +31,7 @@ class OrganisationController {
             wp_redirect($error_redirect . '&error=' . urlencode($validation_result->get_error_message()));
             exit;
         }
-        $result = $this->service->save($data);
+        $result = $this->service->save($data, true);
         if (is_wp_error($result)) {
             wp_redirect($error_redirect . '&error=' . urlencode($result->get_error_message()));
             exit;
@@ -51,7 +51,15 @@ class OrganisationController {
             wp_redirect(admin_url('admin.php?page=myvh-organisations&error=' . urlencode($validation_result->get_error_message())));
             exit;
         }
-        $this->service->delete($data['id']);
+        $result = $this->service->delete($data['id']);
+        if (is_wp_error($result) || !$result) {
+            $message = is_wp_error($result)
+                ? $result->get_error_message()
+                : __('Failed to delete organisation', 'my-village-hall');
+            wp_redirect(admin_url('admin.php?page=myvh-organisations&error=' . urlencode($message)));
+            exit;
+        }
+
         wp_redirect(admin_url('admin.php?page=myvh-organisations&deleted=1'));
         exit;
     }

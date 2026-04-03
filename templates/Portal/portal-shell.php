@@ -33,6 +33,7 @@ if (!defined('ABSPATH')) exit;
         <?php if ($is_client_admin): ?>
             <a href="#client-admins">Client Admins</a>
             <a href="#customers">Customers</a>
+            <a href="#organisation-types">Organisation Types</a>
             <a href="#rooms">Rooms</a>
             <a href="#settings">Settings</a>
         <?php endif; ?>

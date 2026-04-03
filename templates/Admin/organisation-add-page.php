@@ -8,6 +8,13 @@ use MYVH\Organisations\OrganisationTypeService;
 
 $type_service = $myvh_container->get(OrganisationTypeService::class);
 $org_types = $type_service->get_all();
+$default_type_id = 0;
+foreach ($org_types as $type) {
+    if (!empty($type['IsDefault'])) {
+        $default_type_id = intval($type['Id']);
+        break;
+    }
+}
 ?>
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php _e('Add Organisation', 'my-village-hall'); ?></h1>
@@ -41,7 +48,7 @@ $org_types = $type_service->get_all();
                                 <select name="organisation_type_id" class="regular-text">
                                     <option value=""><?php _e('— Select Type —', 'my-village-hall'); ?></option>
                                     <?php foreach ($org_types as $type): ?>
-                                        <option value="<?php echo $type['Id']; ?>"><?php echo esc_html($type['Name']); ?></option>
+                                        <option value="<?php echo $type['Id']; ?>" <?php selected($default_type_id, intval($type['Id'])); ?>><?php echo esc_html($type['Name']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <p class="description">
