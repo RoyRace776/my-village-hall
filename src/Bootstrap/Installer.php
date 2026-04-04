@@ -44,6 +44,9 @@ class Installer {
 
         self::create_tables( $wpdb, $collate );
         self::ensure_room_colour_column( $wpdb );
+        self::ensure_organisation_system_column( $wpdb );
+        self::ensure_organisation_type_flag_columns( $wpdb );
+        self::ensure_addon_archive_column( $wpdb );
         self::add_foreign_keys( $wpdb );
         self::set_default_data( $wpdb );
     }
@@ -58,6 +61,43 @@ class Installer {
 
         // Fallback for installs where dbDelta did not add the new column.
         $wpdb->query( "ALTER TABLE {$table} ADD COLUMN Colour VARCHAR(7) NULL AFTER Name" );
+    }
+
+    private static function ensure_organisation_system_column( wpdb $wpdb ): void {
+        $table = $wpdb->prefix . 'myvh_organisations';
+        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'IsSystem'" );
+
+        if ( $column ) {
+            return;
+        }
+
+        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsSystem TINYINT(1) NOT NULL DEFAULT 0 AFTER IsDefault" );
+    }
+
+    private static function ensure_organisation_type_flag_columns( wpdb $wpdb ): void {
+        $table = $wpdb->prefix . 'myvh_organisation_types';
+
+        $is_system_col = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'IsSystem'" );
+        if ( ! $is_system_col ) {
+            $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsSystem TINYINT(1) NOT NULL DEFAULT 0 AFTER Description" );
+        }
+
+        $is_default_col = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'IsDefault'" );
+        if ( ! $is_default_col ) {
+            $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsDefault TINYINT(1) NOT NULL DEFAULT 0 AFTER IsSystem" );
+        }
+    }
+
+    private static function ensure_addon_archive_column( wpdb $wpdb ): void {
+        $table = $wpdb->prefix . 'myvh_addons';
+        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'ArchivedAt'" );
+
+        if ( $column ) {
+            return;
+        }
+
+        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN ArchivedAt DATETIME NULL AFTER Created" );
+        $wpdb->query( "ALTER TABLE {$table} ADD INDEX idx_archived (ArchivedAt)" );
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -122,12 +162,14 @@ class Installer {
             BillingReference   VARCHAR(100) NULL,
             IsActive           TINYINT(1)    DEFAULT 1,
             IsDefault          TINYINT(1)    DEFAULT 0,
+            IsSystem           TINYINT(1)    NOT NULL DEFAULT 0,
             DefaultPublic      TINYINT(1)    DEFAULT 0,
             Created            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_name    (Name),
             INDEX      idx_org_type (OrganisationTypeId),
             INDEX      idx_active  (IsActive),
             INDEX      idx_default (IsDefault),
+            INDEX      idx_system (IsSystem),
             INDEX      idx_default_public (DefaultPublic),
             INDEX      idx_invoice_org (InvoiceOrganisationBookings)
         ) {$collate};" );
@@ -138,8 +180,12 @@ class Installer {
             Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             Name               VARCHAR(100) NOT NULL,
             Description        VARCHAR(255),
+            IsSystem           TINYINT(1) NOT NULL DEFAULT 0,
+            IsDefault          TINYINT(1) NOT NULL DEFAULT 0,
             Created            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY         uq_name (Name)
+            UNIQUE KEY         uq_name (Name),
+            INDEX              idx_is_system (IsSystem),
+            INDEX              idx_is_default (IsDefault)
         ) {$collate};" );
 
         // ── Organisation Members ───────────────────────────────────────────────────
@@ -260,10 +306,12 @@ class Installer {
             IsActive        TINYINT(1)    DEFAULT 1,
             DisplayOrder    INT UNSIGNED  DEFAULT 0,
             Created         TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+            ArchivedAt      DATETIME      DEFAULT NULL,
             INDEX idx_room           (RoomId),
             INDEX idx_venue          (VenueId),
             INDEX idx_active         (IsActive),
-            INDEX idx_order          (DisplayOrder)
+            INDEX idx_order          (DisplayOrder),
+            INDEX idx_archived       (ArchivedAt)
         ) {$collate};" );
 
         // ── Booking Charges ───────────────────────────────────────────────────
@@ -677,20 +725,66 @@ class Installer {
     // Set up defaults like organisation types and organisations if they don't already exist
     public static function set_default_data($wpdb): void {
 
-        // Name is unique, so this will fail if the record already exists
-        $table_name = $wpdb->prefix . 'myvh_organisation_types';
-        $data = [ 'Name'        => 'Person',
-                  'Description' => 'Individual person'];
+        $types_table = $wpdb->prefix . 'myvh_organisation_types';
+        $orgs_table = $wpdb->prefix . 'myvh_organisations';
 
-        // If the tpye already exists, then the organisation will also exist
-        if ( $wpdb->insert($table_name, $data) <> false ) {
-            $insert_id = $wpdb->insert_id;
-            $table_name = $wpdb->prefix . 'myvh_organisations';
-            $data = ['Name'             => 'Personal booking',
-                     'OrganisationTypeId' => $insert_id,
-                     'IsDefault'          => 1];
+        $person_type = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$types_table} WHERE Name = %s LIMIT 1", 'Person'),
+            'ARRAY_A'
+        );
 
-            $wpdb->insert($table_name,$data);
+        if ( empty($person_type['Id']) ) {
+            $wpdb->insert($types_table, [
+                'Name' => 'Person',
+                'Description' => 'Individual person',
+                'IsSystem' => 1,
+                'IsDefault' => 1,
+            ]);
+            $person_type_id = (int) $wpdb->insert_id;
+        } else {
+            $person_type_id = (int) $person_type['Id'];
+            $wpdb->update($types_table, [
+                'Description' => 'Individual person',
+                'IsSystem' => 1,
+            ], ['Id' => $person_type_id]);
+        }
+
+        $default_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$types_table} WHERE IsDefault = 1");
+        if ( $default_count === 0 && $person_type_id > 0 ) {
+            $wpdb->update($types_table, ['IsDefault' => 1], ['Id' => $person_type_id]);
+            $default_count = 1;
+        }
+
+        if ( $default_count > 1 ) {
+            $keep_default_id = (int) $wpdb->get_var("SELECT Id FROM {$types_table} WHERE IsDefault = 1 ORDER BY Id ASC LIMIT 1");
+            if ( $keep_default_id > 0 ) {
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE {$types_table} SET IsDefault = 0 WHERE IsDefault = 1 AND Id != %d",
+                    $keep_default_id
+                ));
+            }
+        }
+
+        if ( $person_type_id > 0 ) {
+            $personal_booking = $wpdb->get_row(
+                $wpdb->prepare("SELECT * FROM {$orgs_table} WHERE Name = %s LIMIT 1", 'Personal booking'),
+                'ARRAY_A'
+            );
+
+            if ( empty($personal_booking['Id']) ) {
+                $wpdb->insert($orgs_table, [
+                    'Name' => 'Personal booking',
+                    'OrganisationTypeId' => $person_type_id,
+                    'IsDefault' => 1,
+                    'IsSystem' => 1,
+                    'IsActive' => 1,
+                ]);
+            } else {
+                $wpdb->update($orgs_table, [
+                    'OrganisationTypeId' => $person_type_id,
+                    'IsSystem' => 1,
+                ], ['Id' => (int) $personal_booking['Id']]);
+            }
         }
 
     }

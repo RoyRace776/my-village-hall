@@ -9,14 +9,18 @@ class OrganisationService {
     private $repo;
     private $member_repo;
     private $request_repo;
+    private $type_repo;
+
     public function __construct(
         OrganisationRepository $repo,
         OrganisationMemberRepository $member_repo,
-        OrganisationMemberRequestRepository $request_repo
+        OrganisationMemberRequestRepository $request_repo,
+        OrganisationTypeRepository $type_repo
     ) {
         $this->repo = $repo;
         $this->member_repo = $member_repo;
         $this->request_repo = $request_repo;
+        $this->type_repo = $type_repo;
     }
     // ── Organisations ─────────────────────────────
     public function get_all(bool $active_only = false): array {
@@ -34,7 +38,7 @@ class OrganisationService {
     public function get_default(): ?array {
         return $this->repo->get_default();
     }
-    public function save(array $data): int|bool|WP_Error {
+    public function save(array $data, bool $allow_type_changes = true): int|bool|WP_Error {
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Organisation name is required', 'my-village-hall'));
         }
@@ -47,15 +51,58 @@ class OrganisationService {
         if (empty($data['contact_phone'])) {
             return new WP_Error('validation', __('Contact phone is required', 'my-village-hall'));
         }
+
         $is_new = empty($data['organisation_id']);
-        $requested_default = isset($data['is_default']) ? 1 : 0;
+        $existing = null;
+        $organisation_type_id = 0;
+
+        if ($is_new) {
+            if ($allow_type_changes && !empty($data['organisation_type_id'])) {
+                $organisation_type_id = intval($data['organisation_type_id']);
+            } else {
+                $default_type = $this->type_repo->get_default();
+                if (empty($default_type['Id'])) {
+                    $default_type = $this->type_repo->get_by_name('Person');
+                }
+                if (empty($default_type['Id'])) {
+                    return new WP_Error('configuration', __('No default organisation type has been configured', 'my-village-hall'));
+                }
+                $organisation_type_id = intval($default_type['Id']);
+            }
+        } else {
+            $organisation_id = intval($data['organisation_id']);
+            $existing = $this->repo->get_by_id($organisation_id);
+            if (empty($existing['Id'])) {
+                return new WP_Error('not_found', __('Organisation not found', 'my-village-hall'));
+            }
+
+            $organisation_type_id = intval($existing['OrganisationTypeId']);
+            if ($allow_type_changes && !empty($data['organisation_type_id'])) {
+                $organisation_type_id = intval($data['organisation_type_id']);
+            }
+
+            if (!$allow_type_changes && !empty($data['organisation_type_id']) && intval($data['organisation_type_id']) !== intval($existing['OrganisationTypeId'])) {
+                return new WP_Error('forbidden', __('Only admin users can change organisation type', 'my-village-hall'));
+            }
+
+            if (!empty($existing['IsSystem'])) {
+                if (sanitize_text_field($data['name']) !== $existing['Name']) {
+                    return new WP_Error('forbidden', __('System organisations cannot be renamed', 'my-village-hall'));
+                }
+                if ($organisation_type_id !== intval($existing['OrganisationTypeId'])) {
+                    return new WP_Error('forbidden', __('System organisations cannot change organisation type', 'my-village-hall'));
+                }
+            }
+        }
+
+        $requested_default = !empty($data['is_default']) ? 1 : 0;
         if ($is_new && ($this->repo->count_all() === 0 || !$this->repo->has_default())) {
             $requested_default = 1;
         }
         $invoice_organisation_bookings = !empty($data['invoice_organisation_bookings']) ? 1 : 0;
         $record = [
             'Name'               => sanitize_text_field($data['name']),
-            'OrganisationTypeId' => !empty($data['organisation_type_id']) ? intval($data['organisation_type_id']) : null,
+            'OrganisationTypeId' => $organisation_type_id,
             'ContactEmail'       => sanitize_email($data['contact_email']),
             'ContactPhone'       => sanitize_text_field($data['contact_phone']),
             'WebsiteUrl'         => !empty($data['website_url']) ? esc_url_raw($data['website_url']) : null,
@@ -67,10 +114,11 @@ class OrganisationService {
             'BillingTownCity'    => $invoice_organisation_bookings && !empty($data['billing_town_city']) ? sanitize_text_field($data['billing_town_city']) : null,
             'BillingPostcode'    => $invoice_organisation_bookings && !empty($data['billing_postcode']) ? sanitize_text_field($data['billing_postcode']) : null,
             'BillingReference'   => $invoice_organisation_bookings && !empty($data['billing_reference']) ? sanitize_text_field($data['billing_reference']) : null,
-            'IsActive'           => isset($data['is_active']) ? 1 : 0,
+            'IsActive'           => $allow_type_changes ? (!empty($data['is_active']) ? 1 : 0) : ($is_new ? 1 : intval($existing['IsActive'] ?? 1)),
             'IsDefault'          => $requested_default,
-            'DefaultPublic'      => (isset($data['default_public']) && intval($data['default_public']) === 1) ? 1 : 0,
+            'DefaultPublic'      => (!empty($data['default_public']) && intval($data['default_public']) === 1) ? 1 : 0,
         ];
+
         if (!empty($data['organisation_id'])) {
             $organisation_id = intval($data['organisation_id']);
             $updated = $this->repo->update($record, ['Id' => $organisation_id]);
@@ -93,7 +141,12 @@ class OrganisationService {
         }
         return $organisation_id;
     }
+
     public function delete(int $id) {
+        $existing = $this->repo->get_by_id($id);
+        if (!empty($existing['IsSystem'])) {
+            return new WP_Error('forbidden', __('System organisations cannot be deleted', 'my-village-hall'));
+        }
         return $this->repo->delete($id);
     }
     // ── Members ─────────────────────────────

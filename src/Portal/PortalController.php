@@ -1,12 +1,21 @@
 <?php
 namespace MYVH\Portal;
 
+use MYVH\Addons\AddonRequestValidator;
+use MYVH\Addons\AddonService;
+use MYVH\Addons\SaveAddonRequest;
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationTypeService;
+use MYVH\Organisations\SaveOrganisationRequest;
+use MYVH\Organisations\SaveOrganisationTypeRequest;
 use MYVH\Organisations\OrganisationService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Invoices\InvoiceGeneratorService;
 use MYVH\Invoices\InvoiceService;
+use MYVH\Pricing\RoomRateRequestValidator;
+use MYVH\Pricing\RoomRateService;
+use MYVH\Pricing\SaveRoomRateRequest;
 use MYVH\Portal\Support\BookingAccess;
 use MYVH\Rooms\RoomService;
 use MYVH\Rooms\RoomRequestValidator;
@@ -17,35 +26,50 @@ use MYVH\Settings\SettingsRegistry;
 use Throwable;
 
 class PortalController {
+    private $addon_service;
+    private $addon_request_validator;
     private $booking_service;
     private $customer_service;
     private $organisation_service;
+    private $organisation_type_service;
     private $client_admin_service;
     private $invoiceGeneratorService;
     private $invoiceService;
     private $room_service;
     private $room_request_validator;
+    private $room_rate_service;
+    private $room_rate_request_validator;
     private $venue_service;
 
     public function __construct(
+        AddonService $addon_service,
+        AddonRequestValidator $addon_request_validator,
         BookingService $booking_service,
         CustomerService $customer_service,
         OrganisationService $organisation_service,
+        OrganisationTypeService $organisation_type_service,
         ClientAdminService $client_admin_service,
         InvoiceGeneratorService $invoiceGeneratorService,
         InvoiceService $invoiceService,
         RoomService $room_service,
         RoomRequestValidator $room_request_validator,
+        RoomRateService $room_rate_service,
+        RoomRateRequestValidator $room_rate_request_validator,
         VenueService $venue_service
     ) {
+        $this->addon_service = $addon_service;
+        $this->addon_request_validator = $addon_request_validator;
         $this->booking_service = $booking_service;
         $this->customer_service = $customer_service;
         $this->organisation_service = $organisation_service;
+        $this->organisation_type_service = $organisation_type_service;
         $this->client_admin_service = $client_admin_service;
         $this->invoiceGeneratorService = $invoiceGeneratorService;
         $this->invoiceService = $invoiceService;
         $this->room_service = $room_service;
         $this->room_request_validator = $room_request_validator;
+        $this->room_rate_service = $room_rate_service;
+        $this->room_rate_request_validator = $room_rate_request_validator;
         $this->venue_service = $venue_service;
     }
 
@@ -58,6 +82,8 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_request_org_membership', [$this, 'request_organisation_membership']);
         add_action('wp_ajax_myvh_portal_approve_org_request', [$this, 'approve_organisation_membership_request']);
         add_action('wp_ajax_myvh_portal_reject_org_request', [$this, 'reject_organisation_membership_request']);
+        add_action('wp_ajax_myvh_portal_add_organisation', [$this, 'add_organisation']);
+        add_action('wp_ajax_myvh_portal_save_org_type_assignment', [$this, 'save_organisation_type_assignment']);
         add_action('wp_ajax_myvh_portal_save_org_billing', [$this, 'save_organisation_billing']);
         add_action('wp_ajax_myvh_portal_org_add_member', [$this, 'organisation_add_member']);
         add_action('wp_ajax_myvh_portal_org_remove_member', [$this, 'organisation_remove_member']);
@@ -68,8 +94,14 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_remove_client_admin', [$this, 'remove_client_admin']);
         add_action('wp_ajax_myvh_portal_save_customer', [$this, 'save_customer']);
         add_action('wp_ajax_myvh_portal_delete_customer', [$this, 'delete_customer']);
+        add_action('wp_ajax_myvh_portal_save_org_type', [$this, 'save_organisation_type']);
+        add_action('wp_ajax_myvh_portal_delete_org_type', [$this, 'delete_organisation_type']);
         add_action('wp_ajax_myvh_portal_save_room', [$this, 'save_room']);
         add_action('wp_ajax_myvh_portal_delete_room', [$this, 'delete_room']);
+        add_action('wp_ajax_myvh_portal_save_room_rate', [$this, 'save_room_rate']);
+        add_action('wp_ajax_myvh_portal_delete_room_rate', [$this, 'delete_room_rate']);
+        add_action('wp_ajax_myvh_portal_save_addon', [$this, 'save_addon']);
+        add_action('wp_ajax_myvh_portal_delete_addon', [$this, 'delete_addon']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
         //add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
@@ -278,6 +310,17 @@ class PortalController {
                 include MYVH_PLUGIN_DIR . 'templates/Portal/customer-add.php';
                 break;
 
+            case 'organisation-add':
+                if (empty($customer['Id'])) {
+                    wp_send_json_error('Customer profile not found', 400);
+                }
+
+                $organisation_types = $is_client_admin ? $this->organisation_type_service->get_all() : [];
+                $default_organisation_type_id = $this->get_default_organisation_type_id($organisation_types);
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-add.php';
+                break;
+
             case 'rooms':
                 if (!$is_client_admin) {
                     wp_send_json_error('Permission denied', 403);
@@ -312,16 +355,112 @@ class PortalController {
                 include MYVH_PLUGIN_DIR . 'templates/Portal/room-edit.php';
                 break;
 
+            case 'room-rates':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $rates = $this->room_rate_service->get_all();
+                $rooms = $this->room_service->get_all_with_venues();
+                $organisation_types = $this->organisation_type_service->get_all();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/room-rates.php';
+                break;
+
+            case 'addons':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $addons = $this->addon_service->get_with_relations();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/addons.php';
+                break;
+
+            case 'addon-add':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $rooms = $this->room_service->get_all_with_venues();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/addon-add.php';
+                break;
+
+            case 'addon-edit':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $addon_id = intval($_GET['id'] ?? 0);
+
+                if (!$addon_id) {
+                    wp_send_json_error('Invalid add-on ID', 400);
+                }
+
+                $addon = $this->addon_service->get($addon_id);
+                if (!$addon) {
+                    wp_send_json_error('Add-on not found', 404);
+                }
+
+                $rooms = $this->room_service->get_all_with_venues();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/addon-edit.php';
+                break;
+
+            case 'room-rate-add':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $rooms = $this->room_service->get_all_with_venues();
+                $organisation_types = $this->organisation_type_service->get_all();
+                $selected_room_id = intval($_GET['room_id'] ?? 0);
+                include MYVH_PLUGIN_DIR . 'templates/Portal/room-rate-add.php';
+                break;
+
+            case 'room-rate-edit':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $rate_id = intval($_GET['id'] ?? 0);
+
+                if (!$rate_id) {
+                    wp_send_json_error('Invalid rate ID', 400);
+                }
+
+                $rate = $this->room_rate_service->get($rate_id);
+                if (!$rate) {
+                    wp_send_json_error('Room rate not found', 404);
+                }
+
+                $rooms = $this->room_service->get_all_with_venues();
+                $organisation_types = $this->organisation_type_service->get_all();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/room-rate-edit.php';
+                break;
+
+            case 'organisation-types':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $organisation_types = $this->organisation_type_service->get_all();
+                include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-types.php';
+                break;
+
             case 'settings':
                 if (!$is_client_admin) {
                     wp_send_json_error('Permission denied', 403);
                 }
 
                 $settings_groups = [];
+                $current_user_id = get_current_user_id();
+
                 foreach (SettingsRegistry::groups() as $group_key => $group_meta) {
                     $settings = SettingsRegistry::get($group_key);
 
                     if (!$settings) {
+                        continue;
+                    }
+
+                    if (!$settings->is_visible_to_client_admin($current_user_id)) {
                         continue;
                     }
 
@@ -342,6 +481,7 @@ class PortalController {
                 $manageable_organisations = [];
                 $organisation_members = [];
                 $organisation_pending_requests = [];
+                $organisation_types = $is_client_admin ? $this->organisation_type_service->get_all() : [];
                 $requestable_organisations = $this->organisation_service->get_all(true);
 
                 if ( !empty($customer['Id']) ) {
@@ -553,6 +693,93 @@ class PortalController {
         }
 
         wp_send_json_success(['message' => 'Request rejected']);
+    }
+
+    public function add_organisation() {
+        $customer = $this->get_authenticated_customer();
+        if (!$customer) {
+            return;
+        }
+
+        $allow_type_changes = $this->current_user_is_client_admin();
+        $payload = SaveOrganisationRequest::from_post(wp_unslash($_POST), false);
+        if ($allow_type_changes) {
+            $payload['organisation_type_id'] = intval($_POST['organisation_type_id'] ?? 0);
+        }
+        $payload['is_active'] = 1;
+
+        $saved = $this->organisation_service->save($payload, $allow_type_changes);
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        $organisation_id = (int) $saved;
+
+        if ($organisation_id <= 0) {
+            wp_send_json_error('Organisation save failed', 400);
+        }
+
+        $membership = $this->organisation_service->add_member($organisation_id, (int) $customer['Id'], true);
+
+        if (is_wp_error($membership) || !$membership) {
+            $this->organisation_service->delete($organisation_id);
+            $message = is_wp_error($membership)
+                ? $membership->get_error_message()
+                : 'Organisation membership assignment failed';
+            wp_send_json_error($message, 400);
+        }
+
+        wp_send_json_success([
+            'message' => 'Organisation created',
+            'organisation_id' => $organisation_id,
+        ]);
+    }
+
+    public function save_organisation_type_assignment() {
+        $this->require_client_admin_access();
+
+        $organisation_id = intval($_POST['organisation_id'] ?? 0);
+        if ($organisation_id <= 0) {
+            wp_send_json_error('Organisation is required', 400);
+        }
+
+        $existing = $this->organisation_service->get_by_id($organisation_id);
+        if (empty($existing['Id'])) {
+            wp_send_json_error('Organisation not found', 404);
+        }
+
+        $payload = [
+            'organisation_id' => $organisation_id,
+            'name' => $existing['Name'] ?? '',
+            'contact_email' => $existing['ContactEmail'] ?? '',
+            'contact_phone' => $existing['ContactPhone'] ?? '',
+            'website_url' => $existing['WebsiteUrl'] ?? null,
+            'organisation_type_id' => intval($_POST['organisation_type_id'] ?? 0),
+            'invoice_organisation_bookings' => !empty($existing['InvoiceOrganisationBookings']) ? 1 : 0,
+            'billing_contact_name' => $existing['BillingContactName'] ?? '',
+            'billing_email' => $existing['BillingEmail'] ?? '',
+            'billing_address_line1' => $existing['BillingAddressLine1'] ?? '',
+            'billing_address_line2' => $existing['BillingAddressLine2'] ?? '',
+            'billing_town_city' => $existing['BillingTownCity'] ?? '',
+            'billing_postcode' => $existing['BillingPostcode'] ?? '',
+            'billing_reference' => $existing['BillingReference'] ?? '',
+            'is_active' => !empty($existing['IsActive']) ? 1 : 0,
+            'is_default' => !empty($existing['IsDefault']) ? 1 : 0,
+            'default_public' => !empty($existing['DefaultPublic']) ? 1 : 0,
+        ];
+
+        $saved = $this->organisation_service->save($payload, true);
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Organisation update failed', 400);
+        }
+
+        wp_send_json_success(['message' => 'Organisation type updated']);
     }
 
     public function save_organisation_billing() {
@@ -774,6 +1001,53 @@ class PortalController {
         wp_send_json_success(['message' => 'Customer deleted']);
     }
 
+    public function save_organisation_type() {
+        $this->require_client_admin_access();
+
+        $payload = SaveOrganisationTypeRequest::from_post(wp_unslash($_POST));
+
+        try {
+            $saved = $this->organisation_type_service->save($payload);
+        } catch (Throwable $throwable) {
+            wp_send_json_error($throwable->getMessage(), 400);
+        }
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Organisation type save failed', 400);
+        }
+
+        wp_send_json_success([
+            'message' => !empty($payload['org_type_id']) ? 'Organisation type updated' : 'Organisation type created',
+            'org_type_id' => !empty($payload['org_type_id']) ? (int) $payload['org_type_id'] : (int) $saved,
+        ]);
+    }
+
+    public function delete_organisation_type() {
+        $this->require_client_admin_access();
+
+        $org_type_id = intval($_POST['org_type_id'] ?? 0);
+
+        if ($org_type_id <= 0) {
+            wp_send_json_error('Organisation type ID is required', 400);
+        }
+
+        $deleted = $this->organisation_type_service->delete($org_type_id);
+
+        if (is_wp_error($deleted)) {
+            wp_send_json_error($deleted->get_error_message(), 400);
+        }
+
+        if (!$deleted) {
+            wp_send_json_error('Failed to delete organisation type', 400);
+        }
+
+        wp_send_json_success(['message' => 'Organisation type deleted']);
+    }
+
     public function save_room() {
         $this->require_client_admin_access();
 
@@ -801,6 +1075,9 @@ class PortalController {
         wp_send_json_success([
             'message' => !empty($payload['room_id']) ? 'Room updated' : 'Room created',
             'room_id' => !empty($payload['room_id']) ? (int) $payload['room_id'] : (int) $saved,
+            'redirect' => !empty($payload['room_id'])
+                ? 'rooms'
+                : ('room-rate-add?room_id=' . (int) $saved),
         ]);
     }
 
@@ -826,6 +1103,112 @@ class PortalController {
         wp_send_json_success(['message' => 'Room deleted']);
     }
 
+    public function save_room_rate() {
+        $this->require_client_admin_access();
+
+        $payload = SaveRoomRateRequest::from_post(wp_unslash($_POST));
+        $validation = $this->room_rate_request_validator->validate($payload);
+
+        if (is_wp_error($validation)) {
+            wp_send_json_error($validation->get_error_message(), 400);
+        }
+
+        try {
+            $saved = $this->room_rate_service->save($payload);
+        } catch (Throwable $throwable) {
+            wp_send_json_error($throwable->getMessage(), 400);
+        }
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Room rate save failed', 400);
+        }
+
+        wp_send_json_success([
+            'message' => !empty($payload['rate_id']) ? 'Room rate updated' : 'Room rate created',
+            'rate_id' => !empty($payload['rate_id']) ? (int) $payload['rate_id'] : (int) $saved,
+            'redirect' => !empty($payload['rate_id']) ? 'room-rates' : 'room-rates',
+        ]);
+    }
+
+    public function delete_room_rate() {
+        $this->require_client_admin_access();
+
+        $rate_id = intval($_POST['rate_id'] ?? 0);
+
+        if ($rate_id <= 0) {
+            wp_send_json_error('Room rate ID is required', 400);
+        }
+
+        $deleted = $this->room_rate_service->delete($rate_id);
+
+        if (is_wp_error($deleted)) {
+            wp_send_json_error($deleted->get_error_message(), 400);
+        }
+
+        if (!$deleted) {
+            wp_send_json_error('Failed to delete room rate', 400);
+        }
+
+        wp_send_json_success(['message' => 'Room rate deleted']);
+    }
+
+    public function save_addon() {
+        $this->require_client_admin_access();
+
+        $payload = SaveAddonRequest::from_post(wp_unslash($_POST));
+        $validation = $this->addon_request_validator->validate($payload);
+
+        if (is_wp_error($validation)) {
+            wp_send_json_error($validation->get_error_message(), 400);
+        }
+
+        try {
+            $saved = $this->addon_service->save($payload);
+        } catch (Throwable $throwable) {
+            wp_send_json_error($throwable->getMessage(), 400);
+        }
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Add-on save failed', 400);
+        }
+
+        wp_send_json_success([
+            'message' => !empty($payload['addon_id']) ? 'Add-on updated' : 'Add-on created',
+            'addon_id' => !empty($payload['addon_id']) ? (int) $payload['addon_id'] : (int) $saved,
+            'redirect' => 'addons',
+        ]);
+    }
+
+    public function delete_addon() {
+        $this->require_client_admin_access();
+
+        $addon_id = intval($_POST['addon_id'] ?? 0);
+
+        if ($addon_id <= 0) {
+            wp_send_json_error('Add-on ID is required', 400);
+        }
+
+        $deleted = $this->addon_service->delete($addon_id);
+
+        if (is_wp_error($deleted)) {
+            wp_send_json_error($deleted->get_error_message(), 400);
+        }
+
+        if (!$deleted) {
+            wp_send_json_error('Failed to archive add-on', 400);
+        }
+
+        wp_send_json_success(['message' => 'Add-on archived']);
+    }
+
     public function save_client_settings() {
         $this->require_client_admin_access();
 
@@ -839,6 +1222,12 @@ class PortalController {
 
         if (!$settings) {
             wp_send_json_error('Settings group not found', 404);
+        }
+
+        $current_user_id = get_current_user_id();
+
+        if (!$settings->is_visible_to_client_admin($current_user_id) || !$settings->user_can_access($current_user_id)) {
+            wp_send_json_error('Permission denied for this settings group', 403);
         }
 
         $input = wp_unslash($_POST);
@@ -920,6 +1309,16 @@ class PortalController {
         ]);
 
         return $result['groups'];
+    }
+
+    private function get_default_organisation_type_id(array $organisation_types): int {
+        foreach ($organisation_types as $organisation_type) {
+            if (!empty($organisation_type['IsDefault'])) {
+                return (int) ($organisation_type['Id'] ?? 0);
+            }
+        }
+
+        return 0;
     }
 
     private function current_user_is_client_admin(): bool {

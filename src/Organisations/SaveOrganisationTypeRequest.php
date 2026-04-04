@@ -11,6 +11,7 @@ class SaveOrganisationTypeRequest extends RequestMapperBase {
             'org_type_id'  => self::as_int($post, 'org_type_id'),
             'name'         => self::as_text($post, 'name'),
             'description'  => self::as_textarea($post, 'description'),
+            'is_default'   => self::as_bool_int($post, 'is_default'),
         ];
     }
 }

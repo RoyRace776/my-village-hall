@@ -12,13 +12,14 @@ $org_service  = $myvh_container->get(OrganisationService::class);
 $type_service = $myvh_container->get(OrganisationTypeService::class);
 
 $edit_org  = $edit_id ? $org_service->get($edit_id) : null;
+$edit_org_is_system = !empty($edit_org['IsSystem']);
 $orgs      = $org_service->get_all_with_type();
 $org_types = $type_service->get_all();
 ?>
 
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php _e('Organisations', 'my-village-hall'); ?></h1>
-    <a href="<?php echo admin_url('admin.php?page=myvh-organisations&add=1'); ?>" class="page-title-action">
+    <a href="<?php echo admin_url('admin.php?page=myvh-organisation-add'); ?>" class="page-title-action">
         <?php _e('Add New', 'my-village-hall'); ?>
     </a>
     <hr class="wp-header-end">
@@ -87,13 +88,17 @@ $org_types = $type_service->get_all();
                                         <a href="<?php echo admin_url('admin.php?page=myvh-org-members&organisation_id=' . $org['Id']); ?>">
                                             <?php _e('Members', 'my-village-hall'); ?>
                                         </a> |
-                                        <a href="<?php echo wp_nonce_url(
-                                            admin_url('admin-post.php?action=myvh_delete_organisation&id=' . $org['Id']),
-                                            'myvh_delete_organisation'
-                                        ); ?>" class="link-delete"
-                                           onclick="return confirm('<?php _e('Delete this organisation?', 'my-village-hall'); ?>');">
-                                            <?php _e('Delete', 'my-village-hall'); ?>
-                                        </a>
+                                        <?php if (!empty($org['IsSystem'])): ?>
+                                            <span><?php _e('Locked', 'my-village-hall'); ?></span>
+                                        <?php else: ?>
+                                            <a href="<?php echo wp_nonce_url(
+                                                admin_url('admin-post.php?action=myvh_delete_organisation&id=' . $org['Id']),
+                                                'myvh_delete_organisation'
+                                            ); ?>" class="link-delete"
+                                               onclick="return confirm('<?php _e('Delete this organisation?', 'my-village-hall'); ?>');">
+                                                <?php _e('Delete', 'my-village-hall'); ?>
+                                            </a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -104,10 +109,14 @@ $org_types = $type_service->get_all();
         </div>
 
         <!-- ── Form ─────────────────────────────────────────────────────────── -->
-        <?php if (isset($_GET['add']) || $edit_org): ?>
+        <?php if ($edit_org): ?>
         <div class="myvh-col-40">
             <div class="myvh-card">
-                <h2><?php echo $edit_org ? __('Edit Organisation', 'my-village-hall') : __('Add Organisation', 'my-village-hall'); ?></h2>
+            <h2><?php _e('Edit Organisation', 'my-village-hall'); ?></h2>
+
+                <?php if ($edit_org_is_system): ?>
+                    <div class="notice notice-warning inline"><p><?php _e('This is a system organisation. Name and organisation type are locked.', 'my-village-hall'); ?></p></div>
+                <?php endif; ?>
 
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                     <input type="hidden" name="action" value="myvh_save_organisation">
@@ -121,14 +130,15 @@ $org_types = $type_service->get_all();
                             <th><?php _e('Name', 'my-village-hall'); ?> *</th>
                             <td>
                                 <input type="text" name="name" required class="regular-text"
-                                    value="<?php echo $edit_org ? esc_attr($edit_org['Name']) : ''; ?>">
+                                    value="<?php echo $edit_org ? esc_attr($edit_org['Name']) : ''; ?>"
+                                    <?php disabled($edit_org_is_system); ?>>
                             </td>
                         </tr>
 
                         <tr>
                             <th><?php _e('Organisation Type', 'my-village-hall'); ?></th>
                             <td>
-                                <select name="organisation_type_id" class="regular-text">
+                                <select name="organisation_type_id" class="regular-text" <?php disabled($edit_org_is_system); ?>>
                                     <option value=""><?php _e('— Select Type —', 'my-village-hall'); ?></option>
                                     <?php foreach ($org_types as $type): ?>
                                         <option value="<?php echo $type['Id']; ?>"
@@ -286,13 +296,11 @@ $org_types = $type_service->get_all();
 
                     <p class="submit">
                         <button class="myvh-cal-btn">
-                            <?php echo $edit_org ? __('Update Organisation', 'my-village-hall') : __('Add Organisation', 'my-village-hall'); ?>
+                            <?php _e('Update Organisation', 'my-village-hall'); ?>
                         </button>
-                        <?php if ($edit_org): ?>
-                            <a href="<?php echo admin_url('admin.php?page=myvh-organisations'); ?>" class="myvh-cal-btn" style="background:#fff;color:#333;border:1px solid #ccc;">
-                                <?php _e('Cancel', 'my-village-hall'); ?>
-                            </a>
-                        <?php endif; ?>
+                        <a href="<?php echo admin_url('admin.php?page=myvh-organisations'); ?>" class="myvh-cal-btn" style="background:#fff;color:#333;border:1px solid #ccc;">
+                            <?php _e('Cancel', 'my-village-hall'); ?>
+                        </a>
                     </p>
                 </form>
             </div>

@@ -43,7 +43,15 @@ class OrganisationTypeController {
             wp_redirect(admin_url('admin.php?page=myvh-org-types&error=' . urlencode($validation_result->get_error_message())));
             exit;
         }
-        $this->service->delete($data['id']);
+        $result = $this->service->delete($data['id']);
+        if (is_wp_error($result) || !$result) {
+            $message = is_wp_error($result)
+                ? $result->get_error_message()
+                : __('Failed to delete organisation type', 'my-village-hall');
+            wp_redirect(admin_url('admin.php?page=myvh-org-types&error=' . urlencode($message)));
+            exit;
+        }
+
         wp_redirect(admin_url('admin.php?page=myvh-org-types&deleted=1'));
         exit;
     }

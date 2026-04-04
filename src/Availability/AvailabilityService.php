@@ -148,7 +148,7 @@ class AvailabilityService {
     }
 
     private function time_to_hour_floor($value): ?int {
-        if (!preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', (string) $value, $m)) {
+        if (!preg_match('/^(\d{1,2})(?::?(\d{2}))(?::(\d{2}))?$/', (string) $value, $m)) {
             return null;
         }
 
@@ -156,7 +156,7 @@ class AvailabilityService {
     }
 
     private function time_to_hour_ceil($value): ?int {
-        if (!preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', (string) $value, $m)) {
+        if (!preg_match('/^(\d{1,2})(?::?(\d{2}))(?::(\d{2}))?$/', (string) $value, $m)) {
             return null;
         }
 

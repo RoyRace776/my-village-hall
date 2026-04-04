@@ -559,6 +559,46 @@ window.BookingModal = (function() {
             });
     }
 
+    function resolveErrorMessage(payload, fallbackMessage) {
+        if (typeof payload === "string" && payload.trim() !== "") {
+            return payload;
+        }
+
+        if (!payload || typeof payload !== "object") {
+            return fallbackMessage;
+        }
+
+        if (typeof payload.message === "string" && payload.message.trim() !== "") {
+            return payload.message;
+        }
+
+        if (Array.isArray(payload) && payload.length > 0) {
+            const first = payload.find(item => typeof item === "string" && item.trim() !== "");
+            if (first) {
+                return first;
+            }
+        }
+
+        if (payload.errors && typeof payload.errors === "object") {
+            for (const key in payload.errors) {
+                if (!Object.prototype.hasOwnProperty.call(payload.errors, key)) {
+                    continue;
+                }
+
+                const value = payload.errors[key];
+                if (Array.isArray(value) && value.length > 0 && typeof value[0] === "string" && value[0].trim() !== "") {
+                    return value[0];
+                }
+
+                if (typeof value === "string" && value.trim() !== "") {
+                    return value;
+                }
+            }
+        }
+
+        return fallbackMessage;
+    }
+
     // ─────────────────────────────
     // Submit
     // ─────────────────────────────
@@ -587,7 +627,7 @@ window.BookingModal = (function() {
         .then(res => {
 
             if (!res.success) {
-                alert(res.data || "Failed to create booking");
+                alert(resolveErrorMessage(res.data, "Failed to create booking"));
                 return;
             }
 

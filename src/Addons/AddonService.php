@@ -21,11 +21,11 @@ class AddonService {
     }
 
     public function get_all($args = []): array {
-        return $this->repo->get_all($args);
+        return $this->repo->get_all_active($args);
     }
 
     public function get($id): ?array {
-        return $this->repo->get_by_id($id);
+        return $this->repo->get_active_by_id((int) $id);
     }
 
     public function get_with_relations(): array {
@@ -77,7 +77,7 @@ class AddonService {
     }
 
     public function delete($id) {
-        return $this->repo->delete_by_id($id);
+        return $this->repo->archive_by_id((int) $id);
     }
 
     /**

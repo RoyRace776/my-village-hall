@@ -118,6 +118,9 @@ $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($e
                                         <a href="<?php echo admin_url('admin.php?page=myvh-rooms&edit=' . $room['Id']); ?>">
                                             <?php _e('Edit', 'my-village-hall'); ?>
                                         </a> |
+                                        <a href="<?php echo admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . intval($room['Id'])); ?>">
+                                            <?php _e('Manage Rates', 'my-village-hall'); ?>
+                                        </a> |
                                         <a href="<?php echo wp_nonce_url(
                                             admin_url('admin-post.php?action=myvh_delete_room&id=' . $room['Id']),
                                             'myvh_delete_room'
@@ -255,6 +258,11 @@ $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($e
             <?php if ($edit_room): ?>
             <div class="myvh-card" style="margin-top: 20px;">
                 <h3><?php _e('Room Information', 'my-village-hall'); ?></h3>
+                <p>
+                    <a class="button" href="<?php echo admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . intval($edit_room['Id'])); ?>">
+                        <?php _e('Manage Rates for This Room', 'my-village-hall'); ?>
+                    </a>
+                </p>
                 <table class="form-table">
                     <tr>
                         <th><?php _e('Room ID', 'my-village-hall'); ?></th>

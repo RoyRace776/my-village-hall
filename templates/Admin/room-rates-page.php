@@ -21,6 +21,23 @@ $edit_rate         = $edit_id ? $room_rate_service->get($edit_id) : null;
 $rates             = $room_rate_service->get_all();
 $rooms             = $room_service->get_all_with_venues();
 $org_types         = $org_type_service->get_all();
+
+$requested_room_id = isset($_GET['room_id']) ? intval($_GET['room_id']) : 0;
+$selected_room_id = $edit_rate ? intval($edit_rate['RoomId'] ?? 0) : $requested_room_id;
+$selected_room = null;
+
+if ($selected_room_id > 0) {
+    foreach ($rooms as $candidate_room) {
+        if (intval($candidate_room['Id'] ?? 0) === $selected_room_id) {
+            $selected_room = $candidate_room;
+            break;
+        }
+    }
+
+    if (!$selected_room) {
+        $selected_room_id = 0;
+    }
+}
 ?>
 
 <div class="wrap">
@@ -33,6 +50,17 @@ $org_types         = $org_type_service->get_all();
     <?php if (isset($_GET['updated'])): ?>
         <div class="notice notice-success is-dismissible">
             <p><?php _e('Rate saved successfully', 'my-village-hall'); ?></p>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['room_created']) && $selected_room): ?>
+        <div class="notice notice-success is-dismissible">
+            <p>
+                <?php printf(
+                    esc_html__('Room "%s" was created. Add at least one rate before taking bookings.', 'my-village-hall'),
+                    esc_html($selected_room['Name'])
+                ); ?>
+            </p>
         </div>
     <?php endif; ?>
 
@@ -161,6 +189,15 @@ $org_types         = $org_type_service->get_all();
             <div class="myvh-card">
                 <h2><?php echo $edit_rate ? __('Edit Rate', 'my-village-hall') : __('Add Rate', 'my-village-hall'); ?></h2>
 
+                <?php if (!$edit_rate && $selected_room): ?>
+                    <p class="description">
+                        <?php printf(
+                            esc_html__('Adding a rate for %s.', 'my-village-hall'),
+                            esc_html($selected_room['Name'])
+                        ); ?>
+                    </p>
+                <?php endif; ?>
+
                 <?php if (empty($rooms)): ?>
                     <div class="notice notice-warning inline">
                         <p>
@@ -204,7 +241,7 @@ $org_types         = $org_type_service->get_all();
                                         endif;
                                     ?>
                                         <option value="<?php echo $room['Id']; ?>"
-                                            <?php selected($edit_rate && $edit_rate['RoomId'] == $room['Id']); ?>>
+                                            <?php selected($selected_room_id, intval($room['Id'])); ?>>
                                             <?php echo esc_html($room['Name']); ?>
                                         </option>
                                     <?php

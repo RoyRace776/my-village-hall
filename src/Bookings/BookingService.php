@@ -71,13 +71,13 @@ class BookingService {
         $this->booking_repo->begin();
         try {
             if (!empty($data['booking_id'])) {
-                \MYVH\Events\EventDispatcher::dispatch(
-                    \MYVH\Events\BookingEvents::BEFORE_UPDATE,
+                EventDispatcher::dispatch(
+                    BookingEvents::BEFORE_UPDATE,
                     $data
                 );
             } else {
-                \MYVH\Events\EventDispatcher::dispatch(
-                    \MYVH\Events\BookingEvents::BEFORE_CREATE,
+                EventDispatcher::dispatch(
+                BookingEvents::BEFORE_CREATE,
                     $data
                 );
             }
@@ -338,7 +338,7 @@ class BookingService {
      * @param int $booking_id
      * @return true|WP_Error
      */
-    public function recalculate_booking_charges($booking_id): true|WP_Error {
+    public function recalculate_booking_charges($booking_id): bool|WP_Error {
         $booking_id = intval($booking_id);
         if ($booking_id <= 0) {
             return new WP_Error('validation', __('Invalid booking id for charge recalculation', 'my-village-hall'));
@@ -433,7 +433,7 @@ class BookingService {
         //TODO: Dispatch status change events here or in the controller, and consider if old vs new status comparison is needed for BEFORE/AFTER status change events
     }
 
-    public function delete($id): true|WP_Error {
+    public function delete($id): bool|WP_Error {
         $booking_id = intval($id);
         if ($booking_id <= 0) {
             return new WP_Error('validation', __('Booking ID is required', 'my-village-hall'));
@@ -637,7 +637,7 @@ class BookingService {
         }
 
         if ($status === BookingStatus::CONFIRMED || $status === strtolower(BookingStatus::CONFIRMED)) {
-            $threshold_ts = $now_ts + ($min_notice_hours * HOUR_IN_SECONDS);
+            $threshold_ts = $now_ts + ($min_notice_hours * 3600);
 
             if ($start_ts > $threshold_ts) {
                 return [

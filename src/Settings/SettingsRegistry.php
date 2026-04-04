@@ -5,21 +5,23 @@ class SettingsRegistry {
 
     private static $groups = [];
 
+    public static function register($key, $label, $class, array $meta = []): void {
 
-    public static function register($key, $label, $class): void {
-
-        self::$groups[$key] = [
+        self::$groups[$key] = array_merge([
             'label' => $label,
-            'class' => $class
-        ];
-
+            'class' => $class,
+            'required_capability' => '',
+            'hide_from_client_admin' => false,
+        ], $meta);
     }
-
 
     public static function groups(): array {
         return self::$groups;
     }
 
+    public static function reset(): void {
+        self::$groups = [];
+    }
 
     public static function get($key): ?SettingsBase {
 
@@ -30,9 +32,27 @@ class SettingsRegistry {
         $class = self::$groups[$key]['class'];
 
         return new $class();
-
     }
 
+    public static function user_can_access_group($key, int $user_id = 0): bool {
+        $settings = self::get($key);
+
+        if (!$settings) {
+            return false;
+        }
+
+        return $settings->user_can_access($user_id);
+    }
+
+    public static function group_visible_to_client_admin($key, int $user_id = 0): bool {
+        $settings = self::get($key);
+
+        if (!$settings) {
+            return false;
+        }
+
+        return $settings->is_visible_to_client_admin($user_id);
+    }
 
     /**
      * Automatically load settings classes
@@ -42,9 +62,7 @@ class SettingsRegistry {
         $files = glob($settings_dir . '/*.php');
 
         foreach ($files as $file) {
-
             require_once $file;
-
         }
 
         foreach (get_declared_classes() as $class) {
@@ -64,11 +82,12 @@ class SettingsRegistry {
             self::register(
                 $tab['key'],
                 $tab['label'],
-                $class
+                $class,
+                [
+                    'required_capability' => $instance->get_required_capability(),
+                    'hide_from_client_admin' => $instance->should_hide_from_client_admin(),
+                ]
             );
-
         }
-
     }
-
 }

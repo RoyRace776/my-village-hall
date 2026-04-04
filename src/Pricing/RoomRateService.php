@@ -73,10 +73,12 @@ class RoomRateService {
 
     public function get_booking_rate( $room_id, $customer, $organisation ) {
 
-        $org_type_id = $organisation['OrganisationTypeId'];
+        $org_type_id = intval($organisation['OrganisationTypeId'] ?? 0);
 
         // First try a rate specific to this room + organisation type
-        $rate = $this->repo->get_active_room_rate( $room_id, $org_type_id );
+        $rate = $org_type_id > 0
+            ? $this->repo->get_active_room_rate($room_id, $org_type_id)
+            : null;
 
         // Fall back to a rate with no organisation type restriction
         if ( !$rate ) {

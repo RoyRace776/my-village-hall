@@ -484,12 +484,52 @@ document.addEventListener("DOMContentLoaded", () => {
         }).then(r => r.json());
     }
 
+    function resolveMessageText(payload, fallbackText) {
+        if (typeof payload === 'string' && payload.trim() !== '') {
+            return payload;
+        }
+
+        if (!payload || typeof payload !== 'object') {
+            return fallbackText || '';
+        }
+
+        if (typeof payload.message === 'string' && payload.message.trim() !== '') {
+            return payload.message;
+        }
+
+        if (payload.errors && typeof payload.errors === 'object') {
+            for (const key in payload.errors) {
+                if (!Object.prototype.hasOwnProperty.call(payload.errors, key)) {
+                    continue;
+                }
+
+                const value = payload.errors[key];
+                if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string' && value[0].trim() !== '') {
+                    return value[0];
+                }
+
+                if (typeof value === 'string' && value.trim() !== '') {
+                    return value;
+                }
+            }
+        }
+
+        if (Array.isArray(payload) && payload.length > 0) {
+            const first = payload.find(item => typeof item === 'string' && item.trim() !== '');
+            if (first) {
+                return first;
+            }
+        }
+
+        return fallbackText || '';
+    }
+
     /**
      * Show a message in a target element, with color for error/success.
      */
-    function showMessage(target, text, isError) {
+    function showMessage(target, text, isError, fallbackText = '') {
         if (!target) return;
-        target.textContent = text || '';
+        target.textContent = resolveMessageText(text, fallbackText);
         target.style.color = isError ? '#b32d2e' : '#2d5a27';
     }
 
@@ -507,6 +547,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         Object.keys(params || {}).forEach((key) => {
+            if (key === 'action' || key === 'page' || key === 'nonce') {
+                return;
+            }
+
             if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
                 query.set(key, params[key]);
             }
@@ -600,7 +644,7 @@ document.addEventListener("DOMContentLoaded", () => {
             postPortalForm('myvh_portal_update_account', form)
                 .then(res => {
                     if (!res.success) {
-                        showMessage(message, res.data || 'Failed to update details', true);
+                        showMessage(message, res.data, true, 'Failed to update details');
                         return;
                     }
                     showMessage(message, res.data?.message || 'Account details updated', false);
@@ -621,7 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
             postPortalForm('myvh_portal_change_password', form)
                 .then(res => {
                     if (!res.success) {
-                        showMessage(message, res.data || 'Failed to update password', true);
+                        showMessage(message, res.data, true, 'Failed to update password');
                         return;
                     }
 
@@ -654,7 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
             postPortalForm(portalAction, form)
                 .then(res => {
                     if (!res.success) {
-                        showMessage(message, res.data || 'Request failed', true);
+                        showMessage(message, res.data, true, 'Request failed');
                         return;
                     }
 
@@ -664,8 +708,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     showMessage(message, res.data?.message || 'Saved', false);
 
-                    if (reloadPage) {
-                        setTimeout(() => navigateToHash(reloadPage), 200);
+                    const redirectRoute = res.data?.redirect || reloadPage;
+                    if (redirectRoute) {
+                        setTimeout(() => navigateToHash(redirectRoute), 200);
                     }
                 })
                 .catch(() => {

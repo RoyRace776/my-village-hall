@@ -112,6 +112,7 @@ $room_colour = RoomColour::resolve($room['Colour'] ?? '', intval($room['Id'] ?? 
 
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Update Room</button>
+                <a href="#room-rate-add?room_id=<?php echo (int) ($room['Id'] ?? 0); ?>" class="button">Manage Rates</a>
                 <a href="#rooms" class="button">Cancel</a>
                 <div id="myvh-room-edit-message" class="myvh-muted" aria-live="polite"></div>
             </div>

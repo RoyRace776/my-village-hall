@@ -253,8 +253,8 @@ var CalendarAdmin = (function() {
             initialMode: restoredState?.mode || 'Calendar',
             initialDetail: restoredState?.detail || 'Week',
             headerDateFormat: myvhCal.headerDateFormat || null,
-            visibleStartHour: Number(myvhCal.visibleStartHour || 0),
-            visibleEndHour: Number(myvhCal.visibleEndHour || 24),
+            visibleStartHour: myvhCal.visibleStartHour,
+            visibleEndHour: myvhCal.visibleEndHour,
             schedulerOrientation: String(myvhCal.schedulerOrientation || 'horizontal').toLowerCase(),
             statusColors: (myvhCal && myvhCal.statusColors) ? myvhCal.statusColors : null,
 

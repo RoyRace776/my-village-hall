@@ -1,10 +1,11 @@
 
 <?php
 if (!defined('ABSPATH')) exit;
-$action = $_GET['action'] ?? '';
-if ($action === 'add') {
-    include __DIR__ . '/organisation-add.php';
-    return;
+
+$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$organisation_type_lookup = [];
+foreach ($organisation_types as $organisation_type) {
+    $organisation_type_lookup[(int) ($organisation_type['Id'] ?? 0)] = $organisation_type['Name'] ?? '';
 }
 ?>
 
@@ -14,9 +15,9 @@ if ($action === 'add') {
             <h2>Organisations</h2>
             <p>View your memberships, request access, and manage organisations you administer.</p>
         </div>
-        <button onclick="window.location.href='<?php echo esc_url(add_query_arg('action', 'add', get_permalink())); ?>'" class="button button-primary myvh-add-org-btn" type="button" style="margin-bottom:4px;">
+        <a href="#organisation-add" class="button button-primary myvh-add-org-btn" style="margin-bottom:4px;">
             <span class="dashicons dashicons-plus-alt" style="vertical-align:middle; margin-right:4px;"></span> Add Organisation
-        </button>
+        </a>
     </div>
 
     <div class="myvh-account-grid">
@@ -116,12 +117,44 @@ if ($action === 'add') {
                     $members = $organisation_members[$org_id] ?? [];
                     $requests = $organisation_pending_requests[$org_id] ?? [];
                     $message_id = 'myvh-org-admin-message-' . $org_id;
+                    $current_type_name = $organisation_type_lookup[(int) ($org['OrganisationTypeId'] ?? 0)] ?? 'Unassigned';
                 ?>
                 <div class="myvh-card myvh-account-card">
                     <div class="myvh-account-card-head">
                         <h3><?php echo esc_html($org['Name']); ?></h3>
                         <span>Approve requests, add and remove members, and manage admin status.</span>
                     </div>
+
+                    <?php if ($is_client_admin && !empty($organisation_types)): ?>
+                        <div class="myvh-orgs-subsection">
+                            <h4>Organisation Type</h4>
+
+                            <?php if (!empty($org['IsSystem'])): ?>
+                                <p class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>. System organisations cannot change type.</p>
+                            <?php else: ?>
+                                <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_type_assignment" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                    <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
+
+                                    <label class="myvh-account-field" for="myvh-org-type-<?php echo esc_attr($org_id); ?>">
+                                        <span>Organisation type</span>
+                                        <select id="myvh-org-type-<?php echo esc_attr($org_id); ?>" name="organisation_type_id">
+                                            <option value="">Select an organisation type...</option>
+                                            <?php foreach ($organisation_types as $organisation_type): ?>
+                                                <option value="<?php echo esc_attr((int) $organisation_type['Id']); ?>" <?php selected((int) ($org['OrganisationTypeId'] ?? 0), (int) $organisation_type['Id']); ?>>
+                                                    <?php echo esc_html($organisation_type['Name'] ?? ''); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <small class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>.</small>
+                                    </label>
+
+                                    <div class="myvh-account-actions">
+                                        <button type="submit" class="button myvh-cal-btn">Save Organisation Type</button>
+                                    </div>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="myvh-orgs-subsection">
                         <h4>Invoicing Details</h4>
@@ -176,11 +209,12 @@ if ($action === 'add') {
                                     <span>Billing reference</span>
                                     <input type="text" name="billing_reference" value="<?php echo esc_attr($org['BillingReference'] ?? ''); ?>" placeholder="PO number or internal reference">
                                 </label>
+
+                                <div class="myvh-account-actions">
+                                    <button type="submit" class="button myvh-cal-btn">Save Invoicing Details</button>
+                                </div>
                             </div>
 
-                            <div class="myvh-account-actions">
-                                <button type="submit" class="button myvh-cal-btn">Save Invoicing Details</button>
-                            </div>
                         </form>
                     </div>
 

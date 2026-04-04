@@ -1,5 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
+
+$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$default_organisation_type_id = isset($default_organisation_type_id) ? (int) $default_organisation_type_id : 0;
 ?>
 <div class="myvh-dashboard-section myvh-orgs-page">
     <div class="myvh-account-header">
@@ -14,13 +17,35 @@ if (!defined('ABSPATH')) exit;
                 <span>Organisation Name</span>
                 <input id="myvh-org-add-name" type="text" name="name" required>
             </label>
-            <label class="myvh-account-field" for="myvh-org-add-desc">
-                <span>Description (optional)</span>
-                <textarea id="myvh-org-add-desc" name="description" rows="3"></textarea>
+
+            <?php if ($is_client_admin && !empty($organisation_types)): ?>
+                <label class="myvh-account-field" for="myvh-org-add-type">
+                    <span>Organisation Type</span>
+                    <select id="myvh-org-add-type" name="organisation_type_id">
+                        <option value="">Select an organisation type...</option>
+                        <?php foreach ($organisation_types as $organisation_type): ?>
+                            <option value="<?php echo esc_attr((int) $organisation_type['Id']); ?>" <?php selected($default_organisation_type_id, (int) $organisation_type['Id']); ?>>
+                                <?php echo esc_html($organisation_type['Name'] ?? ''); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="myvh-muted">Need another type? Manage them from the Organisation Types page.</small>
+                </label>
+            <?php endif; ?>
+
+            <label class="myvh-account-field" for="myvh-org-add-email">
+                <span>Contact Email</span>
+                <input id="myvh-org-add-email" type="email" name="contact_email" required>
             </label>
+
+            <label class="myvh-account-field" for="myvh-org-add-phone">
+                <span>Contact Phone</span>
+                <input id="myvh-org-add-phone" type="text" name="contact_phone" required>
+            </label>
+
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Create Organisation</button>
-                <a href="<?php echo esc_url(remove_query_arg(['action'], get_permalink())); ?>" class="button">Cancel</a>
+                <a href="#organisations" class="button">Cancel</a>
                 <div id="myvh-org-add-message" class="myvh-muted" aria-live="polite"></div>
             </div>
         </form>

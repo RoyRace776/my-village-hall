@@ -252,7 +252,7 @@ usort($groups, function ($a, $b) {
           </a>
         </div>
 
-        <?php if (!empty($customer['Id'])): ?>
+        <?php if (!empty($customer['Id']) || $is_client_admin): ?>
           <div class="dashboard-card">
             <a href="#organisations">
               <span class="card-icon">👥</span>

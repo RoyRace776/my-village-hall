@@ -34,6 +34,11 @@ var CalendarPublic = (function() {
             context:    'public',
             ajax_url:    myvhCalConfig.ajax_url,
             nonce:      myvhCalConfig.nonce,
+            headerDateFormat: myvhCalConfig.headerDateFormat || null,
+            visibleStartHour: myvhCalConfig.visibleStartHour,
+            visibleEndHour: myvhCalConfig.visibleEndHour,
+            schedulerOrientation: String(myvhCalConfig.schedulerOrientation || 'horizontal').toLowerCase(),
+            statusColors: (myvhCalConfig && myvhCalConfig.statusColors) ? myvhCalConfig.statusColors : null,
 
             editable:   false,
             selectable: false,

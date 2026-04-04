@@ -53,6 +53,7 @@ $rooms = is_array($rooms ?? null) ? $rooms : [];
                         </td>
                         <td style="white-space:nowrap;">
                             <a href="#room-edit?id=<?php echo (int)($item['Id'] ?? 0); ?>" class="myvh-action-icon" aria-label="Edit room" title="Edit room" style="margin-right:10px; vertical-align:middle;">✎</a>
+                            <a href="#room-rate-add?room_id=<?php echo (int)($item['Id'] ?? 0); ?>" class="myvh-action-icon" aria-label="Manage rates" title="Manage rates" style="margin-right:10px; vertical-align:middle;">£</a>
                             <form class="myvh-inline-form" style="display:inline;" data-portal-action="myvh_portal_delete_room" data-message-target="myvh-room-message-<?php echo (int)($item['Id'] ?? 0); ?>" data-reload-page="rooms" data-confirm="Delete this room? This cannot be undone.">
                                 <button type="submit" class="myvh-action-icon myvh-action-danger" aria-label="Delete room" title="Delete room" style="background:none; border:none; padding:0; margin:0; vertical-align:middle; cursor:pointer;">🗑</button>
                                 <input type="hidden" name="room_id" value="<?php echo (int)($item['Id'] ?? 0); ?>">

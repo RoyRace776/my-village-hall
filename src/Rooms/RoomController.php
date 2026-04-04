@@ -52,7 +52,7 @@ class RoomController {
             set_transient($this->get_form_transient_key(), $posted_data, 120);
 
             foreach ($result->get_error_messages() as $msg) {
-                \MYVH\Admin\AdminNotices::error($msg);
+                AdminNotices::error($msg);
             }
 
             $redirect = !empty($data['room_id'])
@@ -65,7 +65,7 @@ class RoomController {
 
         if (!$result) {
             set_transient($this->get_form_transient_key(), $posted_data, 120);
-            \MYVH\Admin\AdminNotices::error(__('Room save failed', 'my-village-hall'));
+            AdminNotices::error(__('Room save failed', 'my-village-hall'));
 
             $redirect = !empty($data['room_id'])
                 ? admin_url('admin.php?page=myvh-rooms&edit=' . intval($data['room_id']))
@@ -77,9 +77,15 @@ class RoomController {
 
         delete_transient($this->get_form_transient_key());
 
-        \MYVH\Admin\AdminNotices::success(__('Room saved successfully', 'my-village-hall'));
+        AdminNotices::success(__('Room saved successfully', 'my-village-hall'));
 
-        wp_redirect(admin_url('admin.php?page=myvh-rooms&updated=1'));
+        $is_update = !empty($data['room_id']);
+        if ($is_update) {
+            wp_redirect(admin_url('admin.php?page=myvh-rooms&updated=1'));
+            exit;
+        }
+
+        wp_redirect(admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . intval($result) . '&room_created=1'));
         exit;
     }
 
@@ -102,14 +108,14 @@ class RoomController {
         if (is_wp_error($result)) {
 
             foreach ($result->get_error_messages() as $msg) {
-                \MYVH\Admin\AdminNotices::error($msg);
+                AdminNotices::error($msg);
             }
 
             wp_redirect(admin_url('admin.php?page=myvh-rooms'));
             exit;
         }
 
-        \MYVH\Admin\AdminNotices::success(__('Room deleted', 'my-village-hall'));
+        AdminNotices::success(__('Room deleted', 'my-village-hall'));
 
         wp_redirect(admin_url('admin.php?page=myvh-rooms&deleted=1'));
         exit;
