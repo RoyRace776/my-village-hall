@@ -4,6 +4,100 @@ var CalendarAdmin = (function() {
     var api = null;
     var nav = null;
     var suppressNavSelect = false;
+    var DEFAULT_STATUS_COLORS = {
+        confirmed: '#2271b1',
+        pending: '#f0a500',
+        cancelled: '#9aa0a6',
+        completed: '#2d8f45'
+    };
+
+    function normaliseHexColour(value) {
+        var text = String(value || '').trim().toLowerCase();
+        return /^#[0-9a-f]{6}$/.test(text) ? text : '';
+    }
+
+    function toStatusLabel(status) {
+        return String(status || '')
+            .replace(/[_-]+/g, ' ')
+            .replace(/\b\w/g, function(match) { return match.toUpperCase(); });
+    }
+
+    function createLegendItem(label, colour) {
+        var item = document.createElement('span');
+        item.className = 'myvh-calendar-key-item';
+
+        var swatch = document.createElement('span');
+        swatch.className = 'myvh-calendar-key-swatch';
+        swatch.style.backgroundColor = colour;
+
+        var text = document.createElement('span');
+        text.className = 'myvh-calendar-key-label';
+        text.textContent = label;
+
+        item.appendChild(swatch);
+        item.appendChild(text);
+        return item;
+    }
+
+    function renderCalendarKey(rooms) {
+        var root = document.getElementById('myvh-calendar-key');
+        if (!root) {
+            return;
+        }
+
+        var statusWrap = root.querySelector('.myvh-calendar-key-status-items');
+        var roomWrap = root.querySelector('.myvh-calendar-key-room-items');
+        if (!statusWrap || !roomWrap) {
+            return;
+        }
+
+        statusWrap.innerHTML = '';
+        roomWrap.innerHTML = '';
+
+        var statusColors = Object.assign({}, DEFAULT_STATUS_COLORS, (myvhCal && typeof myvhCal.statusColors === 'object') ? myvhCal.statusColors : {});
+
+        Object.keys(statusColors).forEach(function(status) {
+            var colour = normaliseHexColour(statusColors[status]);
+            if (!colour) {
+                return;
+            }
+
+            statusWrap.appendChild(createLegendItem(toStatusLabel(status), colour));
+        });
+
+        var seenRoomIds = new Set();
+        (Array.isArray(rooms) ? rooms : []).forEach(function(room) {
+            if (!room || room.id === null || typeof room.id === 'undefined') {
+                return;
+            }
+
+            var roomId = String(room.id);
+            if (seenRoomIds.has(roomId)) {
+                return;
+            }
+
+            var roomName = String(room.name || '').trim();
+            var roomColour = normaliseHexColour(room.roomColour || room.colour);
+            if (!roomName || !roomColour) {
+                return;
+            }
+
+            seenRoomIds.add(roomId);
+            roomWrap.appendChild(createLegendItem(roomName, roomColour));
+        });
+
+        if (!roomWrap.children.length) {
+            roomWrap.appendChild(createLegendItem('No rooms available', '#dcdcde'));
+        }
+    }
+
+    function loadCalendarRooms() {
+        return fetch(myvhCal.ajax_url + '?action=myvh_calendar_rooms&nonce=' + encodeURIComponent(myvhCal.nonce) + '&context=admin')
+            .then(function(response) { return response.json(); })
+            .then(function(payload) {
+                return Array.isArray(payload) ? payload : (Array.isArray(payload && payload.data) ? payload.data : []);
+            });
+    }
 
     /**
      * Get the navigation select mode (Day/Week/Month) based on detail.
@@ -304,6 +398,14 @@ var CalendarAdmin = (function() {
         setActiveModeButton(state.mode || 'Calendar');
         setActiveDetailButton(state.detail || 'Week');
         initNavigator();
+
+        loadCalendarRooms()
+            .then(function(rooms) {
+                renderCalendarKey(rooms);
+            })
+            .catch(function() {
+                renderCalendarKey([]);
+            });
 
         // Optional: expose for debugging
         window.myvhApi = api;

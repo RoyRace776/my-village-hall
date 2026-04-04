@@ -52,6 +52,17 @@ if (!is_user_logged_in()) {
             </div>
                 </div>
 
+                <div id="myvh-calendar-key" class="myvh-calendar-key" aria-label="Calendar key">
+                    <div class="myvh-calendar-key-section">
+                        <h3 class="myvh-calendar-key-title">Statuses</h3>
+                        <div class="myvh-calendar-key-items myvh-calendar-key-status-items"></div>
+                    </div>
+                    <div class="myvh-calendar-key-section">
+                        <h3 class="myvh-calendar-key-title">Rooms</h3>
+                        <div class="myvh-calendar-key-items myvh-calendar-key-room-items"></div>
+                    </div>
+                </div>
+
                 <div id="myvh-calendar" class="myvh-daypilot-frame myvh-portal-calendar-frame"></div>
             </div>
         </div>

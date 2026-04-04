@@ -258,12 +258,18 @@ class CalendarShortcode {
                         </div>
                     </div>
 
-                    <div id="<?php echo esc_attr( $unique_id ); ?>" class="myvh-daypilot-container" style="height: <?php echo (int) $atts['height']; ?>px;"></div>
-
-                    <div class="myvh-cal-legend">
-                        <span class="myvh-legend-dot myvh-legend-confirmed"></span><?php esc_html_e( 'Confirmed', 'my-village-hall' ); ?>
-                        <span class="myvh-legend-dot myvh-legend-pending"></span><?php esc_html_e( 'Pending', 'my-village-hall' ); ?>
+                    <div class="myvh-cal-key" aria-label="<?php esc_attr_e( 'Calendar key', 'my-village-hall' ); ?>">
+                        <div class="myvh-cal-key-section">
+                            <h3 class="myvh-cal-key-title"><?php esc_html_e( 'Statuses', 'my-village-hall' ); ?></h3>
+                            <div class="myvh-cal-key-items myvh-cal-key-status-items"></div>
+                        </div>
+                        <div class="myvh-cal-key-section">
+                            <h3 class="myvh-cal-key-title"><?php esc_html_e( 'Rooms', 'my-village-hall' ); ?></h3>
+                            <div class="myvh-cal-key-items myvh-cal-key-room-items"></div>
+                        </div>
                     </div>
+
+                    <div id="<?php echo esc_attr( $unique_id ); ?>" class="myvh-daypilot-container" style="height: <?php echo (int) $atts['height']; ?>px;"></div>
                 </div>
             </div>
         </div>

@@ -403,6 +403,59 @@ body .scheduler_default_event_inner {
     margin-bottom: 10px;
 }
 
+.myvh-calendar-key {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #fafafa;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.myvh-calendar-key-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 240px;
+    flex: 1 1 320px;
+}
+
+.myvh-calendar-key-title {
+    margin: 2px 0 0;
+    font-size: 12px;
+    line-height: 1.3;
+    color: #50575e;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.myvh-calendar-key-items {
+    display: flex;
+    align-items: center;
+    gap: 8px 10px;
+    flex-wrap: wrap;
+}
+
+.myvh-calendar-key-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #2c3338;
+}
+
+.myvh-calendar-key-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    display: inline-block;
+    flex: 0 0 12px;
+}
+
 .myvh-pill-group {
     display: inline-flex;
     align-items: center;
@@ -486,6 +539,8 @@ body .scheduler_default_event_inner {
     .myvh-calendar-sidebar { width: 100%; min-width: 0; }
     .myvh-cal-nav-picker { padding: 6px; }
     .myvh-calendar-toolbar { flex-direction: column; align-items: flex-start; }
+    .myvh-calendar-key { gap: 10px; }
+    .myvh-calendar-key-section { min-width: 0; flex-basis: 100%; }
     .myvh-calendar-nav,
     .myvh-calendar-views { width: 100%; flex-wrap: wrap; }
     .myvh-cal-btn { min-width: 0; flex: 1 1 auto; }

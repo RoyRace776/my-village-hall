@@ -83,6 +83,102 @@
         });
     }
 
+    function toStatusLabel(status) {
+        return String(status || '')
+            .replace(/[_-]+/g, ' ')
+            .replace(/\b\w/g, function(match) { return match.toUpperCase(); });
+    }
+
+    function createLegendItem(label, colour, itemClass, swatchClass, labelClass) {
+        var item = document.createElement('span');
+        item.className = itemClass;
+
+        var swatch = document.createElement('span');
+        swatch.className = swatchClass;
+        swatch.style.backgroundColor = colour;
+
+        var text = document.createElement('span');
+        text.className = labelClass;
+        text.textContent = label;
+
+        item.appendChild(swatch);
+        item.appendChild(text);
+
+        return item;
+    }
+
+    function renderCalendarKey() {
+        if (!wrap) {
+            return;
+        }
+
+        var keyRoot = wrap.querySelector('.myvh-cal-key');
+        if (!keyRoot) {
+            return;
+        }
+
+        var statusWrap = keyRoot.querySelector('.myvh-cal-key-status-items');
+        var roomWrap = keyRoot.querySelector('.myvh-cal-key-room-items');
+        if (!statusWrap || !roomWrap) {
+            return;
+        }
+
+        statusWrap.innerHTML = '';
+        roomWrap.innerHTML = '';
+
+        Object.keys(STATUS_COLOURS).forEach(function(status) {
+            var colour = normaliseHexColour(STATUS_COLOURS[status]);
+            if (!colour) {
+                return;
+            }
+
+            statusWrap.appendChild(createLegendItem(
+                toStatusLabel(status),
+                colour,
+                'myvh-cal-key-item',
+                'myvh-cal-key-swatch',
+                'myvh-cal-key-label'
+            ));
+        });
+
+        var seenRoomIds = new Set();
+        (Array.isArray(cfg.rooms) ? cfg.rooms : []).forEach(function(room) {
+            if (!room || room.id === null || typeof room.id === 'undefined') {
+                return;
+            }
+
+            var roomId = String(room.id);
+            if (seenRoomIds.has(roomId)) {
+                return;
+            }
+
+            var roomName = String(room.name || '').trim();
+            var roomColour = normaliseHexColour(room.roomColour || room.colour);
+            if (!roomName || !roomColour) {
+                return;
+            }
+
+            seenRoomIds.add(roomId);
+            roomWrap.appendChild(createLegendItem(
+                roomName,
+                roomColour,
+                'myvh-cal-key-item',
+                'myvh-cal-key-swatch',
+                'myvh-cal-key-label'
+            ));
+        });
+
+        if (!roomWrap.children.length) {
+            roomWrap.appendChild(createLegendItem(
+                'No rooms available',
+                '#dcdcde',
+                'myvh-cal-key-item',
+                'myvh-cal-key-swatch',
+                'myvh-cal-key-label'
+            ));
+        }
+    }
+
     function resolveRoomName(event, tags) {
         var direct = tags.room || tags.roomName || '';
         if (String(direct).trim() !== '') {
@@ -188,6 +284,7 @@
         buildRoomIndex();
 
         wrap = container.closest('.myvh-public-calendar-wrap');
+        renderCalendarKey();
 
         initNavigator();
 

@@ -54,6 +54,17 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
 
             </div>
 
+            <div id="myvh-calendar-key" class="myvh-calendar-key" aria-label="<?php esc_attr_e('Calendar key', 'my-village-hall'); ?>">
+                <div class="myvh-calendar-key-section">
+                    <h3 class="myvh-calendar-key-title"><?php esc_html_e('Statuses', 'my-village-hall'); ?></h3>
+                    <div class="myvh-calendar-key-items myvh-calendar-key-status-items"></div>
+                </div>
+                <div class="myvh-calendar-key-section">
+                    <h3 class="myvh-calendar-key-title"><?php esc_html_e('Rooms', 'my-village-hall'); ?></h3>
+                    <div class="myvh-calendar-key-items myvh-calendar-key-room-items"></div>
+                </div>
+            </div>
+
             <!-- Week / Day calendar -->
             <div id="myvh-calendar" class="myvh-daypilot-frame" style="height:700px;"></div>
         </div>
