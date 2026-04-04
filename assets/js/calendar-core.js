@@ -257,6 +257,21 @@ window.CalendarCore = (function () {
         }
     }
 
+    function getVenueId(opts = {}) {
+        const raw = (typeof opts.getVenueId === "function") ? opts.getVenueId() : opts.venueId;
+        const venueId = Number(raw || 0);
+        return Number.isFinite(venueId) && venueId > 0 ? Math.trunc(venueId) : 0;
+    }
+
+    function appendVenueParam(url, opts = {}) {
+        const venueId = getVenueId(opts);
+        if (venueId <= 0) {
+            return url;
+        }
+
+        return `${url}&venue_id=${encodeURIComponent(venueId)}`;
+    }
+
     function loadEvents(ajax_url, nonce, context = "admin", opts = {}) {
         const statusColors = getStatusColors(opts);
 
@@ -264,9 +279,11 @@ window.CalendarCore = (function () {
             const start = calendar.visibleStart();
             const end = calendar.visibleEnd();
 
-            const url = `${ajax_url}?action=myvh_calendar_events&nonce=${nonce}`
+            let url = `${ajax_url}?action=myvh_calendar_events&nonce=${nonce}`
                 + `&context=${encodeURIComponent(context)}`
                 + `&start=${start.toString()}&end=${end.toString()}`;
+
+            url = appendVenueParam(url, opts);
 
             fetch(url).then(r => r.json()).then(events => {
                 events.forEach(e => {
@@ -281,9 +298,11 @@ window.CalendarCore = (function () {
             const start = scheduler.startDate;
             const end = scheduler.startDate.addDays(scheduler.days || 1);
 
-            const url = `${ajax_url}?action=myvh_calendar_events&nonce=${nonce}`
+            let url = `${ajax_url}?action=myvh_calendar_events&nonce=${nonce}`
                 + `&context=${encodeURIComponent(context)}`
                 + `&start=${start.toString()}&end=${end.toString()}`;
+
+            url = appendVenueParam(url, opts);
 
             fetch(url).then(r => r.json()).then(events => {
                 events.forEach(e => {
@@ -584,7 +603,8 @@ window.CalendarCore = (function () {
             dispose() {}
         };
 
-        const roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
+        let roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
+        roomsUrl = appendVenueParam(roomsUrl, opts);
 
         fetch(roomsUrl)
             .then(r => r.json())
@@ -679,7 +699,8 @@ window.CalendarCore = (function () {
 
         scheduler = new DayPilot.Scheduler(containerId, config);
 
-        const roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
+        let roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
+        roomsUrl = appendVenueParam(roomsUrl, opts);
 
         fetch(roomsUrl)
             .then(r => r.json())
@@ -887,6 +908,10 @@ window.CalendarCore = (function () {
 
             reload() {
                 loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
+            },
+
+            rerender(startDate = null) {
+                render(currentContainerId, opts, startDate || currentStartDateValue());
             }
         };
     }

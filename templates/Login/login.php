@@ -69,6 +69,19 @@ if ($register_page_url === '') {
 }
 
 $show_register_focus = $query_register || $mode === 'register';
+
+$show_reset_request = !empty($_GET['reset']) && $_GET['reset'] === '1';
+$show_reset_confirm = !empty($_GET['myvh_reset']) && !empty($_GET['uid']) && !empty($_GET['token']);
+
+if ($show_reset_confirm) {
+    include MYVH_PLUGIN_DIR . 'templates/Login/password-reset-confirm-form.php';
+    return;
+}
+
+if ($show_reset_request) {
+    include MYVH_PLUGIN_DIR . 'templates/Login/password-reset-form.php';
+    return;
+}
 ?>
 
 <div class="myvh-login-container">
@@ -118,7 +131,7 @@ $show_register_focus = $query_register || $mode === 'register';
         <button type="submit" class="myvh-login-button">Sign in</button>
 
         <div class="myvh-form-footer">
-            <a href="<?php echo esc_url(home_url('/password-reset/')); ?>">Forgot Password?</a>
+            <a href="<?php echo esc_url(add_query_arg('reset', '1', $login_page_url)); ?>">Forgot Password?</a>
         </div>
 
         <div class="myvh-form-footer myvh-form-footer--secondary">

@@ -6,12 +6,15 @@ var Calendar = (function() {
         var viewModal = null;
         var nav = null;
         var suppressNavSelect = false;
+        var selectedVenueId = 0;
+        var allVenues = [];
         var DEFAULT_STATUS_COLORS = {
             confirmed: '#2271b1',
             pending: '#f0a500',
             cancelled: '#9aa0a6',
             completed: '#2d8f45'
         };
+        var VENUE_STORAGE_KEY = 'myvhCalendarVenue_portal';
 
         function normaliseHexColour(value) {
             var text = String(value || '').trim().toLowerCase();
@@ -93,12 +96,129 @@ var Calendar = (function() {
             }
         }
 
-        function loadCalendarRooms() {
-            return fetch(myvhCal.ajax_url + '?action=myvh_calendar_rooms&nonce=' + encodeURIComponent(myvhCal.nonce) + '&context=portal')
+        function getPersistedVenueId() {
+            try {
+                return parseInt(window.localStorage.getItem(VENUE_STORAGE_KEY) || '0', 10) || 0;
+            } catch (err) {
+                return 0;
+            }
+        }
+
+        function setPersistedVenueId(venueId) {
+            try {
+                if (venueId > 0) {
+                    window.localStorage.setItem(VENUE_STORAGE_KEY, String(venueId));
+                } else {
+                    window.localStorage.removeItem(VENUE_STORAGE_KEY);
+                }
+            } catch (err) {
+                // Ignore storage failures.
+            }
+        }
+
+        function buildVenuesFromRooms(rooms) {
+            var byId = {};
+
+            (Array.isArray(rooms) ? rooms : []).forEach(function(room) {
+                var venueId = parseInt(room && room.venue_id, 10) || 0;
+                var venueName = String((room && room.venue) || '').trim();
+
+                if (venueId <= 0 || !venueName) {
+                    return;
+                }
+
+                byId[venueId] = venueName;
+            });
+
+            return Object.keys(byId)
+                .map(function(id) {
+                    return { id: parseInt(id, 10), name: byId[id] };
+                })
+                .sort(function(a, b) {
+                    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+                });
+        }
+
+        function resolveInitialVenueId(venues) {
+            if (!Array.isArray(venues) || venues.length === 0) {
+                return 0;
+            }
+
+            var venueIds = venues.map(function(venue) { return venue.id; });
+
+            if (venues.length === 1) {
+                return venueIds[0];
+            }
+
+            var persistedVenueId = getPersistedVenueId();
+            if (persistedVenueId > 0 && venueIds.indexOf(persistedVenueId) !== -1) {
+                return persistedVenueId;
+            }
+
+            return venueIds[0];
+        }
+
+        function loadRoomsForVenue(venueId) {
+            var url = myvhCal.ajax_url + '?action=myvh_calendar_rooms&nonce=' + encodeURIComponent(myvhCal.nonce) + '&context=portal';
+            if (venueId > 0) {
+                url += '&venue_id=' + encodeURIComponent(venueId);
+            }
+
+            return fetch(url)
                 .then(function(response) { return response.json(); })
                 .then(function(payload) {
                     return Array.isArray(payload) ? payload : (Array.isArray(payload && payload.data) ? payload.data : []);
                 });
+        }
+
+        function loadCalendarRooms() {
+            return loadRoomsForVenue(selectedVenueId);
+        }
+
+        function renderVenueSelector() {
+            var wrap = document.getElementById('myvh-calendar-venue-wrap');
+            var select = document.getElementById('myvh-calendar-venue-select');
+
+            if (!wrap || !select) {
+                return;
+            }
+
+            if (!Array.isArray(allVenues) || allVenues.length <= 1) {
+                wrap.style.display = 'none';
+                select.innerHTML = '';
+                return;
+            }
+
+            wrap.style.display = '';
+            select.innerHTML = '';
+
+            allVenues.forEach(function(venue) {
+                var option = document.createElement('option');
+                option.value = String(venue.id);
+                option.textContent = venue.name;
+                option.selected = venue.id === selectedVenueId;
+                select.appendChild(option);
+            });
+
+            select.onchange = function() {
+                var nextVenueId = parseInt(select.value || '0', 10) || 0;
+                selectedVenueId = nextVenueId;
+                setPersistedVenueId(nextVenueId);
+
+                if (api && typeof api.rerender === 'function') {
+                    api.rerender();
+                    ensureSelectableRangeHandlers();
+                    syncNavigator();
+                }
+
+                loadCalendarRooms()
+                    .then(function(rooms) {
+                        renderCalendarKey(rooms);
+                    })
+                    .catch(function() {
+                        renderCalendarKey([]);
+                    });
+            };
         }
 
         /**
@@ -325,8 +445,11 @@ var Calendar = (function() {
                 context: 'portal',
 
                 loadRooms: () =>
-                    fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}&context=portal`)
-                        .then(r => r.json()),
+                    fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}&context=portal${selectedVenueId > 0 ? `&venue_id=${encodeURIComponent(selectedVenueId)}` : ''}`)
+                        .then(r => r.json())
+                        .then(function(payload) {
+                            return Array.isArray(payload) ? payload : (Array.isArray(payload && payload.data) ? payload.data : []);
+                        }),
 
                 loadCustomers: () =>
                     fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
@@ -337,7 +460,7 @@ var Calendar = (function() {
                         .then(r => r.json()),
 
                 lockCustomer: !isClientAdmin,
-                lockOrganisation: !isClientAdmin,
+                lockOrganisation: false,
                 hideCustomer: !isClientAdmin,
                 lockAddonPrices: true,
                 requireOrganisation: true,
@@ -353,8 +476,11 @@ var Calendar = (function() {
                 context: 'portal',
 
                 loadRooms: () =>
-                    fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}&context=portal`)
-                        .then(r => r.json()),
+                    fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}&context=portal${selectedVenueId > 0 ? `&venue_id=${encodeURIComponent(selectedVenueId)}` : ''}`)
+                        .then(r => r.json())
+                        .then(function(payload) {
+                            return Array.isArray(payload) ? payload : (Array.isArray(payload && payload.data) ? payload.data : []);
+                        }),
 
                 loadCustomers: () =>
                     fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
@@ -365,7 +491,7 @@ var Calendar = (function() {
                         .then(r => r.json()),
 
                 lockCustomer: !isClientAdmin,
-                lockOrganisation: !isClientAdmin,
+                lockOrganisation: false,
                 hideCustomer: !isClientAdmin,
                 lockAddonPrices: true,
                 requireOrganisation: true,
@@ -377,42 +503,61 @@ var Calendar = (function() {
                 onSuccess: () => api.reload()
             });
 
-            api = CalendarCore.init("myvh-calendar", {
+            function initialiseCalendar() {
+                api = CalendarCore.init("myvh-calendar", {
 
-                context:    "portal",
-                ajax_url:   myvhCal.ajax_url,
-                nonce:      myvhCal.nonce,
-                headerDateFormat: myvhCal.headerDateFormat || null,
-                visibleStartHour: myvhCal.visibleStartHour,
-                visibleEndHour: myvhCal.visibleEndHour,
-                schedulerOrientation: String(myvhCal.schedulerOrientation || 'horizontal').toLowerCase(),
-                statusColors: (myvhCal && myvhCal.statusColors) ? myvhCal.statusColors : null,
+                    context:    "portal",
+                    ajax_url:   myvhCal.ajax_url,
+                    nonce:      myvhCal.nonce,
+                    headerDateFormat: myvhCal.headerDateFormat || null,
+                    visibleStartHour: myvhCal.visibleStartHour,
+                    visibleEndHour: myvhCal.visibleEndHour,
+                    schedulerOrientation: String(myvhCal.schedulerOrientation || 'horizontal').toLowerCase(),
+                    statusColors: (myvhCal && myvhCal.statusColors) ? myvhCal.statusColors : null,
+                    getVenueId: function() { return selectedVenueId; },
 
-                editable:   false,
-                selectable: true,
-                readOnly:   true,
-                initialMode: 'Calendar',
-                initialDetail: 'Week',
+                    editable:   false,
+                    selectable: true,
+                    readOnly:   true,
+                    initialMode: 'Calendar',
+                    initialDetail: 'Week',
 
-                // onEventClick removed: clicking events no longer shows booking
+                    // onEventClick removed: clicking events no longer shows booking
 
-                onTimeRangeSelected: openSelectionModal,
-                onEventClick : openReadOnlyModal
-            });
+                    onTimeRangeSelected: openSelectionModal,
+                    onEventClick : openReadOnlyModal
+                });
 
-            bindControls();
-            const state = api.getState?.() || {};
-            setActiveModeButton(state.mode || 'Calendar');
-            setActiveDetailButton(state.detail || 'Week');
-            ensureSelectableRangeHandlers();
-            initNavigator();
+                bindControls();
+                const state = api.getState?.() || {};
+                setActiveModeButton(state.mode || 'Calendar');
+                setActiveDetailButton(state.detail || 'Week');
+                ensureSelectableRangeHandlers();
+                initNavigator();
 
-            loadCalendarRooms()
+                loadCalendarRooms()
+                    .then(function(rooms) {
+                        renderCalendarKey(rooms);
+                    })
+                    .catch(function() {
+                        renderCalendarKey([]);
+                    });
+            }
+
+            loadRoomsForVenue(0)
                 .then(function(rooms) {
-                    renderCalendarKey(rooms);
+                    allVenues = buildVenuesFromRooms(rooms);
+                    selectedVenueId = resolveInitialVenueId(allVenues);
+                    setPersistedVenueId(selectedVenueId);
+                    renderVenueSelector();
                 })
                 .catch(function() {
-                    renderCalendarKey([]);
+                    allVenues = [];
+                    selectedVenueId = 0;
+                    renderVenueSelector();
+                })
+                .finally(function() {
+                    initialiseCalendar();
                 });
         }
 

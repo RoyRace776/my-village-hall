@@ -16,6 +16,10 @@
     var wrap    = null;   // .myvh-public-calendar-wrap
     var dp      = null;   // active DayPilot control
     var nav     = null;   // DayPilot navigator control
+    var allRooms = Array.isArray(cfg.rooms) ? cfg.rooms.slice() : [];
+    var selectedVenueId = 0;
+    var pinnedVenueId = parseInt(cfg.venueId || '0', 10) || 0;
+    var VENUE_STORAGE_KEY = 'myvhCalendarVenue_public';
     var lastEvents = [];
     var roomNameById = {};
     var loadRequestSeq = 0;
@@ -59,11 +63,12 @@
     function buildRoomIndex() {
         roomNameById = {};
 
-        if (!Array.isArray(cfg.rooms)) {
+        var visibleRooms = getVisibleRooms();
+        if (!Array.isArray(visibleRooms)) {
             return;
         }
 
-        cfg.rooms.forEach(function(room) {
+        visibleRooms.forEach(function(room) {
             if (!room) {
                 return;
             }
@@ -80,6 +85,126 @@
             }
 
             roomNameById[String(id)] = name.trim();
+        });
+    }
+
+    function getPersistedVenueId() {
+        try {
+            return parseInt(window.localStorage.getItem(VENUE_STORAGE_KEY) || '0', 10) || 0;
+        } catch (err) {
+            return 0;
+        }
+    }
+
+    function setPersistedVenueId(venueId) {
+        try {
+            if (venueId > 0) {
+                window.localStorage.setItem(VENUE_STORAGE_KEY, String(venueId));
+            } else {
+                window.localStorage.removeItem(VENUE_STORAGE_KEY);
+            }
+        } catch (err) {
+            // Ignore storage failures.
+        }
+    }
+
+    function buildVenueList() {
+        var byId = {};
+
+        allRooms.forEach(function(room) {
+            var venueId = parseInt((room && room.venueId) || (room && room.venue_id) || '0', 10) || 0;
+            var venueName = String((room && room.venue) || (room && room.VenueName) || '').trim();
+
+            if (venueId <= 0 || !venueName) {
+                return;
+            }
+
+            byId[venueId] = venueName;
+        });
+
+        return Object.keys(byId)
+            .map(function(id) {
+                return { id: parseInt(id, 10), name: byId[id] };
+            })
+            .sort(function(a, b) {
+                return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+            });
+    }
+
+    function getVisibleRooms() {
+        if (selectedVenueId <= 0) {
+            return allRooms.slice();
+        }
+
+        return allRooms.filter(function(room) {
+            var venueId = parseInt((room && room.venueId) || (room && room.venue_id) || '0', 10) || 0;
+            return venueId === selectedVenueId;
+        });
+    }
+
+    function initialiseVenueSelector() {
+        var venues = buildVenueList();
+        var venueWrap = wrap ? wrap.querySelector('.myvh-cal-venue-filter') : null;
+        var venueSelect = wrap ? wrap.querySelector('.myvh-cal-venue-select') : null;
+
+        if (pinnedVenueId > 0) {
+            selectedVenueId = pinnedVenueId;
+            cfg.venueId = selectedVenueId;
+            if (venueWrap) {
+                venueWrap.style.display = 'none';
+            }
+            return;
+        }
+
+        if (venues.length === 0) {
+            selectedVenueId = 0;
+            cfg.venueId = 0;
+            if (venueWrap) {
+                venueWrap.style.display = 'none';
+            }
+            return;
+        }
+
+        if (venues.length === 1) {
+            selectedVenueId = venues[0].id;
+            cfg.venueId = selectedVenueId;
+            setPersistedVenueId(selectedVenueId);
+            if (venueWrap) {
+                venueWrap.style.display = 'none';
+            }
+            return;
+        }
+
+        var persistedVenueId = getPersistedVenueId();
+        var knownVenueIds = venues.map(function(venue) { return venue.id; });
+        selectedVenueId = (persistedVenueId > 0 && knownVenueIds.indexOf(persistedVenueId) !== -1)
+            ? persistedVenueId
+            : venues[0].id;
+        cfg.venueId = selectedVenueId;
+        setPersistedVenueId(selectedVenueId);
+
+        if (!venueWrap || !venueSelect) {
+            return;
+        }
+
+        venueWrap.style.display = '';
+        venueSelect.innerHTML = '';
+
+        venues.forEach(function(venue) {
+            var option = document.createElement('option');
+            option.value = String(venue.id);
+            option.textContent = venue.name;
+            option.selected = venue.id === selectedVenueId;
+            venueSelect.appendChild(option);
+        });
+
+        venueSelect.addEventListener('change', function() {
+            selectedVenueId = parseInt(venueSelect.value || '0', 10) || 0;
+            cfg.venueId = selectedVenueId;
+            setPersistedVenueId(selectedVenueId);
+            buildRoomIndex();
+            renderCalendarKey();
+            mountView(current.detail, current.mode);
         });
     }
 
@@ -142,7 +267,7 @@
         });
 
         var seenRoomIds = new Set();
-        (Array.isArray(cfg.rooms) ? cfg.rooms : []).forEach(function(room) {
+        getVisibleRooms().forEach(function(room) {
             if (!room || room.id === null || typeof room.id === 'undefined') {
                 return;
             }
@@ -281,9 +406,10 @@
         if (!container) { return; }
 
         ensureThreeLetterEnglishWeekdays(headerDateFormat);
-        buildRoomIndex();
 
         wrap = container.closest('.myvh-public-calendar-wrap');
+        initialiseVenueSelector();
+        buildRoomIndex();
         renderCalendarKey();
 
         initNavigator();
@@ -428,7 +554,7 @@
         var startHour  = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 8;
         var endHour    = Number.isFinite(Number(cfg.visibleEndHour))   ? Number(cfg.visibleEndHour)   : 22;
         var totalSlots = Math.max(1, endHour - startHour);
-        var rooms      = Array.isArray(cfg.rooms) ? cfg.rooms : [];
+        var rooms      = getVisibleRooms();
 
         function getVisibleDays(startDate) {
             if (detail === 'day') {
@@ -662,10 +788,12 @@
     }
 
     function buildSchedulerResources(events) {
-        if (Array.isArray(cfg.rooms) && cfg.rooms.length > 0) {
+        var visibleRooms = getVisibleRooms();
+
+        if (Array.isArray(visibleRooms) && visibleRooms.length > 0) {
             var groups = {};
 
-            cfg.rooms.forEach(function (room) {
+            visibleRooms.forEach(function (room) {
                 var venueId = room.venueId || 'venue-unknown';
                 var venueName = room.venue || 'Venue';
 
@@ -783,7 +911,7 @@
                     + '?start=' + encodeURIComponent(range.start)
                     + '&end='   + encodeURIComponent(range.end);
 
-        if (cfg.venueId > 0) { url += '&venue_id=' + cfg.venueId; }
+        if (selectedVenueId > 0) { url += '&venue_id=' + selectedVenueId; }
         if (cfg.roomId  > 0) { url += '&room_id='  + cfg.roomId;  }
 
         fetch(url, {

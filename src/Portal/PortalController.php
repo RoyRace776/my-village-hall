@@ -94,6 +94,7 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_remove_client_admin', [$this, 'remove_client_admin']);
         add_action('wp_ajax_myvh_portal_save_customer', [$this, 'save_customer']);
         add_action('wp_ajax_myvh_portal_delete_customer', [$this, 'delete_customer']);
+        add_action('wp_ajax_myvh_portal_send_password_reset', [$this, 'send_password_reset_email']);
         add_action('wp_ajax_myvh_portal_save_org_type', [$this, 'save_organisation_type']);
         add_action('wp_ajax_myvh_portal_delete_org_type', [$this, 'delete_organisation_type']);
         add_action('wp_ajax_myvh_portal_save_room', [$this, 'save_room']);
@@ -989,6 +990,10 @@ class PortalController {
             $payload['customer_id'] = $customer_id;
         }
 
+        // Check if this is a new customer and if user exists before saving
+        $is_new_customer = $customer_id <= 0;
+        $existing_user = !empty($email) ? get_user_by('email', $email) : null;
+
         try {
             $saved = $this->customer_service->save($payload);
         } catch (Throwable $throwable) {
@@ -997,6 +1002,16 @@ class PortalController {
 
         if (is_wp_error($saved)) {
             wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        // Send password setup email if new customer was created without existing user
+        if ($is_new_customer && !$existing_user) {
+            $saved_customer_id = (int) $saved;
+            $customer = $this->customer_service->get($saved_customer_id);
+            if (!empty($customer['WPUserId'])) {
+                $email_service = new \MYVH\Email\PasswordSetupEmailService();
+                $email_service->send_password_setup_email($saved_customer_id, (int) $customer['WPUserId']);
+            }
         }
 
         wp_send_json_success([
@@ -1025,6 +1040,37 @@ class PortalController {
         }
 
         wp_send_json_success(['message' => 'Customer deleted']);
+    }
+
+    public function send_password_reset_email() {
+        $this->require_client_admin_access();
+
+        $customer_id = intval($_POST['customer_id'] ?? 0);
+
+        if ($customer_id <= 0) {
+            wp_send_json_error('Customer ID is required', 400);
+        }
+
+        // Get customer and verify it belongs to this organization
+        $customer = $this->customer_service->get($customer_id);
+        if (empty($customer['Id'])) {
+            wp_send_json_error('Customer not found', 404);
+        }
+
+        // Check if customer has a WordPress user
+        if (empty($customer['WPUserId'])) {
+            wp_send_json_error('Customer does not have a WordPress account', 400);
+        }
+
+        // Send password setup email
+        $email_service = new \MYVH\Email\PasswordSetupEmailService();
+        $result = $email_service->send_password_setup_email($customer_id, (int) $customer['WPUserId']);
+
+        if ($result) {
+            wp_send_json_success(['message' => 'Password reset email sent successfully']);
+        } else {
+            wp_send_json_error('Failed to send password reset email', 500);
+        }
     }
 
     public function save_organisation_type() {

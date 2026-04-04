@@ -1,6 +1,8 @@
 <?php
 namespace MYVH\Customers;
 
+use MYVH\Email\PasswordSetupEmailService;
+
 if (!defined('ABSPATH')) exit;
 
 class CustomerController {
@@ -32,11 +34,25 @@ class CustomerController {
             exit;
         }
 
+        // Check if this is a new customer and if user exists before saving
+        $is_new_customer = empty($data['customer_id']);
+        $existing_user = !empty($data['email']) ? get_user_by('email', $data['email']) : null;
+
         $result = $this->service->save($data);
 
         if (is_wp_error($result)) {
             wp_redirect(admin_url('admin.php?page=myvh-customers&error=' . urlencode($result->get_error_message())));
             exit;
+        }
+
+        // Send password setup email if new customer was created without existing user
+        if ($is_new_customer && !$existing_user) {
+            $customer_id = (int) $result;
+            $customer = $this->service->get($customer_id);
+            if (!empty($customer['WPUserId'])) {
+                $email_service = new PasswordSetupEmailService();
+                $email_service->send_password_setup_email($customer_id, (int) $customer['WPUserId']);
+            }
         }
 
         wp_redirect(admin_url('admin.php?page=myvh-customers&updated=1'));

@@ -1,6 +1,8 @@
 <?php
 namespace MYVH\Venues;
 
+use WP_Error;
+
 if (!defined('ABSPATH')) exit;
 
 class VenueService {

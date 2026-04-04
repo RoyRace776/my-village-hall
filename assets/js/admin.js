@@ -431,7 +431,48 @@ jQuery(document).ready(function($) {
         });
     });
 
+    // ==================== SEND PASSWORD RESET EMAIL ====================
+
+    // Send password reset email for customer
+    $('.send-password-reset').on('click', function(e) {
+        e.preventDefault();
+
+        var link = $(this);
+        var customerId = link.data('customer-id');
+
+        if (!customerId) {
+            alert('Invalid customer ID');
+            return;
+        }
+
+        showLoading(link);
+
+        $.ajax({
+            url: myvhAjax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'myvh_admin_send_password_reset',
+                nonce: myvhAjax.nonce,
+                customer_id: customerId
+            },
+            success: function(response) {
+                hideLoading(link);
+
+                if (response.success) {
+                    alert(response.data.message);
+                } else {
+                    alert('Error: ' + response.data.message);
+                }
+            },
+            error: function() {
+                hideLoading(link);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    });
+
     // Room form
+
     $('#myvh-room-form').on('submit', function(e) {
         e.preventDefault();
 

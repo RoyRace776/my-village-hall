@@ -61,6 +61,7 @@ if (!$customer) {
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Update Customer</button>
                 <a href="#customers" class="button">Cancel</a>
+                <button type="button" class="button myvh-send-password-reset-btn" data-customer-id="<?php echo (int)$customer['Id']; ?>">Send Password Reset Email</button>
                 <div id="myvh-customer-edit-message" class="myvh-muted" aria-live="polite"></div>
             </div>
         </form>

@@ -98,6 +98,9 @@ if ($edit_customer) {
                                         <a href="<?php echo admin_url('admin.php?page=myvh-customers&edit=' . $customer['Id']); ?>">
                                             <?php _e('Edit', 'my-village-hall'); ?>
                                         </a> |
+                                        <a href="#" class="send-password-reset" data-customer-id="<?php echo intval($customer['Id']); ?>">
+                                            <?php _e('Send Password Reset', 'my-village-hall'); ?>
+                                        </a> |
                                         <a href="<?php echo wp_nonce_url(
                                             admin_url('admin-post.php?action=myvh_delete_customer&id=' . $customer['Id']),
                                             'myvh_delete_customer'

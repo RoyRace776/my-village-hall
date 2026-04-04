@@ -4,6 +4,8 @@ $error = get_transient('myvh_reset_error');
 delete_transient('myvh_reset_error');
 $success = get_transient('myvh_reset_success');
 delete_transient('myvh_reset_success');
+$login_page = get_page_by_path('login');
+$login_url = $login_page ? get_permalink($login_page->ID) : home_url('/login/');
 ?>
 <div class="myvh-login-container">
     <div class="myvh-login-shell">
@@ -34,7 +36,7 @@ delete_transient('myvh_reset_success');
                 </div>
                 <button type="submit" class="myvh-login-button">Send reset link</button>
                 <div class="myvh-form-footer myvh-form-footer--secondary">
-                    <a href="<?php echo esc_url(home_url('/login/')); ?>">Back to sign in</a>
+                    <a href="<?php echo esc_url($login_url); ?>">Back to sign in</a>
                 </div>
             </form>
         </div>

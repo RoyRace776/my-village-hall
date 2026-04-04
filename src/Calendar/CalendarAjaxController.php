@@ -149,6 +149,7 @@ class CalendarAjaxController {
         check_ajax_referer('myvh_calendar', 'nonce');
 
         $context = sanitize_text_field($_GET['context'] ?? $_POST['context'] ?? 'admin');
+        $venue_id = absint($_GET['venue_id'] ?? $_POST['venue_id'] ?? 0);
 
         if ( $context === 'portal' ) {
             $this->authorize_user();
@@ -162,10 +163,16 @@ class CalendarAjaxController {
 
         foreach ($rooms as $room) {
 
+            $room_venue_id = !empty($room['VenueId']) ? (int) $room['VenueId'] : 0;
+
+            if ($venue_id > 0 && $room_venue_id !== $venue_id) {
+                continue;
+            }
+
             $columns[] = [
                 "name" => $room['Name'],
                 "id"   => $room['Id'],
-                "venue_id" => !empty($room['VenueId']) ? (int) $room['VenueId'] : 0,
+                "venue_id" => $room_venue_id,
                 "venue" => $room['VenueName'] ?? '',
                 "colour" => RoomColour::resolve($room['Colour'] ?? '', (int) ($room['Id'] ?? 0)),
                 "roomColour" => RoomColour::resolve($room['Colour'] ?? '', (int) ($room['Id'] ?? 0)),
@@ -199,8 +206,11 @@ class CalendarAjaxController {
         $start = sanitize_text_field($_GET['start'] ?? null);
         $end   = sanitize_text_field($_GET['end'] ?? null);
         $context = sanitize_text_field($_GET['context'] ?? 'public');
+        $venue_id = absint($_GET['venue_id'] ?? $_POST['venue_id'] ?? 0);
 
-        $events = $this->calendar_service->get_events($start, $end, $context, get_current_user_id());
+        $events = $this->calendar_service->get_events($start, $end, $context, get_current_user_id(), [
+            'venue_id' => $venue_id,
+        ]);
 
         wp_send_json($events);
     }
@@ -269,11 +279,20 @@ class CalendarAjaxController {
 
         check_ajax_referer('myvh_calendar', 'nonce');
 
-        if (!current_user_can('manage_myvh')) {
+        $request = $this->get_request_data();
+        $context = sanitize_text_field($request['context'] ?? 'admin');
+
+        if ($context === 'portal') {
+            if (!is_user_logged_in()) {
+                wp_send_json_error('Login required', 401);
+            }
+            if (!$this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id())) {
+                wp_send_json_error('Permission denied', 403);
+            }
+        } elseif (!current_user_can('manage_myvh')) {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $request = $this->get_request_data();
         try {
             $result = $this->calendar_service->update_event($request);
 

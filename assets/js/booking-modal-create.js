@@ -260,10 +260,20 @@ window.BookingModalCreate = (function() {
         if (submitBtn) submitBtn.style.display = '';
         form.reset();
 
+        applyVisibility();
+
         // Populate dropdowns (rooms, customers), then organisations
-        populateDropdowns().then(() => {
-            refreshOrganisations();
-        });
+        populateDropdowns()
+            .then(() => {
+                if (data.customer_id) {
+                    setValue('customer_id', data.customer_id);
+                }
+
+                return refreshOrganisations(data.organisation_id || '');
+            })
+            .then(() => {
+                applyContext(data);
+            });
 
         // Prepopulate start/end and displayed date/times if provided
         if (data.start) setValue('start', data.start);

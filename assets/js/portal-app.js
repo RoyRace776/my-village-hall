@@ -468,13 +468,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /**
-     * Submit a portal form via AJAX POST.
+     * Submit a portal action via AJAX POST.
      * @param {string} action - The WP AJAX action name
-     * @param {HTMLFormElement} form - The form to submit
+     * @param {HTMLFormElement|Object} payload - Form element or key/value payload
      * @returns {Promise<object>} - The JSON response
      */
-    function postPortalForm(action, form) {
-        const formData = new FormData(form);
+    function postPortalForm(action, payload) {
+        const formData = (payload instanceof HTMLFormElement)
+            ? new FormData(payload)
+            : new FormData();
+
+        if (!(payload instanceof HTMLFormElement) && payload && typeof payload === 'object') {
+            Object.keys(payload).forEach((key) => {
+                formData.append(key, payload[key]);
+            });
+        }
+
         formData.append('action', action);
         formData.append('nonce', myvhPortal.nonce);
 
@@ -717,6 +726,48 @@ document.addEventListener("DOMContentLoaded", () => {
                     showMessage(message, 'Unexpected error while saving', true);
                 });
         }
+    });
+
+    // Send password reset email handler
+    document.getElementById('portal-content').addEventListener('click', function (e) {
+        const button = e.target.closest('.myvh-send-password-reset, .myvh-send-password-reset-btn');
+        if (!button) {
+            return;
+        }
+
+        e.preventDefault();
+
+        const customerId = button.dataset.customerId;
+        if (!customerId) {
+            alert('Invalid customer ID');
+            return;
+        }
+
+        if (button.disabled) {
+            return;
+        }
+
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = 'Sending...';
+
+        postPortalForm('myvh_portal_send_password_reset', { customer_id: customerId })
+            .then(res => {
+                button.disabled = false;
+                button.textContent = originalText;
+
+                if (!res.success) {
+                    alert('Error: ' + (res.data?.message || res.data || 'Failed to send email'));
+                    return;
+                }
+
+                alert(res.data?.message || 'Password reset email sent successfully');
+            })
+            .catch(() => {
+                button.disabled = false;
+                button.textContent = originalText;
+                alert('An error occurred. Please try again.');
+            });
     });
 
     // Initial page load

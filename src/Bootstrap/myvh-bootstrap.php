@@ -39,4 +39,10 @@ if ( $myvh_container instanceof Container ) {
 
     $customer_user_sync = $myvh_container->get( MYVH\Customers\CustomerUserSync::class );
     $customer_user_sync->register();
+
+    // Admin password reset AJAX handler
+    $admin_password_reset = new MYVH\Admin\AdminPasswordResetHandler(
+        $myvh_container->get( MYVH\Customers\CustomerService::class )
+    );
+    $admin_password_reset->register();
 }

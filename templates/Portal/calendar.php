@@ -43,6 +43,11 @@ if (!is_user_logged_in()) {
                 <button id="myvh-next" class="myvh-cal-btn myvh-cal-nav-btn" type="button" aria-label="Next">&gt;</button>
             </div>
 
+            <div id="myvh-calendar-venue-wrap" class="myvh-calendar-venue-filter" style="display:none;">
+                <label class="screen-reader-text" for="myvh-calendar-venue-select">Venue</label>
+                <select id="myvh-calendar-venue-select" class="myvh-cal-btn myvh-calendar-venue-select"></select>
+            </div>
+
             <div class="myvh-calendar-views myvh-pill-group">
                 <button id="myvh-mode-calendar" class="myvh-cal-btn myvh-view-btn myvh-mode-btn active" data-mode="Calendar" type="button">Calendar</button>
                 <button id="myvh-mode-scheduler" class="myvh-cal-btn myvh-view-btn myvh-mode-btn" data-mode="Scheduler" type="button">Scheduler</button>

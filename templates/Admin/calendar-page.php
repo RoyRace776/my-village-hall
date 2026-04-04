@@ -30,6 +30,11 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
             <button id="myvh-next" class="myvh-cal-btn myvh-cal-nav-btn" type="button" aria-label="<?php esc_attr_e('Next', 'my-village-hall'); ?>">&gt;</button>
         </div>
 
+        <div id="myvh-calendar-venue-wrap" class="myvh-calendar-venue-filter" style="display:none;">
+            <label class="screen-reader-text" for="myvh-calendar-venue-select"><?php esc_html_e('Venue', 'my-village-hall'); ?></label>
+            <select id="myvh-calendar-venue-select" class="myvh-cal-btn myvh-calendar-venue-select"></select>
+        </div>
+
         <div class="myvh-calendar-views myvh-pill-group">
             <button id="myvh-mode-calendar" class="myvh-cal-btn myvh-view-btn myvh-mode-btn active" data-mode="Calendar" type="button">
                 <?php _e('Calendar', 'my-village-hall'); ?>

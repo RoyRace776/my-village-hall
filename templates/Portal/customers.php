@@ -49,6 +49,7 @@ $edit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
                         <td style="padding-right:32px;"><?php echo esc_html($item['PhoneNumber'] ?? ''); ?></td>
                         <td style="white-space:nowrap;">
                             <a href="#customer-edit?id=<?php echo (int)($item['Id'] ?? 0); ?>" class="myvh-action-icon" aria-label="Edit customer" title="Edit customer" style="margin-right:10px; vertical-align:middle;">✎</a>
+                            <a href="#" class="myvh-send-password-reset" data-customer-id="<?php echo (int)($item['Id'] ?? 0); ?>" aria-label="Send password reset email" title="Send password reset email" style="margin-right:10px; vertical-align:middle;">📧</a>
                             <form class="myvh-inline-form" style="display:inline;" data-portal-action="myvh_portal_delete_customer" data-message-target="myvh-customer-message-<?php echo (int)($item['Id'] ?? 0); ?>" data-reload-page="customers" data-confirm="Delete this customer? This cannot be undone.">
                                 <button type="submit" class="myvh-action-icon myvh-action-danger" aria-label="Delete customer" title="Delete customer" style="background:none; border:none; padding:0; margin:0; vertical-align:middle; cursor:pointer;">🗑</button>
                                 <input type="hidden" name="customer_id" value="<?php echo (int)($item['Id'] ?? 0); ?>">

@@ -205,6 +205,7 @@ class CalendarShortcode {
                 'month'    => __( 'Month',    'my-village-hall' ),
                 'week'     => __( 'Week',     'my-village-hall' ),
                 'day'      => __( 'Day',      'my-village-hall' ),
+                'venue'    => __( 'Venue',    'my-village-hall' ),
                 'booked'   => __( 'Booked',   'my-village-hall' ),
                 'noEvents' => __( 'No bookings this period.', 'my-village-hall' ),
             ],
@@ -248,6 +249,10 @@ class CalendarShortcode {
                             <button class="myvh-cal-btn myvh-cal-today"><?php esc_html_e( 'Today', 'my-village-hall' ); ?></button>
                             <button class="myvh-cal-btn myvh-cal-next" aria-label="<?php esc_attr_e( 'Next', 'my-village-hall' ); ?>">&#8250;</button>
                             <span class="myvh-cal-title"></span>
+                        </div>
+                        <div class="myvh-cal-venue-filter" style="display:none;">
+                            <label class="screen-reader-text" for="<?php echo esc_attr( $unique_id ); ?>-venue"><?php esc_html_e( 'Venue', 'my-village-hall' ); ?></label>
+                            <select id="<?php echo esc_attr( $unique_id ); ?>-venue" class="myvh-cal-venue-select"></select>
                         </div>
                         <div class="myvh-cal-views">
                             <button class="myvh-cal-btn myvh-mode-btn active" data-mode="calendar"><?php esc_html_e( 'Calendar', 'my-village-hall' ); ?></button>

@@ -35,9 +35,7 @@ class PasswordResetHandler {
             wp_safe_redirect($_SERVER['REQUEST_URI']); exit;
         }
         $token = $this->generate_token($user->ID);
-        // Use the password reset page (with [myvh_password_reset] shortcode)
-        $reset_page = get_page_by_path('password-reset');
-        $reset_base = $reset_page ? get_permalink($reset_page->ID) : home_url('/password-reset/');
+        $reset_base = $this->get_reset_page_url();
         $reset_url = add_query_arg([
             'myvh_reset' => 1,
             'uid' => $user->ID,
@@ -65,7 +63,9 @@ class PasswordResetHandler {
     public function handle_reset_confirm() {
         if (empty($_GET['myvh_reset']) || empty($_GET['uid']) || empty($_GET['token'])) return;
         $user_id = intval($_GET['uid']);
-        $token = sanitize_text_field($_GET['token']);
+        // Only keep alphanumeric chars — sanitize_text_field strips %XX sequences
+        // which can corrupt tokens if the raw value contained a literal '%'.
+        $token = preg_replace('/[^a-zA-Z0-9]/', '', (string) $_GET['token']);
         if (!$this->validate_token($user_id, $token)) {
             set_transient('myvh_reset_error', 'Invalid or expired reset link.', 60);
             wp_safe_redirect(home_url('/login/')); exit;
@@ -86,10 +86,12 @@ class PasswordResetHandler {
     }
 
     /**
-     * Generate a secure, single-use token for password reset
+     * Generate a secure, single-use token for password reset.
+     * Uses hex encoding so the value is always URL-safe and survives
+     * sanitize_text_field without modification.
      */
     protected function generate_token($user_id) {
-        $token = wp_generate_password(32, true, true);
+        $token = bin2hex(random_bytes(16)); // 32-char lowercase hex string
         set_transient('myvh_reset_token_' . $user_id, $token, $this->token_ttl);
         return $token;
     }
@@ -128,5 +130,48 @@ class PasswordResetHandler {
         add_action('after_password_reset', function($user) {
             $this->invalidate_token($user->ID);
         });
+    }
+
+    /**
+     * Resolve the most likely password reset page URL.
+     */
+    public function get_reset_page_url(): string {
+        $filtered = apply_filters('myvh_password_reset_page_url', '');
+        if (is_string($filtered) && $filtered !== '') {
+            return esc_url_raw($filtered);
+        }
+
+        $candidate_pages = get_posts([
+            'post_type'      => 'page',
+            'post_status'    => 'publish',
+            'posts_per_page' => 200,
+            'orderby'        => 'menu_order title',
+            'order'          => 'ASC',
+            'suppress_filters' => false,
+        ]);
+
+        foreach ((array) $candidate_pages as $page) {
+            if (empty($page->ID)) {
+                continue;
+            }
+
+            if (has_shortcode((string) $page->post_content, 'myvh_password_reset')) {
+                return (string) get_permalink((int) $page->ID);
+            }
+        }
+
+        $reset_page = get_page_by_path('password-reset');
+        if ($reset_page && !empty($reset_page->ID)) {
+            return (string) get_permalink((int) $reset_page->ID);
+        }
+
+        foreach (['login', 'sign-in', 'signin', 'account-login'] as $slug) {
+            $login_page = get_page_by_path($slug);
+            if ($login_page && !empty($login_page->ID)) {
+                return (string) get_permalink((int) $login_page->ID);
+            }
+        }
+
+        return home_url('/login/');
     }
 }
