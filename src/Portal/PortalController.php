@@ -445,6 +445,32 @@ class PortalController {
                 include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-types.php';
                 break;
 
+            case 'organisation-type-add':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-type-add.php';
+                break;
+
+            case 'organisation-type-edit':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $org_type_id = intval($_GET['id'] ?? 0);
+                if (!$org_type_id) {
+                    wp_send_json_error('Invalid organisation type ID', 400);
+                }
+
+                $organisation_type = $this->organisation_type_service->get($org_type_id);
+                if (!$organisation_type) {
+                    wp_send_json_error('Organisation type not found', 404);
+                }
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-type-edit.php';
+                break;
+
             case 'settings':
                 if (!$is_client_admin) {
                     wp_send_json_error('Permission denied', 403);
@@ -1145,9 +1171,9 @@ class PortalController {
 
         $deleted = $this->room_rate_service->delete($rate_id);
 
-        if (is_wp_error($deleted)) {
-            wp_send_json_error($deleted->get_error_message(), 400);
-        }
+        // if (is_wp_error($deleted)) {
+        //     wp_send_json_error($deleted->get_error_message(), 400);
+        // }
 
         if (!$deleted) {
             wp_send_json_error('Failed to delete room rate', 400);
@@ -1198,9 +1224,9 @@ class PortalController {
 
         $deleted = $this->addon_service->delete($addon_id);
 
-        if (is_wp_error($deleted)) {
-            wp_send_json_error($deleted->get_error_message(), 400);
-        }
+        // if (is_wp_error($deleted)) {
+        //     wp_send_json_error($deleted->get_error_message(), 400);
+        // }
 
         if (!$deleted) {
             wp_send_json_error('Failed to archive add-on', 400);

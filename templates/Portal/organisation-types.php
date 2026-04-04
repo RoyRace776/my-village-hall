@@ -8,103 +8,61 @@ $organisation_types = is_array($organisation_types ?? null) ? $organisation_type
     <div class="myvh-account-header" style="display:flex; align-items:end; justify-content:space-between; gap:24px;">
         <div>
             <h2>Organisation Types</h2>
-            <p>Add, update, and remove organisation types for this client site.</p>
+            <p>Select a type to edit, or add a new organisation type.</p>
         </div>
+        <a href="#organisation-type-add" class="button button-primary" style="margin-bottom:4px;">
+            <span class="dashicons dashicons-plus-alt" style="vertical-align:middle; margin-right:4px;"></span> Add Organisation Type
+        </a>
     </div>
 
-    <div class="myvh-account-grid">
-        <div class="myvh-card myvh-account-card">
-            <div class="myvh-account-card-head">
-                <h3>Add Organisation Type</h3>
-                <span>Create a type for organisation records</span>
-            </div>
-
-            <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_type" data-message-target="myvh-org-type-create-message" data-reload-page="organisation-types">
-                <label class="myvh-account-field" for="myvh-org-type-name">
-                    <span>Name</span>
-                    <input id="myvh-org-type-name" type="text" name="name" required>
-                </label>
-
-                <label class="myvh-account-field" for="myvh-org-type-description">
-                    <span>Description</span>
-                    <textarea id="myvh-org-type-description" name="description" rows="3"></textarea>
-                </label>
-
-                <label class="myvh-account-field" style="display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" name="is_default" value="1">
-                    <span>Set as default organisation type</span>
-                </label>
-
-                <div class="myvh-account-actions">
-                    <button type="submit" class="button button-primary">Add Organisation Type</button>
-                    <div id="myvh-org-type-create-message" class="myvh-muted" aria-live="polite"></div>
-                </div>
-            </form>
+    <div class="myvh-card myvh-account-card">
+        <div class="myvh-account-card-head">
+            <h3>All Organisation Types</h3>
+            <span><?php echo count($organisation_types); ?> type records</span>
         </div>
 
-        <div class="myvh-card myvh-account-card">
-            <div class="myvh-account-card-head">
-                <h3>All Organisation Types</h3>
-                <span><?php echo count($organisation_types); ?> type records</span>
-            </div>
-
-            <?php if (empty($organisation_types)): ?>
-                <p>No organisation types found for this site.</p>
-            <?php else: ?>
-                <div class="myvh-client-admin-list">
-                    <?php foreach ($organisation_types as $type): ?>
-                        <?php
-                        $type_id = (int) ($type['Id'] ?? 0);
-                        $is_system = !empty($type['IsSystem']);
-                        $is_default = !empty($type['IsDefault']);
-                        $save_message_id = 'myvh-org-type-save-message-' . $type_id;
-                        $delete_message_id = 'myvh-org-type-delete-message-' . $type_id;
-                        ?>
-
-                        <div class="myvh-card myvh-account-card" style="margin-bottom:12px;">
+        <?php if (empty($organisation_types)): ?>
+            <p>No organisation types found for this site.</p>
+            <p><a href="#organisation-type-add" class="button button-primary">Create First Organisation Type</a></p>
+        <?php else: ?>
+            <table class="myvh-customer-list-table">
+                <thead>
+                    <tr>
+                        <th style="padding-right:24px;">Type</th>
+                        <th style="padding-right:24px;">Description</th>
+                        <th style="padding-right:24px;">Default</th>
+                        <th style="padding-right:24px;">System</th>
+                        <th style="min-width:90px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($organisation_types as $type): ?>
+                    <?php
+                    $type_id = (int) ($type['Id'] ?? 0);
+                    $is_system = !empty($type['IsSystem']);
+                    $delete_message_id = 'myvh-org-type-message-' . $type_id;
+                    ?>
+                    <tr>
+                        <td style="padding-right:24px;"><strong><?php echo esc_html($type['Name'] ?? ''); ?></strong></td>
+                        <td style="padding-right:24px;"><?php echo !empty($type['Description']) ? esc_html($type['Description']) : '<span style="color:#7a7166;">-</span>'; ?></td>
+                        <td style="padding-right:24px;"><?php echo !empty($type['IsDefault']) ? 'Yes' : '-'; ?></td>
+                        <td style="padding-right:24px;"><?php echo $is_system ? 'Yes' : '-'; ?></td>
+                        <td style="white-space:nowrap;">
+                            <a href="#organisation-type-edit?id=<?php echo $type_id; ?>" class="myvh-action-icon" aria-label="Edit organisation type" title="Edit organisation type" style="margin-right:10px; vertical-align:middle;">✎</a>
                             <?php if ($is_system): ?>
-                                <div class="myvh-account-card-head">
-                                    <h3><?php echo esc_html($type['Name'] ?? ''); ?></h3>
-                                    <span><?php echo $is_default ? 'System default type' : 'System type'; ?></span>
-                                </div>
-                                <p><?php echo esc_html($type['Description'] ?? ''); ?></p>
-                                <p class="myvh-muted">Locked system type</p>
+                                <span class="myvh-action-icon myvh-action-danger myvh-action-icon-disabled" aria-disabled="true" title="Delete not available">🗑</span>
                             <?php else: ?>
-                                <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_type" data-message-target="<?php echo esc_attr($save_message_id); ?>" data-reload-page="organisation-types">
+                                <form class="myvh-inline-form" style="display:inline;" data-portal-action="myvh_portal_delete_org_type" data-message-target="<?php echo esc_attr($delete_message_id); ?>" data-reload-page="organisation-types" data-confirm="Delete this organisation type? This cannot be undone.">
+                                    <button type="submit" class="myvh-action-icon myvh-action-danger" aria-label="Delete organisation type" title="Delete organisation type" style="background:none; border:none; padding:0; margin:0; vertical-align:middle; cursor:pointer;">🗑</button>
                                     <input type="hidden" name="org_type_id" value="<?php echo $type_id; ?>">
-
-                                    <label class="myvh-account-field" for="myvh-org-type-name-<?php echo $type_id; ?>">
-                                        <span>Name</span>
-                                        <input id="myvh-org-type-name-<?php echo $type_id; ?>" type="text" name="name" value="<?php echo esc_attr($type['Name'] ?? ''); ?>" required>
-                                    </label>
-
-                                    <label class="myvh-account-field" for="myvh-org-type-description-<?php echo $type_id; ?>">
-                                        <span>Description</span>
-                                        <textarea id="myvh-org-type-description-<?php echo $type_id; ?>" name="description" rows="2"><?php echo esc_textarea($type['Description'] ?? ''); ?></textarea>
-                                    </label>
-
-                                    <label class="myvh-account-field" style="display:flex; align-items:center; gap:8px;">
-                                        <input type="checkbox" name="is_default" value="1" <?php checked($is_default); ?>>
-                                        <span>Default organisation type</span>
-                                    </label>
-
-                                    <div class="myvh-account-actions">
-                                        <button type="submit" class="button button-secondary">Save</button>
-                                    </div>
-                                </form>
-
-                                <form class="myvh-inline-form" data-portal-action="myvh_portal_delete_org_type" data-message-target="<?php echo esc_attr($delete_message_id); ?>" data-reload-page="organisation-types" data-confirm="Delete this organisation type? This cannot be undone.">
-                                    <input type="hidden" name="org_type_id" value="<?php echo $type_id; ?>">
-                                    <button type="submit" class="button">Delete</button>
                                 </form>
                             <?php endif; ?>
-
-                            <div id="<?php echo esc_attr($save_message_id); ?>" class="myvh-muted" aria-live="polite"></div>
                             <div id="<?php echo esc_attr($delete_message_id); ?>" class="myvh-muted" aria-live="polite"></div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
     </div>
 </div>

@@ -5,18 +5,29 @@ if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village
 global $myvh_container;
 use MYVH\Organisations\OrganisationTypeService;
 
+$manage_type  = isset($_GET['manage_type']) ? sanitize_text_field(wp_unslash($_GET['manage_type'])) : '';
+if ($manage_type !== '') {
+    if ($manage_type === '__add_new__') {
+        wp_safe_redirect(admin_url('admin.php?page=myvh-org-types&add=1'));
+        exit;
+    }
+
+    if (ctype_digit($manage_type)) {
+        wp_safe_redirect(admin_url('admin.php?page=myvh-org-types&edit=' . intval($manage_type)));
+        exit;
+    }
+}
+
 $edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $type_service = $myvh_container->get(OrganisationTypeService::class);
 $edit_type    = $edit_id ? $type_service->get($edit_id) : null;
 $edit_type_is_system = !empty($edit_type['IsSystem']);
 $types        = $type_service->get_all();
+$invalid_edit = isset($_GET['edit']) && $edit_id > 0 && !$edit_type;
 ?>
 
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php _e('Organisation Types', 'my-village-hall'); ?></h1>
-    <a href="<?php echo admin_url('admin.php?page=myvh-org-types&add=1'); ?>" class="page-title-action">
-        <?php _e('Add New', 'my-village-hall'); ?>
-    </a>
     <hr class="wp-header-end">
 
     <?php if (isset($_GET['updated'])): ?>
@@ -28,59 +39,57 @@ $types        = $type_service->get_all();
     <?php if (isset($_GET['error'])): ?>
         <div class="notice notice-error is-dismissible"><p><?php echo esc_html($_GET['error']); ?></p></div>
     <?php endif; ?>
+    <?php if ($invalid_edit): ?>
+        <div class="notice notice-error is-dismissible"><p><?php _e('The selected organisation type could not be found.', 'my-village-hall'); ?></p></div>
+    <?php endif; ?>
 
     <div class="myvh-row">
 
-        <!-- ── List ────────────────────────────────────────────────────────── -->
         <div class="myvh-col-60">
             <div class="myvh-card">
-                <h2><?php _e('All Organisation Types', 'my-village-hall'); ?></h2>
+                <h2><?php _e('Select Organisation Type', 'my-village-hall'); ?></h2>
+                <p><?php _e('Choose a type to edit, or choose Add New Organisation Type to create one.', 'my-village-hall'); ?></p>
 
-                <table class="wp-list-table widefat striped">
-                    <thead>
-                        <tr>
-                            <th><?php _e('Name', 'my-village-hall'); ?></th>
-                            <th><?php _e('System', 'my-village-hall'); ?></th>
-                            <th><?php _e('Default', 'my-village-hall'); ?></th>
-                            <th><?php _e('Description', 'my-village-hall'); ?></th>
-                            <th><?php _e('Actions', 'my-village-hall'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($types)): ?>
-                            <tr><td colspan="5"><?php _e('No organisation types found.', 'my-village-hall'); ?></td></tr>
-                        <?php else: ?>
-                            <?php foreach ($types as $type): ?>
-                                <tr>
-                                    <td><strong><?php echo esc_html($type['Name']); ?></strong></td>
-                                    <td><?php echo !empty($type['IsSystem']) ? __('Yes', 'my-village-hall') : '—'; ?></td>
-                                    <td><?php echo !empty($type['IsDefault']) ? __('Yes', 'my-village-hall') : '—'; ?></td>
-                                    <td><?php echo esc_html($type['Description'] ?? ''); ?></td>
-                                    <td>
-                                        <?php if (!empty($type['IsSystem'])): ?>
-                                            <span><?php _e('Locked', 'my-village-hall'); ?></span>
-                                        <?php else: ?>
-                                            <a href="<?php echo admin_url('admin.php?page=myvh-org-types&edit=' . $type['Id']); ?>">
-                                                <?php _e('Edit', 'my-village-hall'); ?>
-                                            </a> |
-                                            <a href="<?php echo wp_nonce_url(
-                                                admin_url('admin-post.php?action=myvh_delete_org_type&id=' . $type['Id']),
-                                                'myvh_delete_org_type'
-                                            ); ?>" class="link-delete"
-                                               onclick="return confirm('<?php _e('Delete this type?', 'my-village-hall'); ?>');">
-                                                <?php _e('Delete', 'my-village-hall'); ?>
-                                            </a>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                <?php if (empty($types)): ?>
+                    <p>
+                        <a href="<?php echo admin_url('admin.php?page=myvh-org-types&add=1'); ?>" class="button button-primary">
+                            <?php _e('Add Organisation Type', 'my-village-hall'); ?>
+                        </a>
+                    </p>
+                <?php else: ?>
+                    <form method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>">
+                        <input type="hidden" name="page" value="myvh-org-types">
+                        <p>
+                            <select name="manage_type" size="12" style="width: 100%; max-width: 420px;">
+                                <option value=""><?php _e('Select an organisation type...', 'my-village-hall'); ?></option>
+                                <option value="__add_new__"><?php _e('Add New Organisation Type', 'my-village-hall'); ?></option>
+                                <?php foreach ($types as $type): ?>
+                                    <?php
+                                        $label = $type['Name'];
+                                        if (!empty($type['IsDefault'])) {
+                                            $label .= ' (' . __('Default', 'my-village-hall') . ')';
+                                        }
+                                        if (!empty($type['IsSystem'])) {
+                                            $label .= ' (' . __('System', 'my-village-hall') . ')';
+                                        }
+                                    ?>
+                                    <option value="<?php echo intval($type['Id']); ?>" <?php selected($edit_id, intval($type['Id'])); ?>>
+                                        <?php echo esc_html($label); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </p>
+                        <p class="submit">
+                            <button type="submit" class="button button-primary"><?php _e('Go', 'my-village-hall'); ?></button>
+                            <a href="<?php echo admin_url('admin.php?page=myvh-org-types&add=1'); ?>" class="button">
+                                <?php _e('Add New Type', 'my-village-hall'); ?>
+                            </a>
+                        </p>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
 
-        <!-- ── Form ─────────────────────────────────────────────────────────── -->
         <?php if (isset($_GET['add']) || $edit_type): ?>
         <div class="myvh-col-40">
             <div class="myvh-card">
