@@ -15,8 +15,8 @@ class LoginHandler {
     }
 
     private function validate_password_strength(string $password): ?string {
-        if (strlen($password) < 10) {
-            return 'Password must be at least 10 characters.';
+        if (strlen($password) < 9) {
+            return 'Password must be at least 9 characters.';
         }
 
         if (!preg_match('/[A-Z]/', $password)) {
