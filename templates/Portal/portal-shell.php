@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) exit;
         </div>
     <?php endif; ?>
 
-    <nav class="<?php echo esc_attr( apply_filters( 'myvh_portal_nav_class', 'portal-nav' ) ); ?>">
+    <nav class="<?php echo esc_attr( apply_filters( 'myvh_portal_nav_class', 'portal-nav' ) ); ?>" data-portal-nav>
 
         <a href="#dashboard">Dashboard</a>
         <a href="#bookings"><?php echo $is_client_admin ? 'Bookings' : 'My Bookings'; ?></a>
@@ -31,13 +31,26 @@ if (!defined('ABSPATH')) exit;
         <?php endif; ?>
         <a href="#account">Account</a>
         <?php if ($is_client_admin): ?>
-            <a href="#client-admins">Client Admins</a>
-            <a href="#customers">Customers</a>
-            <a href="#organisation-types">Organisation Types</a>
-            <a href="#rooms">Rooms</a>
-            <a href="#room-rates">Room Rates</a>
-            <a href="#addons">Add-ons</a>
-            <a href="#settings">Settings</a>
+            <div class="myvh-portal-nav-group" data-portal-nav-group>
+                <button
+                    type="button"
+                    class="myvh-portal-nav-toggle"
+                    aria-expanded="false"
+                    aria-controls="myvh-portal-admin-menu"
+                >
+                    <span>Admin</span>
+                    <span class="myvh-portal-nav-toggle-icon" aria-hidden="true"></span>
+                </button>
+                <div id="myvh-portal-admin-menu" class="myvh-portal-nav-submenu">
+                    <a href="#client-admins">Client Admins</a>
+                    <a href="#customers">Customers</a>
+                    <a href="#organisation-types">Organisation Types</a>
+                    <a href="#rooms">Rooms</a>
+                    <a href="#room-rates">Room Rates</a>
+                    <a href="#addons">Add-ons</a>
+                    <a href="#settings">Settings</a>
+                </div>
+            </div>
         <?php endif; ?>
 
     </nav>

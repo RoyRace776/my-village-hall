@@ -10,6 +10,62 @@ document.addEventListener("DOMContentLoaded", () => {
         'home': 'dashboard'
     };
 
+    function initPortalNavigation() {
+        const portalNav = document.querySelector('[data-portal-nav]');
+        if (!portalNav || portalNav.dataset.bound === '1') {
+            return;
+        }
+
+        portalNav.dataset.bound = '1';
+
+        const adminGroup = portalNav.querySelector('[data-portal-nav-group]');
+        const adminToggle = adminGroup ? adminGroup.querySelector('.myvh-portal-nav-toggle') : null;
+
+        const closeAdminMenu = () => {
+            if (!adminGroup || !adminToggle) {
+                return;
+            }
+
+            adminGroup.classList.remove('is-open');
+            adminToggle.setAttribute('aria-expanded', 'false');
+        };
+
+        if (adminGroup && adminToggle) {
+            adminToggle.addEventListener('click', () => {
+                const isOpen = adminGroup.classList.toggle('is-open');
+                adminToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!adminGroup.contains(event.target)) {
+                    closeAdminMenu();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeAdminMenu();
+                }
+            });
+        }
+
+        portalNav.addEventListener('click', (event) => {
+            const link = event.target.closest('a[href^="#"]');
+            if (!link || !portalNav.contains(link)) {
+                return;
+            }
+
+            const href = link.getAttribute('href') || '';
+            if (!href || href === '#') {
+                return;
+            }
+
+            event.preventDefault();
+            closeAdminMenu();
+            navigateToHash(href);
+        });
+    }
+
     /**
      * Initialize all portal page widgets and logic.
      * Should be called after each page load or dynamic content update.
@@ -622,6 +678,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Listen for hash changes to trigger router
     window.addEventListener("hashchange", router);
+
+    initPortalNavigation();
 
     // Ensure in-content hash links still work when clicking the same route twice.
     document.getElementById('portal-content').addEventListener('click', function (e) {

@@ -391,6 +391,106 @@ body .site-main:has(#myvh-portal) {
   margin-top: 4px;
 }
 
+.portal-nav {
+  max-width: 1600px;
+  margin: 0 auto 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.portal-nav > a,
+.myvh-portal-nav-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid #d9cdbf;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none;
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+
+.portal-nav > a:hover,
+.portal-nav > a:focus-visible,
+.myvh-portal-nav-toggle:hover,
+.myvh-portal-nav-toggle:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 6px 18px rgba(181, 69, 27, 0.14);
+  outline: none;
+}
+
+.myvh-portal-nav-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.myvh-portal-nav-group.is-open .myvh-portal-nav-toggle {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #fff8f3;
+}
+
+.myvh-portal-nav-toggle-icon {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+  transition: transform .16s ease;
+}
+
+.myvh-portal-nav-group.is-open .myvh-portal-nav-toggle-icon {
+  transform: rotate(225deg) translateY(-1px);
+}
+
+.myvh-portal-nav-submenu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 220px;
+  padding: 10px;
+  border: 1px solid #e5ddd1;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 32px rgba(28, 26, 23, 0.1);
+  z-index: 20;
+}
+
+.myvh-portal-nav-group.is-open .myvh-portal-nav-submenu {
+  display: grid;
+  gap: 6px;
+}
+
+.myvh-portal-nav-submenu a {
+  display: block;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.myvh-portal-nav-submenu a:hover,
+.myvh-portal-nav-submenu a:focus-visible {
+  background: var(--cream);
+  color: var(--accent);
+  outline: none;
+}
+
 .myvh-portal-sites {
   max-width: 1600px;
   margin: 20px auto 14px;
@@ -1657,6 +1757,22 @@ body .site-main:has(#myvh-portal) {
     width: min(96vw, 96vw);
     max-height: 92vh;
     padding: 16px 14px;
+  }
+
+  .portal-nav {
+    gap: 8px;
+  }
+
+  .portal-nav > a,
+  .myvh-portal-nav-group,
+  .myvh-portal-nav-toggle {
+    width: 100%;
+  }
+
+  .myvh-portal-nav-submenu {
+    position: static;
+    min-width: 0;
+    width: 100%;
   }
 
   #myvh-booking-modal-create th,
