@@ -32,10 +32,10 @@ class InvoiceRepository extends RepositoryBase{
     public function get_all_with_customers(): ?array {
         $sql = "SELECT
                     i.*,
-                    c.Name as CustomerName,
-                    c.Email as CustomerEmail
+                    COALESCE(c.Name, i.BillingName, i.BillingOrganisationName, '') as CustomerName,
+                    COALESCE(c.Email, i.BillingEmail, '') as CustomerEmail
                 FROM $this->table_name i
-                JOIN {$this->wpdb->prefix}myvh_customers c ON i.CustomerId = c.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON i.CustomerId = c.Id
                 ORDER BY i.InvoiceDate DESC";
 
         $results = $this->wpdb->get_results($sql, ARRAY_A);

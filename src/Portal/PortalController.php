@@ -231,9 +231,17 @@ class PortalController {
                 $valid_statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
                 $selected_statuses = array_values(array_intersect($selected_statuses, $valid_statuses));
 
-                // Get invoices for customer with optional status filter
+                // Get invoices for customer with optional status filter.
                 $invoices = [];
-                if ($has_customer) {
+                if ($is_client_admin) {
+                    $invoices = $this->invoiceService->get_with_customers() ?: [];
+
+                    if (!empty($selected_statuses)) {
+                        $invoices = array_values(array_filter($invoices, function ($invoice) use ($selected_statuses) {
+                            return in_array($invoice['Status'] ?? '', $selected_statuses, true);
+                        }));
+                    }
+                } elseif ($has_customer) {
                     $customer_id = intval($customer['Id']);
                     $invoices = $this->invoiceService->get_for_portal(
                         $customer_id,
@@ -241,24 +249,25 @@ class PortalController {
                     );
                 }
 
-
-                // Client admins can manually create invoices from uninvoiced bookings.
-                $uninvoiced_bookings = [];
-                $uninvoiced_by_customer = [];
-                $uninvoiced_by_organisation = [];
-                if ($is_client_admin) {
-                    $uninvoiced_bookings = $this->booking_service->get_uninvoiced_bookings([
-                        'orderby' => 'b.StartDate',
-                        'order' => 'DESC',
-                    ]);
-                    $uninvoiced_by_customer = $this->booking_service->get_uninvoiced_by_customer();
-                    $uninvoiced_by_organisation = $this->booking_service->get_uninvoiced_by_organisation();
-                }
-
                 // Prepare available statuses for UI filter
                 $available_statuses = $valid_statuses;
 
                 include MYVH_PLUGIN_DIR . 'templates/Portal/invoices.php';
+                break;
+
+            case 'invoice-generate':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $uninvoiced_bookings = $this->booking_service->get_uninvoiced_bookings([
+                    'orderby' => 'b.StartDate',
+                    'order' => 'DESC',
+                ]);
+                $uninvoiced_by_customer = $this->booking_service->get_uninvoiced_by_customer();
+                $uninvoiced_by_organisation = $this->booking_service->get_uninvoiced_by_organisation();
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/invoice-generate.php';
                 break;
             case 'account':
                 include MYVH_PLUGIN_DIR . 'templates/Portal/account.php';

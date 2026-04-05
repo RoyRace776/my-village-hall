@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) exit;
         <a href="#dashboard">Dashboard</a>
         <a href="#bookings"><?php echo $is_client_admin ? 'Bookings' : 'My Bookings'; ?></a>
         <a href="#calendar">Calendar</a>
-        <a href="#invoices">Invoices</a>
+        <a href="#invoices">View Invoices</a>
         <?php if ($has_customer||$is_client_admin): ?>
             <a href="#organisations">Organisations</a>
         <?php endif; ?>
@@ -48,6 +48,7 @@ if (!defined('ABSPATH')) exit;
                     <a href="#rooms">Rooms</a>
                     <a href="#room-rates">Room Rates</a>
                     <a href="#addons">Add-ons</a>
+                    <a href="#invoice-generate">Generate Invoices</a>
                     <a href="#settings">Settings</a>
                 </div>
             </div>

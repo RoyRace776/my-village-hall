@@ -6,13 +6,16 @@ if (!defined('ABSPATH')) exit;
 class InvoiceController {
 
     private $service;
+    private $generator_service;
     private $request_validator;
 
     public function __construct(
         InvoiceService $service,
+        InvoiceGeneratorService $generator_service,
         InvoiceRequestValidator $request_validator
     ) {
         $this->service = $service;
+        $this->generator_service = $generator_service;
         $this->request_validator = $request_validator;
     }
 
@@ -28,17 +31,56 @@ class InvoiceController {
 
         $validation_result = $this->request_validator->validate($data);
         if (is_wp_error($validation_result)) {
-            wp_redirect(admin_url('admin.php?page=myvh-invoices&error=' . urlencode($validation_result->get_error_message())));
+            $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'error', $validation_result->get_error_message());
             exit;
         }
 
         $result = $this->service->save($data);
         if (is_wp_error($result)) {
-            wp_redirect(admin_url('admin.php?page=myvh-invoices&error=' . urlencode($result->get_error_message())));
+            $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'error', $result->get_error_message());
             exit;
         }
 
-        wp_redirect(admin_url('admin.php?page=myvh-invoices&updated=1'));
+        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1');
+        exit;
+    }
+
+    public function generate_from_bookings(): void {
+
+        if (!current_user_can('manage_myvh')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        check_admin_referer('myvh_generate_invoices');
+
+        $booking_ids_raw = wp_unslash($_POST['booking_ids'] ?? []);
+        if (is_string($booking_ids_raw)) {
+            $booking_ids_raw = explode(',', $booking_ids_raw);
+        }
+
+        $booking_ids = array_filter(array_map('intval', (array) $booking_ids_raw));
+        if (empty($booking_ids)) {
+            $this->redirect_with_message('myvh-invoice-generate', 'error', __('Select at least one booking to generate invoices.', 'my-village-hall'));
+            exit;
+        }
+
+        $group_by = sanitize_key($_POST['group_by'] ?? 'per_booking');
+        if (!in_array($group_by, ['per_booking', 'by_customer', 'by_organisation'], true)) {
+            $group_by = 'per_booking';
+        }
+
+        $result = $this->generator_service->generate_invoices_from_bookings($booking_ids, [
+            'group_by' => $group_by,
+            'trigger_event' => 'manual',
+            'origin' => 'admin',
+        ]);
+
+        if (is_wp_error($result)) {
+            $this->redirect_with_message('myvh-invoice-generate', 'error', $result->get_error_message());
+            exit;
+        }
+
+        $this->redirect_with_message('myvh-invoices', 'generated', (string) count($result));
         exit;
     }
 
@@ -53,7 +95,7 @@ class InvoiceController {
         $id = intval($_GET['id']);
         $this->service->delete($id);
 
-        wp_redirect(admin_url('admin.php?page=myvh-invoices&deleted=1'));
+        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'deleted', '1');
         exit;
     }
 
@@ -70,7 +112,7 @@ class InvoiceController {
 
         $this->service->update_status($id, $status);
 
-        wp_redirect(admin_url('admin.php?page=myvh-invoices&updated=1'));
+        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1');
         exit;
     }
 
@@ -87,7 +129,18 @@ class InvoiceController {
 
         $this->service->record_payment($id, $amount);
 
-        wp_redirect(admin_url('admin.php?page=myvh-invoices&updated=1'));
+        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1');
         exit;
+    }
+
+    private function get_admin_page_slug(string $fallback): string {
+        $page = sanitize_key($_REQUEST['redirect_page'] ?? $_REQUEST['page'] ?? $fallback);
+        $allowed_pages = ['myvh-invoices', 'myvh-invoice-generate'];
+
+        return in_array($page, $allowed_pages, true) ? $page : $fallback;
+    }
+
+    private function redirect_with_message(string $page, string $key, string $value): void {
+        wp_redirect(admin_url('admin.php?page=' . $page . '&' . $key . '=' . urlencode($value)));
     }
 }

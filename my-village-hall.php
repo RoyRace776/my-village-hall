@@ -176,6 +176,7 @@ class MyVillageHall {
 
         // Invoices & Payments
         $this->on_admin_post( 'myvh_save_invoice',           InvoiceController::class, 'save' );
+        $this->on_admin_post( 'myvh_generate_invoices',      InvoiceController::class, 'generate_from_bookings' );
         $this->on_admin_post( 'myvh_delete_invoice',         InvoiceController::class, 'delete' );
         $this->on_admin_post( 'myvh_update_invoice_status',  InvoiceController::class, 'update_status' );
         $this->on_admin_post( 'myvh_record_payment',         InvoiceController::class, 'record_payment' );
@@ -252,7 +253,8 @@ class MyVillageHall {
      *   ├── ── (separator) ──
      *   ├── Room Rates
      *   ├── Add-ons
-     *   ├── Invoices
+    *   ├── View Invoices
+    *   ├── Generate Invoices
      *   ├── ── (separator) ──
      *   └── Recurring Patterns
      */
@@ -363,9 +365,15 @@ class MyVillageHall {
         );
 
         add_submenu_page( 'my-village-hall',
-            __( 'Invoices', 'my-village-hall' ),
-            __( 'Invoices', 'my-village-hall' ),
+            __( 'View Invoices', 'my-village-hall' ),
+            __( 'View Invoices', 'my-village-hall' ),
             'manage_options', 'myvh-invoices', [ $this, 'render_invoices_page' ]
+        );
+
+        add_submenu_page( 'my-village-hall',
+            __( 'Generate Invoices', 'my-village-hall' ),
+            __( 'Generate Invoices', 'my-village-hall' ),
+            'manage_options', 'myvh-invoice-generate', [ $this, 'render_invoice_generate_page' ]
         );
 
         $this->add_menu_separator();
@@ -396,8 +404,8 @@ class MyVillageHall {
 
         add_submenu_page(
             $parent_slug,
-            __( 'Invoices', 'my-village-hall' ),
-            __( 'Invoices', 'my-village-hall' ),
+            __( 'View Invoices', 'my-village-hall' ),
+            __( 'View Invoices', 'my-village-hall' ),
             'manage_options',
             $target_slug,
             [ $this, 'render_invoices_page' ]
@@ -635,6 +643,7 @@ class MyVillageHall {
     public function render_room_rates_page():      void { $this->render_page( 'room-rates' ); }
     public function render_addons_page():          void { $this->render_page( 'addons' ); }
     public function render_invoices_page():        void { $this->render_page( 'invoices' ); }
+    public function render_invoice_generate_page(): void { $this->render_page( 'invoice-generate' ); }
     public function render_recurring_page():       void { $this->render_page( 'recurring' ); }
 
     /**
