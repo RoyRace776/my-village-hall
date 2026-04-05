@@ -28,8 +28,9 @@ $charge_type_labels = [
             <h2>Room Rates</h2>
             <p>Manage room pricing for this client site.</p>
         </div>
-        <a href="#room-rate-add" class="button button-primary" style="margin-bottom:4px;">
-            <span class="dashicons dashicons-plus-alt" style="vertical-align:middle; margin-right:4px;"></span> Add Room Rate
+        <a href="#room-rate-add" class="myvh-portal-add-btn">
+            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+            <span>Add Room Rate</span>
         </a>
     </div>
 

@@ -15,8 +15,9 @@ foreach ($organisation_types as $organisation_type) {
             <h2>Organisations</h2>
             <p>View your memberships, request access, and manage organisations you administer.</p>
         </div>
-        <a href="#organisation-add" class="button button-primary myvh-add-org-btn" style="margin-bottom:4px;">
-            <span class="dashicons dashicons-plus-alt" style="vertical-align:middle; margin-right:4px;"></span> Add Organisation
+        <a href="#organisation-add" class="myvh-portal-add-btn">
+            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+            <span>Add Organisation</span>
         </a>
     </div>
 

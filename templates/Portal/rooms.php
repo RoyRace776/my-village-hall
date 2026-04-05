@@ -11,8 +11,9 @@ $rooms = is_array($rooms ?? null) ? $rooms : [];
             <h2>Rooms</h2>
             <p>Manage room details and room colours for this client site.</p>
         </div>
-        <a href="#room-add" class="button button-primary" style="margin-bottom:4px;">
-            <span class="dashicons dashicons-plus-alt" style="vertical-align:middle; margin-right:4px;"></span> Add Room
+        <a href="#room-add" class="myvh-portal-add-btn">
+            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+            <span>Add Room</span>
         </a>
     </div>
     <div class="myvh-card myvh-account-card">

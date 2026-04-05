@@ -732,6 +732,48 @@ body .site-main:has(#myvh-portal) {
   border-color: #9a3a15;
 }
 
+.myvh-portal-add-btn {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  font-size: .92rem;
+  font-weight: 500;
+  line-height: 1.2;
+  box-shadow: 0 8px 20px rgba(181, 69, 27, 0.16);
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.myvh-portal-add-btn:hover,
+.myvh-portal-add-btn:focus-visible {
+  background: #9a3a15;
+  border-color: #9a3a15;
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(181, 69, 27, 0.22);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.myvh-portal-add-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 /* ==========================================================================
    10. QUICK ACTION CARDS (right sidebar)
    ========================================================================== */

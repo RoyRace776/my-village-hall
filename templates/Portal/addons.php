@@ -16,8 +16,9 @@ $charge_type_labels = [
             <h2>Add-ons</h2>
             <p>Manage booking add-ons for this client site.</p>
         </div>
-        <a href="#addon-add" class="button button-primary" style="margin-bottom:4px;">
-            <span class="dashicons dashicons-plus-alt" style="vertical-align:middle; margin-right:4px;"></span> Add Add-on
+        <a href="#addon-add" class="myvh-portal-add-btn">
+            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+            <span>Add Add-on</span>
         </a>
     </div>
 

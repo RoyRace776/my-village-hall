@@ -46,9 +46,9 @@ usort($groups, function ($a, $b) use ($today) {
         <h2><?php echo $is_client_admin ? 'Client Bookings' : 'My Bookings'; ?></h2>
 
         <?php if ($is_client_admin || !empty($customer['Id'])): ?>
-            <a href="#new-booking"
-               class="myvh-button myvh-button-primary">
-                ➕ New Booking
+            <a href="#new-booking" class="myvh-portal-add-btn">
+                <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                <span>New Booking</span>
             </a>
         <?php endif; ?>
     </div>
