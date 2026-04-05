@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Bootstrap\Network;
 
+use WP_Site;
 use WP_User;
 use MYVH\Portal\ClientAdminService;
 
@@ -38,7 +39,12 @@ class NetworkDashboard {
     public function render_dashboard(): void {
         echo '<div class="wrap"><h1>Village Hall Network Dashboard</h1>';
 
-        $sites = get_sites(['number' => 0]);
+        /** @var WP_Site[] $sites */
+        $sites = get_sites([
+            'number' => 0,
+            'count' => false,
+            'fields' => '',
+        ]);
 
         echo '<table class="widefat"><thead>
                 <tr><th>Site</th><th>Bookings</th><th>Customers</th></tr>
@@ -79,8 +85,11 @@ class NetworkDashboard {
         }
 
         $service = new ClientAdminService();
+        /** @var WP_Site[] $sites */
         $sites = get_sites([
             'number' => 0,
+            'count' => false,
+            'fields' => '',
             'orderby' => 'domain',
             'order' => 'ASC',
         ]);

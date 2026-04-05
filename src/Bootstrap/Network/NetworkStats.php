@@ -1,5 +1,7 @@
 <?php
 namespace MYVH\Bootstrap\Network;
+
+use WP_Site;
 use DateTime;
 
 if (!defined('ABSPATH')) exit;
@@ -8,7 +10,12 @@ class NetworkStats {
 
     public function get_overview(): array {
 
-        $sites = get_sites();
+        /** @var WP_Site[] $sites */
+        $sites = get_sites([
+            'number' => 0,
+            'count' => false,
+            'fields' => '',
+        ]);
         $total = 0;
         $active = 0;
 
@@ -43,7 +50,12 @@ class NetworkStats {
         $days = max(1, (int) $days);
 
         $results = array_fill(0, $days, 0);
-        $sites = get_sites();
+        /** @var WP_Site[] $sites */
+        $sites = get_sites([
+            'number' => 0,
+            'count' => false,
+            'fields' => '',
+        ]);
 
         foreach ($sites as $site) {
 

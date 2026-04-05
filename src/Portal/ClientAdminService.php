@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Portal;
 
+use WP_Site;
 use WP_User;
 
 if (!defined('ABSPATH')) {
@@ -144,7 +145,14 @@ class ClientAdminService {
 
         if ($this->is_global_admin($user_id)) {
             if (is_multisite()) {
-                foreach (get_sites(['number' => 0]) as $site) {
+                /** @var WP_Site[] $sites */
+                $sites = get_sites([
+                    'number' => 0,
+                    'count' => false,
+                    'fields' => '',
+                ]);
+
+                foreach ($sites as $site) {
                     $site_ids[] = (int) $site->blog_id;
                 }
             } else {

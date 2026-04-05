@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Bootstrap\Network;
 
+use WP_Site;
 use WP_List_Table;
 
 if (!defined('ABSPATH')) exit;
@@ -22,7 +23,12 @@ class NetworkSitesTable extends WP_List_Table {
 
     public function prepare_items(): void {
 
-        $sites = get_sites();
+        /** @var WP_Site[] $sites */
+        $sites = get_sites([
+            'number' => 0,
+            'count' => false,
+            'fields' => '',
+        ]);
         $data = [];
 
         foreach ($sites as $site) {
