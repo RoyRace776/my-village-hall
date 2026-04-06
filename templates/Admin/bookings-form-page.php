@@ -119,6 +119,7 @@ $form_recurrence_day = sanitize_text_field($form_data['recurrence_day'] ?? strto
 $form_recurrence_end_type = sanitize_text_field($form_data['recurrence_end_type'] ?? 'date');
 $form_recurrence_end_date = sanitize_text_field($form_data['recurrence_end_date'] ?? date('Y-m-d', strtotime('+1 year')));
 $form_max_occurrences = max(1, intval($form_data['max_occurrences'] ?? 12));
+$form_edit_scope = sanitize_text_field($form_data['edit_scope'] ?? 'this_only');
 
 $selected_customer_organisations = $form_customer_id > 0
     ? ($customer_organisations_map[$form_customer_id] ?? [])
@@ -463,6 +464,31 @@ $status_colors = [
                                 </td>
                             </tr>
 
+                                <?php if ($edit_booking && $recurring_pattern): ?>
+                                <tr>
+                                    <th scope="row"><?php _e('Apply changes to', 'my-village-hall'); ?></th>
+                                    <td>
+                                        <fieldset>
+                                            <label style="display:block; margin-bottom:8px;">
+                                                <input type="radio" name="edit_scope" value="this_only" <?php checked($form_edit_scope, 'this_only'); ?>>
+                                                <?php _e('This booking only', 'my-village-hall'); ?>
+                                            </label>
+                                            <label style="display:block; margin-bottom:8px;">
+                                                <input type="radio" name="edit_scope" value="all_bookings" <?php checked($form_edit_scope, 'all_bookings'); ?>>
+                                                <?php _e('All bookings in this series', 'my-village-hall'); ?>
+                                            </label>
+                                            <label style="display:block; margin-bottom:8px;">
+                                                <input type="radio" name="edit_scope" value="this_and_future" <?php checked($form_edit_scope, 'this_and_future'); ?>>
+                                                <?php _e('This booking and all future bookings', 'my-village-hall'); ?>
+                                            </label>
+                                            <p class="description" style="margin:8px 0 0;">
+                                                <?php _e('Series-wide updates currently apply description, status, visibility, and add-ons. Use "This booking only" for date, time, room, customer, organisation, or recurrence changes.', 'my-village-hall'); ?>
+                                            </p>
+                                        </fieldset>
+                                    </td>
+                                </tr>
+                                <?php endif; ?>
+
                             <tr>
                                 <th><?php _e('Start Date', 'my-village-hall'); ?> *</th>
                                 <td>
@@ -638,7 +664,7 @@ $status_colors = [
                         <div style="padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-top: 20px;">
                             <p style="margin: 0;">
                                 <strong>⚠️ <?php _e('Note:', 'my-village-hall'); ?></strong>
-                                <?php _e('This is part of a recurring pattern. Changes will only affect this booking.', 'my-village-hall'); ?>
+                                <?php _e('This is part of a recurring pattern. Choose how far this update should apply before saving.', 'my-village-hall'); ?>
                                 <a href="<?php echo admin_url('admin.php?page=myvh-recurring'); ?>">
                                     <?php _e('Manage pattern', 'my-village-hall'); ?>
                                 </a>

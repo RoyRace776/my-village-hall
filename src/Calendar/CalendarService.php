@@ -151,6 +151,7 @@ class CalendarService {
         $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
         $existing_booking = $booking_id > 0 ? $this->booking_service->get_by_id($booking_id) : null;
         $current_status = sanitize_text_field((string)($existing_booking['Status'] ?? BookingStatus::PENDING));
+        $addons = $this->normalize_addons($request['addons'] ?? []);
 
         $data = [
             'booking_id' => $booking_id,
@@ -163,7 +164,13 @@ class CalendarService {
             'room_id' => intval($request['room_id'] ?? 0),
             'customer_id' => intval($request['customer_id'] ?? 0),
             'organisation_id' => intval($request['organisation_id'] ?? 0),
+            'addons' => $addons,
+            'edit_scope' => sanitize_text_field($request['edit_scope'] ?? ''),
         ];
+
+        if (array_key_exists('public', $request)) {
+            $data['public'] = intval($request['public']);
+        }
 
         $validation = $this->validate_calendar_update_payload($data);
         if (is_wp_error($validation)) {

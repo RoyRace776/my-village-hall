@@ -84,6 +84,7 @@ window.BookingModalCreate = (function() {
         config.editMode = false;
         config.editBookingId = 0;
         setValue('booking_id', '');
+        resetRecurringEditScope();
         updateModalMode(false);
     }
 
@@ -128,6 +129,7 @@ window.BookingModalCreate = (function() {
                     }
 
                     const booking = res.data.booking;
+                    booking.__addons = Array.isArray(res.data.addons) ? res.data.addons : [];
 
                     // 🔑 IMPORTANT: load dropdowns first
                     return populateDropdowns()
@@ -144,6 +146,8 @@ window.BookingModalCreate = (function() {
 
                     // ✅ Use your helper (don’t manually split)
                     setDisplayedDateTimes(booking['StartDate'], booking['EndDate']);
+                    applyExistingAddons(booking.__addons || []);
+                    setRecurringEditScopeVisibility(!!booking['RecurringPatternId']);
 
                     // ❌ REMOVE this (it’s wrong and conflicts)
                     // form.querySelector("[name=text]").value = booking.Description;
@@ -190,6 +194,7 @@ window.BookingModalCreate = (function() {
                     }
 
                     const booking = res.data.booking;
+                    booking.__addons = Array.isArray(res.data.addons) ? res.data.addons : [];
 
                     return populateDropdowns()
                         .then(() => {
@@ -211,6 +216,8 @@ window.BookingModalCreate = (function() {
                     setValue('start', startDateTime);
                     setValue('end', endDateTime);
                     setDisplayedDateTimes(startDateTime, endDateTime);
+                    applyExistingAddons(booking.__addons || []);
+                    setRecurringEditScopeVisibility(!!booking['RecurringPatternId']);
 
                     const publicCheckbox = form.querySelector("[name=public]");
                     if (publicCheckbox) {
@@ -289,6 +296,8 @@ window.BookingModalCreate = (function() {
         if (recurringOptions) {
             recurringOptions.style.display = "none";
         }
+
+        resetRecurringEditScope();
 
         const maxOccurrences = form.querySelector("[name=max_occurrences]");
         const recurrenceEndDate = form.querySelector("[name=recurrence_end_date]");
@@ -469,6 +478,64 @@ window.BookingModalCreate = (function() {
         const checkbox = row.querySelector(".myvh-modal-addon-checkbox");
         if (checkbox) {
             checkbox.checked = enabled;
+        }
+    }
+
+    function applyExistingAddons(addons) {
+        const addonMap = {};
+
+        (Array.isArray(addons) ? addons : []).forEach(addon => {
+            const addonId = String(addon.AddonId || addon.addon_id || '');
+            if (addonId) {
+                addonMap[addonId] = addon;
+            }
+        });
+
+        form.querySelectorAll('.myvh-modal-addon-row').forEach(row => {
+            const addonIdField = row.querySelector('input[name$="[addon_id]"]');
+            const priceField = row.querySelector('.myvh-modal-addon-price');
+            const quantityField = row.querySelector('.myvh-modal-addon-qty');
+            const addonId = addonIdField ? String(addonIdField.value || '') : '';
+            const addon = addonId ? addonMap[addonId] : null;
+
+            if (addon && priceField) {
+                const resolvedPrice = addon.UnitPrice ?? addon.unit_price ?? priceField.value ?? 0;
+                priceField.value = Number(resolvedPrice).toFixed(2);
+            }
+
+            if (addon && quantityField) {
+                quantityField.value = String(addon.Quantity ?? addon.quantity ?? 1);
+            } else if (quantityField) {
+                quantityField.value = '1';
+            }
+
+            toggleAddonRow(row, !!addon);
+        });
+    }
+
+    function resetRecurringEditScope() {
+        const scopeRow = form.querySelector('#myvh-modal-edit-scope-row');
+        form.querySelectorAll('input[name=edit_scope]').forEach((radio, index) => {
+            radio.checked = index === 0;
+        });
+
+        if (scopeRow) {
+            scopeRow.style.display = 'none';
+        }
+    }
+
+    function setRecurringEditScopeVisibility(show) {
+        const scopeRow = form.querySelector('#myvh-modal-edit-scope-row');
+        if (!scopeRow) {
+            return;
+        }
+
+        scopeRow.style.display = show && config.editMode ? '' : 'none';
+
+        if (!show || !config.editMode) {
+            form.querySelectorAll('input[name=edit_scope]').forEach((radio, index) => {
+                radio.checked = index === 0;
+            });
         }
     }
 
@@ -789,6 +856,10 @@ window.BookingModalCreate = (function() {
             return;
         }
 
+        if (!confirmRecurringScopeForPortalEdit()) {
+            return;
+        }
+
         const formData = buildSubmitFormData();
 
         setLoading(true);
@@ -841,6 +912,72 @@ window.BookingModalCreate = (function() {
         });
 
         return formData;
+    }
+
+    function confirmRecurringScopeForPortalEdit() {
+        if (config.context !== 'portal' || !config.editMode) {
+            return true;
+        }
+
+        const scopeRow = form.querySelector('#myvh-modal-edit-scope-row');
+        if (!scopeRow || scopeRow.style.display === 'none') {
+            return true;
+        }
+
+        const currentScope = getSelectedRecurringEditScope();
+        const defaultChoice = recurringScopeToPromptChoice(currentScope);
+        const choice = window.prompt(
+            'Apply this recurring booking update to:\n1. This booking only\n2. All bookings in this series\n3. This booking and all future bookings',
+            defaultChoice
+        );
+
+        if (choice === null) {
+            return false;
+        }
+
+        const selectedScope = promptChoiceToRecurringScope(choice);
+        if (!selectedScope) {
+            window.alert('Please choose 1, 2, or 3.');
+            return false;
+        }
+
+        setRecurringEditScope(selectedScope);
+        return true;
+    }
+
+    function getSelectedRecurringEditScope() {
+        return form.querySelector('input[name=edit_scope]:checked')?.value || 'this_only';
+    }
+
+    function setRecurringEditScope(scope) {
+        form.querySelectorAll('input[name=edit_scope]').forEach((radio) => {
+            radio.checked = radio.value === scope;
+        });
+    }
+
+    function recurringScopeToPromptChoice(scope) {
+        switch (scope) {
+            case 'all_bookings':
+                return '2';
+            case 'this_and_future':
+                return '3';
+            case 'this_only':
+            default:
+                return '1';
+        }
+    }
+
+    function promptChoiceToRecurringScope(choice) {
+        switch (String(choice || '').trim()) {
+            case '1':
+                return 'this_only';
+            case '2':
+                return 'all_bookings';
+            case '3':
+                return 'this_and_future';
+            default:
+                return '';
+        }
     }
 
     // ─────────────────────────────

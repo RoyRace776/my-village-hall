@@ -77,6 +77,7 @@ class CalendarAjaxController {
         $edit_rules = $this->booking_service->can_edit($booking);
         wp_send_json_success([
             'booking' => $booking,
+            'addons' => $this->booking_service->get_addons_for_booking($booking_id),
             'can_edit' => !empty($edit_rules['can_edit']),
             'edit_reason' => $edit_rules['reason'] ?? '',
         ]);

@@ -164,6 +164,24 @@ class BookingServiceTest extends UnitTestCase {
         ], $overrides);
     }
 
+    private function recurring_booking_record(int $booking_id, array $overrides = []): array {
+        return array_merge([
+            'Id' => $booking_id,
+            'RecurringPatternId' => 200,
+            'CustomerId' => 1,
+            'OrganisationId' => 0,
+            'RoomId' => 5,
+            'Status' => 'confirmed',
+            'StartDate' => '2026-06-01',
+            'EndDate' => '2026-06-01',
+            'StartTime' => '09:00:00',
+            'EndTime' => '11:00:00',
+            'Description' => 'Yoga class',
+            'Public' => 0,
+            'ChargeableHours' => 2,
+        ], $overrides);
+    }
+
     /**
      * Wires up the mocks for the standard "happy path" CREATE scenario.
      * Returns the booking id that repo->create() will return.
@@ -190,7 +208,7 @@ class BookingServiceTest extends UnitTestCase {
         $this->pricing->shouldReceive('get_charge_snapshot')
             ->with($new_id)
             ->once()
-            ->andReturn([]);
+            ->andReturnUsing(static fn () => []);
 
         $this->booking_charge_repo->shouldReceive('delete_by_booking_id')
             ->with($new_id)
@@ -271,7 +289,7 @@ class BookingServiceTest extends UnitTestCase {
         // update_booking() fetches the current record first
         $this->booking_repo->shouldReceive('get_by_id')
             ->with($booking_id)
-            ->andReturn(['Id' => $booking_id, 'Status' => 'confirmed', 'Public' => 0]);
+            ->andReturnUsing(static fn () => ['Id' => $booking_id, 'Status' => 'confirmed', 'Public' => 0]);
 
         $this->booking_repo->shouldReceive('update')
             ->once()
@@ -284,7 +302,7 @@ class BookingServiceTest extends UnitTestCase {
         $this->pricing->shouldReceive('get_charge_snapshot')
             ->with($booking_id)
             ->once()
-            ->andReturn([]);
+            ->andReturnUsing(static fn () => []);
 
         $this->booking_charge_repo->shouldReceive('delete_by_booking_id')
             ->with($booking_id)
@@ -298,6 +316,176 @@ class BookingServiceTest extends UnitTestCase {
         $result = $this->service->save($data);
 
         $this->assertSame($booking_id, $result);
+    }
+
+    /** @test */
+    public function save_update_does_not_replace_addons_when_payload_does_not_include_them(): void {
+        $booking_id = 99;
+        $data = $this->minimal_create_data(['booking_id' => $booking_id]);
+        unset($data['addons']);
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+
+        $this->room_service->shouldReceive('get')
+            ->with(5)
+            ->once()
+            ->andReturn($this->minimal_room());
+
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->with($booking_id)
+            ->once()
+            ->andReturn($this->recurring_booking_record($booking_id, ['RecurringPatternId' => null]));
+
+        $this->booking_repo->shouldReceive('update')
+            ->once()
+            ->andReturn(true);
+
+        $this->addon_service->shouldReceive('save_booking_addons')->never();
+
+        $this->pricing->shouldReceive('get_charge_snapshot')
+            ->with($booking_id)
+            ->once()
+            ->andReturnUsing(static fn () => []);
+
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')
+            ->with($booking_id)
+            ->once()
+            ->andReturn(1);
+
+        $this->booking_charge_repo->shouldReceive('create')
+            ->once()
+            ->andReturn(1);
+
+        $result = $this->service->save($data);
+
+        $this->assertSame($booking_id, $result);
+    }
+
+    /** @test */
+    public function save_update_with_all_bookings_scope_updates_each_booking_in_the_pattern(): void {
+        $booking_id = 99;
+        $pattern_id = 200;
+        $data = $this->minimal_create_data([
+            'booking_id' => $booking_id,
+            'description' => 'Updated series description',
+            'edit_scope' => 'all_bookings',
+            'addons' => [
+                [
+                    'addon_id' => 10,
+                    'quantity' => 1,
+                    'unit_price' => 5,
+                    'description' => '',
+                ],
+            ],
+        ]);
+
+        $bookings = [
+            $this->recurring_booking_record(99),
+            $this->recurring_booking_record(100, [
+                'StartDate' => '2026-06-08',
+                'EndDate' => '2026-06-08',
+            ]),
+        ];
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
+        $this->booking_repo->shouldReceive('get_by_id')->with($booking_id)->once()->andReturn($this->recurring_booking_record($booking_id));
+        $this->booking_repo->shouldReceive('get_by_pattern_id')->with($pattern_id)->once()->andReturn($bookings);
+        $this->booking_repo->shouldReceive('update')->twice()->andReturn(true);
+        $this->addon_service->shouldReceive('save_booking_addons')->twice()->withAnyArgs();
+
+        $this->pricing->shouldReceive('get_charge_snapshot')->with(99)->once()->andReturnUsing(static fn () => []);
+        $this->pricing->shouldReceive('get_charge_snapshot')->with(100)->once()->andReturnUsing(static fn () => []);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(99)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(100)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('create')->twice()->andReturn(1);
+
+        $result = $this->service->save($data);
+
+        $this->assertSame($booking_id, $result);
+    }
+
+    /** @test */
+    public function save_update_with_this_and_future_scope_updates_only_split_future_bookings(): void {
+        $booking_id = 100;
+        $pattern_id = 200;
+        $data = $this->minimal_create_data([
+            'booking_id' => $booking_id,
+            'start_date' => '2026-06-08',
+            'end_date' => '2026-06-08',
+            'description' => 'Future series description',
+            'edit_scope' => 'this_and_future',
+            'addons' => [
+                [
+                    'addon_id' => 11,
+                    'quantity' => 2,
+                    'unit_price' => 7,
+                    'description' => '',
+                ],
+            ],
+        ]);
+
+        $all_bookings = [
+            $this->recurring_booking_record(99),
+            $this->recurring_booking_record(100, ['StartDate' => '2026-06-08', 'EndDate' => '2026-06-08']),
+            $this->recurring_booking_record(101, ['StartDate' => '2026-06-15', 'EndDate' => '2026-06-15']),
+        ];
+        $future_bookings = [
+            $this->recurring_booking_record(100, ['RecurringPatternId' => 201, 'StartDate' => '2026-06-08', 'EndDate' => '2026-06-08']),
+            $this->recurring_booking_record(101, ['RecurringPatternId' => 201, 'StartDate' => '2026-06-15', 'EndDate' => '2026-06-15']),
+        ];
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
+        $this->booking_repo->shouldReceive('get_by_id')->with($booking_id)->once()->andReturn($this->recurring_booking_record($booking_id, ['StartDate' => '2026-06-08', 'EndDate' => '2026-06-08']));
+        $this->booking_repo->shouldReceive('get_by_pattern_id')->with($pattern_id)->once()->andReturn($all_bookings);
+        $this->recurring_pattern_service->shouldReceive('split_pattern_from_booking')
+            ->with($pattern_id, $booking_id)
+            ->once()
+            ->andReturnUsing(static fn () => [
+                'new_pattern_id' => 201,
+                'future_bookings' => $future_bookings,
+                'previous_bookings' => [$all_bookings[0]],
+            ]);
+        $this->booking_repo->shouldReceive('update')->twice()->andReturn(true);
+        $this->addon_service->shouldReceive('save_booking_addons')->twice()->withAnyArgs();
+        $this->pricing->shouldReceive('get_charge_snapshot')->with(100)->once()->andReturnUsing(static fn () => []);
+        $this->pricing->shouldReceive('get_charge_snapshot')->with(101)->once()->andReturnUsing(static fn () => []);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(100)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(101)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('create')->twice()->andReturn(1);
+
+        $result = $this->service->save($data);
+
+        $this->assertSame($booking_id, $result);
+    }
+
+    /** @test */
+    public function save_update_with_series_scope_rejects_schedule_changes(): void {
+        $booking_id = 99;
+        $data = $this->minimal_create_data([
+            'booking_id' => $booking_id,
+            'start_time' => '10:00:00',
+            'edit_scope' => 'all_bookings',
+        ]);
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('rollback')->once();
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
+        $this->booking_repo->shouldReceive('get_by_id')->with($booking_id)->once()->andReturn($this->recurring_booking_record($booking_id));
+
+        $result = $this->service->save($data);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('validation', $result->get_error_code());
     }
 
     /** @test */
@@ -326,7 +514,7 @@ class BookingServiceTest extends UnitTestCase {
         ->andReturn(10);
 
     $this->addon_service->shouldReceive('save_booking_addons')->once();
-    $this->pricing->shouldReceive('get_charge_snapshot')->andReturn([]);
+    $this->pricing->shouldReceive('get_charge_snapshot')->andReturnUsing(static fn () => []);
     $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->andReturn(1);
     $this->booking_charge_repo->shouldReceive('create')->andReturn(1);
 
@@ -363,7 +551,7 @@ class BookingServiceTest extends UnitTestCase {
 
     /** @test */
     public function recalculate_booking_charges_returns_wp_error_when_delete_fails(): void {
-        $this->pricing->shouldReceive('get_charge_snapshot')->andReturn([]);
+        $this->pricing->shouldReceive('get_charge_snapshot')->andReturnUsing(static fn () => []);
 
         $this->booking_charge_repo->shouldReceive('delete_by_booking_id')
             ->with(7)
@@ -378,7 +566,7 @@ class BookingServiceTest extends UnitTestCase {
 
     /** @test */
     public function recalculate_booking_charges_returns_wp_error_when_create_fails(): void {
-        $this->pricing->shouldReceive('get_charge_snapshot')->andReturn([]);
+        $this->pricing->shouldReceive('get_charge_snapshot')->andReturnUsing(static fn () => []);
         $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->andReturn(1);
         $this->booking_charge_repo->shouldReceive('create')->andReturn(false);
 
@@ -390,7 +578,7 @@ class BookingServiceTest extends UnitTestCase {
 
     /** @test */
     public function recalculate_booking_charges_returns_true_on_success(): void {
-        $this->pricing->shouldReceive('get_charge_snapshot')->andReturn([]);
+        $this->pricing->shouldReceive('get_charge_snapshot')->andReturnUsing(static fn () => []);
         $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->andReturn(1);
         $this->booking_charge_repo->shouldReceive('create')->andReturn(1);
 
@@ -559,7 +747,7 @@ class BookingServiceTest extends UnitTestCase {
             }))
             ->andReturn($new_id);
         $this->addon_service->shouldReceive('save_booking_addons')->once()->withAnyArgs();
-        $this->pricing->shouldReceive('get_charge_snapshot')->andReturn([]);
+        $this->pricing->shouldReceive('get_charge_snapshot')->andReturnUsing(static fn () => []);
         $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->andReturn(1);
         $this->booking_charge_repo->shouldReceive('create')->andReturn(1);
 

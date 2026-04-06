@@ -105,6 +105,35 @@ document.addEventListener("DOMContentLoaded", () => {
         const bookingEditForm = document.getElementById('myvh-booking-edit-form');
         if (bookingEditForm) {
             const submitButton = bookingEditForm.querySelector('button[type="submit"]');
+            const scopeRadios = Array.from(bookingEditForm.querySelectorAll('input[name="edit_scope"]'));
+            const scopeHint = bookingEditForm.querySelector('[data-recurring-scope-hint]');
+            const scheduleFields = Array.from(bookingEditForm.querySelectorAll('input[name="start_date"], input[name="start_time"], input[name="end_time"]'));
+
+            const syncRecurringScopeState = () => {
+                if (!scopeRadios.length || !scheduleFields.length) {
+                    return;
+                }
+
+                const scheduleChanged = scheduleFields.some((field) => field.defaultValue !== field.value);
+
+                scopeRadios.forEach((radio) => {
+                    const isSingle = radio.value === 'this_only';
+                    radio.disabled = scheduleChanged && !isSingle;
+                    if (radio.disabled && radio.checked) {
+                        const fallback = scopeRadios.find(option => option.value === 'this_only');
+                        if (fallback) {
+                            fallback.checked = true;
+                        }
+                    }
+                });
+
+                if (scopeHint) {
+                    scopeHint.textContent = scheduleChanged
+                        ? 'Date and time changes only apply to this booking in the portal edit form.'
+                        : 'Series-wide updates apply description only in this portal form. If you change the date or time, broader options will be disabled.';
+                }
+            };
+
             if (submitButton) {
                 // Track all non-hidden fields
                 const trackedFields = Array.from(
@@ -136,6 +165,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     field.addEventListener('change', syncSubmitState);
                 });
 
+                scheduleFields.forEach((field) => {
+                    field.addEventListener('input', syncRecurringScopeState);
+                    field.addEventListener('change', syncRecurringScopeState);
+                });
+
+                syncRecurringScopeState();
                 syncSubmitState();
             }
         }

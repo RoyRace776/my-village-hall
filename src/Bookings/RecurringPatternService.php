@@ -45,6 +45,119 @@ class RecurringPatternService {
         return $this->get_booking_repo()->get_by_pattern_id($pattern_id);
     }
 
+    public function split_pattern_from_booking(int $pattern_id, int $booking_id): array|WP_Error {
+        $pattern = $this->repo->get_by_id($pattern_id);
+        if (!$pattern) {
+            return new WP_Error('not_found', __('Recurring pattern not found', 'my-village-hall'));
+        }
+
+        $bookings = $this->get_bookings_for_pattern($pattern_id);
+        if (empty($bookings)) {
+            return new WP_Error('not_found', __('Recurring bookings not found', 'my-village-hall'));
+        }
+
+        usort($bookings, static function (array $left, array $right): int {
+            $left_key = sprintf(
+                '%s %s %010d',
+                (string) ($left['StartDate'] ?? ''),
+                (string) ($left['StartTime'] ?? ''),
+                intval($left['Id'] ?? 0)
+            );
+            $right_key = sprintf(
+                '%s %s %010d',
+                (string) ($right['StartDate'] ?? ''),
+                (string) ($right['StartTime'] ?? ''),
+                intval($right['Id'] ?? 0)
+            );
+
+            return strcmp($left_key, $right_key);
+        });
+
+        $selected_index = -1;
+        foreach ($bookings as $index => $booking) {
+            if (intval($booking['Id'] ?? 0) === $booking_id) {
+                $selected_index = $index;
+                break;
+            }
+        }
+
+        if ($selected_index < 0) {
+            return new WP_Error('not_found', __('Booking not found in recurring pattern', 'my-village-hall'));
+        }
+
+        if ($selected_index === 0) {
+            return [
+                'new_pattern_id' => $pattern_id,
+                'future_bookings' => $bookings,
+                'previous_bookings' => [],
+            ];
+        }
+
+        $previous_bookings = array_slice($bookings, 0, $selected_index);
+        $future_bookings = array_slice($bookings, $selected_index);
+        $parent_booking = $future_bookings[0] ?? null;
+
+        if (!$parent_booking) {
+            return new WP_Error('validation', __('No future recurring bookings were found to split', 'my-village-hall'));
+        }
+
+        $new_pattern_record = [
+            'ParentBookingId' => intval($parent_booking['Id']),
+            'RecurrenceType' => sanitize_text_field($pattern['RecurrenceType'] ?? ''),
+            'RecurrenceInterval' => intval($pattern['RecurrenceInterval'] ?? 1),
+            'RecurrenceDay' => sanitize_text_field($pattern['RecurrenceDay'] ?? ''),
+            'RecurrenceWeek' => sanitize_text_field($pattern['RecurrenceWeek'] ?? ''),
+            'StartDate' => sanitize_text_field($parent_booking['StartDate'] ?? ''),
+            'EndDate' => !empty($pattern['EndDate']) ? sanitize_text_field($pattern['EndDate']) : null,
+            'MaxOccurrences' => !empty($pattern['MaxOccurrences']) ? count($future_bookings) : null,
+            'OccurrenceCount' => count($future_bookings),
+            'IsActive' => !empty($pattern['IsActive']) ? 1 : 0,
+        ];
+
+        $new_pattern_id = $this->repo->create($new_pattern_record);
+        if ($new_pattern_id === false) {
+            return new WP_Error('database', __('Failed to create the future recurring pattern', 'my-village-hall'));
+        }
+
+        foreach ($future_bookings as &$future_booking) {
+            $updated = $this->booking_repo->update(
+                ['RecurringPatternId' => $new_pattern_id],
+                ['Id' => intval($future_booking['Id'] ?? 0)]
+            );
+
+            if ($updated === false) {
+                return new WP_Error('database', __('Failed to reassign recurring bookings to the future pattern', 'my-village-hall'));
+            }
+
+            $future_booking['RecurringPatternId'] = $new_pattern_id;
+        }
+        unset($future_booking);
+
+        $last_previous_booking = end($previous_bookings);
+        $old_pattern_update = [
+            'OccurrenceCount' => count($previous_bookings),
+        ];
+
+        if ($last_previous_booking) {
+            $old_pattern_update['EndDate'] = sanitize_text_field($last_previous_booking['StartDate'] ?? '');
+        }
+
+        if (!empty($pattern['MaxOccurrences'])) {
+            $old_pattern_update['MaxOccurrences'] = count($previous_bookings);
+        }
+
+        $updated_pattern = $this->repo->update($old_pattern_update, ['Id' => $pattern_id]);
+        if ($updated_pattern === false) {
+            return new WP_Error('database', __('Failed to update the original recurring pattern', 'my-village-hall'));
+        }
+
+        return [
+            'new_pattern_id' => $new_pattern_id,
+            'future_bookings' => $future_bookings,
+            'previous_bookings' => $previous_bookings,
+        ];
+    }
+
     /**
      * Save a recurring pattern and immediately create all future bookings
      */
@@ -178,7 +291,7 @@ class RecurringPatternService {
             'errors' => []
         ];
 
-        $duration_days = max(0, (int) ((strtotime($parent_booking['EndDate']) - strtotime($parent_booking['StartDate'])) / DAY_IN_SECONDS));
+        $duration_days = max(0, (int) ((strtotime($parent_booking['EndDate']) - strtotime($parent_booking['StartDate'])) / 86400));
 
         // Create bookings for each date
         foreach ($dates as $date) {

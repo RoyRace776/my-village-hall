@@ -18,6 +18,7 @@ class SaveBookingRequest extends RequestMapperBase
     {
         $data = [
             'booking_id'         => self::as_int($post, 'booking_id'),
+            'edit_scope'         => self::as_text($post, 'edit_scope'),
             'customer_id'        => self::as_int($post, 'customer_id'),
             'organisation_id'    => self::as_int($post, 'organisation_id'),
             'room_id'            => self::as_int($post, 'room_id'),

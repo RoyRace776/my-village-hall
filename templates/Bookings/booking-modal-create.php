@@ -80,6 +80,26 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
                             </select>
                         </td>
                     </tr>
+                    <tr id="myvh-modal-edit-scope-row" style="display:none;">
+                        <th>Apply changes to</th>
+                        <td>
+                            <label style="display:block; margin-bottom:8px;">
+                                <input type="radio" name="edit_scope" value="this_only" checked>
+                                This booking only
+                            </label>
+                            <label style="display:block; margin-bottom:8px;">
+                                <input type="radio" name="edit_scope" value="all_bookings">
+                                All bookings in this series
+                            </label>
+                            <label style="display:block; margin-bottom:8px;">
+                                <input type="radio" name="edit_scope" value="this_and_future">
+                                This booking and all future bookings
+                            </label>
+                            <p class="description" style="margin:8px 0 0;">
+                                Series-wide updates apply description, status, visibility, and add-ons.
+                            </p>
+                        </td>
+                    </tr>
                     <tr>
                         <th>Visibility</th>
                         <td>
@@ -183,7 +203,7 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
                                 <td>
                                     <input type="number" step="0.01" min="0" name="addons[<?php echo $i; ?>][unit_price]" class="small-text myvh-modal-addon-price" value="<?php echo esc_attr(number_format((float)$addon['Price'], 2, '.', '')); ?>" disabled>
                                 </td>
-                                <input type="hidden" name="addons[<?php echo $i; ?>][quantity]" value="1">
+                                <input type="hidden" name="addons[<?php echo $i; ?>][quantity]" class="myvh-modal-addon-qty" value="1">
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

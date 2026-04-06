@@ -53,6 +53,27 @@ if (!defined('ABSPATH')) exit;
                         <textarea id="myvh-booking-description" name="description" rows="3"><?php echo esc_textarea($booking['Description'] ?? ''); ?></textarea>
                     </label>
 
+                    <?php if (!empty($booking['RecurringPatternId'])): ?>
+                        <fieldset class="myvh-account-field" data-recurring-scope-fieldset>
+                            <span>Apply changes to</span>
+                            <label>
+                                <input type="radio" name="edit_scope" value="this_only" checked>
+                                This booking only
+                            </label>
+                            <label>
+                                <input type="radio" name="edit_scope" value="all_bookings">
+                                All bookings in this series
+                            </label>
+                            <label>
+                                <input type="radio" name="edit_scope" value="this_and_future">
+                                This booking and all future bookings
+                            </label>
+                            <p class="myvh-account-hint" data-recurring-scope-hint>
+                                Series-wide updates apply description only in this portal form. If you change the date or time, broader options will be disabled.
+                            </p>
+                        </fieldset>
+                    <?php endif; ?>
+
                     <p class="myvh-account-hint">Room and organisation are fixed for this edit flow.</p>
                     <?php if (!empty($is_client_admin) && !empty($booking['CustomerName'])): ?>
                         <p class="myvh-account-hint">Customer: <?php echo esc_html($booking['CustomerName']); ?></p>

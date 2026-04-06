@@ -46,12 +46,17 @@ class UpdateBookingAction {
 
         $result = $this->booking_service->save([
             'booking_id'  => $booking_id,
+            'edit_scope'  => sanitize_text_field($input['edit_scope'] ?? ''),
             'customer_id' => (int) $booking['CustomerId'],
+            'organisation_id' => (int) ($booking['OrganisationId'] ?? 0),
             'room_id'     => (int) $booking['RoomId'],
             'start_date'  => sanitize_text_field($input['start_date'] ?? $booking['StartDate']),
+            'end_date'    => sanitize_text_field($booking['EndDate'] ?? $booking['StartDate']),
             'start_time'  => sanitize_text_field($input['start_time'] ?? substr($booking['StartTime'], 0, 5)),
             'end_time'    => sanitize_text_field($input['end_time'] ?? substr($booking['EndTime'], 0, 5)),
             'description' => sanitize_textarea_field($input['description'] ?? $booking['Description']),
+            'status'      => sanitize_text_field($booking['Status'] ?? ''),
+            'public'      => !empty($booking['Public']) ? 1 : 0,
         ]);
 
         if (is_wp_error($result)) {
