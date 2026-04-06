@@ -148,7 +148,7 @@ class AssetLoader {
                 'myvh-booking-modal-create',
                 MYVH_PLUGIN_URL . 'assets/js/booking-modal-create.js',
                 ['myvh-calendar-core'], // optional but safe
-                '1.0',
+                self::asset_version( 'assets/js/booking-modal-create.js' ),
                 true
             );
 
@@ -156,7 +156,7 @@ class AssetLoader {
                 'myvh-booking-modal-view',
                 MYVH_PLUGIN_URL . 'assets/js/booking-modal-view.js',
                 ['myvh-calendar-core'], // optional but safe
-                '1.0',
+                self::asset_version( 'assets/js/booking-modal-view.js' ),
                 true
             );
 
@@ -231,7 +231,7 @@ class AssetLoader {
             'myvh-booking-modal-create',
             MYVH_PLUGIN_URL . 'assets/js/booking-modal-create.js',
             ['myvh-calendar-core'], // optional but safe
-            '1.0',
+            self::asset_version( 'assets/js/booking-modal-create.js' ),
             true
         );
 
@@ -239,7 +239,7 @@ class AssetLoader {
             'myvh-booking-modal-view',
             MYVH_PLUGIN_URL . 'assets/js/booking-modal-view.js',
             ['myvh-calendar-core'], // optional but safe
-            '1.0',
+            self::asset_version( 'assets/js/booking-modal-view.js' ),
             true
         );
 
@@ -255,7 +255,7 @@ class AssetLoader {
             'myvh-bookings',
             MYVH_PLUGIN_URL . 'assets/js/bookings.js',
             [ 'jquery' ],
-            MYVH_VERSION,
+            self::asset_version( 'assets/js/bookings.js' ),
             true
         );
 
@@ -263,7 +263,7 @@ class AssetLoader {
             'myvh-dashboard',
             MYVH_PLUGIN_URL . 'assets/js/dashboard.js',
             [ 'jquery', 'myvh-calendar-portal', 'myvh-bookings' ],
-            MYVH_VERSION,
+            self::asset_version( 'assets/js/dashboard.js' ),
             true
         );
 
@@ -271,7 +271,7 @@ class AssetLoader {
             'myvh-portal-app',
             MYVH_PLUGIN_URL . 'assets/js/portal-app.js',
             [ 'myvh-dashboard' ],
-            MYVH_VERSION,
+            self::asset_version( 'assets/js/portal-app.js' ),
             true
         );
     }

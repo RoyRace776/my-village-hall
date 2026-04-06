@@ -167,49 +167,11 @@ class PortalController {
                 include MYVH_PLUGIN_DIR . 'templates/Portal/bookings.php';
                 break;
 
-            case 'bookings-new':
-                $can_create_booking = $is_client_admin || $has_customer;
-                include MYVH_PLUGIN_DIR . 'templates/Portal/bookings-new.php';
-                break;
-
-            case 'booking-view':
-                $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = BookingAccess::get_accessible_booking(
-                                $booking_id,
-                                intval($customer['Id'] ?? 0),
-                                $is_client_admin,
-                                $this->booking_service
-                            );
-                $delete_rules = !empty($booking)
-                    ? $this->booking_service->can_delete($booking)
-                    : ['can_delete' => false, 'reason' => 'Booking not found or you do not have permission to delete it.'];
-                include MYVH_PLUGIN_DIR . 'templates/Portal/booking-view.php';
-                break;
-
-            case 'booking-edit':
-                $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = BookingAccess::get_accessible_booking(
-                                $booking_id,
-                                intval($customer['Id'] ?? 0),
-                                $is_client_admin,
-                                $this->booking_service
-                            );
-                include MYVH_PLUGIN_DIR . 'templates/Portal/booking-edit.php';
-                break;
-
-            case 'booking-delete':
-                $booking_id = intval($_GET['booking_id'] ?? 0);
-                $booking = BookingAccess::get_accessible_booking(
-                                $booking_id,
-                                intval($customer['Id'] ?? 0),
-                                $is_client_admin,
-                                $this->booking_service
-                            );
-                $delete_rules = $this->booking_service->can_delete($booking);
-                include MYVH_PLUGIN_DIR . 'templates/Portal/booking-delete.php';
-                break;
-
             case 'calendar':
+            case 'bookings-new':
+            case 'booking-view':
+            case 'booking-edit':
+            case 'booking-delete':
                 $can_create_booking = $is_client_admin || $has_customer;
                 include MYVH_PLUGIN_DIR . 'templates/Portal/calendar.php';
                 break;

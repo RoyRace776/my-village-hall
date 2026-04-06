@@ -3,6 +3,7 @@ window.BookingModalCreate = (function() {
     // TODO take out references to view only mode
     let config = {};
     let modal, form;
+    let isBound = false;
     let roomsCache = null;
     let customersCache = null;
     const organisationsCache = {};
@@ -47,11 +48,13 @@ window.BookingModalCreate = (function() {
         form  = document.getElementById("myvh-booking-form-create");
 
         if (!modal || !form) {
-            console.error("BookingModalCreate: modal or form not found");
             return;
         }
 
-        bindEvents();
+        if (!isBound) {
+            bindEvents();
+            isBound = true;
+        }
     }
 
     /**

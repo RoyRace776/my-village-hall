@@ -6,9 +6,92 @@ document.addEventListener("DOMContentLoaded", () => {
     const routeAliases = {
         'my-bookings': 'bookings',
         'book-room': 'bookings',
-        'new-booking': 'bookings-new',
         'home': 'dashboard'
     };
+
+    const legacyBookingRoutes = new Set(['new-booking', 'bookings-new', 'booking-view', 'booking-edit', 'booking-delete']);
+
+    function getHashRoute(targetHash) {
+        const normalized = String(targetHash || '').replace(/^#/, '');
+        const [page, queryString] = normalized.split('?');
+        const params = {};
+
+        new URLSearchParams(queryString || '').forEach((value, key) => {
+            params[key] = value;
+        });
+
+        return {
+            page: page || 'dashboard',
+            params: params
+        };
+    }
+
+    function getLegacyBookingAction(page, params) {
+        if (!legacyBookingRoutes.has(page)) {
+            return null;
+        }
+
+        const bookingId = parseInt(params.booking_id || '0', 10) || 0;
+
+        if (page === 'new-booking' || page === 'bookings-new') {
+            return {
+                page: 'bookings',
+                run: function() {
+                    window.MyvhPortalCalendarFlow?.openCreate({});
+                }
+            };
+        }
+
+        if (!bookingId) {
+            return {
+                page: 'bookings',
+                run: function() {}
+            };
+        }
+
+        if (page === 'booking-edit') {
+            return {
+                page: 'bookings',
+                run: function() {
+                    window.MyvhPortalCalendarFlow?.openEdit(bookingId);
+                }
+            };
+        }
+
+        if (page === 'booking-delete') {
+            return {
+                page: 'bookings',
+                run: function() {
+                    window.MyvhPortalCalendarFlow?.openView(bookingId);
+                }
+            };
+        }
+
+        return {
+            page: 'bookings',
+            run: function() {
+                window.MyvhPortalCalendarFlow?.openView(bookingId);
+            }
+        };
+    }
+
+    function runWhenPortalBookingFlowReady(action) {
+        if (typeof action !== 'function') {
+            return;
+        }
+
+        if (window.MyvhPortalCalendarFlow) {
+            action();
+            return;
+        }
+
+        const handleReady = function() {
+            document.removeEventListener('myvh:portal-booking-flow-ready', handleReady);
+            action();
+        };
+
+        document.addEventListener('myvh:portal-booking-flow-ready', handleReady, { once: true });
+    }
 
     function initPortalNavigation() {
         const portalNav = document.querySelector('[data-portal-nav]');
@@ -71,6 +154,10 @@ document.addEventListener("DOMContentLoaded", () => {
      * Should be called after each page load or dynamic content update.
      */
     function initPortalPage() {
+        if (typeof Calendar !== 'undefined' && typeof Calendar.ensureBookingFlow === 'function') {
+            Calendar.ensureBookingFlow();
+        }
+
         // Initialize calendar if present
         if (document.getElementById('myvh-calendar') && typeof Calendar !== 'undefined') {
             Calendar.init();
@@ -710,9 +797,12 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     function loadPage(page, params = {}) {
 
+        const legacyBookingAction = getLegacyBookingAction(page, params);
+        const resolvedPage = legacyBookingAction ? legacyBookingAction.page : page;
+
         const query = new URLSearchParams({
             action: 'myvh_portal_page',
-            page: page,
+            page: resolvedPage,
             nonce: myvhPortal.nonce,
         });
 
@@ -734,6 +824,10 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(html => {
                 document.getElementById("portal-content").innerHTML = html;
                 initPortalPage();
+
+                if (legacyBookingAction) {
+                    runWhenPortalBookingFlowReady(legacyBookingAction.run);
+                }
             });
     }
 
@@ -799,7 +893,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         e.preventDefault();
+
+        const route = getHashRoute(href);
+        const resolvedPage = routeAliases[route.page] || route.page;
+        const legacyBookingAction = getLegacyBookingAction(resolvedPage, route.params);
+
+        if (legacyBookingAction) {
+            runWhenPortalBookingFlowReady(legacyBookingAction.run);
+            return;
+        }
+
         navigateToHash(href);
+    });
+
+    document.addEventListener('myvh:portal-booking-changed', function() {
+        const currentRoute = getHashRoute(window.location.hash || '#dashboard');
+        const currentPage = routeAliases[currentRoute.page] || currentRoute.page;
+
+        if (currentPage === 'calendar') {
+            return;
+        }
+
+        router();
     });
 
     // Delegate form submission handling for all portal forms

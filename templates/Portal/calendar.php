@@ -74,9 +74,3 @@ if (!is_user_logged_in()) {
     </div>
 
 </div>
-
-<?php
-include MYVH_PLUGIN_DIR . 'templates/Bookings/booking-modal-create.php';
-include MYVH_PLUGIN_DIR . 'templates/Bookings/booking-modal-view.php';
-
-?>

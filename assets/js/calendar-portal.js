@@ -175,6 +175,20 @@ var Calendar = (function() {
             return loadRoomsForVenue(selectedVenueId);
         }
 
+        function loadPortalCustomers() {
+            return fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
+                .then(function(response) { return response.json(); });
+        }
+
+        function loadPortalOrganisations(customerId) {
+            return fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}&customer_id=${encodeURIComponent(customerId || '')}`)
+                .then(function(response) { return response.json(); });
+        }
+
+        function notifyPortalBookingFlowChanged() {
+            document.dispatchEvent(new CustomEvent('myvh:portal-booking-changed'));
+        }
+
         function renderVenueSelector() {
             var wrap = document.getElementById('myvh-calendar-venue-wrap');
             var select = document.getElementById('myvh-calendar-venue-select');
@@ -338,6 +352,158 @@ var Calendar = (function() {
             });
         }
 
+        function openCreateModal(data) {
+            if (!createModal) {
+                return;
+            }
+
+            createModal.open(data || {});
+        }
+
+        function openEditModal(bookingId) {
+            if (!createModal || !bookingId) {
+                return;
+            }
+
+            createModal.open({ editMode: true, bookingId: bookingId });
+        }
+
+        function openViewModal(bookingId) {
+            if (!viewModal || !bookingId) {
+                return;
+            }
+
+            viewModal.open({ bookingId: bookingId, viewOnly: true });
+        }
+
+        function deleteBooking(bookingId) {
+            if (!bookingId) {
+                return Promise.resolve(false);
+            }
+
+            if (!window.confirm('Delete this booking? This action cannot be undone.')) {
+                return Promise.resolve(false);
+            }
+
+            const formData = new FormData();
+            formData.append('action', 'myvh_portal_delete_booking');
+            formData.append('nonce', myvhCal.nonce);
+            formData.append('booking_id', String(bookingId));
+
+            return fetch(myvhCal.ajax_url, {
+                method: 'POST',
+                body: formData
+            })
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    if (!result || !result.success) {
+                        throw new Error(result && result.data && result.data.message ? result.data.message : (result && result.data) || 'Failed to delete booking');
+                    }
+
+                    viewModal.close();
+                    if (api && typeof api.reload === 'function') {
+                        api.reload();
+                    }
+
+                    notifyPortalBookingFlowChanged();
+
+                    return true;
+                })
+                .catch(function(error) {
+                    window.alert(error && error.message ? error.message : 'Failed to delete booking');
+                    return false;
+                });
+        }
+
+        function initialisePortalBookingFlow() {
+            if (window.MyvhPortalCalendarFlow) {
+                return window.MyvhPortalCalendarFlow;
+            }
+
+            createModal = BookingModalCreate;
+            viewModal = BookingModalView;
+
+            const isClientAdmin = !!Number(myvhCal.isClientAdmin || 0);
+            const handleBookingSaved = function() {
+                if (api && typeof api.reload === 'function') {
+                    api.reload();
+                }
+
+                notifyPortalBookingFlowChanged();
+            };
+
+            createModal.init({
+                ajax_url: myvhCal.ajax_url,
+                nonce: myvhCal.nonce,
+                context: 'portal',
+
+                loadRooms: function() {
+                    return loadCalendarRooms();
+                },
+
+                loadCustomers: function() {
+                    return loadPortalCustomers();
+                },
+
+                loadOrganisations: function(customerId) {
+                    return loadPortalOrganisations(customerId);
+                },
+
+                lockCustomer: !isClientAdmin,
+                lockOrganisation: false,
+                hideCustomer: !isClientAdmin,
+                lockAddonPrices: true,
+                requireOrganisation: true,
+
+                onClose: () => api?.clearSelection?.(),
+                onSuccess: handleBookingSaved
+            });
+
+            viewModal.init({
+                ajax_url: myvhCal.ajax_url,
+                nonce: myvhCal.nonce,
+                context: 'portal',
+
+                loadRooms: function() {
+                    return loadCalendarRooms();
+                },
+
+                loadCustomers: function() {
+                    return loadPortalCustomers();
+                },
+
+                loadOrganisations: function(customerId) {
+                    return loadPortalOrganisations(customerId);
+                },
+
+                lockCustomer: !isClientAdmin,
+                lockOrganisation: false,
+                hideCustomer: !isClientAdmin,
+                lockAddonPrices: true,
+                requireOrganisation: true,
+
+                onClose: () => api?.clearSelection?.(),
+                onEdit: ({ bookingId }) => {
+                    createModal.open({ editMode: true, bookingId: bookingId });
+                },
+                onDelete: ({ bookingId }) => {
+                    deleteBooking(bookingId);
+                },
+                onSuccess: handleBookingSaved
+            });
+
+            window.MyvhPortalCalendarFlow = {
+                openCreate: openCreateModal,
+                openEdit: openEditModal,
+                openView: openViewModal,
+                deleteBooking: deleteBooking
+            };
+
+            document.dispatchEvent(new CustomEvent('myvh:portal-booking-flow-ready'));
+
+            return window.MyvhPortalCalendarFlow;
+        }
+
         /**
          * Ensure selectable range handlers are set up for calendar and scheduler.
          */
@@ -433,75 +599,7 @@ var Calendar = (function() {
          * Initialize the portal calendar, modal, and controls.
          */
         function init() {
-
-            // TODO: switch this to use the create modal and a separate view modal rather than using the create modal in view only mode
-            createModal = BookingModalCreate;
-            viewModal = BookingModalView;
-            const isClientAdmin = !!Number(myvhCal.isClientAdmin || 0);
-
-            createModal.init({
-                ajax_url: myvhCal.ajax_url,
-                nonce: myvhCal.nonce,
-                context: 'portal',
-
-                loadRooms: () =>
-                    fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}&context=portal${selectedVenueId > 0 ? `&venue_id=${encodeURIComponent(selectedVenueId)}` : ''}`)
-                        .then(r => r.json())
-                        .then(function(payload) {
-                            return Array.isArray(payload) ? payload : (Array.isArray(payload && payload.data) ? payload.data : []);
-                        }),
-
-                loadCustomers: () =>
-                    fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
-                        .then(r => r.json()),
-
-                loadOrganisations: (customerId) =>
-                    fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}&customer_id=${encodeURIComponent(customerId || '')}`)
-                        .then(r => r.json()),
-
-                lockCustomer: !isClientAdmin,
-                lockOrganisation: false,
-                hideCustomer: !isClientAdmin,
-                lockAddonPrices: true,
-                requireOrganisation: true,
-
-                onClose: () => api?.clearSelection?.(),
-                onSuccess: () => api.reload()
-            });
-
-
-            viewModal.init({
-                ajax_url: myvhCal.ajax_url,
-                nonce: myvhCal.nonce,
-                context: 'portal',
-
-                loadRooms: () =>
-                    fetch(`${myvhCal.ajax_url}?action=myvh_calendar_rooms&nonce=${myvhCal.nonce}&context=portal${selectedVenueId > 0 ? `&venue_id=${encodeURIComponent(selectedVenueId)}` : ''}`)
-                        .then(r => r.json())
-                        .then(function(payload) {
-                            return Array.isArray(payload) ? payload : (Array.isArray(payload && payload.data) ? payload.data : []);
-                        }),
-
-                loadCustomers: () =>
-                    fetch(`${myvhCal.ajax_url}?action=myvh_customers&nonce=${myvhCal.nonce}`)
-                        .then(r => r.json()),
-
-                loadOrganisations: (customerId) =>
-                    fetch(`${myvhCal.ajax_url}?action=myvh_organisations&nonce=${myvhCal.nonce}&customer_id=${encodeURIComponent(customerId || '')}`)
-                        .then(r => r.json()),
-
-                lockCustomer: !isClientAdmin,
-                lockOrganisation: false,
-                hideCustomer: !isClientAdmin,
-                lockAddonPrices: true,
-                requireOrganisation: true,
-
-                onClose: () => api?.clearSelection?.(),
-                onEdit: ({ bookingId }) => {
-                    createModal.open({ editMode: true, bookingId: bookingId });
-                },
-                onSuccess: () => api.reload()
-            });
+            initialisePortalBookingFlow();
 
             function initialiseCalendar() {
                 api = CalendarCore.init("myvh-calendar", {
@@ -562,7 +660,8 @@ var Calendar = (function() {
         }
 
         return {
-            init: init
+            init: init,
+            ensureBookingFlow: initialisePortalBookingFlow
         };
 
     })();

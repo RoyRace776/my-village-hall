@@ -59,3 +59,8 @@ if (!defined('ABSPATH')) exit;
     <div id="portal-content"></div>
 
 </div>
+
+<?php
+include MYVH_PLUGIN_DIR . 'templates/Bookings/booking-modal-create.php';
+include MYVH_PLUGIN_DIR . 'templates/Bookings/booking-modal-view.php';
+?>

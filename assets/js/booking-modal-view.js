@@ -3,8 +3,10 @@ window.BookingModalView = (function() {
     // TODO take out references to view only mode
     let config = {};
     let modal, form;
+    let isBound = false;
     let currentBookingId = 0;
     let currentCanEdit = false;
+    let currentCanDelete = false;
 
     /**
      * Initialize the booking modal with configuration and bind events.
@@ -32,6 +34,7 @@ window.BookingModalView = (function() {
             // Hooks
             onSuccess: () => {},
             onEdit: () => {},
+            onDelete: () => {},
             onOpen: () => {},
             onClose: () => {},
             beforeSubmit: () => true, // allow validation hook
@@ -44,11 +47,13 @@ window.BookingModalView = (function() {
         form  = document.getElementById("myvh-booking-form-view");
 
         if (!modal || !form) {
-            console.error("BookingModalView: modal or form not found");
             return;
         }
 
-        bindEvents();
+        if (!isBound) {
+            bindEvents();
+            isBound = true;
+        }
     }
 
     /**
@@ -82,6 +87,19 @@ window.BookingModalView = (function() {
             });
         });
 
+        const deleteButtons = modal.querySelectorAll('.myvh-delete-booking');
+        deleteButtons.forEach((button) => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+
+                if (!currentCanDelete || !currentBookingId) {
+                    return;
+                }
+
+                config.onDelete({ bookingId: currentBookingId });
+            });
+        });
+
         // Click outside closes modal
         modal.addEventListener("click", function(e) {
             if (e.target === modal) {
@@ -104,7 +122,9 @@ window.BookingModalView = (function() {
 
         currentBookingId = Number(bookingId) || 0;
         currentCanEdit = false;
+        currentCanDelete = false;
         updateEditButtons(false, 'Loading booking permissions...');
+        updateDeleteButtons(false, 'Loading booking permissions...');
 
         const nonce = config.context === "portal" ? config.nonce : "myvh_calendar";
 
@@ -125,7 +145,9 @@ window.BookingModalView = (function() {
                     const payload = {
                         booking: res.data.booking,
                         canEdit: !!res.data.can_edit,
-                        editReason: res.data.edit_reason || ''
+                        editReason: res.data.edit_reason || '',
+                        canDelete: !!res.data.can_delete,
+                        deleteReason: res.data.delete_reason || ''
                     };
 
                     return payload;
@@ -142,7 +164,9 @@ window.BookingModalView = (function() {
                     setValue('description', booking['Description']);
                     setValue('public', !!booking['Public']);
                     currentCanEdit = !!payload.canEdit;
+                    currentCanDelete = !!payload.canDelete;
                     updateEditButtons(currentCanEdit, payload.editReason);
+                    updateDeleteButtons(currentCanDelete, payload.deleteReason);
 
                     const startDateTime = `${booking['StartDate'] || ''} ${booking['StartTime'] || ''}`.trim();
                     const endDate = booking['EndDate'] || booking['StartDate'] || '';
@@ -170,7 +194,9 @@ window.BookingModalView = (function() {
         form.reset();
         currentBookingId = 0;
         currentCanEdit = false;
+        currentCanDelete = false;
         updateEditButtons(false, '');
+        updateDeleteButtons(false, '');
         form.querySelectorAll("select, input, textarea").forEach(el => {
             if (el.name === 'room_id' || el.name === 'customer_id' || el.name === 'organisation_id' || el.name === 'public') {
                 el.disabled = true;
@@ -473,6 +499,13 @@ window.BookingModalView = (function() {
         });
     }
 
+    function updateDeleteButtons(canDelete, reason = '') {
+        modal.querySelectorAll('.myvh-delete-booking').forEach((button) => {
+            button.disabled = !canDelete;
+            button.title = canDelete ? '' : (reason || 'Deleting not available');
+        });
+    }
+
     // ─────────────────────────────
     // Dropdowns
     // ─────────────────────────────
@@ -595,7 +628,7 @@ window.BookingModalView = (function() {
     return {
         init,
         open,
-        close
+        close,
     };
 
 })();
