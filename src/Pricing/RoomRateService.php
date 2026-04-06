@@ -24,6 +24,10 @@ class RoomRateService {
         return $this->repo->get_by_room($room_id);
     }
 
+    public function get_room_ids_with_active_rates(array $room_ids = []): array {
+        return $this->repo->get_room_ids_with_active_rates($room_ids);
+    }
+
     public function get($id): ?array {
         return $this->repo->get_by_id($id);
     }

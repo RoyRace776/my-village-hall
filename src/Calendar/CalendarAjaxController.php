@@ -6,6 +6,7 @@ use MYVH\Rooms\RoomRepository;
 use MYVH\Rooms\RoomColour;
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Pricing\RoomRateService;
 
 use Exception;
 
@@ -18,24 +19,28 @@ class CalendarAjaxController {
     private $room_repository;
     private $customer_service;
     private $client_admin_service;
+    private $room_rate_service;
 
     public function __construct(
         CalendarService $calendar_service,
         BookingService $booking_service,
         RoomRepository $room_repository,
         CustomerService $customer_service,
-        ClientAdminService $client_admin_service) {
+        ClientAdminService $client_admin_service,
+        RoomRateService $room_rate_service) {
 
         $this->calendar_service = $calendar_service;
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;
         $this->customer_service = $customer_service;
         $this->client_admin_service = $client_admin_service;
+        $this->room_rate_service = $room_rate_service;
     }
 
     public function register_routes(): void {
 
         add_action('wp_ajax_myvh_calendar_rooms', [$this, 'get_rooms']);
+        add_action('wp_ajax_myvh_get_rooms_by_venue', [$this, 'get_rooms_by_venue']);
         add_action('wp_ajax_myvh_calendar_events', [$this, 'get_events']);
         add_action('wp_ajax_myvh_move_booking', [$this, 'move_booking']);
         add_action('wp_ajax_myvh_create_event', [$this, 'create_event']);
@@ -161,30 +166,19 @@ class CalendarAjaxController {
             wp_send_json_error( 'Permission denied', 403 );
         }
 
-        $rooms = $this->room_repository->get_all_with_venues();
+        wp_send_json($this->build_room_columns($this->get_bookable_rooms($venue_id)));
+    }
 
-        $columns = [];
+    public function get_rooms_by_venue(): void {
 
-        foreach ($rooms as $room) {
+        $this->verify_rooms_request_nonce();
+        $this->authorize_admin();
 
-            $room_venue_id = !empty($room['VenueId']) ? (int) $room['VenueId'] : 0;
+        $venue_id = absint($_GET['venue_id'] ?? $_POST['venue_id'] ?? 0);
 
-            if ($venue_id > 0 && $room_venue_id !== $venue_id) {
-                continue;
-            }
-
-            $columns[] = [
-                "name" => $room['Name'],
-                "id"   => $room['Id'],
-                "venue_id" => $room_venue_id,
-                "venue" => $room['VenueName'] ?? '',
-                "colour" => RoomColour::resolve($room['Colour'] ?? '', (int) ($room['Id'] ?? 0)),
-                "roomColour" => RoomColour::resolve($room['Colour'] ?? '', (int) ($room['Id'] ?? 0)),
-                "allow_multiday" => !empty($room['AllowMultiDayBookings']) ? 1 : 0
-            ];
-        }
-
-        wp_send_json($columns);
+        wp_send_json_success([
+            'rooms' => $this->get_bookable_rooms($venue_id),
+        ]);
     }
 
     public function get_events(): void {
@@ -322,6 +316,79 @@ class CalendarAjaxController {
         if (!is_user_logged_in()) {
             wp_send_json_error('Login required', 401);
         }
+    }
+
+    private function verify_rooms_request_nonce(): void {
+        $valid = check_ajax_referer('myvh_calendar', 'nonce', false);
+
+        if (!$valid) {
+            $valid = check_ajax_referer('myvh_admin', 'nonce', false);
+        }
+
+        if (!$valid) {
+            wp_send_json_error('Invalid nonce', 403);
+        }
+    }
+
+    private function get_bookable_rooms(int $venue_id = 0): array {
+        $rooms = $this->room_repository->get_all_with_venues();
+
+        if (empty($rooms)) {
+            return [];
+        }
+
+        $room_ids = array_values(array_unique(array_filter(array_map(static function ($room): int {
+            return !empty($room['Id']) ? (int) $room['Id'] : 0;
+        }, $rooms))));
+
+        if (empty($room_ids)) {
+            return [];
+        }
+
+        $bookable_room_lookup = array_fill_keys(
+            $this->room_rate_service->get_room_ids_with_active_rates($room_ids),
+            true
+        );
+
+        if (empty($bookable_room_lookup)) {
+            return [];
+        }
+
+        return array_values(array_filter($rooms, static function ($room) use ($venue_id, $bookable_room_lookup): bool {
+            $room_id = !empty($room['Id']) ? (int) $room['Id'] : 0;
+            $room_venue_id = !empty($room['VenueId']) ? (int) $room['VenueId'] : 0;
+
+            if ($room_id < 1 || !isset($bookable_room_lookup[$room_id])) {
+                return false;
+            }
+
+            if ($venue_id > 0 && $room_venue_id !== $venue_id) {
+                return false;
+            }
+
+            return true;
+        }));
+    }
+
+    private function build_room_columns(array $rooms): array {
+        $columns = [];
+
+        foreach ($rooms as $room) {
+            $room_id = (int) ($room['Id'] ?? 0);
+            $room_venue_id = !empty($room['VenueId']) ? (int) $room['VenueId'] : 0;
+
+            $columns[] = [
+                'name' => $room['Name'],
+                'id' => $room_id,
+                'venue_id' => $room_venue_id,
+                'venue' => $room['VenueName'] ?? '',
+                'colour' => RoomColour::resolve($room['Colour'] ?? '', $room_id),
+                'roomColour' => RoomColour::resolve($room['Colour'] ?? '', $room_id),
+                'allow_multiday' => !empty($room['AllowMultiDayBookings']) ? 1 : 0,
+            ];
+        }
+
+        return $columns;
     }
 
     private function get_request_data(): array {

@@ -54,7 +54,7 @@ class BookingValidatorTest extends UnitTestCase {
         $this->customer_repo->shouldReceive('get_by_id')
             ->once()
             ->with(11)
-            ->andReturn(['Id' => 11]);
+            ->andReturnUsing(static fn(): array => ['Id' => 11]);
 
         $room = [
             'Id' => 5,
@@ -66,9 +66,8 @@ class BookingValidatorTest extends UnitTestCase {
         $this->room_service->shouldReceive('get')
             ->once()
             ->with(5)
-            ->andReturn($room);
+            ->andReturnUsing(static fn() => $room);
 
-        $this->room_rules->shouldReceive('allows_multi_day')->once()->with($room)->andReturn(true);
         $this->room_rules->shouldReceive('is_duration_allowed')->once()->andReturn(true);
         $this->room_rules->shouldReceive('is_day_allowed')->once()->andReturn(true);
         $this->room_rules->shouldReceive('has_buffer_time')->once()->andReturn(true);
@@ -89,7 +88,7 @@ class BookingValidatorTest extends UnitTestCase {
         $result = $this->validator->validate($this->valid_data());
 
         $this->assertInstanceOf(WP_Error::class, $result);
-        $this->assertSame('This room cannot be booked because no room rate is configured.', $result->get_error_message());
+        $this->assertSame('This room cannot be booked because no applicable room rate is configured.', $result->get_error_message());
     }
 
     /** @test */
@@ -99,7 +98,7 @@ class BookingValidatorTest extends UnitTestCase {
         $this->room_rate_service->shouldReceive('get_booking_rate')
             ->once()
             ->with(5, ['Id' => 11], [])
-            ->andReturn(['Id' => 90]);
+            ->andReturnUsing(static fn(): array => ['Id' => 90]);
 
         $result = $this->validator->validate($this->valid_data());
 

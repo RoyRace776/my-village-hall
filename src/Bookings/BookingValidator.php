@@ -162,7 +162,7 @@ class BookingValidator
         if (!$room_rate) {
             return new WP_Error(
                 'validation',
-                __('This room cannot be booked because no room rate is configured.', 'my-village-hall')
+                __('This room cannot be booked because no applicable room rate is configured.', 'my-village-hall')
             );
         }
 

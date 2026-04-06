@@ -21,6 +21,24 @@ class RoomRateRepository extends RepositoryBase{
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
+    public function get_room_ids_with_active_rates(array $room_ids = []): array {
+        $room_ids = array_values(array_filter(array_map('intval', $room_ids)));
+
+        if (!empty($room_ids)) {
+            $placeholders = implode(', ', array_fill(0, count($room_ids), '%d'));
+            $sql = $this->wpdb->prepare(
+                "SELECT DISTINCT RoomId FROM {$this->table_name}
+                 WHERE IsActive = 1
+                 AND RoomId IN ({$placeholders})",
+                ...$room_ids
+            );
+        } else {
+            $sql = "SELECT DISTINCT RoomId FROM {$this->table_name} WHERE IsActive = 1";
+        }
+
+        return array_values(array_map('intval', $this->wpdb->get_col($sql) ?: []));
+    }
+
     public function get_active_room_rate( $room_id, $org_type_id = null ): ?array {
         if ( $org_type_id ) {
             $sql = $this->wpdb->prepare(
