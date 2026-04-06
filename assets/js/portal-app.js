@@ -423,6 +423,29 @@ document.addEventListener("DOMContentLoaded", () => {
             activateBookingTypeTab(initialBookingType);
         }
 
+        // Expand/collapse recurring booking rows by pattern group
+        invoicesPage.addEventListener('click', function (event) {
+            const recurringToggle = event.target.closest('.myvh-recurring-group-toggle');
+            if (!recurringToggle) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const groupId = recurringToggle.getAttribute('data-recurring-group') || '';
+            if (!groupId) {
+                return;
+            }
+
+            const isExpanded = recurringToggle.getAttribute('aria-expanded') === 'true';
+            recurringToggle.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+
+            const childRows = Array.from(invoicesPage.querySelectorAll('[data-recurring-group-child="' + groupId + '"]'));
+            childRows.forEach((row) => {
+                row.hidden = isExpanded;
+            });
+        });
+
         // Select all/clear all for the currently selected booking type only
         invoicesPage.addEventListener('click', function (event) {
             const selectAllBtn = event.target.closest('.myvh-select-all-uninvoiced');

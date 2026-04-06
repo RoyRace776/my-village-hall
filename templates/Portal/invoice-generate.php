@@ -16,6 +16,23 @@ $recurring_uninvoiced_bookings = array_values(array_filter(
         return !empty($booking['RecurringPatternId']);
     }
 ));
+
+$recurring_booking_groups = [];
+foreach ($recurring_uninvoiced_bookings as $booking) {
+    $pattern_id = intval($booking['RecurringPatternId'] ?? 0);
+    if ($pattern_id <= 0) {
+        $pattern_id = intval($booking['Id'] ?? 0);
+    }
+
+    if (!isset($recurring_booking_groups[$pattern_id])) {
+        $recurring_booking_groups[$pattern_id] = [
+            'pattern_id' => $pattern_id,
+            'bookings' => [],
+        ];
+    }
+
+    $recurring_booking_groups[$pattern_id]['bookings'][] = $booking;
+}
 ?>
 
 <div class="myvh-dashboard-section myvh-client-settings-page myvh-invoices-page">
@@ -127,19 +144,42 @@ $recurring_uninvoiced_bookings = array_values(array_filter(
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($recurring_uninvoiced_bookings as $booking): ?>
+                                    <?php foreach ($recurring_booking_groups as $group): ?>
+                                        <?php $group_id = intval($group['pattern_id']); ?>
                                         <tr>
-                                            <td>
-                                                <input type="checkbox" name="booking_ids[]" value="<?php echo intval($booking['Id']); ?>" class="myvh-uninvoiced-checkbox" data-booking-type="recurring" disabled>
+                                            <td colspan="8" style="background:#f6f7f7;">
+                                                <button
+                                                    type="button"
+                                                    class="button-link myvh-recurring-group-toggle"
+                                                    data-recurring-group="<?php echo esc_attr((string) $group_id); ?>"
+                                                    aria-expanded="false"
+                                                    style="font-weight:600; text-decoration:none;"
+                                                >
+                                                    <?php
+                                                    echo esc_html(sprintf(
+                                                        'Pattern #%d (%d booking%s)',
+                                                        $group_id,
+                                                        count($group['bookings']),
+                                                        count($group['bookings']) === 1 ? '' : 's'
+                                                    ));
+                                                    ?>
+                                                </button>
                                             </td>
-                                            <td>#<?php echo intval($booking['Id']); ?></td>
-                                            <td>#<?php echo intval($booking['RecurringPatternId'] ?? 0); ?></td>
-                                            <td><?php echo esc_html($booking['CustomerName'] ?? 'Unknown'); ?></td>
-                                            <td><?php echo esc_html($booking['OrganisationName'] ?? '-'); ?></td>
-                                            <td><?php echo esc_html($booking['Description'] ?? '-'); ?></td>
-                                            <td><?php echo esc_html(date('j M Y', strtotime((string) ($booking['StartDate'] ?? '')))); ?></td>
-                                            <td><?php echo esc_html($booking['RoomName'] ?? '-'); ?></td>
                                         </tr>
+                                        <?php foreach ($group['bookings'] as $booking): ?>
+                                            <tr class="myvh-recurring-group-child" data-recurring-group-child="<?php echo esc_attr((string) $group_id); ?>" hidden>
+                                                <td>
+                                                    <input type="checkbox" name="booking_ids[]" value="<?php echo intval($booking['Id']); ?>" class="myvh-uninvoiced-checkbox" data-booking-type="recurring" disabled>
+                                                </td>
+                                                <td>#<?php echo intval($booking['Id']); ?></td>
+                                                <td>#<?php echo intval($booking['RecurringPatternId'] ?? 0); ?></td>
+                                                <td><?php echo esc_html($booking['CustomerName'] ?? 'Unknown'); ?></td>
+                                                <td><?php echo esc_html($booking['OrganisationName'] ?? '-'); ?></td>
+                                                <td><?php echo esc_html($booking['Description'] ?? '-'); ?></td>
+                                                <td><?php echo esc_html(date('j M Y', strtotime((string) ($booking['StartDate'] ?? '')))); ?></td>
+                                                <td><?php echo esc_html($booking['RoomName'] ?? '-'); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
