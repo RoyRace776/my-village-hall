@@ -385,26 +385,73 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        // Select all/clear all checkboxes for uninvoiced bookings
-        const checkboxes = Array.from(invoicesPage.querySelectorAll('.myvh-uninvoiced-checkbox'));
-        const selectAllButton = invoicesPage.querySelector('#myvh-select-all-uninvoiced');
-        const clearAllButton = invoicesPage.querySelector('#myvh-clear-all-uninvoiced');
+        // Single/recurring booking split tabs in Create Invoices panel
+        const bookingTypeTabs = Array.from(invoicesPage.querySelectorAll('.myvh-booking-type-tab'));
+        const bookingTypePanels = Array.from(invoicesPage.querySelectorAll('[data-booking-type-panel]'));
 
-        if (selectAllButton) {
-            selectAllButton.addEventListener('click', function () {
-                checkboxes.forEach((checkbox) => {
+        if (bookingTypeTabs.length && bookingTypePanels.length) {
+            const activateBookingTypeTab = (tabKey) => {
+                bookingTypeTabs.forEach((tab) => {
+                    const isActive = tab.dataset.bookingTypeTab === tabKey;
+                    tab.classList.toggle('is-active', isActive);
+                    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+
+                bookingTypePanels.forEach((panel) => {
+                    const isActive = panel.dataset.bookingTypePanel === tabKey;
+                    panel.classList.toggle('is-active', isActive);
+                    panel.hidden = !isActive;
+
+                    const panelCheckboxes = Array.from(panel.querySelectorAll('.myvh-uninvoiced-checkbox'));
+                    panelCheckboxes.forEach((checkbox) => {
+                        checkbox.disabled = !isActive;
+                    });
+                });
+            };
+
+            invoicesPage.addEventListener('click', (event) => {
+                const clickedBookingTypeTab = event.target.closest('[data-booking-type-tab]');
+                if (!clickedBookingTypeTab || !invoicesPage.contains(clickedBookingTypeTab)) {
+                    return;
+                }
+
+                event.preventDefault();
+                activateBookingTypeTab(clickedBookingTypeTab.dataset.bookingTypeTab || 'single');
+            });
+
+            const initialBookingType = bookingTypeTabs[0]?.dataset.bookingTypeTab || 'single';
+            activateBookingTypeTab(initialBookingType);
+        }
+
+        // Select all/clear all for the currently selected booking type only
+        invoicesPage.addEventListener('click', function (event) {
+            const selectAllBtn = event.target.closest('.myvh-select-all-uninvoiced');
+            const clearAllBtn = event.target.closest('.myvh-clear-all-uninvoiced');
+            if (!selectAllBtn && !clearAllBtn) {
+                return;
+            }
+
+            const bookingType = (selectAllBtn || clearAllBtn).getAttribute('data-booking-type') || '';
+            if (!bookingType) {
+                return;
+            }
+
+            const typedCheckboxes = Array.from(
+                invoicesPage.querySelectorAll('.myvh-uninvoiced-checkbox[data-booking-type="' + bookingType + '"]:not(:disabled)')
+            );
+
+            if (selectAllBtn) {
+                typedCheckboxes.forEach((checkbox) => {
                     checkbox.checked = true;
                 });
-            });
-        }
+            }
 
-        if (clearAllButton) {
-            clearAllButton.addEventListener('click', function () {
-                checkboxes.forEach((checkbox) => {
+            if (clearAllBtn) {
+                typedCheckboxes.forEach((checkbox) => {
                     checkbox.checked = false;
                 });
-            });
-        }
+            }
+        });
     }
 
     /**

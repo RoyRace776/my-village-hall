@@ -418,10 +418,7 @@ class BookingService {
     }
 
     public function cancel($id): int|false {
-        return $this->booking_repo->update(
-            ['Status' => BookingStatus::CANCELLED],
-            ['Id' => $id]
-        );
+        return $this->update_status($id, BookingStatus::CANCELLED);
     }
 
     public function update_status($id, $status): int|false {
@@ -669,6 +666,7 @@ class BookingService {
     }
 
     public function can_edit($booking): array {
+        //TODO: Implement edit restrictions based on user, status and time thresholds, similar to can_delete()
         return [
             'can_edit' => true,
             'reason' => '',
