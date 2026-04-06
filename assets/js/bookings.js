@@ -100,7 +100,7 @@ var Bookings = (function() {
             return;
         }
         initialized = true;
-        bindAccordion();
+        bindGroupToggles();
         bindActions();
         bindStatusFilters();
     }

@@ -154,6 +154,10 @@ document.addEventListener("DOMContentLoaded", () => {
      * Should be called after each page load or dynamic content update.
      */
     function initPortalPage() {
+        if (typeof Bookings !== 'undefined' && typeof Bookings.init === 'function') {
+            Bookings.init();
+        }
+
         if (typeof Calendar !== 'undefined' && typeof Calendar.ensureBookingFlow === 'function') {
             Calendar.ensureBookingFlow();
         }
