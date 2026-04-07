@@ -378,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const targetDiv = customerId ? document.getElementById('myvh-customer-drilldown') : document.getElementById('myvh-organisation-drilldown');
             if (!targetDiv) return;
 
-            targetDiv.innerHTML = '<p>Loading bookings...</p>';
+            targetDiv.innerHTML = renderDrilldownState('Loading bookings...', '');
 
             // Build AJAX params
             const params = new URLSearchParams({
@@ -393,14 +393,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 .then(r => r.json())
                 .then(res => {
                     if (!res.success || !Array.isArray(res.data.bookings)) {
-                        targetDiv.innerHTML = '<p>No bookings found or error.</p>';
+                        targetDiv.innerHTML = renderDrilldownState('No bookings found or error.', 'Try again in a moment.');
                         return;
                     }
                     if (res.data.bookings.length === 0) {
-                        targetDiv.innerHTML = '<p>No uninvoiced bookings found.</p>';
+                        targetDiv.innerHTML = renderDrilldownState('No uninvoiced bookings found.', 'This customer or organisation has nothing ready to invoice right now.');
                         return;
                     }
-                    let html = '<table class="myvh-invoices-table"><thead><tr>' +
+                    let html = '<div class="myvh-generate-drilldown-card">' +
+                        '<div class="myvh-account-card-head"><div><h3>Uninvoiced Bookings</h3>' +
+                        '<span>' + res.data.bookings.length + ' booking' + (res.data.bookings.length === 1 ? '' : 's') + '</span></div></div>' +
+                        '<div class="myvh-invoices-table-wrap myvh-generate-table-wrap">' +
+                        '<table class="myvh-customer-list-table myvh-invoices-table myvh-generate-drilldown-table"><thead><tr>' +
                         '<th>Booking</th><th>Description</th><th>Date</th><th>Room</th></tr></thead><tbody>';
                     res.data.bookings.forEach(b => {
                         html += '<tr>' +
@@ -410,11 +414,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             '<td>' + (b.RoomName ? escapeHtml(b.RoomName) : '-') + '</td>' +
                             '</tr>';
                     });
-                    html += '</tbody></table>';
+                    html += '</tbody></table></div></div>';
                     targetDiv.innerHTML = html;
                 })
                 .catch(() => {
-                    targetDiv.innerHTML = '<p>Error loading bookings.</p>';
+                    targetDiv.innerHTML = renderDrilldownState('Error loading bookings.', 'Check the connection and try again.');
                 });
         });
 
@@ -431,6 +435,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
             }
             return dateStr;
+        }
+
+        function renderDrilldownState(title, detail) {
+            const detailHtml = detail ? '<p>' + escapeHtml(detail) + '</p>' : '';
+
+            return '<div class="myvh-empty-state myvh-invoices-empty-state myvh-generate-drilldown-empty">' +
+                '<p class="myvh-invoices-empty-state__title">' + escapeHtml(title) + '</p>' +
+                detailHtml +
+                '</div>';
         }
 
         // Tab switching logic for invoices page

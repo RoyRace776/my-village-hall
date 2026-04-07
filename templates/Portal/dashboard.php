@@ -8,6 +8,7 @@ $customer = $customer ?? null;
 $is_client_admin = !empty($is_client_admin);
 
 $groups = array_values($groups ?? []);
+$group_count = count($groups);
 $can_delete_booking = $can_delete_booking ?? static function(array $booking): bool {
   return false;
 };
@@ -40,22 +41,36 @@ usort($groups, function ($a, $b) {
 });
 ?>
 
-<div class="myvh-dashboard">
+<div class="myvh-dashboard-section myvh-portal-dashboard-page">
 
-  <div class="myvh-header">
-    <h1 class="greeting">Welcome, <em><?= esc_html($current_user->display_name) ?></em></h1>
-    <span class="tagline"><?php echo $is_client_admin ? esc_html(get_bloginfo('name') . ' - Client Admin Portal') : 'My Village Hall - Member Portal'; ?></span>
+  <div class="myvh-account-header">
+    <div>
+      <h2>Welcome, <?php echo esc_html($current_user->display_name); ?></h2>
+      <p><?php echo $is_client_admin ? esc_html(get_bloginfo('name') . ' - Client Admin Portal') : 'My Village Hall - Member Portal'; ?></p>
+    </div>
+    <a href="#bookings" class="myvh-portal-add-btn myvh-portal-nav-btn">
+      <span class="myvh-portal-add-btn__icon" aria-hidden="true">→</span>
+      <span><?php echo $is_client_admin ? 'View Bookings' : 'My Bookings'; ?></span>
+    </a>
   </div>
 
-  <div class="myvh-dashboard-columns">
+  <div class="myvh-portal-dashboard-grid">
 
-    <div class="dashboard-left myvh-surface-panel">
-      <h2 class="section-title"><?php echo $is_client_admin ? 'Client Bookings' : 'Upcoming Bookings'; ?></h2>
+    <div class="myvh-card myvh-account-card myvh-portal-dashboard-main-card">
+      <div class="myvh-account-card-head">
+        <div>
+          <h3><?php echo $is_client_admin ? 'Client Bookings' : 'Upcoming Bookings'; ?></h3>
+          <span><?php echo esc_html((string) $group_count); ?> <?php echo 1 === $group_count ? 'booking group' : 'booking groups'; ?></span>
+        </div>
+      </div>
 
       <?php if (!$is_client_admin && empty($customer['Id'])): ?>
-        <p class="no-bookings">No customer profile is linked to this account yet.</p>
+        <div class="myvh-empty-state myvh-portal-dashboard-empty-state">
+          <p class="myvh-portal-dashboard-empty-state__title">No customer profile is linked to this account yet.</p>
+          <p>Your dashboard will start showing bookings as soon as this account is linked to a customer record.</p>
+        </div>
       <?php elseif (!empty($groups)): ?>
-        <div class="myvh-bookings-list dashboard-style">
+        <div class="myvh-bookings-list myvh-portal-dashboard-bookings-list">
           <?php $last_group_year = null; ?>
           <?php
             $today = date('Y-m-d');
@@ -110,8 +125,8 @@ usort($groups, function ($a, $b) {
                     </div>
                     <div class="myvh-group-room">
                       <?php echo esc_html($rep['RoomName']); ?>
-                      <?php if (!empty($summary_booking['Description'])): ?>
-                        - <?php echo esc_html($summary_booking['Description']); ?>
+                      <?php if (!empty($rep['Description'])): ?>
+                        - <?php echo esc_html($rep['Description']); ?>
                       <?php endif; ?>
                     </div>
                   </div>
@@ -223,76 +238,77 @@ usort($groups, function ($a, $b) {
         </div>
 
       <?php else: ?>
-        <p class="no-bookings"><?php echo $is_client_admin ? 'No bookings found for this client.' : 'You have no upcoming bookings.'; ?></p>
+        <div class="myvh-empty-state myvh-portal-dashboard-empty-state">
+          <p class="myvh-portal-dashboard-empty-state__title"><?php echo $is_client_admin ? 'No bookings found for this client.' : 'You have no upcoming bookings.'; ?></p>
+          <p><?php echo $is_client_admin ? 'New bookings will appear here once this site has active reservations.' : 'Your upcoming bookings will appear here once a room has been reserved.'; ?></p>
+        </div>
       <?php endif; ?>
     </div>
 
-    <div class="dashboard-right myvh-surface-panel">
-      <h2 class="section-title">Quick Actions</h2>
-      <div class="action-cards">
-
-        <div class="dashboard-card">
-          <a href="#bookings">
-            <span class="card-icon">📅</span>
-            <?php echo $is_client_admin ? 'View Bookings' : 'Book a Room'; ?>
-          </a>
+    <div class="myvh-portal-dashboard-side">
+      <div class="myvh-card myvh-account-card myvh-portal-dashboard-side-card">
+        <div class="myvh-account-card-head">
+          <div>
+            <h3>Quick Actions</h3>
+            <span>Common portal shortcuts</span>
+          </div>
         </div>
+        <div class="myvh-portal-quick-actions">
 
-        <div class="dashboard-card">
-          <a href="#calendar">
-            <span class="card-icon">🗓</span>
-            View Calendar
+          <a class="myvh-portal-quick-action" href="#bookings">
+            <span class="myvh-portal-quick-action__icon" aria-hidden="true">📅</span>
+            <span class="myvh-portal-quick-action__text"><?php echo $is_client_admin ? 'View Bookings' : 'Book a Room'; ?></span>
           </a>
-        </div>
 
-        <div class="dashboard-card">
-          <a href="#bookings">
-            <span class="card-icon">📋</span>
-            <?php echo $is_client_admin ? 'All Bookings' : 'My Bookings'; ?>
+          <a class="myvh-portal-quick-action" href="#calendar">
+            <span class="myvh-portal-quick-action__icon" aria-hidden="true">🗓</span>
+            <span class="myvh-portal-quick-action__text">View Calendar</span>
           </a>
+
+          <a class="myvh-portal-quick-action" href="#bookings">
+            <span class="myvh-portal-quick-action__icon" aria-hidden="true">📋</span>
+            <span class="myvh-portal-quick-action__text"><?php echo $is_client_admin ? 'All Bookings' : 'My Bookings'; ?></span>
+          </a>
+
+          <?php if (!empty($customer['Id']) || $is_client_admin): ?>
+            <a class="myvh-portal-quick-action" href="#organisations">
+              <span class="myvh-portal-quick-action__icon" aria-hidden="true">👥</span>
+              <span class="myvh-portal-quick-action__text">Organisations</span>
+            </a>
+          <?php endif; ?>
+
+          <?php if ($is_client_admin): ?>
+            <a class="myvh-portal-quick-action" href="#client-admins">
+              <span class="myvh-portal-quick-action__icon" aria-hidden="true">🛡</span>
+              <span class="myvh-portal-quick-action__text">Client Admins</span>
+            </a>
+            <a class="myvh-portal-quick-action" href="#customers">
+              <span class="myvh-portal-quick-action__icon" aria-hidden="true">👤</span>
+              <span class="myvh-portal-quick-action__text">Customers</span>
+            </a>
+            <a class="myvh-portal-quick-action" href="#settings">
+              <span class="myvh-portal-quick-action__icon" aria-hidden="true">⚙</span>
+              <span class="myvh-portal-quick-action__text">Settings</span>
+            </a>
+          <?php endif; ?>
+
         </div>
+      </div>
 
-        <?php if (!empty($customer['Id']) || $is_client_admin): ?>
-          <div class="dashboard-card">
-            <a href="#organisations">
-              <span class="card-icon">👥</span>
-              Organisations
-            </a>
+      <div class="myvh-card myvh-account-card myvh-portal-dashboard-side-card">
+        <div class="myvh-account-card-head">
+          <div>
+            <h3>Hall Notices</h3>
+            <span>Latest site updates</span>
           </div>
-        <?php endif; ?>
-
-        <?php if ($is_client_admin): ?>
-          <div class="dashboard-card">
-            <a href="#client-admins">
-              <span class="card-icon">🛡</span>
-              Client Admins
-            </a>
-          </div>
-          <div class="dashboard-card">
-            <a href="#customers">
-              <span class="card-icon">👤</span>
-              Customers
-            </a>
-          </div>
-          <div class="dashboard-card">
-            <a href="#settings">
-              <span class="card-icon">⚙</span>
-              Settings
-            </a>
-          </div>
-        <?php endif; ?>
-
+        </div>
+        <ul class="myvh-portal-notices-list">
+          <li>Kitchen refurbishment starting next month.</li>
+          <li>AGM scheduled for April 23rd.</li>
+        </ul>
       </div>
     </div>
 
-  </div>
-
-  <div class="dashboard-notices myvh-surface-panel">
-    <h2 class="section-title">Hall Notices</h2>
-    <ul class="notices-list">
-      <li>Kitchen refurbishment starting next month.</li>
-      <li>AGM scheduled for April 23rd.</li>
-    </ul>
   </div>
 
 </div>

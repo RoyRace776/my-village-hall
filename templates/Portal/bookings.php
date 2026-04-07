@@ -8,6 +8,7 @@ $is_client_admin = !empty($is_client_admin);
 $customer = $customer ?? null;
 $groups = array_values($groups ?? []);
 $today  = date('Y-m-d');
+$group_count = count($groups);
 $can_delete_booking = $can_delete_booking ?? static function(array $booking): bool {
     return false;
 };
@@ -40,10 +41,13 @@ usort($groups, function ($a, $b) use ($today) {
 });
 ?>
 
-<div class="myvh-dashboard-section">
+<div class="myvh-dashboard-section myvh-portal-bookings-page">
 
-    <div class="myvh-section-header">
-        <h2><?php echo $is_client_admin ? 'Client Bookings' : 'My Bookings'; ?></h2>
+    <div class="myvh-account-header">
+        <div>
+            <h2><?php echo $is_client_admin ? 'Client Bookings' : 'My Bookings'; ?></h2>
+            <p><?php echo $is_client_admin ? 'Review, filter, and manage bookings across this client site.' : 'Review, filter, and manage your bookings in one place.'; ?></p>
+        </div>
 
         <?php if ($is_client_admin || !empty($customer['Id'])): ?>
             <a href="#new-booking" class="myvh-portal-add-btn">
@@ -53,30 +57,43 @@ usort($groups, function ($a, $b) use ($today) {
         <?php endif; ?>
     </div>
 
-    <div class="myvh-surface-panel myvh-bookings-panel">
+    <div class="myvh-card myvh-account-card myvh-bookings-panel myvh-portal-bookings-card">
+        <div class="myvh-account-card-head">
+            <div>
+                <h3><?php echo $is_client_admin ? 'Booking Timeline' : 'Your Booking Timeline'; ?></h3>
+                <span><?php echo esc_html((string) $group_count); ?> <?php echo 1 === $group_count ? 'booking group' : 'booking groups'; ?></span>
+            </div>
+        </div>
 
     <?php if (!$is_client_admin && empty($customer['Id'])): ?>
 
-        <div class="myvh-card">
-            <p>No customer profile is linked to this account yet.</p>
+        <div class="myvh-empty-state myvh-portal-bookings-empty-state">
+            <p class="myvh-portal-bookings-empty-state__title">No customer profile is linked to this account yet.</p>
+            <p>Your bookings will appear here once your account is linked to a customer record.</p>
         </div>
 
     <?php elseif (empty($groups)): ?>
 
-        <div class="myvh-card">
-            <p><?php echo $is_client_admin ? 'No bookings found for this client.' : 'No bookings yet.'; ?></p>
+        <div class="myvh-empty-state myvh-portal-bookings-empty-state">
+            <p class="myvh-portal-bookings-empty-state__title"><?php echo $is_client_admin ? 'No bookings found for this client.' : 'No bookings yet.'; ?></p>
+            <p><?php echo $is_client_admin ? 'Bookings will appear here once this site has upcoming or historic reservations.' : 'Create a booking and it will appear here with its status and actions.'; ?></p>
         </div>
 
     <?php else: ?>
 
 
         <!-- Client-side status filter checkboxes -->
-        <div class="myvh-bookings-status-checkboxes" style="margin-bottom: 16px;">
-            <strong><?php _e('Show statuses:', 'my-village-hall'); ?></strong>
-            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="pending" checked> <?php _e('Pending', 'my-village-hall'); ?></label>
-            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="confirmed" checked> <?php _e('Confirmed', 'my-village-hall'); ?></label>
-            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="cancelled" checked> <?php _e('Cancelled', 'my-village-hall'); ?></label>
-            <label style="margin-right:10px;"><input type="checkbox" class="myvh-status-filter" value="completed" checked> <?php _e('Completed', 'my-village-hall'); ?></label>
+        <div class="myvh-bookings-filter-panel">
+            <div class="myvh-bookings-filter-panel__head">
+                <strong><?php _e('Show statuses', 'my-village-hall'); ?></strong>
+                <span>Use the filters below to focus on the booking states you want to review.</span>
+            </div>
+            <div class="myvh-bookings-status-checkboxes">
+                <label class="myvh-checkbox-label"><input type="checkbox" class="myvh-status-filter" value="pending" checked> <span><?php _e('Pending', 'my-village-hall'); ?></span></label>
+                <label class="myvh-checkbox-label"><input type="checkbox" class="myvh-status-filter" value="confirmed" checked> <span><?php _e('Confirmed', 'my-village-hall'); ?></span></label>
+                <label class="myvh-checkbox-label"><input type="checkbox" class="myvh-status-filter" value="cancelled" checked> <span><?php _e('Cancelled', 'my-village-hall'); ?></span></label>
+                <label class="myvh-checkbox-label"><input type="checkbox" class="myvh-status-filter" value="completed" checked> <span><?php _e('Completed', 'my-village-hall'); ?></span></label>
+            </div>
         </div>
 
         <div class="myvh-bookings-list">
@@ -141,8 +158,8 @@ usort($groups, function ($a, $b) use ($today) {
 
                             <div class="myvh-group-room">
                                 <?php echo esc_html($rep['RoomName']); ?>
-                                <?php if (!empty($summary_booking['Description'])): ?>
-                                    - <?php echo esc_html($summary_booking['Description']); ?>
+                                <?php if (!empty($rep['Description'])): ?>
+                                    - <?php echo esc_html($rep['Description']); ?>
                                 <?php endif; ?>
                             </div>
                         </div>

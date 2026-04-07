@@ -1429,6 +1429,705 @@ body .site-main:has(#myvh-portal) {
   opacity: 1;
 }
 
+.myvh-invoices-page .myvh-account-header {
+  align-items: flex-end;
+  gap: 24px;
+}
+
+.myvh-invoices-page .myvh-account-header p {
+  max-width: 760px;
+}
+
+.myvh-invoices-page .myvh-account-card {
+  border: 1px solid #e4d9ca;
+  box-shadow: 0 10px 20px rgba(28, 26, 23, 0.05);
+}
+
+.myvh-invoices-page .myvh-account-card-head {
+  align-items: flex-end;
+}
+
+.myvh-invoice-filter-section {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #eadfd2;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #f8f3ec 100%);
+}
+
+.myvh-invoice-filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 16px;
+}
+
+.myvh-invoice-filter-group {
+  display: grid;
+  gap: 10px;
+  flex: 1 1 460px;
+}
+
+.myvh-invoice-filter-label {
+  color: var(--ink);
+  font-size: .84rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.myvh-invoices-page .myvh-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.myvh-invoices-page .myvh-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e5d8ca;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-size: .86rem;
+  box-shadow: 0 1px 2px rgba(28, 26, 23, 0.04);
+}
+
+.myvh-invoices-page .myvh-checkbox-label input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.myvh-invoice-filter-submit {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(181, 69, 27, 0.16);
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.myvh-invoice-filter-submit:hover,
+.myvh-invoice-filter-submit:focus-visible {
+  background: #9a3a15;
+  border-color: #9a3a15;
+  box-shadow: 0 12px 24px rgba(181, 69, 27, 0.22);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.myvh-invoices-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.myvh-invoices-table {
+  min-width: 900px;
+}
+
+.myvh-invoices-table td {
+  line-height: 1.4;
+}
+
+.myvh-invoices-table__amount,
+.myvh-invoices-table .myvh-amount {
+  text-align: right;
+}
+
+.myvh-invoices-table .myvh-amount {
+  white-space: nowrap;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.myvh-invoice-meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.myvh-invoice-billing {
+  min-width: 210px;
+}
+
+.myvh-invoices-page .myvh-badge-org {
+  background: #6a5b4d;
+}
+
+.myvh-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.myvh-status-badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.myvh-status-draft {
+  color: #5a5045;
+  background: #f4f0ea;
+  border-color: #dfd4c8;
+}
+
+.myvh-status-sent {
+  color: #1c5c8b;
+  background: #e8f1fa;
+  border-color: #c8dcee;
+}
+
+.myvh-status-paid {
+  color: #1f6a22;
+  background: #e7f4e7;
+  border-color: #cde6cf;
+}
+
+.myvh-status-overdue {
+  color: #9f2829;
+  background: #fbeaea;
+  border-color: #f0c7c7;
+}
+
+.myvh-status-cancelled {
+  color: #7a4d22;
+  background: #f8eee1;
+  border-color: #ead2b1;
+}
+
+.myvh-text-danger {
+  color: #9f2829;
+  font-weight: 600;
+}
+
+.myvh-invoices-empty-state {
+  padding: 26px 20px;
+  border: 1px dashed #dccdbc;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #faf6f0 100%);
+  text-align: center;
+}
+
+.myvh-invoices-empty-state__title {
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.myvh-invoices-empty-state p:last-child {
+  margin-bottom: 0;
+}
+
+.myvh-portal-nav-btn {
+  background: #fff;
+  border-color: #dbcab8;
+  color: var(--ink);
+  box-shadow: 0 8px 20px rgba(28, 26, 23, 0.08);
+}
+
+.myvh-portal-nav-btn:hover,
+.myvh-portal-nav-btn:focus-visible {
+  background: #f7f1ea;
+  border-color: #cdb59d;
+  color: var(--ink);
+  box-shadow: 0 12px 24px rgba(28, 26, 23, 0.12);
+}
+
+.myvh-portal-nav-btn .myvh-portal-add-btn__icon {
+  background: rgba(181, 69, 27, 0.12);
+  color: var(--accent);
+}
+
+.myvh-invoice-generate-page .myvh-invoices-tabs {
+  margin-bottom: 16px;
+}
+
+.myvh-generate-panel {
+  display: block;
+}
+
+.myvh-generate-form {
+  gap: 16px;
+}
+
+.myvh-generate-intro {
+  margin: 0;
+  color: var(--muted);
+}
+
+.myvh-generate-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.myvh-generate-summary-card {
+  padding: 14px 16px;
+  border: 1px solid #eadfd2;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #f8f3ec 100%);
+  box-shadow: 0 4px 12px rgba(28, 26, 23, 0.04);
+}
+
+.myvh-generate-summary-card__label {
+  display: block;
+  color: var(--muted);
+  font-size: .82rem;
+  margin-bottom: 6px;
+}
+
+.myvh-generate-summary-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.myvh-generate-grouping-panel {
+  padding: 16px;
+  border: 1px solid #eadfd2;
+  border-radius: 12px;
+  background: #fcfaf7;
+}
+
+.myvh-generate-grouping-field {
+  max-width: 360px;
+}
+
+.myvh-generate-select {
+  min-height: 42px;
+  border: 1px solid #d8ccbc;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.myvh-generate-subtabs {
+  margin-bottom: 0;
+}
+
+.myvh-generate-booking-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.myvh-invoices-panel[hidden],
+.myvh-booking-type-panel[hidden],
+.myvh-recurring-group-child[hidden] {
+  display: none !important;
+}
+
+.myvh-generate-panel-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid #eadfd2;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #faf5ee 100%);
+}
+
+.myvh-generate-panel-toolbar strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+
+.myvh-generate-panel-toolbar span {
+  display: block;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.myvh-generate-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.myvh-generate-toolbar-button,
+.myvh-generate-drilldown-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(181, 69, 27, 0.16);
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.myvh-generate-toolbar-button:hover,
+.myvh-generate-toolbar-button:focus-visible,
+.myvh-generate-drilldown-btn:hover,
+.myvh-generate-drilldown-btn:focus-visible {
+  background: #9a3a15;
+  border-color: #9a3a15;
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(181, 69, 27, 0.2);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.myvh-generate-toolbar-button--muted {
+  background: #fff;
+  border-color: #d9cab8;
+  color: #5c5248;
+  box-shadow: none;
+}
+
+.myvh-generate-toolbar-button--muted:hover,
+.myvh-generate-toolbar-button--muted:focus-visible {
+  background: #f7f1ea;
+  border-color: #cab39a;
+  color: #3f3731;
+  box-shadow: 0 6px 14px rgba(28, 26, 23, 0.08);
+}
+
+.myvh-generate-table-wrap {
+  padding: 8px;
+  border: 1px solid #d9cec0;
+  border-radius: 12px;
+  background: #fbf8f4;
+  max-height: 340px;
+}
+
+.myvh-generate-bookings-table th:first-child,
+.myvh-generate-bookings-table td:first-child {
+  width: 72px;
+}
+
+.myvh-generate-bookings-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.myvh-recurring-group-row td {
+  background: #f5eee5;
+  box-shadow: none;
+}
+
+.myvh-recurring-group-cell {
+  padding: 0;
+}
+
+.myvh-recurring-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.myvh-recurring-group-toggle::after {
+  content: '+';
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.myvh-recurring-group-toggle[aria-expanded="true"]::after {
+  content: '−';
+}
+
+.myvh-recurring-group-toggle__title,
+.myvh-recurring-group-toggle__meta {
+  display: inline-flex;
+  align-items: center;
+}
+
+.myvh-recurring-group-toggle__meta {
+  color: var(--muted);
+  font-size: .84rem;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.myvh-generate-submit-row {
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid #efe8dd;
+}
+
+.myvh-generate-submit-row .myvh-button {
+  min-height: 42px;
+  padding: 0 18px;
+}
+
+.myvh-generate-empty-state {
+  margin: 0;
+}
+
+.myvh-generate-drilldown {
+  margin-top: 18px;
+}
+
+.myvh-generate-drilldown-card {
+  padding: 16px;
+  border: 1px solid #e4d9ca;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #faf6f0 100%);
+}
+
+.myvh-generate-drilldown-card .myvh-account-card-head {
+  margin-bottom: 12px;
+}
+
+.myvh-generate-drilldown-empty {
+  margin: 0;
+}
+
+.myvh-generate-form .myvh-form-message {
+  min-height: 20px;
+  margin: 0;
+  color: var(--muted);
+  font-size: .84rem;
+}
+
+.myvh-portal-dashboard-page .myvh-account-header,
+.myvh-portal-bookings-page .myvh-account-header {
+  align-items: flex-end;
+  gap: 24px;
+}
+
+.myvh-portal-dashboard-page .myvh-account-header p,
+.myvh-portal-bookings-page .myvh-account-header p {
+  max-width: 760px;
+}
+
+.myvh-portal-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.95fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.myvh-portal-dashboard-side {
+  display: grid;
+  gap: 20px;
+}
+
+.myvh-portal-dashboard-page .myvh-account-card,
+.myvh-portal-bookings-page .myvh-account-card {
+  border: 1px solid #e4d9ca;
+  box-shadow: 0 10px 20px rgba(28, 26, 23, 0.05);
+}
+
+.myvh-portal-dashboard-main-card,
+.myvh-portal-dashboard-side-card,
+.myvh-portal-bookings-card {
+  padding: 20px;
+}
+
+.myvh-portal-dashboard-bookings-list,
+.myvh-portal-bookings-page .myvh-bookings-list {
+  margin-bottom: 0;
+}
+
+.myvh-portal-dashboard-empty-state,
+.myvh-portal-bookings-empty-state {
+  padding: 26px 20px;
+  border: 1px dashed #dccdbc;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #faf6f0 100%);
+  text-align: center;
+}
+
+.myvh-portal-dashboard-empty-state__title,
+.myvh-portal-bookings-empty-state__title {
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.myvh-portal-quick-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.myvh-portal-quick-action {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5d8ca;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #faf5ee 100%);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: 0 3px 8px rgba(28, 26, 23, 0.04);
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease, background .16s ease;
+}
+
+.myvh-portal-quick-action:hover,
+.myvh-portal-quick-action:focus-visible {
+  border-color: #cfb49a;
+  background: linear-gradient(135deg, #fff 0%, #f5ece2 100%);
+  box-shadow: 0 10px 18px rgba(28, 26, 23, 0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.myvh-portal-quick-action__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f1e2d4;
+  font-size: 1.1rem;
+}
+
+.myvh-portal-quick-action__text {
+  font-weight: 600;
+}
+
+.myvh-portal-notices-list {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.myvh-portal-notices-list li {
+  position: relative;
+  padding: 12px 14px 12px 36px;
+  border: 1px solid #eee2d5;
+  border-radius: 12px;
+  background: #fffaf5;
+  color: var(--ink);
+}
+
+.myvh-portal-notices-list li::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 16px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(181, 69, 27, 0.12);
+}
+
+.myvh-bookings-filter-panel {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #eadfd2;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #f8f3ec 100%);
+}
+
+.myvh-bookings-filter-panel__head strong {
+  display: block;
+  color: var(--ink);
+  font-size: .86rem;
+  margin-bottom: 4px;
+}
+
+.myvh-bookings-filter-panel__head span {
+  display: block;
+  color: var(--muted);
+  font-size: .84rem;
+}
+
+.myvh-bookings-status-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.myvh-portal-bookings-page .myvh-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e5d8ca;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-size: .86rem;
+  box-shadow: 0 1px 2px rgba(28, 26, 23, 0.04);
+}
+
+.myvh-portal-bookings-page .myvh-checkbox-label input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.myvh-portal-bookings-page .myvh-booking-group,
+.myvh-portal-dashboard-page .myvh-booking-group {
+  margin-bottom: 12px;
+  border: 1px solid #eadfd2;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(28, 26, 23, 0.04);
+}
+
+.myvh-portal-bookings-page .myvh-booking-group:last-child,
+.myvh-portal-dashboard-page .myvh-booking-group:last-child {
+  margin-bottom: 0;
+}
+
+.myvh-portal-bookings-page .myvh-group-header,
+.myvh-portal-dashboard-page .myvh-group-header {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #fff 0%, #faf5ee 100%);
+}
+
+.myvh-portal-bookings-page .myvh-group-children,
+.myvh-portal-dashboard-page .myvh-group-children {
+  padding: 10px;
+  background: #fcfaf7;
+}
+
+.myvh-portal-bookings-page .myvh-bookings-list .myvh-booking-card,
+.myvh-portal-dashboard-page .myvh-bookings-list .myvh-booking-card {
+  border: 1px solid #eee7de;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(28, 26, 23, 0.04);
+}
+
+.myvh-portal-bookings-page .myvh-year-divider,
+.myvh-portal-dashboard-page .myvh-year-divider {
+  margin: 14px 0 8px;
+}
+
 /* =======================================================================
    15. ORGANISATIONS PAGE
    ======================================================================= */
@@ -2109,6 +2808,55 @@ body .site-main:has(#myvh-portal) {
   .myvh-client-settings-page .myvh-account-card-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .myvh-invoices-page .myvh-account-header {
+    align-items: flex-start;
+  }
+
+  .myvh-invoice-filter-form {
+    align-items: stretch;
+  }
+
+  .myvh-invoice-filter-submit {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .myvh-generate-summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .myvh-portal-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .myvh-generate-panel-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .myvh-generate-toolbar-actions {
+    width: 100%;
+  }
+
+  .myvh-generate-toolbar-button,
+  .myvh-generate-drilldown-btn {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .myvh-generate-grouping-field {
+    max-width: none;
+  }
+
+  .myvh-portal-dashboard-page .myvh-account-header,
+  .myvh-portal-bookings-page .myvh-account-header {
+    align-items: flex-start;
+  }
+
+  .myvh-invoices-table {
+    min-width: 760px;
   }
 }
 

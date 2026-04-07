@@ -4,10 +4,11 @@ if (!defined('ABSPATH')) {
 }
 
 $is_client_admin_view = !empty($is_client_admin);
+$invoice_count = is_array($invoices ?? null) ? count($invoices) : 0;
 ?>
 
 <div class="myvh-dashboard-section myvh-client-settings-page myvh-invoices-page">
-    <div class="myvh-account-header myvh-settings-header">
+    <div class="myvh-account-header">
         <div>
             <h2><?php echo $is_client_admin_view ? 'Generated Invoices' : 'Your Invoices'; ?></h2>
             <p><?php echo $is_client_admin_view
@@ -15,39 +16,43 @@ $is_client_admin_view = !empty($is_client_admin);
                 : 'Review invoice statuses, balances, and due dates for your account.'; ?></p>
         </div>
         <?php if ($is_client_admin_view): ?>
-            <div class="myvh-account-actions">
-                <a href="#invoice-generate" class="myvh-button myvh-button-primary">Generate Invoices</a>
-            </div>
+            <a href="#invoice-generate" class="myvh-portal-add-btn">
+                <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                <span>Generate Invoices</span>
+            </a>
         <?php endif; ?>
     </div>
-    <div class="myvh-account-grid myvh-settings-groups myvh-settings-panels">
-        <div class="myvh-card myvh-account-card myvh-settings-group is-active">
-            <div class="myvh-section-header" style="margin-bottom: 12px;">
+    <div class="myvh-card myvh-account-card myvh-invoices-card">
+        <div class="myvh-account-card-head">
+            <div>
                 <h3><?php echo $is_client_admin_view ? 'Invoice List' : 'Your Invoice List'; ?></h3>
+                <span><?php echo esc_html((string) $invoice_count); ?> <?php echo 1 === $invoice_count ? 'invoice record' : 'invoice records'; ?></span>
             </div>
+        </div>
 
-            <div class="myvh-filter-section">
-                <form id="myvh-invoice-filter-form" class="myvh-filter-form">
-                    <div class="myvh-filter-group">
-                        <label>Filter by Status:</label>
-                        <div class="myvh-checkbox-group">
-                            <?php foreach ($available_statuses as $status): ?>
-                                <label class="myvh-checkbox-label">
-                                    <input type="checkbox"
-                                           name="statuses[]"
-                                           value="<?php echo esc_attr($status); ?>"
-                                           <?php checked(in_array($status, $selected_statuses)); ?>>
-                                    <?php echo ucfirst(esc_html($status)); ?>
-                                </label>
-                            <?php endforeach; ?>
-                        </div>
+        <div class="myvh-invoice-filter-section">
+            <form id="myvh-invoice-filter-form" class="myvh-invoice-filter-form">
+                <div class="myvh-invoice-filter-group">
+                    <span class="myvh-invoice-filter-label">Filter by status</span>
+                    <div class="myvh-checkbox-group">
+                        <?php foreach ($available_statuses as $status): ?>
+                            <label class="myvh-checkbox-label">
+                                <input type="checkbox"
+                                       name="statuses[]"
+                                       value="<?php echo esc_attr($status); ?>"
+                                       <?php checked(in_array($status, $selected_statuses, true)); ?>>
+                                <span><?php echo ucfirst(esc_html($status)); ?></span>
+                            </label>
+                        <?php endforeach; ?>
                     </div>
-                    <button type="submit" class="button">Apply Filter</button>
-                </form>
-            </div>
+                </div>
+                <button type="submit" class="myvh-invoice-filter-submit">Apply Filter</button>
+            </form>
+        </div>
 
-            <?php if (!empty($invoices)): ?>
-                <table class="myvh-invoices-table">
+        <?php if (!empty($invoices)): ?>
+            <div class="myvh-invoices-table-wrap">
+                <table class="myvh-customer-list-table myvh-invoices-table">
                     <thead>
                         <tr>
                             <th>Invoice Number</th>
@@ -56,8 +61,8 @@ $is_client_admin_view = !empty($is_client_admin);
                             <?php endif; ?>
                             <th>Date</th>
                             <th>Billing</th>
-                            <th>Amount</th>
-                            <th>Paid</th>
+                            <th class="myvh-invoices-table__amount">Amount</th>
+                            <th class="myvh-invoices-table__amount">Paid</th>
                             <th>Due Date</th>
                             <th>Status</th>
                         </tr>
@@ -72,14 +77,14 @@ $is_client_admin_view = !empty($is_client_admin);
                                     <td>
                                         <strong><?php echo esc_html($invoice['CustomerName'] ?? 'Unknown'); ?></strong>
                                         <?php if (!empty($invoice['CustomerEmail'])): ?>
-                                            <br><small><?php echo esc_html($invoice['CustomerEmail']); ?></small>
+                                            <span class="myvh-invoice-meta"><?php echo esc_html($invoice['CustomerEmail']); ?></span>
                                         <?php endif; ?>
                                     </td>
                                 <?php endif; ?>
                                 <td>
                                     <?php echo esc_html(date_format(date_create($invoice['InvoiceDate']), 'j M Y')); ?>
                                 </td>
-                                <td>
+                                <td class="myvh-invoice-billing">
                                     <?php
                                         $invoice_type = !empty($invoice['IsPersonalInvoice']) ? 'Personal' : 'Organisation';
                                         if (!empty($invoice['OrganisationName'])) {
@@ -90,11 +95,11 @@ $is_client_admin_view = !empty($is_client_admin);
                                         }
 
                                         if (!empty($invoice['BillingName'])) {
-                                            echo '<br><small>' . esc_html($invoice['BillingName']) . '</small>';
+                                            echo '<span class="myvh-invoice-meta">' . esc_html($invoice['BillingName']) . '</span>';
                                         }
 
                                         if (!empty($invoice['BillingReference'])) {
-                                            echo '<br><small>Ref: ' . esc_html($invoice['BillingReference']) . '</small>';
+                                            echo '<span class="myvh-invoice-meta">Ref: ' . esc_html($invoice['BillingReference']) . '</span>';
                                         }
                                     ?>
                                 </td>
@@ -127,14 +132,15 @@ $is_client_admin_view = !empty($is_client_admin);
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-            <?php else: ?>
-                <div class="myvh-empty-state">
-                    <p>No invoices found.</p>
-                    <?php if (!empty($selected_statuses)): ?>
-                        <p>Try adjusting your filters to see more invoices.</p>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
+            </div>
+        <?php else: ?>
+            <div class="myvh-empty-state myvh-invoices-empty-state">
+                <p class="myvh-invoices-empty-state__title">No invoices found.</p>
+                <p><?php echo !empty($selected_statuses)
+                    ? 'Try adjusting the selected statuses to see more invoices.'
+                    : 'Invoices will appear here once they have been generated for this account.'; ?></p>
+            </div>
+        <?php endif; ?>
         </div>
     </div>
 </div>
