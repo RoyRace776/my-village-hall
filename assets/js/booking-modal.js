@@ -647,10 +647,15 @@ window.BookingModal = (function() {
 
         const formData = new FormData(form);
         const publicCheckbox = form.querySelector("[name=public]");
+        const noInvoiceCheckbox = form.querySelector("[name=no_invoice_required]");
 
         // Always send explicit visibility for modal creates, even when unchecked.
         if (publicCheckbox) {
             formData.set("public", publicCheckbox.checked ? "1" : "0");
+        }
+
+        if (noInvoiceCheckbox) {
+            formData.set("no_invoice_required", noInvoiceCheckbox.checked ? "1" : "0");
         }
 
         // Disabled controls are excluded from FormData, but locked fields are intentional selections.

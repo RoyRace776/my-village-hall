@@ -30,6 +30,7 @@ window.BookingModalView = (function() {
             hideCustomer: false,
             hideOrganisation: false,
             requireOrganisation: false,
+            canManageNoInvoiceRequired: false,
 
             // Hooks
             onSuccess: () => {},
@@ -125,6 +126,7 @@ window.BookingModalView = (function() {
         currentCanDelete = false;
         updateEditButtons(false, 'Loading booking permissions...');
         updateDeleteButtons(false, 'Loading booking permissions...');
+        applyNoInvoiceRequiredVisibility();
 
         const nonce = config.context === "portal" ? config.nonce : "myvh_calendar";
 
@@ -154,6 +156,7 @@ window.BookingModalView = (function() {
                 })
                 .then((payload) => {
                     const booking = payload.booking;
+                    config.canManageNoInvoiceRequired = !!payload.canManageNoInvoiceRequired;
 
                     setSelectDisplayOption('room_id', booking['RoomId'], booking['RoomName'], {
                         allowMultiday: booking['AllowMultiDayBookings']
@@ -163,10 +166,12 @@ window.BookingModalView = (function() {
                     setValue('status', formatStatus(booking['Status']));
                     setValue('description', booking['Description']);
                     setValue('public', !!booking['Public']);
+                    setValue('no_invoice_required', !!booking['NoInvoiceRequired']);
                     currentCanEdit = !!payload.canEdit;
                     currentCanDelete = !!payload.canDelete;
                     updateEditButtons(currentCanEdit, payload.editReason);
                     updateDeleteButtons(currentCanDelete, payload.deleteReason);
+                    applyNoInvoiceRequiredVisibility();
 
                     const startDateTime = `${booking['StartDate'] || ''} ${booking['StartTime'] || ''}`.trim();
                     const endDate = booking['EndDate'] || booking['StartDate'] || '';
@@ -203,6 +208,11 @@ window.BookingModalView = (function() {
                 return;
             }
 
+            if (el.name === 'no_invoice_required') {
+                el.disabled = true;
+                return;
+            }
+
             if (el.id === 'myvh-modal-start-date' || el.id === 'myvh-modal-start-time' || el.id === 'myvh-modal-end-date' || el.id === 'myvh-modal-end-time') {
                 el.disabled = true;
                 return;
@@ -210,6 +220,26 @@ window.BookingModalView = (function() {
 
             el.disabled = false;
         });
+        applyNoInvoiceRequiredVisibility();
+    }
+
+    function applyNoInvoiceRequiredVisibility() {
+        const row = form.querySelector('#myvh-modal-view-no-invoice-row');
+        const checkbox = form.querySelector('[name=no_invoice_required]');
+
+        if (row) {
+            row.style.display = config.canManageNoInvoiceRequired ? '' : 'none';
+        }
+
+        if (!checkbox) {
+            return;
+        }
+
+        if (!config.canManageNoInvoiceRequired) {
+            checkbox.checked = false;
+        }
+
+        checkbox.disabled = true;
     }
 
     function bindDependentControls() {

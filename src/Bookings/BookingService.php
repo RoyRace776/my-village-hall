@@ -115,6 +115,7 @@ class BookingService {
 
             $booking_id = !empty($data['booking_id']) ? intval($data['booking_id']) : 0;
             $public_visibility = $this->resolve_public_visibility($data, $organisation_id, $booking_id);
+            $no_invoice_required = intval($data['no_invoice_required'] ?? 0);
 
             $record = [
                 'CustomerId'        => $customer_id,
@@ -127,6 +128,7 @@ class BookingService {
                 'EndTime'           => $end_time,
                 'Description'       => sanitize_textarea_field($data['description'] ?? ''),
                 'Public'            => $public_visibility,
+                'NoInvoiceRequired' => $no_invoice_required,
                 'ChargeableHours'   => $chargeable_hours
             ];
 
@@ -323,6 +325,7 @@ class BookingService {
         $normalized['status'] = sanitize_text_field((string) ($record['Status'] ?? $data['status'] ?? $current_record['Status'] ?? ''));
         $normalized['description'] = sanitize_textarea_field($data['description'] ?? $record['Description'] ?? $current_record['Description'] ?? '');
         $normalized['public'] = intval($record['Public'] ?? $data['public'] ?? $current_record['Public'] ?? 0);
+        $normalized['no_invoice_required'] = intval($record['NoInvoiceRequired'] ?? $data['no_invoice_required'] ?? $current_record['NoInvoiceRequired'] ?? 0);
         $normalized['edit_scope'] = $this->normalize_edit_scope($data['edit_scope'] ?? '');
 
         return $normalized;
@@ -341,6 +344,7 @@ class BookingService {
             'status' => sanitize_text_field((string) ($base_record['Status'] ?? $booking['Status'] ?? '')),
             'description' => sanitize_textarea_field($base_record['Description'] ?? $booking['Description'] ?? ''),
             'public' => intval($base_record['Public'] ?? $booking['Public'] ?? 0),
+            'no_invoice_required' => intval($base_record['NoInvoiceRequired'] ?? $booking['NoInvoiceRequired'] ?? 0),
             'edit_scope' => $this->normalize_edit_scope($base_data['edit_scope'] ?? ''),
         ];
 
@@ -356,6 +360,7 @@ class BookingService {
             'Status' => $base_record['Status'],
             'Description' => $base_record['Description'],
             'Public' => $base_record['Public'],
+            'NoInvoiceRequired' => intval($base_record['NoInvoiceRequired'] ?? 0),
         ];
 
         if ($override_pattern_id > 0) {
@@ -1136,6 +1141,10 @@ class BookingService {
      */
     public function get_uninvoiced_by_customer(): array {
         return $this->booking_repo->count_uninvoiced_by_customer();
+    }
+
+    public function booking_requires_no_invoice(int $booking_id): bool {
+        return $this->booking_repo->is_no_invoice_required($booking_id);
     }
 
     /**

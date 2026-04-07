@@ -146,6 +146,7 @@ class BookingServiceTest extends UnitTestCase {
             'end_time'        => '11:00:00',
             'description'     => '',
             'public'          => 0,
+            'no_invoice_required' => 0,
             'is_recurring'    => 0,
             'addons'          => [],
         ], $overrides);
@@ -178,6 +179,7 @@ class BookingServiceTest extends UnitTestCase {
             'EndTime' => '11:00:00',
             'Description' => 'Yoga class',
             'Public' => 0,
+            'NoInvoiceRequired' => 0,
             'ChargeableHours' => 2,
         ], $overrides);
     }
@@ -247,6 +249,37 @@ class BookingServiceTest extends UnitTestCase {
         $result = $this->service->save($this->minimal_create_data());
 
         $this->assertSame($expected_id, $result);
+    }
+
+    /** @test */
+    public function save_create_persists_no_invoice_required_flag(): void {
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+
+        $this->room_service->shouldReceive('get')
+            ->with(5)
+            ->once()
+            ->andReturn($this->minimal_room());
+
+        $this->booking_repo->shouldReceive('create')
+            ->once()
+            ->with(Mockery::on(static function (array $record): bool {
+                return intval($record['NoInvoiceRequired'] ?? 0) === 1;
+            }))
+            ->andReturn(42);
+
+        $this->addon_service->shouldReceive('save_booking_addons')->once()->withAnyArgs();
+        $this->pricing->shouldReceive('get_charge_snapshot')->with(42)->once()->andReturnUsing(static fn () => []);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(42)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('create')->once()->andReturn(1);
+
+        $result = $this->service->save($this->minimal_create_data([
+            'no_invoice_required' => 1,
+        ]));
+
+        $this->assertSame(42, $result);
     }
 
     /** @test */
@@ -399,6 +432,48 @@ class BookingServiceTest extends UnitTestCase {
         $this->booking_repo->shouldReceive('update')->twice()->andReturn(true);
         $this->addon_service->shouldReceive('save_booking_addons')->twice()->withAnyArgs();
 
+        $this->pricing->shouldReceive('get_charge_snapshot')->with(99)->once()->andReturnUsing(static fn () => []);
+        $this->pricing->shouldReceive('get_charge_snapshot')->with(100)->once()->andReturnUsing(static fn () => []);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(99)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(100)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('create')->twice()->andReturn(1);
+
+        $result = $this->service->save($data);
+
+        $this->assertSame($booking_id, $result);
+    }
+
+    /** @test */
+    public function save_update_with_all_bookings_scope_propagates_no_invoice_required_flag(): void {
+        $booking_id = 99;
+        $pattern_id = 200;
+        $data = $this->minimal_create_data([
+            'booking_id' => $booking_id,
+            'edit_scope' => 'all_bookings',
+            'no_invoice_required' => 1,
+        ]);
+
+        $bookings = [
+            $this->recurring_booking_record(99),
+            $this->recurring_booking_record(100, [
+                'StartDate' => '2026-06-08',
+                'EndDate' => '2026-06-08',
+            ]),
+        ];
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
+        $this->booking_repo->shouldReceive('get_by_id')->with($booking_id)->once()->andReturn($this->recurring_booking_record($booking_id));
+        $this->booking_repo->shouldReceive('get_by_pattern_id')->with($pattern_id)->once()->andReturn($bookings);
+        $this->booking_repo->shouldReceive('update')
+            ->twice()
+            ->with(Mockery::on(static function (array $record): bool {
+                return intval($record['NoInvoiceRequired'] ?? 0) === 1;
+            }), Mockery::any())
+            ->andReturn(true);
+        $this->addon_service->shouldReceive('save_booking_addons')->twice()->withAnyArgs();
         $this->pricing->shouldReceive('get_charge_snapshot')->with(99)->once()->andReturnUsing(static fn () => []);
         $this->pricing->shouldReceive('get_charge_snapshot')->with(100)->once()->andReturnUsing(static fn () => []);
         $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with(99)->once()->andReturn(1);

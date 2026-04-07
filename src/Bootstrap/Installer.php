@@ -244,6 +244,7 @@ class Installer {
             EndTime            TIME         NOT NULL,
             ChargeableHours    INT UNSIGNED DEFAULT NULL,
             Public             TINYINT(1)   DEFAULT 1,
+            NoInvoiceRequired  TINYINT(1)   NOT NULL DEFAULT 0,
             Description        VARCHAR(255),
             RecurringPatternId INT UNSIGNED  DEFAULT NULL,
             Created            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,

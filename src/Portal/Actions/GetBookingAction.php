@@ -35,6 +35,12 @@ class GetBookingAction {
             throw new Exception('Booking not found or not accessible');
         }
 
+        if (!$is_admin) {
+            unset($booking['NoInvoiceRequired']);
+        } else {
+            $booking['NoInvoiceRequired'] = intval($booking['NoInvoiceRequired'] ?? 0);
+        }
+
         return $booking;
     }
 }

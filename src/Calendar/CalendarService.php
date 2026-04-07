@@ -103,6 +103,10 @@ class CalendarService {
             $data['public'] = intval($request['public']);
         }
 
+        if ($this->can_manage_no_invoice_required($context, $viewer_user_id) && array_key_exists('no_invoice_required', $request)) {
+            $data['no_invoice_required'] = intval($request['no_invoice_required']);
+        }
+
         if ($context === 'portal') {
             $is_client_admin = $this->client_admin_service->can_administer_blog($viewer_user_id, get_current_blog_id());
 
@@ -172,6 +176,13 @@ class CalendarService {
             $data['public'] = intval($request['public']);
         }
 
+        if ($this->can_manage_no_invoice_required(
+            sanitize_text_field($request['context'] ?? 'admin'),
+            get_current_user_id()
+        ) && array_key_exists('no_invoice_required', $request)) {
+            $data['no_invoice_required'] = intval($request['no_invoice_required']);
+        }
+
         $validation = $this->validate_calendar_update_payload($data);
         if (is_wp_error($validation)) {
             return $validation;
@@ -183,6 +194,14 @@ class CalendarService {
         }
 
         return ['id' => $id];
+    }
+
+    private function can_manage_no_invoice_required(string $context, int $viewer_user_id): bool {
+        if ($context !== 'portal') {
+            return current_user_can('manage_myvh');
+        }
+
+        return $this->client_admin_service->can_administer_blog($viewer_user_id, get_current_blog_id());
     }
 
     private function get_room_metadata() {

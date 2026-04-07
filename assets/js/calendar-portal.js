@@ -454,6 +454,7 @@ var Calendar = (function() {
                 hideCustomer: !isClientAdmin,
                 lockAddonPrices: true,
                 requireOrganisation: true,
+                canManageNoInvoiceRequired: isClientAdmin,
 
                 onClose: () => api?.clearSelection?.(),
                 onSuccess: handleBookingSaved
@@ -481,6 +482,7 @@ var Calendar = (function() {
                 hideCustomer: !isClientAdmin,
                 lockAddonPrices: true,
                 requireOrganisation: true,
+                canManageNoInvoiceRequired: isClientAdmin,
 
                 onClose: () => api?.clearSelection?.(),
                 onEdit: ({ bookingId }) => {

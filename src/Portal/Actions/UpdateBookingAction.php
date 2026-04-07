@@ -57,6 +57,9 @@ class UpdateBookingAction {
             'description' => sanitize_textarea_field($input['description'] ?? $booking['Description']),
             'status'      => sanitize_text_field($booking['Status'] ?? ''),
             'public'      => !empty($booking['Public']) ? 1 : 0,
+            'no_invoice_required' => $is_admin
+                ? intval($input['no_invoice_required'] ?? ($booking['NoInvoiceRequired'] ?? 0))
+                : intval($booking['NoInvoiceRequired'] ?? 0),
         ]);
 
         if (is_wp_error($result)) {

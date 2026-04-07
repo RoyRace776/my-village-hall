@@ -97,6 +97,13 @@ class InvoiceGeneratorService {
 
         // Check mutual exclusivity: ensure none of the bookings are already invoiced
         foreach ($booking_ids as $booking_id) {
+            if ($this->booking_service->booking_requires_no_invoice($booking_id)) {
+                return new WP_Error(
+                    'invoice_not_required',
+                    sprintf(__('Booking #%d is marked as not requiring an invoice', 'my-village-hall'), $booking_id)
+                );
+            }
+
             if ($this->booking_service->booking_has_invoices($booking_id)) {
                 return new WP_Error(
                     'already_invoiced',

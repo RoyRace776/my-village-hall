@@ -79,6 +79,10 @@ class CalendarAjaxController {
         if (!$booking) {
             wp_send_json_error('Booking not found or not accessible', 404);
         }
+
+        $can_manage_no_invoice_required = $this->current_user_can_manage_no_invoice_required();
+        $booking = $this->filter_booking_for_viewer($booking, $can_manage_no_invoice_required);
+
         $edit_rules = $this->booking_service->can_edit($booking);
         $delete_rules = $this->booking_service->can_delete($booking);
         wp_send_json_success([
@@ -88,6 +92,7 @@ class CalendarAjaxController {
             'edit_reason' => $edit_rules['reason'] ?? '',
             'can_delete' => !empty($delete_rules['can_delete']),
             'delete_reason' => $delete_rules['reason'] ?? '',
+            'can_manage_no_invoice_required' => $can_manage_no_invoice_required,
         ]);
     }
 
@@ -316,6 +321,24 @@ class CalendarAjaxController {
         if (!is_user_logged_in()) {
             wp_send_json_error('Login required', 401);
         }
+    }
+
+    private function current_user_can_manage_no_invoice_required(): bool {
+        if (current_user_can('manage_myvh')) {
+            return true;
+        }
+
+        return $this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
+    }
+
+    private function filter_booking_for_viewer(array $booking, bool $can_manage_no_invoice_required): array {
+        if ($can_manage_no_invoice_required) {
+            $booking['NoInvoiceRequired'] = intval($booking['NoInvoiceRequired'] ?? 0);
+            return $booking;
+        }
+
+        unset($booking['NoInvoiceRequired']);
+        return $booking;
     }
 
     private function verify_rooms_request_nonce(): void {

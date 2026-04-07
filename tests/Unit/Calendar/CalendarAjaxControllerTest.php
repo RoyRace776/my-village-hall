@@ -45,6 +45,8 @@ class CalendarAjaxControllerTest extends UnitTestCase {
             'current_user_can' => true,
             'is_user_logged_in' => true,
             'absint' => fn($value) => abs((int) $value),
+            'get_current_user_id' => 21,
+            'get_current_blog_id' => 7,
         ]);
 
         Functions\when('wp_send_json')->alias(function ($data = null, $status_code = null) {
@@ -159,6 +161,100 @@ class CalendarAjaxControllerTest extends UnitTestCase {
         $this->assertCount(1, $response->data['rooms']);
         $this->assertSame(10, $response->data['rooms'][0]['Id']);
         $this->assertSame('Main Hall', $response->data['rooms'][0]['Name']);
+    }
+
+    /** @test */
+    public function get_booking_redacts_no_invoice_required_for_non_privileged_viewers(): void {
+        $_GET = [
+            'booking_id' => 55,
+            'nonce' => 'example',
+        ];
+
+        Functions\when('current_user_can')->alias(static fn(string $capability): bool => false);
+
+        $this->customer_service->shouldReceive('get_by_user_id')
+            ->with(21)
+            ->once()
+            ->andReturnUsing(static fn(): array => ['Id' => 9]);
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->with(21, 7)
+            ->twice()
+            ->andReturn(false);
+
+        $this->booking_service->shouldReceive('get_all_with_details')
+            ->with(['customer_id' => 9])
+            ->once()
+            ->andReturn([
+                [
+                    'Id' => 55,
+                    'CustomerId' => 9,
+                    'RoomId' => 3,
+                    'OrganisationId' => 0,
+                    'Status' => 'confirmed',
+                    'Description' => 'Community lunch',
+                    'Public' => 1,
+                    'NoInvoiceRequired' => 1,
+                ],
+            ]);
+
+        $this->booking_service->shouldReceive('can_edit')->once()->andReturnUsing(static fn(): array => ['can_edit' => false, 'reason' => '']);
+        $this->booking_service->shouldReceive('can_delete')->once()->andReturnUsing(static fn(): array => ['can_delete' => false, 'reason' => '']);
+        $this->booking_service->shouldReceive('get_addons_for_booking')->with(55)->once()->andReturn([]);
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->get_booking();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertArrayNotHasKey('NoInvoiceRequired', $response->data['booking']);
+        $this->assertFalse($response->data['can_manage_no_invoice_required']);
+    }
+
+    /** @test */
+    public function get_booking_includes_no_invoice_required_for_client_admins(): void {
+        $_GET = [
+            'booking_id' => 55,
+            'nonce' => 'example',
+        ];
+
+        Functions\when('current_user_can')->alias(static fn(string $capability): bool => false);
+
+        $this->customer_service->shouldReceive('get_by_user_id')
+            ->with(21)
+            ->once()
+            ->andReturnUsing(static fn(): array => ['Id' => 9]);
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->with(21, 7)
+            ->twice()
+            ->andReturn(true);
+
+        $this->booking_service->shouldReceive('get_by_id_with_details')
+            ->with(55)
+            ->once()
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 55,
+                'CustomerId' => 9,
+                'RoomId' => 3,
+                'OrganisationId' => 0,
+                'Status' => 'confirmed',
+                'Description' => 'Committee meeting',
+                'Public' => 1,
+                'NoInvoiceRequired' => 1,
+            ]);
+
+        $this->booking_service->shouldReceive('can_edit')->once()->andReturnUsing(static fn(): array => ['can_edit' => true, 'reason' => '']);
+        $this->booking_service->shouldReceive('can_delete')->once()->andReturnUsing(static fn(): array => ['can_delete' => true, 'reason' => '']);
+        $this->booking_service->shouldReceive('get_addons_for_booking')->with(55)->once()->andReturn([]);
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->get_booking();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame(1, $response->data['booking']['NoInvoiceRequired']);
+        $this->assertTrue($response->data['can_manage_no_invoice_required']);
     }
 
     private function capture_json_response(callable $callback): CalendarJsonResponseException {

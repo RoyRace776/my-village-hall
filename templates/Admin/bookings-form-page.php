@@ -110,6 +110,7 @@ $form_description = isset($form_data['description']) ? sanitize_textarea_field($
 $default_status = myvh_setting('booking.require_approval', true) ? BookingStatus::PENDING : BookingStatus::CONFIRMED;
 $form_status = isset($form_data['status']) ? sanitize_text_field($form_data['status']) : ($edit_booking['Status'] ?? $default_status);
 $form_public = $has_form_data ? !empty($form_data['public']) : !empty($edit_booking['Public']);
+$form_no_invoice_required = $has_form_data ? !empty($form_data['no_invoice_required']) : !empty($edit_booking['NoInvoiceRequired']);
 $form_is_recurring = !empty($form_data['is_recurring']);
 $form_recurrence_type = sanitize_text_field($form_data['recurrence_type'] ?? 'weekly');
 $form_recurrence_interval = max(1, intval($form_data['recurrence_interval'] ?? 1));
@@ -269,6 +270,14 @@ $status_colors = [
                                 <?php else: ?>
                                     🔒 <?php _e('Private (hidden from public)', 'my-village-hall'); ?>
                                 <?php endif; ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><?php _e('Invoice', 'my-village-hall'); ?></th>
+                            <td>
+                                <?php echo !empty($edit_booking['NoInvoiceRequired'])
+                                    ? esc_html__('No invoice required', 'my-village-hall')
+                                    : esc_html__('Invoice required', 'my-village-hall'); ?>
                             </td>
                         </tr>
                         <?php if ($recurring_pattern): ?>
@@ -569,6 +578,18 @@ $status_colors = [
                                         <?php _e('Show on public calendar', 'my-village-hall'); ?>
                                     </label>
                                     <p class="description"><?php _e('Uncheck to hide from public view', 'my-village-hall'); ?></p>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th><?php _e('Invoice', 'my-village-hall'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="no_invoice_required" value="1"
+                                            <?php checked($form_no_invoice_required); ?>>
+                                        <?php _e('This booking does not need an invoice', 'my-village-hall'); ?>
+                                    </label>
+                                    <p class="description"><?php _e('Leave unchecked to keep the booking invoiceable by default.', 'my-village-hall'); ?></p>
                                 </td>
                             </tr>
 

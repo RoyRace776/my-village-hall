@@ -149,6 +149,15 @@ add_action('admin_footer', function() use ($available_addons) {
                         </td>
                     </tr>
                     <tr>
+                        <th>Invoice</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="no_invoice_required" value="1">
+                                This booking does not need an invoice
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
                         <th>Recurring</th>
                         <td>
                             <label>

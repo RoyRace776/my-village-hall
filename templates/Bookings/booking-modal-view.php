@@ -79,6 +79,15 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
                             </label>
                         </td>
                     </tr>
+                    <tr id="myvh-modal-view-no-invoice-row" style="display:none;">
+                        <th>Invoice</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="no_invoice_required" value="1" disabled>
+                                This booking does not need an invoice
+                            </label>
+                        </td>
+                    </tr>
                 </table>
             </div>
 

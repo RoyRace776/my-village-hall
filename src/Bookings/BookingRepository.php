@@ -390,6 +390,7 @@ class BookingRepository extends RepositoryBase
 
         $where = [
             "b.Status IN ('confirmed', 'completed')",
+            "b.NoInvoiceRequired = 0",
             "ii.Id IS NULL"  // No invoice items linked
         ];
         $params = [];
@@ -465,6 +466,7 @@ class BookingRepository extends RepositoryBase
                 LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
                     AND i.Status NOT IN ('cancelled')
                 WHERE b.Status IN ('confirmed', 'completed')
+                    AND b.NoInvoiceRequired = 0
                     AND b.OrganisationId IS NOT NULL
                 GROUP BY b.OrganisationId, o.Name
                 HAVING COUNT(i.Id) = 0
@@ -497,6 +499,7 @@ class BookingRepository extends RepositoryBase
                 LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
                     AND i.Status NOT IN ('cancelled')
                 WHERE b.Status IN ('confirmed', 'completed')
+                    AND b.NoInvoiceRequired = 0
                 GROUP BY b.CustomerId, c.Name, c.Email
                 HAVING COUNT(i.Id) = 0
                 ORDER BY c.Name ASC";
@@ -529,5 +532,14 @@ class BookingRepository extends RepositoryBase
 
         $result = $this->wpdb->get_var($sql);
         return intval($result) > 0;
+    }
+
+    public function is_no_invoice_required(int $booking_id): bool {
+        $sql = $this->wpdb->prepare(
+            "SELECT NoInvoiceRequired FROM {$this->table_name} WHERE Id = %d",
+            $booking_id
+        );
+
+        return intval($this->wpdb->get_var($sql)) === 1;
     }
 }

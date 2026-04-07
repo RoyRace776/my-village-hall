@@ -31,6 +31,7 @@ window.BookingModalCreate = (function() {
             hideCustomer: false,
             hideOrganisation: false,
             requireOrganisation: false,
+            canManageNoInvoiceRequired: false,
 
             // Hooks
             onSuccess: () => {},
@@ -55,6 +56,8 @@ window.BookingModalCreate = (function() {
             bindEvents();
             isBound = true;
         }
+
+        applyNoInvoiceRequiredVisibility();
     }
 
     /**
@@ -227,11 +230,15 @@ window.BookingModalCreate = (function() {
                         publicCheckbox.checked = !!booking['Public'];
                     }
 
+                    setValue('no_invoice_required', !!booking['NoInvoiceRequired']);
+
                     form.querySelectorAll("select, input, textarea").forEach(el => {
                         if (!el.dataset.locked) {
                             el.disabled = false;
                         }
                     });
+
+                    applyNoInvoiceRequiredVisibility();
 
                     const recurringOptions = form.querySelector("#myvh-modal-recurring-options");
                     if (recurringOptions) {
@@ -330,6 +337,9 @@ window.BookingModalCreate = (function() {
             publicCheckbox.checked = false;
         }
 
+        setValue('no_invoice_required', false);
+        applyNoInvoiceRequiredVisibility();
+
         syncEndDateVisibility();
 
         // Show modal in add/edit mode
@@ -345,6 +355,7 @@ window.BookingModalCreate = (function() {
         form.querySelectorAll("select, input, textarea").forEach(el => {
             el.disabled = false;
         });
+        applyNoInvoiceRequiredVisibility();
     }
 
     function bindDependentControls() {
@@ -560,6 +571,27 @@ window.BookingModalCreate = (function() {
 
         toggleField("customer_id", !config.hideCustomer);
         toggleField("organisation_id", !config.hideOrganisation);
+    }
+
+    function applyNoInvoiceRequiredVisibility() {
+        const row = form.querySelector('#myvh-modal-no-invoice-row');
+        const checkbox = form.querySelector('[name=no_invoice_required]');
+        const canManage = !!config.canManageNoInvoiceRequired;
+        const isLoading = modal?.dataset.loading === '1';
+
+        if (row) {
+            row.style.display = canManage ? '' : 'none';
+        }
+
+        if (!checkbox) {
+            return;
+        }
+
+        if (!canManage) {
+            checkbox.checked = false;
+        }
+
+        checkbox.disabled = !canManage || isLoading;
     }
 
     function toggleField(field, show) {
@@ -901,10 +933,15 @@ window.BookingModalCreate = (function() {
 
         const formData = new FormData(form);
         const publicCheckbox = form.querySelector("[name=public]");
+        const noInvoiceCheckbox = form.querySelector("[name=no_invoice_required]");
 
         // Always send explicit visibility for modal creates, even when unchecked.
         if (publicCheckbox) {
             formData.set("public", publicCheckbox.checked ? "1" : "0");
+        }
+
+        if (noInvoiceCheckbox && config.canManageNoInvoiceRequired) {
+            formData.set("no_invoice_required", noInvoiceCheckbox.checked ? "1" : "0");
         }
 
         // Disabled controls are excluded from FormData, but locked fields are intentional selections.
@@ -988,6 +1025,10 @@ window.BookingModalCreate = (function() {
     // ─────────────────────────────
     function setLoading(state) {
 
+        if (modal) {
+            modal.dataset.loading = state ? '1' : '0';
+        }
+
         form.querySelectorAll("button[type=submit]").forEach(btn => {
             btn.disabled = state;
             btn.textContent = state ? "Saving..." : (config.editMode ? "Update Booking" : "Create Booking");
@@ -999,6 +1040,8 @@ window.BookingModalCreate = (function() {
                 el.disabled = state;
             }
         });
+
+        applyNoInvoiceRequiredVisibility();
     }
 
     // ─────────────────────────────
