@@ -24,6 +24,7 @@ class SaveRoomRequest extends RequestMapperBase {
             'closing_time'             => self::as_text($post, 'closing_time'),
             'allow-multi-day-bookings' => self::as_bool_int($post, 'allow-multi-day-bookings'),
             'calc-closed-hours'        => self::as_bool_int($post, 'calc-closed-hours'),
+            'is-public'                => self::as_bool_int($post, 'is-public'),
         ];
     }
 }

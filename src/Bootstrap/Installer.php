@@ -44,6 +44,7 @@ class Installer {
 
         self::create_tables( $wpdb, $collate );
         self::ensure_room_colour_column( $wpdb );
+        self::ensure_room_is_public_column( $wpdb );
         self::ensure_organisation_system_column( $wpdb );
         self::ensure_organisation_type_flag_columns( $wpdb );
         self::ensure_addon_archive_column( $wpdb );
@@ -61,6 +62,19 @@ class Installer {
 
         // Fallback for installs where dbDelta did not add the new column.
         $wpdb->query( "ALTER TABLE {$table} ADD COLUMN Colour VARCHAR(7) NULL AFTER Name" );
+    }
+
+    private static function ensure_room_is_public_column( wpdb $wpdb ): void {
+        $table = $wpdb->prefix . 'myvh_rooms';
+        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'IsPublic'" );
+
+        if ( $column ) {
+            return;
+        }
+
+        // Fallback for installs where dbDelta did not add the new column.
+        // Existing rooms default to public to preserve visibility.
+        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsPublic TINYINT(1) NOT NULL DEFAULT 1 AFTER CalcClosedHours" );
     }
 
     private static function ensure_organisation_system_column( wpdb $wpdb ): void {
@@ -138,8 +152,10 @@ class Installer {
             ClosingTime             TIME,
             AllowMultiDayBookings   TINYINT(1) DEFAULT 0 NOT NULL,
             CalcClosedHours         TINYINT(1) DEFAULT 0 NOT NULL,
+            IsPublic                TINYINT(1) DEFAULT 1 NOT NULL,
             INDEX idx_venue (VenueId),
-            INDEX idx_name  (Name)
+            INDEX idx_name  (Name),
+            INDEX idx_public (IsPublic)
         ) {$collate};" );
 
         // ── Organisations  ───────────────────────────────────────────────────

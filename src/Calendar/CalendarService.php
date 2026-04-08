@@ -29,14 +29,22 @@ class CalendarService {
         $this->client_admin_service = $client_admin_service;
     }
 
+    // Internal cache for room metadata during a request, used by is_room_visible()
+    private $_room_meta_cache = [];
+
     public function get_events($start, $end, $context = 'public', $viewer_user_id = 0, $filters = []): array {
         $bookings = $this->booking_service->get_between($start, $end, $context, $filters);
         $room_meta = $this->get_room_metadata();
+        $this->_room_meta_cache = $room_meta;
         $viewer_scope = $this->resolve_viewer_scope($context, $viewer_user_id);
         $default_label = $this->get_private_booking_label();
         $events = [];
 
         foreach ((array) $bookings as $booking) {
+            $room_id = isset($booking['RoomId']) ? (int) $booking['RoomId'] : 0;
+            if (!$this->is_room_visible($room_id, $context, $viewer_scope)) {
+                continue;
+            }
             $events[] = $this->map_booking_to_event($booking, $context, $room_meta, $viewer_scope, $default_label);
         }
 
@@ -54,10 +62,15 @@ class CalendarService {
 
         $bookings = $this->booking_service->get_between($start, $end, $context, $filters);
         $room_meta = $this->get_room_metadata();
+        $this->_room_meta_cache = $room_meta;
         $viewer_scope = $this->resolve_viewer_scope($context, $viewer_user_id);
         $events = [];
 
         foreach ((array) $bookings as $booking) {
+            $room_id = isset($booking['RoomId']) ? (int) $booking['RoomId'] : 0;
+            if (!$this->is_room_visible($room_id, $context, $viewer_scope)) {
+                continue;
+            }
             $events[] = $this->map_booking_to_public_feed_event($booking, $room_meta, $viewer_scope, $default_label, $context);
         }
 
@@ -215,13 +228,41 @@ class CalendarService {
             }
 
             $room_meta[$room_id] = [
-                'name' => isset($room['Name']) ? (string) $room['Name'] : '',
-                'venue' => isset($room['VenueName']) ? (string) $room['VenueName'] : '',
-                'colour' => RoomColour::resolve($room['Colour'] ?? '', $room_id),
+                'name'      => isset($room['Name']) ? (string) $room['Name'] : '',
+                'venue'     => isset($room['VenueName']) ? (string) $room['VenueName'] : '',
+                'colour'    => RoomColour::resolve($room['Colour'] ?? '', $room_id),
+                'is_public' => !empty($room['IsPublic']),
             ];
         }
 
         return $room_meta;
+    }
+
+    /**
+     * Returns true if the room is visible to the viewer in the given context.
+     * Private rooms are only visible to admins and client admins.
+     */
+    private function is_room_visible($room_id, $context, $viewer_scope): bool {
+        // Rooms not found in metadata are treated as public (safe default)
+        if (!isset($this->_room_meta_cache[$room_id])) {
+            return true;
+        }
+
+        if ($this->_room_meta_cache[$room_id]['is_public']) {
+            return true;
+        }
+
+        // Private room: admins always see it
+        if ($context === 'admin') {
+            return true;
+        }
+
+        // Private room in portal: only client admins see it
+        if ($context === 'portal' && !empty($viewer_scope['is_client_admin'])) {
+            return true;
+        }
+
+        return false;
     }
 
     private function resolve_viewer_scope($context, $viewer_user_id) {

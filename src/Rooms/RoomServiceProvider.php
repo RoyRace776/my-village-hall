@@ -7,6 +7,7 @@ class RoomServiceProvider
         $container->singleton(RoomRepository::class);
         $container->singleton(RoomRulesService::class);
         $container->singleton(RoomService::class);
+        $container->singleton(RoomVisibilityService::class);
         $container->singleton(RoomRequestValidator::class);
         $container->singleton(RoomController::class);
     }

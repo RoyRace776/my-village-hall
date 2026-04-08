@@ -40,6 +40,9 @@ $rooms = is_array($rooms ?? null) ? $rooms : [];
                     <tr>
                         <td style="padding-right:24px;">
                             <strong><?php echo esc_html($item['Name'] ?? ''); ?></strong>
+                            <?php if (empty($item['IsPublic'])): ?>
+                                <span style="display:inline-block; margin-left:8px; padding:2px 6px; background:#f5e6d3; color:#7a5c3a; border-radius:3px; font-size:11px; font-weight:500;">🔒 PRIVATE</span>
+                            <?php endif; ?>
                             <?php if (!empty($item['Description'])): ?>
                                 <br><small style="color:#7a7166;"><?php echo esc_html($item['Description']); ?></small>
                             <?php endif; ?>

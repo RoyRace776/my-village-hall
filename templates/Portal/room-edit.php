@@ -110,6 +110,13 @@ $room_colour = RoomColour::resolve($room['Colour'] ?? '', intval($room['Id'] ?? 
                 </span>
             </label>
 
+            <label class="myvh-account-field">
+                <span>
+                    <input type="checkbox" name="is-public" value="1" <?php checked(!empty($room['IsPublic'])); ?>>
+                    Make this room public
+                </span>
+            </label>
+
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Update Room</button>
                 <a href="#room-rate-add?room_id=<?php echo (int) ($room['Id'] ?? 0); ?>" class="button">Manage Rates</a>

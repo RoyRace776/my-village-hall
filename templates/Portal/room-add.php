@@ -105,6 +105,13 @@ $room_colour_palette = RoomColour::palette();
                     </span>
                 </label>
 
+                <label class="myvh-account-field">
+                    <span>
+                        <input type="checkbox" name="is-public" value="1" checked>
+                        Make this room public
+                    </span>
+                </label>
+
                 <div class="myvh-account-actions">
                     <button type="submit" class="button button-primary">Create Room</button>
                     <a href="#rooms" class="button">Cancel</a>

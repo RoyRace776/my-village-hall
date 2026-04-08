@@ -75,7 +75,8 @@ class RoomService {
             'OpeningTime'  => $opening_time,
             'ClosingTime'  => $closing_time,
             'AllowMultiDayBookings' => !empty($data['allow-multi-day-bookings']) ? 1 : 0,
-            'CalcClosedHours' => !empty($data['calc-closed-hours']) ? 1 : 0
+            'CalcClosedHours' => !empty($data['calc-closed-hours']) ? 1 : 0,
+            'IsPublic'      => !empty($data['is-public']) ? 1 : 0
         ];
 
         if (!empty($data['room_id'])) {

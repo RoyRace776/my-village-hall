@@ -4,6 +4,7 @@ namespace MYVH\Calendar;
 use MYVH\Bookings\BookingService;
 use MYVH\Rooms\RoomRepository;
 use MYVH\Rooms\RoomColour;
+use MYVH\Rooms\RoomVisibilityService;
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Pricing\RoomRateService;
@@ -20,6 +21,7 @@ class CalendarAjaxController {
     private $customer_service;
     private $client_admin_service;
     private $room_rate_service;
+    private $room_visibility_service;
 
     public function __construct(
         CalendarService $calendar_service,
@@ -27,7 +29,8 @@ class CalendarAjaxController {
         RoomRepository $room_repository,
         CustomerService $customer_service,
         ClientAdminService $client_admin_service,
-        RoomRateService $room_rate_service) {
+        RoomRateService $room_rate_service,
+        RoomVisibilityService $room_visibility_service) {
 
         $this->calendar_service = $calendar_service;
         $this->booking_service = $booking_service;
@@ -35,6 +38,7 @@ class CalendarAjaxController {
         $this->customer_service = $customer_service;
         $this->client_admin_service = $client_admin_service;
         $this->room_rate_service = $room_rate_service;
+        $this->room_visibility_service = $room_visibility_service;
     }
 
     public function register_routes(): void {
@@ -355,6 +359,13 @@ class CalendarAjaxController {
 
     private function get_bookable_rooms(int $venue_id = 0): array {
         $rooms = $this->room_repository->get_all_with_venues();
+
+        if (empty($rooms)) {
+            return [];
+        }
+
+        // Filter by visibility based on current user's permissions
+        $rooms = $this->room_visibility_service->filter_rooms_for_user($rooms, get_current_user_id());
 
         if (empty($rooms)) {
             return [];
