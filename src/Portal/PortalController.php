@@ -13,6 +13,7 @@ use MYVH\Organisations\OrganisationService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Invoices\InvoiceGeneratorService;
 use MYVH\Invoices\InvoiceService;
+use MYVH\Payments\PaymentService;
 use MYVH\Pricing\RoomRateRequestValidator;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Pricing\SaveRoomRateRequest;
@@ -35,6 +36,7 @@ class PortalController {
     private $client_admin_service;
     private $invoiceGeneratorService;
     private $invoiceService;
+    private $paymentService;
     private $room_service;
     private $room_request_validator;
     private $room_rate_service;
@@ -51,6 +53,7 @@ class PortalController {
         ClientAdminService $client_admin_service,
         InvoiceGeneratorService $invoiceGeneratorService,
         InvoiceService $invoiceService,
+        PaymentService $paymentService,
         RoomService $room_service,
         RoomRequestValidator $room_request_validator,
         RoomRateService $room_rate_service,
@@ -66,6 +69,7 @@ class PortalController {
         $this->client_admin_service = $client_admin_service;
         $this->invoiceGeneratorService = $invoiceGeneratorService;
         $this->invoiceService = $invoiceService;
+        $this->paymentService = $paymentService;
         $this->room_service = $room_service;
         $this->room_request_validator = $room_request_validator;
         $this->room_rate_service = $room_rate_service;
@@ -106,6 +110,8 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
         add_action('wp_ajax_myvh_portal_update_invoice_status', [$this, 'update_invoice_status']);
+        add_action('wp_ajax_myvh_portal_create_payment', [$this, 'create_payment']);
+        add_action('wp_ajax_myvh_portal_delete_payment', [$this, 'delete_payment']);
         //add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
     }
 
@@ -231,6 +237,19 @@ class PortalController {
                 }
 
                 include MYVH_PLUGIN_DIR . 'templates/Portal/invoice-view.php';
+                break;
+
+            case 'payments':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $selected_invoice_id = intval($_GET['invoice_id'] ?? 0);
+                $payments = $this->paymentService->get_payments($selected_invoice_id);
+                $payment_methods = $this->paymentService->get_valid_methods();
+                $invoices = $this->invoiceService->get_with_customers() ?: [];
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/payments.php';
                 break;
 
             case 'invoice-generate':
@@ -1338,6 +1357,53 @@ class PortalController {
         ]);
     }
 
+    public function create_payment(): void {
+        $this->require_client_admin_access();
+
+        $payload = wp_unslash($_POST);
+        $result = $this->paymentService->create($payload);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()], 400);
+        }
+
+        $invoice_id = intval($payload['invoice_id'] ?? 0);
+        $invoice = $this->invoiceService->get_detail($invoice_id);
+
+        wp_send_json_success([
+            'message' => __('Payment saved.', 'my-village-hall'),
+            'redirect' => sanitize_text_field($payload['redirect_route'] ?? ('payments?invoice_id=' . $invoice_id)),
+            'status' => $invoice['Status'] ?? '',
+            'status_label' => $this->invoiceService->get_status_label((string) ($invoice['Status'] ?? '')),
+            'amount_paid' => $invoice['AmountPaid'] ?? 0,
+            'amount_due' => $invoice['AmountDue'] ?? 0,
+        ]);
+    }
+
+    public function delete_payment(): void {
+        $this->require_client_admin_access();
+
+        $payment_id = intval($_POST['payment_id'] ?? 0);
+        $result = $this->paymentService->delete($payment_id);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()], 400);
+        }
+
+        $redirect = sanitize_text_field($_POST['redirect_route'] ?? 'payments');
+        $invoice_id = intval($_POST['invoice_id'] ?? 0);
+        $invoice = $invoice_id > 0 ? $this->invoiceService->get_detail($invoice_id) : null;
+
+        wp_send_json_success([
+            'message' => __('Payment deleted.', 'my-village-hall'),
+            'redirect' => $redirect,
+            'status' => $invoice['Status'] ?? '',
+            'status_label' => $this->invoiceService->get_status_label((string) ($invoice['Status'] ?? '')),
+            'amount_paid' => $invoice['AmountPaid'] ?? 0,
+            'amount_due' => $invoice['AmountDue'] ?? 0,
+        ]);
+    }
+
     public function update_invoice_status(): void {
         $this->require_client_admin_access();
 
@@ -1360,7 +1426,7 @@ class PortalController {
         wp_send_json_success([
             'message' => 'Invoice status updated.',
             'status' => $status,
-            'status_label' => ucfirst($status),
+            'status_label' => $this->invoiceService->get_status_label($status),
         ]);
     }
 

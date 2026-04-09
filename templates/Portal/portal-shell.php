@@ -48,6 +48,7 @@ if (!defined('ABSPATH')) exit;
                     <a href="#rooms">Rooms</a>
                     <a href="#room-rates">Room Rates</a>
                     <a href="#addons">Add-ons</a>
+                    <a href="#payments">Payments</a>
                     <a href="#invoice-generate">Generate Invoices</a>
                     <a href="#settings">Settings</a>
                 </div>

@@ -20,6 +20,9 @@ $invoices = $invoice_service->get_with_customers() ?: [];
     <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-invoice-generate')); ?>" class="page-title-action">
         <?php esc_html_e('Generate Invoices', 'my-village-hall'); ?>
     </a>
+    <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-payments')); ?>" class="page-title-action">
+        <?php esc_html_e('View Payments', 'my-village-hall'); ?>
+    </a>
     <hr class="wp-header-end">
 
     <?php if (isset($_GET['error'])): ?>
@@ -86,24 +89,21 @@ $invoices = $invoice_service->get_with_customers() ?: [];
                             </td>
                             <td>
                                 <a href="<?php echo esc_url($view_url); ?>"><?php esc_html_e('View', 'my-village-hall'); ?></a><br>
-                                <?php if (($invoice['Status'] ?? '') !== 'sent'): ?>
+                                <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-payments&invoice_id=' . intval($invoice['Id']))); ?>"><?php esc_html_e('Payments', 'my-village-hall'); ?></a><br>
+                                <?php endif; ?>
+                                <?php if (($invoice['Status'] ?? '') === 'draft'): ?>
                                     <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_update_invoice_status&id=' . intval($invoice['Id']) . '&status=sent&redirect_page=myvh-invoices'), 'myvh_update_invoice_status')); ?>">
                                         <?php esc_html_e('Mark Sent', 'my-village-hall'); ?>
                                     </a><br>
                                 <?php endif; ?>
-                                <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
+                                <?php if (($invoice['Status'] ?? '') !== 'cancelled' && (float) ($invoice['AmountPaid'] ?? 0) <= 0): ?>
                                     <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_update_invoice_status&id=' . intval($invoice['Id']) . '&status=cancelled&redirect_page=myvh-invoices'), 'myvh_update_invoice_status')); ?>">
                                         <?php esc_html_e('Cancel', 'my-village-hall'); ?>
-                                    </a><br>
+                                    </a>
+                                <?php elseif ((float) ($invoice['AmountPaid'] ?? 0) > 0): ?>
+                                    <span><?php esc_html_e('Cannot cancel after payment', 'my-village-hall'); ?></span>
                                 <?php endif; ?>
-                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:8px;">
-                                    <input type="hidden" name="action" value="myvh_record_payment">
-                                    <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
-                                    <input type="hidden" name="redirect_page" value="myvh-invoices">
-                                    <?php wp_nonce_field('myvh_record_payment'); ?>
-                                    <input type="number" name="payment_amount" min="0" step="0.01" class="small-text" placeholder="0.00">
-                                    <button type="submit" class="button button-small"><?php esc_html_e('Record Payment', 'my-village-hall'); ?></button>
-                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>

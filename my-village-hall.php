@@ -26,6 +26,7 @@ use MYVH\Organisations\OrganisationTypeController;
 use MYVH\Pricing\RoomRateController;
 use MYVH\Addons\AddonController;
 use MYVH\Invoices\InvoiceController;
+use MYVH\Payments\PaymentController;
 use MYVH\Settings\GeneralSettings;
 use MYVH\Calendar\CalendarShortcode;
 use MYVH\Calendar\CalendarStatusColours;
@@ -180,7 +181,8 @@ class MyVillageHall {
         $this->on_admin_post( 'myvh_generate_invoices',      InvoiceController::class, 'generate_from_bookings' );
         $this->on_admin_post( 'myvh_delete_invoice',         InvoiceController::class, 'delete' );
         $this->on_admin_post( 'myvh_update_invoice_status',  InvoiceController::class, 'update_status' );
-        $this->on_admin_post( 'myvh_record_payment',         InvoiceController::class, 'record_payment' );
+        $this->on_admin_post( 'myvh_record_payment',         PaymentController::class, 'create' );
+        $this->on_admin_post( 'myvh_delete_payment',         PaymentController::class, 'delete' );
     }
 
     /**
@@ -369,6 +371,12 @@ class MyVillageHall {
             __( 'View Invoices', 'my-village-hall' ),
             __( 'View Invoices', 'my-village-hall' ),
             'manage_options', 'myvh-invoices', [ $this, 'render_invoices_page' ]
+        );
+
+        add_submenu_page( 'my-village-hall',
+            __( 'Payments', 'my-village-hall' ),
+            __( 'Payments', 'my-village-hall' ),
+            'manage_options', 'myvh-payments', [ $this, 'render_payments_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
@@ -637,6 +645,7 @@ class MyVillageHall {
         return;
 
     }
+    public function render_payments_page():        void { $this->render_page( 'payments' ); }
     public function render_customer_add_page():    void { $this->render_page( 'customer-add' ); }
     public function render_organisation_add_page(): void { $this->render_page( 'organisation-add' ); }
     public function render_venues_page():          void { $this->render_page( 'venues' ); }

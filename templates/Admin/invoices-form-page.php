@@ -10,17 +10,25 @@ if (!current_user_can('manage_myvh')) {
 global $myvh_container;
 
 use MYVH\Invoices\InvoiceService;
+use MYVH\Payments\PaymentService;
 
 $view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
 $invoice_service = $myvh_container->get(InvoiceService::class);
+$payment_service = $myvh_container->get(PaymentService::class);
 $invoice = $view_id > 0 ? $invoice_service->get_detail($view_id) : null;
 $invoice_bookings = $invoice['BookingsSummary'] ?? [];
+$invoice_payments = $invoice['Payments'] ?? [];
 $valid_statuses = $invoice_service->get_valid_statuses();
+$payment_methods = $payment_service->get_valid_methods();
+$has_payments = !empty($invoice_payments);
 ?>
 
 <div class="wrap">
     <h1><?php esc_html_e('View Invoice', 'my-village-hall'); ?></h1>
     <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-invoices')); ?>" class="page-title-action"><?php esc_html_e('Back to Invoices', 'my-village-hall'); ?></a>
+    <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
+    <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-payments&invoice_id=' . $view_id)); ?>" class="page-title-action"><?php esc_html_e('Open Payments Page', 'my-village-hall'); ?></a>
+    <?php endif; ?>
     <hr class="wp-header-end">
 
     <?php if (isset($_GET['error'])): ?>
@@ -28,6 +36,9 @@ $valid_statuses = $invoice_service->get_valid_statuses();
     <?php endif; ?>
     <?php if (isset($_GET['updated'])): ?>
         <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Invoice updated.', 'my-village-hall'); ?></p></div>
+    <?php endif; ?>
+    <?php if (isset($_GET['deleted'])): ?>
+        <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Payment deleted.', 'my-village-hall'); ?></p></div>
     <?php endif; ?>
 
     <?php if (empty($invoice)): ?>
@@ -47,7 +58,7 @@ $valid_statuses = $invoice_service->get_valid_statuses();
                             <th><?php esc_html_e('Status', 'my-village-hall'); ?></th>
                             <td>
                                 <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice['Status'] ?? 'draft'); ?>">
-                                    <?php echo esc_html(ucfirst($invoice['Status'] ?? 'draft')); ?>
+                                    <?php echo esc_html($invoice_service->get_status_label((string) ($invoice['Status'] ?? 'draft'))); ?>
                                 </span>
                             </td>
                         </tr>
@@ -109,6 +120,49 @@ $valid_statuses = $invoice_service->get_valid_statuses();
                 </div>
 
                 <div class="myvh-card">
+                    <h2><?php esc_html_e('Payments', 'my-village-hall'); ?></h2>
+
+                    <?php if (empty($invoice_payments)): ?>
+                        <p><?php esc_html_e('No payments have been recorded for this invoice yet.', 'my-village-hall'); ?></p>
+                    <?php else: ?>
+                        <table class="wp-list-table widefat striped">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Date', 'my-village-hall'); ?></th>
+                                    <th><?php esc_html_e('Type', 'my-village-hall'); ?></th>
+                                    <th><?php esc_html_e('Amount', 'my-village-hall'); ?></th>
+                                    <th><?php esc_html_e('Reference', 'my-village-hall'); ?></th>
+                                    <th><?php esc_html_e('Comment', 'my-village-hall'); ?></th>
+                                    <th><?php esc_html_e('Actions', 'my-village-hall'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($invoice_payments as $payment): ?>
+                                    <tr>
+                                        <td><?php echo esc_html(date('j M Y', strtotime((string) ($payment['PaymentDate'] ?? 'now')))); ?></td>
+                                        <td><?php echo esc_html(ucwords((string) ($payment['PaymentMethod'] ?? 'other'))); ?></td>
+                                        <td><?php echo esc_html(number_format((float) ($payment['Amount'] ?? 0), 2)); ?></td>
+                                        <td><?php echo esc_html($payment['TransactionReference'] ?? ''); ?></td>
+                                        <td><?php echo esc_html($payment['Notes'] ?? ''); ?></td>
+                                        <td>
+                                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('Delete this payment?', 'my-village-hall')); ?>');">
+                                                <input type="hidden" name="action" value="myvh_delete_payment">
+                                                <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) intval($payment['Id'] ?? 0)); ?>">
+                                                <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>">
+                                                <input type="hidden" name="redirect_page" value="myvh-invoices">
+                                                <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>">
+                                                <?php wp_nonce_field('myvh_delete_payment'); ?>
+                                                <button type="submit" class="button button-small"><?php esc_html_e('Delete', 'my-village-hall'); ?></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+
+                <div class="myvh-card">
                     <h2><?php esc_html_e('Related Bookings', 'my-village-hall'); ?></h2>
 
                     <?php if (empty($invoice_bookings)): ?>
@@ -158,50 +212,91 @@ $valid_statuses = $invoice_service->get_valid_statuses();
             <div class="myvh-col-40">
                 <div class="myvh-card">
                     <h2><?php esc_html_e('Amend Status', 'my-village-hall'); ?></h2>
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <input type="hidden" name="action" value="myvh_update_invoice_status">
-                        <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
-                        <input type="hidden" name="redirect_page" value="myvh-invoices">
-                        <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
-                        <?php wp_nonce_field('myvh_update_invoice_status'); ?>
+                    <?php if ($has_payments): ?>
+                        <p><?php esc_html_e('Status is managed by recorded payments for this invoice.', 'my-village-hall'); ?></p>
+                    <?php else: ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                            <input type="hidden" name="action" value="myvh_update_invoice_status">
+                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                            <input type="hidden" name="redirect_page" value="myvh-invoices">
+                            <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                            <?php wp_nonce_field('myvh_update_invoice_status'); ?>
 
-                        <p>
-                            <label for="myvh-invoice-status"><strong><?php esc_html_e('Status', 'my-village-hall'); ?></strong></label>
-                        </p>
-                        <p>
-                            <select id="myvh-invoice-status" name="status">
-                                <?php foreach ($valid_statuses as $status): ?>
-                                    <option value="<?php echo esc_attr($status); ?>" <?php selected(($invoice['Status'] ?? '') === $status); ?>>
-                                        <?php echo esc_html(ucfirst($status)); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </p>
-                        <p>
-                            <button type="submit" class="button button-primary"><?php esc_html_e('Update Status', 'my-village-hall'); ?></button>
-                        </p>
-                    </form>
+                            <p>
+                                <label for="myvh-invoice-status"><strong><?php esc_html_e('Status', 'my-village-hall'); ?></strong></label>
+                            </p>
+                            <p>
+                                <select id="myvh-invoice-status" name="status">
+                                    <?php foreach ($valid_statuses as $status): ?>
+                                        <?php if (in_array($status, ['draft', 'sent', 'overdue', 'cancelled'], true)): ?>
+                                            <option value="<?php echo esc_attr($status); ?>" <?php selected(($invoice['Status'] ?? '') === $status); ?>>
+                                                <?php echo esc_html($invoice_service->get_status_label($status)); ?>
+                                            </option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                            </p>
+                            <p>
+                                <button type="submit" class="button button-primary"><?php esc_html_e('Update Status', 'my-village-hall'); ?></button>
+                            </p>
+                        </form>
+                    <?php endif; ?>
                 </div>
 
                 <div class="myvh-card">
-                    <h2><?php esc_html_e('Record Payment', 'my-village-hall'); ?></h2>
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <input type="hidden" name="action" value="myvh_record_payment">
-                        <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
-                        <input type="hidden" name="redirect_page" value="myvh-invoices">
-                        <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
-                        <?php wp_nonce_field('myvh_record_payment'); ?>
+                    <h2><?php esc_html_e('Add Payment', 'my-village-hall'); ?></h2>
+                    <?php if (($invoice['Status'] ?? '') === 'cancelled'): ?>
+                        <p><?php esc_html_e('Reopen this invoice before recording payments.', 'my-village-hall'); ?></p>
+                    <?php elseif ((float) ($invoice['AmountDue'] ?? 0) <= 0): ?>
+                        <p><?php esc_html_e('This invoice has already been fully paid.', 'my-village-hall'); ?></p>
+                    <?php else: ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                            <input type="hidden" name="action" value="myvh_record_payment">
+                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                            <input type="hidden" name="redirect_page" value="myvh-invoices">
+                            <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                            <?php wp_nonce_field('myvh_record_payment'); ?>
 
-                        <p>
-                            <label for="myvh-payment-amount"><strong><?php esc_html_e('Amount', 'my-village-hall'); ?></strong></label>
-                        </p>
-                        <p>
-                            <input id="myvh-payment-amount" type="number" name="payment_amount" min="0" step="0.01" class="regular-text" placeholder="0.00">
-                        </p>
-                        <p>
-                            <button type="submit" class="button"><?php esc_html_e('Record Payment', 'my-village-hall'); ?></button>
-                        </p>
-                    </form>
+                            <p>
+                                <label for="myvh-payment-date"><strong><?php esc_html_e('Payment Date', 'my-village-hall'); ?></strong></label>
+                            </p>
+                            <p>
+                                <input id="myvh-payment-date" type="date" name="payment_date" class="regular-text" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
+                            </p>
+                            <p>
+                                <label for="myvh-payment-amount"><strong><?php esc_html_e('Amount', 'my-village-hall'); ?></strong></label>
+                            </p>
+                            <p>
+                                <input id="myvh-payment-amount" type="number" name="payment_amount" min="0.01" step="0.01" class="regular-text" required>
+                            </p>
+                            <p>
+                                <label for="myvh-payment-method"><strong><?php esc_html_e('Payment Type', 'my-village-hall'); ?></strong></label>
+                            </p>
+                            <p>
+                                <select id="myvh-payment-method" name="payment_method" class="regular-text" required>
+                                    <option value=""><?php esc_html_e('Select a payment type', 'my-village-hall'); ?></option>
+                                    <?php foreach ($payment_methods as $method): ?>
+                                        <option value="<?php echo esc_attr($method); ?>"><?php echo esc_html(ucwords($method)); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </p>
+                            <p>
+                                <label for="myvh-payment-reference"><strong><?php esc_html_e('Reference', 'my-village-hall'); ?></strong></label>
+                            </p>
+                            <p>
+                                <input id="myvh-payment-reference" type="text" name="payment_reference" class="regular-text">
+                            </p>
+                            <p>
+                                <label for="myvh-payment-comment"><strong><?php esc_html_e('Comment', 'my-village-hall'); ?></strong></label>
+                            </p>
+                            <p>
+                                <textarea id="myvh-payment-comment" name="payment_comment" class="large-text" rows="4"></textarea>
+                            </p>
+                            <p>
+                                <button type="submit" class="button button-primary"><?php esc_html_e('Save Payment', 'my-village-hall'); ?></button>
+                            </p>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

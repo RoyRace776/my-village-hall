@@ -131,6 +131,11 @@ $invoice_count = is_array($invoices ?? null) ? count($invoices) : 0;
                                 </td>
                                 <td>
                                     <a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-button myvh-button-small">View</a>
+                                    <?php if ($is_client_admin_view): ?>
+                                        <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
+                                            <a href="#payments?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-button myvh-button-small">Payments</a>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

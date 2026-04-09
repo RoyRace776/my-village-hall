@@ -1600,6 +1600,12 @@ body .site-main:has(#myvh-portal) {
   border-color: #cde6cf;
 }
 
+.myvh-status-part-paid {
+  color: #7c4d0b;
+  background: #fff3df;
+  border-color: #f1d6ab;
+}
+
 .myvh-status-overdue {
   color: #9f2829;
   background: #fbeaea;

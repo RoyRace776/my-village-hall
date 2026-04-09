@@ -3,10 +3,13 @@
 namespace MYVH\Tests\Unit\Portal;
 
 use Brain\Monkey\Functions;
+use MYVH\Addons\AddonRequestValidator;
+use MYVH\Addons\AddonService;
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
 use MYVH\Invoices\InvoiceGeneratorService;
 use MYVH\Invoices\InvoiceService;
+use MYVH\Payments\PaymentService;
 use MYVH\Organisations\OrganisationService;
 use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Portal\ClientAdminService;
@@ -19,6 +22,8 @@ use MYVH\Tests\Unit\UnitTestCase;
 use MYVH\Venues\VenueService;
 
 class PortalControllerTest extends UnitTestCase {
+    private $addon_service;
+    private $addon_request_validator;
     private $booking_service;
     private $customer_service;
     private $organisation_service;
@@ -26,6 +31,7 @@ class PortalControllerTest extends UnitTestCase {
     private $client_admin_service;
     private $invoice_generator_service;
     private $invoice_service;
+    private $payment_service;
     private $room_service;
     private $room_request_validator;
     private $room_rate_service;
@@ -36,6 +42,8 @@ class PortalControllerTest extends UnitTestCase {
     protected function setUp(): void {
         parent::setUp();
 
+        $this->addon_service = $this->mock(AddonService::class);
+        $this->addon_request_validator = $this->mock(AddonRequestValidator::class);
         $this->booking_service = $this->mock(BookingService::class);
         $this->customer_service = $this->mock(CustomerService::class);
         $this->organisation_service = $this->mock(OrganisationService::class);
@@ -43,6 +51,7 @@ class PortalControllerTest extends UnitTestCase {
         $this->client_admin_service = $this->mock(ClientAdminService::class);
         $this->invoice_generator_service = $this->mock(InvoiceGeneratorService::class);
         $this->invoice_service = $this->mock(InvoiceService::class);
+        $this->payment_service = $this->mock(PaymentService::class);
         $this->room_service = $this->mock(RoomService::class);
         $this->room_request_validator = $this->mock(RoomRequestValidator::class);
         $this->room_rate_service = $this->mock(RoomRateService::class);
@@ -50,6 +59,8 @@ class PortalControllerTest extends UnitTestCase {
         $this->venue_service = $this->mock(VenueService::class);
 
         $this->controller = new PortalController(
+            $this->addon_service,
+            $this->addon_request_validator,
             $this->booking_service,
             $this->customer_service,
             $this->organisation_service,
@@ -57,6 +68,7 @@ class PortalControllerTest extends UnitTestCase {
             $this->client_admin_service,
             $this->invoice_generator_service,
             $this->invoice_service,
+            $this->payment_service,
             $this->room_service,
             $this->room_request_validator,
             $this->room_rate_service,
@@ -227,6 +239,94 @@ class PortalControllerTest extends UnitTestCase {
 
         $this->assertTrue($response->success);
         $this->assertSame('Organisation type updated', $response->data['message']);
+    }
+
+    /** @test */
+    public function client_admin_can_create_payment_in_portal(): void {
+        $_POST = [
+            'invoice_id' => 14,
+            'payment_amount' => '25.00',
+            'payment_method' => 'card',
+            'payment_date' => '2026-04-09',
+            'redirect_route' => 'invoice-view?invoice_id=14',
+        ];
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->once()
+            ->with(77, 9)
+            ->andReturn(true);
+
+        $this->payment_service->shouldReceive('create')
+            ->once()
+            ->with($_POST)
+            ->andReturn(88);
+
+        $this->invoice_service->shouldReceive('get_detail')
+            ->once()
+            ->with(14)
+            ->andReturn([
+                'Id' => 14,
+                'Status' => 'part-paid',
+                'AmountPaid' => 25,
+                'AmountDue' => 75,
+            ]);
+
+        $this->invoice_service->shouldReceive('get_status_label')
+            ->once()
+            ->with('part-paid')
+            ->andReturn('Part Paid');
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->create_payment();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame('Payment saved.', $response->data['message']);
+        $this->assertSame('invoice-view?invoice_id=14', $response->data['redirect']);
+        $this->assertSame('part-paid', $response->data['status']);
+    }
+
+    /** @test */
+    public function client_admin_can_delete_payment_in_portal(): void {
+        $_POST = [
+            'payment_id' => 88,
+            'invoice_id' => 14,
+            'redirect_route' => 'payments?invoice_id=14',
+        ];
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->once()
+            ->with(77, 9)
+            ->andReturn(true);
+
+        $this->payment_service->shouldReceive('delete')
+            ->once()
+            ->with(88)
+            ->andReturn(true);
+
+        $this->invoice_service->shouldReceive('get_detail')
+            ->once()
+            ->with(14)
+            ->andReturn([
+                'Id' => 14,
+                'Status' => 'sent',
+                'AmountPaid' => 0,
+                'AmountDue' => 100,
+            ]);
+
+        $this->invoice_service->shouldReceive('get_status_label')
+            ->once()
+            ->with('sent')
+            ->andReturn('Sent');
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->delete_payment();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame('Payment deleted.', $response->data['message']);
+        $this->assertSame('payments?invoice_id=14', $response->data['redirect']);
+        $this->assertSame('sent', $response->data['status']);
     }
 
     private function capture_json_response(callable $callback): JsonResponseException {
