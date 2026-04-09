@@ -92,8 +92,13 @@ class InvoiceController {
 
         check_admin_referer('myvh_delete_invoice');
 
-        $id = intval($_GET['id']);
-        $this->service->delete($id);
+        $id = intval($_REQUEST['id'] ?? 0);
+        $result = $this->service->delete($id);
+
+        if (is_wp_error($result)) {
+            $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'error', $result->get_error_message(), $this->get_admin_redirect_args());
+            exit;
+        }
 
         $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'deleted', '1');
         exit;
@@ -107,12 +112,17 @@ class InvoiceController {
 
         check_admin_referer('myvh_update_invoice_status');
 
-        $id = intval($_GET['id']);
-        $status = sanitize_text_field($_GET['status']);
+        $id = intval($_REQUEST['id'] ?? $_REQUEST['invoice_id'] ?? 0);
+        $status = sanitize_text_field($_REQUEST['status'] ?? '');
 
-        $this->service->update_status($id, $status);
+        $result = $this->service->update_status($id, $status);
 
-        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1');
+        if (is_wp_error($result)) {
+            $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'error', $result->get_error_message(), $this->get_admin_redirect_args());
+            exit;
+        }
+
+        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1', $this->get_admin_redirect_args());
         exit;
     }
 
@@ -124,13 +134,29 @@ class InvoiceController {
 
         check_admin_referer('myvh_record_payment');
 
-        $id = intval($_POST['invoice_id']);
-        $amount = floatval($_POST['payment_amount']);
+        $id = intval($_POST['invoice_id'] ?? 0);
+        $amount = floatval($_POST['payment_amount'] ?? 0);
 
-        $this->service->record_payment($id, $amount);
+        $result = $this->service->record_payment($id, $amount);
 
-        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1');
+        if (is_wp_error($result)) {
+            $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'error', $result->get_error_message(), $this->get_admin_redirect_args());
+            exit;
+        }
+
+        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1', $this->get_admin_redirect_args());
         exit;
+    }
+
+    private function get_admin_redirect_args(): array {
+        $args = [];
+
+        $redirect_view = intval($_REQUEST['redirect_view'] ?? 0);
+        if ($redirect_view > 0) {
+            $args['view'] = $redirect_view;
+        }
+
+        return $args;
     }
 
     private function get_admin_page_slug(string $fallback): string {
@@ -140,7 +166,8 @@ class InvoiceController {
         return in_array($page, $allowed_pages, true) ? $page : $fallback;
     }
 
-    private function redirect_with_message(string $page, string $key, string $value): void {
-        wp_redirect(admin_url('admin.php?page=' . $page . '&' . $key . '=' . urlencode($value)));
+    private function redirect_with_message(string $page, string $key, string $value, array $extra_args = []): void {
+        $args = array_merge(['page' => $page, $key => $value], $extra_args);
+        wp_safe_redirect(add_query_arg($args, admin_url('admin.php')));
     }
 }

@@ -48,6 +48,128 @@ class InvoiceRepository extends RepositoryBase{
     }
 
     /**
+     * Get one invoice with customer and organisation metadata.
+     *
+     * @param int $invoice_id The invoice ID.
+     * @return array|null
+     */
+    public function get_detail($invoice_id): ?array {
+        $sql = $this->wpdb->prepare(
+            "SELECT
+                i.*,
+                COALESCE(c.Name, i.BillingName, i.BillingOrganisationName, '') as CustomerName,
+                COALESCE(c.Email, i.BillingEmail, '') as CustomerEmail,
+                COALESCE(MAX(b.OrganisationId), 0) as OrganisationId,
+                COALESCE(MAX(o.Name), MAX(i.BillingOrganisationName), '') as OrganisationName,
+                COUNT(DISTINCT ii.BookingId) as BookingCount
+            FROM $this->table_name i
+            LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON i.CustomerId = c.Id
+            LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON i.Id = ii.InvoiceId
+            LEFT JOIN {$this->wpdb->prefix}myvh_bookings b ON ii.BookingId = b.Id
+            LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+            WHERE i.Id = %d
+            GROUP BY i.Id",
+            intval($invoice_id)
+        );
+
+        $result = $this->wpdb->get_row($sql, ARRAY_A);
+
+        if ($result === null && !empty($this->wpdb->last_error)) {
+            error_log('MYVH Invoice Repository Error (get_detail): ' . $this->wpdb->last_error);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get one invoice detail record if the customer can access it in the portal.
+     *
+     * @param int $invoice_id The invoice ID.
+     * @param int $customer_id The customer ID.
+     * @return array|null
+     */
+    public function get_portal_detail($invoice_id, $customer_id): ?array {
+        $invoice_id = intval($invoice_id);
+        $customer_id = intval($customer_id);
+
+        $sql = "
+            SELECT
+                i.*,
+                COALESCE(c.Name, i.BillingName, i.BillingOrganisationName, '') as CustomerName,
+                COALESCE(c.Email, i.BillingEmail, '') as CustomerEmail,
+                COALESCE(MAX(b.OrganisationId), 0) as OrganisationId,
+                CASE WHEN i.CustomerId = %d THEN 1 ELSE 0 END as IsPersonalInvoice,
+                COALESCE(MAX(o.Name), MAX(i.BillingOrganisationName), '') as OrganisationName,
+                COUNT(DISTINCT ii.BookingId) as BookingCount
+            FROM $this->table_name i
+            LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON i.CustomerId = c.Id
+            LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON i.Id = ii.InvoiceId
+            LEFT JOIN {$this->wpdb->prefix}myvh_bookings b ON ii.BookingId = b.Id
+            LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+            WHERE i.Id = %d
+              AND (
+                    i.CustomerId = %d
+                    OR b.OrganisationId IN (
+                        SELECT om.OrganisationId
+                        FROM {$this->wpdb->prefix}myvh_organisation_members om
+                        WHERE om.CustomerId = %d
+                          AND om.IsOrganisationAdmin = 1
+                    )
+              )
+            GROUP BY i.Id
+        ";
+
+        $prepared_sql = $this->wpdb->prepare($sql, $customer_id, $invoice_id, $customer_id, $customer_id);
+        $result = $this->wpdb->get_row($prepared_sql, ARRAY_A);
+
+        if ($result === null && !empty($this->wpdb->last_error)) {
+            error_log('MYVH Invoice Repository Error (get_portal_detail): ' . $this->wpdb->last_error);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get invoice items with linked booking data.
+     *
+     * @param int $invoice_id The invoice ID.
+     * @return array
+     */
+    public function get_items_for_invoice($invoice_id): array {
+        $sql = $this->wpdb->prepare(
+            "SELECT
+                ii.*,
+                b.StartDate,
+                b.EndDate,
+                b.StartTime,
+                b.EndTime,
+                b.Description as BookingDescription,
+                b.Status as BookingStatus,
+                b.CustomerId as BookingCustomerId,
+                r.Name as RoomName,
+                o.Name as OrganisationName,
+                c.Name as BookingCustomerName
+            FROM {$this->wpdb->prefix}myvh_invoice_items ii
+            LEFT JOIN {$this->wpdb->prefix}myvh_bookings b ON ii.BookingId = b.Id
+            LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
+            LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+            LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
+            WHERE ii.InvoiceId = %d
+            ORDER BY ii.DisplayOrder ASC, ii.Id ASC",
+            intval($invoice_id)
+        );
+
+        $results = $this->wpdb->get_results($sql, ARRAY_A);
+
+        if ($results === null) {
+            error_log('MYVH Invoice Repository Error (get_items_for_invoice): ' . $this->wpdb->last_error);
+            return [];
+        }
+
+        return $results;
+    }
+
+    /**
      * Get invoices by customer ID
      *
      * @param int $customer_id The customer ID

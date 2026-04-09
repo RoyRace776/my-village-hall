@@ -65,13 +65,14 @@ $invoice_count = is_array($invoices ?? null) ? count($invoices) : 0;
                             <th class="myvh-invoices-table__amount">Paid</th>
                             <th>Due Date</th>
                             <th>Status</th>
+                            <th>Details</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($invoices as $invoice): ?>
                             <tr class="myvh-invoice-row">
                                 <td class="myvh-invoice-number">
-                                    <strong><?php echo esc_html($invoice['InvoiceNumber']); ?></strong>
+                                    <strong><a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>"><?php echo esc_html($invoice['InvoiceNumber']); ?></a></strong>
                                 </td>
                                 <?php if ($is_client_admin_view): ?>
                                     <td>
@@ -127,6 +128,9 @@ $invoice_count = is_array($invoices ?? null) ? count($invoices) : 0;
                                     <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice['Status']); ?>">
                                         <?php echo ucfirst(esc_html($invoice['Status'])); ?>
                                     </span>
+                                </td>
+                                <td>
+                                    <a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-button myvh-button-small">View</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

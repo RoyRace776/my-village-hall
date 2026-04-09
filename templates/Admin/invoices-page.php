@@ -58,9 +58,10 @@ $invoices = $invoice_service->get_with_customers() ?: [];
                     </tr>
                 <?php else: ?>
                     <?php foreach ($invoices as $invoice): ?>
+                        <?php $view_url = admin_url('admin.php?page=myvh-invoices&view=' . intval($invoice['Id'])); ?>
                         <tr>
                             <td>
-                                <strong><?php echo esc_html($invoice['InvoiceNumber'] ?? ''); ?></strong><br>
+                                <strong><a href="<?php echo esc_url($view_url); ?>"><?php echo esc_html($invoice['InvoiceNumber'] ?? ''); ?></a></strong><br>
                                 <small><?php echo esc_html(date('j M Y', strtotime((string) ($invoice['InvoiceDate'] ?? 'now')))); ?></small>
                             </td>
                             <td>
@@ -84,6 +85,7 @@ $invoices = $invoice_service->get_with_customers() ?: [];
                                 </span>
                             </td>
                             <td>
+                                <a href="<?php echo esc_url($view_url); ?>"><?php esc_html_e('View', 'my-village-hall'); ?></a><br>
                                 <?php if (($invoice['Status'] ?? '') !== 'sent'): ?>
                                     <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_update_invoice_status&id=' . intval($invoice['Id']) . '&status=sent&redirect_page=myvh-invoices'), 'myvh_update_invoice_status')); ?>">
                                         <?php esc_html_e('Mark Sent', 'my-village-hall'); ?>

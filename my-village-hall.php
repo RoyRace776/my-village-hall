@@ -643,7 +643,7 @@ class MyVillageHall {
     public function render_rooms_page():           void { $this->render_page( 'rooms' ); }
     public function render_room_rates_page():      void { $this->render_page( 'room-rates' ); }
     public function render_addons_page():          void { $this->render_page( 'addons' ); }
-    public function render_invoices_page():        void { $this->render_page( 'invoices' ); }
+    public function render_invoices_page():        void { $this->render_page( 'invoices', true ); }
     public function render_invoice_generate_page(): void { $this->render_page( 'invoice-generate' ); }
     public function render_recurring_page():       void { $this->render_page( 'recurring' ); }
 

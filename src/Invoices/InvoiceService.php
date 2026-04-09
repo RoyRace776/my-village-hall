@@ -8,6 +8,8 @@ if (!defined('ABSPATH')) exit;
 
 class InvoiceService {
 
+    public const VALID_STATUSES = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
+
     private $repo;
     private $payment_repo;
 
@@ -27,6 +29,69 @@ class InvoiceService {
 
     public function get_with_customers(): ?array {
         return $this->repo->get_all_with_customers();
+    }
+
+    public function get_detail($id): ?array {
+        $invoice = $this->repo->get_detail($id);
+
+        if (!$invoice) {
+            return null;
+        }
+
+        $invoice['Items'] = $this->repo->get_items_for_invoice($id);
+        $invoice['BookingsSummary'] = $this->build_booking_summary($invoice['Items']);
+
+        return $invoice;
+    }
+
+    public function get_detail_for_portal($id, $customer_id, bool $is_client_admin = false): ?array {
+        $invoice = $is_client_admin
+            ? $this->repo->get_detail($id)
+            : $this->repo->get_portal_detail($id, $customer_id);
+
+        if (!$invoice) {
+            return null;
+        }
+
+        $invoice['Items'] = $this->repo->get_items_for_invoice($id);
+        $invoice['BookingsSummary'] = $this->build_booking_summary($invoice['Items']);
+
+        return $invoice;
+    }
+
+    public function get_valid_statuses(): array {
+        return self::VALID_STATUSES;
+    }
+
+    private function build_booking_summary(array $items): array {
+        $bookings = [];
+
+        foreach ($items as $item) {
+            $booking_id = intval($item['BookingId'] ?? 0);
+            if ($booking_id <= 0) {
+                continue;
+            }
+
+            if (!isset($bookings[$booking_id])) {
+                $bookings[$booking_id] = [
+                    'BookingId' => $booking_id,
+                    'Description' => $item['BookingDescription'] ?: ($item['Description'] ?? ''),
+                    'StartDate' => $item['StartDate'] ?? null,
+                    'EndDate' => $item['EndDate'] ?? null,
+                    'StartTime' => $item['StartTime'] ?? null,
+                    'EndTime' => $item['EndTime'] ?? null,
+                    'RoomName' => $item['RoomName'] ?? null,
+                    'OrganisationName' => $item['OrganisationName'] ?? null,
+                    'BookingCustomerName' => $item['BookingCustomerName'] ?? null,
+                    'BookingStatus' => $item['BookingStatus'] ?? null,
+                    'TotalAmount' => 0.0,
+                ];
+            }
+
+            $bookings[$booking_id]['TotalAmount'] += floatval($item['TotalAmount'] ?? 0);
+        }
+
+        return array_values($bookings);
     }
 
     public function get_by_customer($customer_id): ?array {
@@ -127,9 +192,7 @@ class InvoiceService {
      * @return bool|WP_Error
      */
     public function update_status($id, $status): bool|WP_Error {
-        $valid_statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
-
-        if (!in_array($status, $valid_statuses)) {
+        if (!in_array($status, self::VALID_STATUSES, true)) {
             return new WP_Error('validation', __('Invalid invoice status', 'my-village-hall'));
         }
 

@@ -983,6 +983,42 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        if (form.id === 'myvh-portal-invoice-status-form') {
+            e.preventDefault();
+
+            const message = form.querySelector('[data-invoice-status-message]');
+            showMessage(message, 'Updating invoice status...', false);
+
+            postPortalForm('myvh_portal_update_invoice_status', form)
+                .then(res => {
+                    if (!res.success) {
+                        showMessage(message, res.data, true, 'Failed to update invoice status');
+                        return;
+                    }
+
+                    const badge = document.querySelector('[data-invoice-status-badge]');
+                    const statusValue = document.querySelector('[data-current-invoice-status]');
+                    const nextStatus = res.data?.status || '';
+                    const nextLabel = res.data?.status_label || nextStatus;
+
+                    if (badge && nextStatus) {
+                        badge.className = 'myvh-status-badge myvh-status-' + nextStatus;
+                        badge.textContent = nextLabel;
+                    }
+
+                    if (statusValue && nextLabel) {
+                        statusValue.textContent = nextLabel;
+                    }
+
+                    showMessage(message, res.data?.message || 'Invoice status updated', false);
+                })
+                .catch(() => {
+                    showMessage(message, 'Unexpected error updating invoice status', true);
+                });
+
+            return;
+        }
+
         // Generic portal action forms (with data-portal-action)
         const portalAction = form.dataset.portalAction;
         if (portalAction) {

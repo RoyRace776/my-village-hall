@@ -105,6 +105,7 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_delete_addon', [$this, 'delete_addon']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
+        add_action('wp_ajax_myvh_portal_update_invoice_status', [$this, 'update_invoice_status']);
         //add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
     }
 
@@ -190,7 +191,7 @@ class PortalController {
                 }
 
                 // Validate statuses against allowed values
-                $valid_statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
+                $valid_statuses = $this->invoiceService->get_valid_statuses();
                 $selected_statuses = array_values(array_intersect($selected_statuses, $valid_statuses));
 
                 // Get invoices for customer with optional status filter.
@@ -215,6 +216,21 @@ class PortalController {
                 $available_statuses = $valid_statuses;
 
                 include MYVH_PLUGIN_DIR . 'templates/Portal/invoices.php';
+                break;
+
+            case 'invoice-view':
+                $invoice_id = intval($_GET['invoice_id'] ?? 0);
+                $invoice = null;
+                $invoice_items = [];
+                $available_statuses = $this->invoiceService->get_valid_statuses();
+
+                if ($invoice_id > 0) {
+                    $customer_id = !empty($customer['Id']) ? intval($customer['Id']) : 0;
+                    $invoice = $this->invoiceService->get_detail_for_portal($invoice_id, $customer_id, $is_client_admin);
+                    $invoice_items = $invoice['Items'] ?? [];
+                }
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/invoice-view.php';
                 break;
 
             case 'invoice-generate':
@@ -1319,6 +1335,32 @@ class PortalController {
             'message' => sprintf(__('Created %d invoice(s)', 'my-village-hall'), $count),
             'invoice_ids' => $result,
             'count' => $count
+        ]);
+    }
+
+    public function update_invoice_status(): void {
+        $this->require_client_admin_access();
+
+        $invoice_id = intval($_POST['invoice_id'] ?? 0);
+        $status = sanitize_text_field($_POST['status'] ?? '');
+
+        if ($invoice_id <= 0) {
+            wp_send_json_error(['message' => 'Invalid invoice'], 400);
+        }
+
+        if (!$this->invoiceService->get($invoice_id)) {
+            wp_send_json_error(['message' => 'Invoice not found'], 404);
+        }
+
+        $result = $this->invoiceService->update_status($invoice_id, $status);
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()], 400);
+        }
+
+        wp_send_json_success([
+            'message' => 'Invoice status updated.',
+            'status' => $status,
+            'status_label' => ucfirst($status),
         ]);
     }
 
