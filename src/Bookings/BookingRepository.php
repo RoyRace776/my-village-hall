@@ -372,7 +372,7 @@ class BookingRepository extends RepositoryBase
 
 
     /**
-     * Get uninvoiced bookings (confirmed or completed status, no non-cancelled invoices)
+     * Get uninvoiced bookings (confirmed or completed status, no active invoices)
      *
      * @param array $args Optional query arguments (orderby, order, limit, offset, organisation_id, customer_id)
      * @return array|null Array of uninvoiced bookings with customer/org details
@@ -390,8 +390,7 @@ class BookingRepository extends RepositoryBase
 
         $where = [
             "b.Status IN ('confirmed', 'completed')",
-            "b.NoInvoiceRequired = 0",
-            "ii.Id IS NULL"  // No invoice items linked
+            "b.NoInvoiceRequired = 0"
         ];
         $params = [];
 

@@ -34,6 +34,50 @@ foreach ($recurring_uninvoiced_bookings as $booking) {
     $recurring_booking_groups[$pattern_id]['bookings'][] = $booking;
 }
 
+foreach ($recurring_booking_groups as &$group) {
+    usort($group['bookings'], static function (array $left, array $right): int {
+        $left_timestamp = strtotime((string) ($left['StartDate'] ?? ''));
+        $right_timestamp = strtotime((string) ($right['StartDate'] ?? ''));
+
+        if ($left_timestamp === $right_timestamp) {
+            return intval($left['Id'] ?? 0) <=> intval($right['Id'] ?? 0);
+        }
+
+        if (false === $left_timestamp) {
+            return 1;
+        }
+
+        if (false === $right_timestamp) {
+            return -1;
+        }
+
+        return $left_timestamp <=> $right_timestamp;
+    });
+
+    $group['first_booking'] = $group['bookings'][0] ?? [];
+}
+unset($group);
+
+$recurring_booking_groups = array_values($recurring_booking_groups);
+usort($recurring_booking_groups, static function (array $left, array $right): int {
+    $left_timestamp = strtotime((string) (($left['first_booking']['StartDate'] ?? '')));
+    $right_timestamp = strtotime((string) (($right['first_booking']['StartDate'] ?? '')));
+
+    if ($left_timestamp === $right_timestamp) {
+        return intval($left['pattern_id'] ?? 0) <=> intval($right['pattern_id'] ?? 0);
+    }
+
+    if (false === $left_timestamp) {
+        return 1;
+    }
+
+    if (false === $right_timestamp) {
+        return -1;
+    }
+
+    return $left_timestamp <=> $right_timestamp;
+});
+
 $single_booking_count = count($single_uninvoiced_bookings);
 $recurring_booking_count = count($recurring_uninvoiced_bookings);
 $uninvoiced_booking_count = count($uninvoiced_bookings ?? []);
@@ -93,8 +137,8 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                     <span>Grouping</span>
                     <select id="myvh-group-by" name="group_by" class="myvh-input myvh-generate-select">
                         <option value="per_booking">One invoice per booking</option>
-                        <option value="by_customer">Group by customer</option>
-                        <option value="by_organisation">Group by organisation</option>
+                        <option value="by_customer">One invoice per customer</option>
+                        <option value="by_organisation">One invoice per organisation</option>
                     </select>
                 </label>
                 <p class="myvh-account-hint">Choose how the selected bookings should be bundled into invoices before submission.</p>
@@ -187,8 +231,10 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                                 <tbody>
                                     <?php foreach ($recurring_booking_groups as $group): ?>
                                         <?php $group_id = intval($group['pattern_id']); ?>
+                                        <?php $first_booking = $group['first_booking'] ?? []; ?>
                                         <tr class="myvh-recurring-group-row">
-                                            <td colspan="8" class="myvh-recurring-group-cell">
+                                            <td></td>
+                                            <td class="myvh-recurring-group-cell">
                                                 <button
                                                     type="button"
                                                     class="button-link myvh-recurring-group-toggle"
@@ -199,6 +245,12 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                                                     <span class="myvh-recurring-group-toggle__meta"><?php echo esc_html((string) count($group['bookings'])); ?> <?php echo count($group['bookings']) === 1 ? 'booking' : 'bookings'; ?></span>
                                                 </button>
                                             </td>
+                                            <td>#<?php echo esc_html((string) $group_id); ?></td>
+                                            <td><?php echo esc_html($first_booking['CustomerName'] ?? 'Unknown'); ?></td>
+                                            <td><?php echo esc_html($first_booking['OrganisationName'] ?? '-'); ?></td>
+                                            <td><?php echo esc_html($first_booking['Description'] ?? '-'); ?></td>
+                                            <td><?php echo esc_html(date('j M Y', strtotime((string) ($first_booking['StartDate'] ?? '')))); ?></td>
+                                            <td><?php echo esc_html($first_booking['RoomName'] ?? '-'); ?></td>
                                         </tr>
                                         <?php foreach ($group['bookings'] as $booking): ?>
                                             <tr class="myvh-recurring-group-child" data-recurring-group-child="<?php echo esc_attr((string) $group_id); ?>" hidden>

@@ -127,7 +127,7 @@ class PortalController {
 
         $args = [
             'orderby' => 'b.StartDate',
-            'order' => 'DESC',
+            'order' => 'ASC',
         ];
         if ($customer_id) {
             $args['customer_id'] = $customer_id;
@@ -240,7 +240,7 @@ class PortalController {
 
                 $uninvoiced_bookings = $this->booking_service->get_uninvoiced_bookings([
                     'orderby' => 'b.StartDate',
-                    'order' => 'DESC',
+                    'order' => 'ASC',
                 ]);
                 $uninvoiced_by_customer = $this->booking_service->get_uninvoiced_by_customer();
                 $uninvoiced_by_organisation = $this->booking_service->get_uninvoiced_by_organisation();

@@ -14,7 +14,7 @@ use MYVH\Bookings\BookingService;
 $booking_service = $myvh_container->get(BookingService::class);
 $uninvoiced_bookings = $booking_service->get_uninvoiced_bookings([
     'orderby' => 'b.StartDate',
-    'order' => 'DESC',
+    'order' => 'ASC',
 ]);
 $single_uninvoiced_bookings = array_values(array_filter(
     $uninvoiced_bookings,
@@ -44,6 +44,51 @@ foreach ($recurring_uninvoiced_bookings as $booking) {
 
     $admin_recurring_booking_groups[$pattern_id]['bookings'][] = $booking;
 }
+
+foreach ($admin_recurring_booking_groups as &$group) {
+    usort($group['bookings'], static function (array $left, array $right): int {
+        $left_timestamp = strtotime((string) ($left['StartDate'] ?? ''));
+        $right_timestamp = strtotime((string) ($right['StartDate'] ?? ''));
+
+        if ($left_timestamp === $right_timestamp) {
+            return intval($left['Id'] ?? 0) <=> intval($right['Id'] ?? 0);
+        }
+
+        if (false === $left_timestamp) {
+            return 1;
+        }
+
+        if (false === $right_timestamp) {
+            return -1;
+        }
+
+        return $left_timestamp <=> $right_timestamp;
+    });
+
+    $group['first_booking'] = $group['bookings'][0] ?? [];
+}
+unset($group);
+
+$admin_recurring_booking_groups = array_values($admin_recurring_booking_groups);
+usort($admin_recurring_booking_groups, static function (array $left, array $right): int {
+    $left_timestamp = strtotime((string) (($left['first_booking']['StartDate'] ?? '')));
+    $right_timestamp = strtotime((string) (($right['first_booking']['StartDate'] ?? '')));
+
+    if ($left_timestamp === $right_timestamp) {
+        return intval($left['pattern_id'] ?? 0) <=> intval($right['pattern_id'] ?? 0);
+    }
+
+    if (false === $left_timestamp) {
+        return 1;
+    }
+
+    if (false === $right_timestamp) {
+        return -1;
+    }
+
+    return $left_timestamp <=> $right_timestamp;
+});
+
 $uninvoiced_by_customer = $booking_service->get_uninvoiced_by_customer();
 $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation();
 ?>
@@ -77,8 +122,8 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                                 <td>
                                     <select id="myvh-group-by-admin" name="group_by" class="regular-text">
                                         <option value="per_booking"><?php esc_html_e('One invoice per booking', 'my-village-hall'); ?></option>
-                                        <option value="by_customer"><?php esc_html_e('Group by customer', 'my-village-hall'); ?></option>
-                                        <option value="by_organisation"><?php esc_html_e('Group by organisation', 'my-village-hall'); ?></option>
+                                        <option value="by_customer"><?php esc_html_e('One invoice per customer', 'my-village-hall'); ?></option>
+                                        <option value="by_organisation"><?php esc_html_e('One invoice per organisation', 'my-village-hall'); ?></option>
                                     </select>
                                 </td>
                             </tr>
@@ -161,8 +206,10 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                                 <?php else: ?>
                                     <?php foreach ($admin_recurring_booking_groups as $group): ?>
                                         <?php $group_id = intval($group['pattern_id']); ?>
+                                        <?php $first_booking = $group['first_booking'] ?? []; ?>
                                         <tr>
-                                            <td colspan="8" style="background:#f6f7f7;">
+                                            <td style="background:#f6f7f7;"></td>
+                                            <td style="background:#f6f7f7;">
                                                 <button
                                                     type="button"
                                                     class="button-link myvh-admin-recurring-group-toggle"
@@ -180,6 +227,12 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                                                     ?>
                                                 </button>
                                             </td>
+                                            <td style="background:#f6f7f7;">#<?php echo esc_html((string) $group_id); ?></td>
+                                            <td style="background:#f6f7f7;"><?php echo esc_html($first_booking['CustomerName'] ?? 'Unknown'); ?></td>
+                                            <td style="background:#f6f7f7;"><?php echo esc_html($first_booking['OrganisationName'] ?? '-'); ?></td>
+                                            <td style="background:#f6f7f7;"><?php echo esc_html($first_booking['Description'] ?? '-'); ?></td>
+                                            <td style="background:#f6f7f7;"><?php echo esc_html(date('j M Y', strtotime((string) ($first_booking['StartDate'] ?? '')))); ?></td>
+                                            <td style="background:#f6f7f7;"><?php echo esc_html($first_booking['RoomName'] ?? '-'); ?></td>
                                         </tr>
                                         <?php foreach ($group['bookings'] as $booking): ?>
                                             <tr data-recurring-group-child="<?php echo esc_attr((string) $group_id); ?>" hidden>
