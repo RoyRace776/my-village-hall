@@ -146,6 +146,7 @@ window.BookingModalView = (function() {
 
                     const payload = {
                         booking: res.data.booking,
+                        addons: Array.isArray(res.data.addons) ? res.data.addons : [],
                         canEdit: !!res.data.can_edit,
                         editReason: res.data.edit_reason || '',
                         canDelete: !!res.data.can_delete,
@@ -167,6 +168,7 @@ window.BookingModalView = (function() {
                     setValue('description', booking['Description']);
                     setValue('public', !!booking['Public']);
                     setValue('no_invoice_required', !!booking['NoInvoiceRequired']);
+                    applyExistingAddons(payload.addons || []);
                     currentCanEdit = !!payload.canEdit;
                     currentCanDelete = !!payload.canDelete;
                     updateEditButtons(currentCanEdit, payload.editReason);
@@ -220,6 +222,7 @@ window.BookingModalView = (function() {
 
             el.disabled = false;
         });
+        applyExistingAddons([]);
         applyNoInvoiceRequiredVisibility();
     }
 
@@ -376,6 +379,60 @@ window.BookingModalView = (function() {
         const checkbox = row.querySelector(".myvh-modal-addon-checkbox");
         if (checkbox) {
             checkbox.checked = enabled;
+        }
+    }
+
+    function applyExistingAddons(addons) {
+        const addonMap = {};
+        let selectedCount = 0;
+
+        (Array.isArray(addons) ? addons : []).forEach(addon => {
+            const addonId = String(addon.AddonId || addon.addon_id || '');
+            if (addonId) {
+                addonMap[addonId] = addon;
+            }
+        });
+
+        form.querySelectorAll('.myvh-modal-addon-row').forEach(row => {
+            const addonIdField = row.querySelector('input[name$="[addon_id]"]');
+            const priceField = row.querySelector('.myvh-modal-addon-price');
+            const quantityField = row.querySelector('.myvh-modal-addon-qty');
+            const addonId = addonIdField ? String(addonIdField.value || '') : '';
+            const addon = addonId ? addonMap[addonId] : null;
+
+            if (addon && priceField) {
+                const resolvedPrice = addon.UnitPrice ?? addon.unit_price ?? priceField.value ?? 0;
+                priceField.value = Number(resolvedPrice).toFixed(2);
+            }
+
+            if (addon && quantityField) {
+                quantityField.value = String(addon.Quantity ?? addon.quantity ?? 1);
+            } else if (quantityField) {
+                quantityField.value = '1';
+            }
+
+            const isSelected = !!addon;
+            toggleAddonRow(row, isSelected);
+            row.style.display = isSelected ? '' : 'none';
+
+            if (isSelected) {
+                selectedCount += 1;
+            }
+        });
+
+        updateAddonEmptyState(selectedCount);
+    }
+
+    function updateAddonEmptyState(selectedCount) {
+        const table = form.querySelector('#myvh-modal-addons-table');
+        const empty = form.querySelector('#myvh-modal-addons-empty');
+
+        if (table) {
+            table.style.display = selectedCount > 0 ? '' : 'none';
+        }
+
+        if (empty) {
+            empty.style.display = selectedCount > 0 ? 'none' : '';
         }
     }
 
