@@ -5,7 +5,7 @@ class GeneralSettings extends SettingsBase {
 
     protected $option_name = 'myvh_general_settings';
     protected $required_capability = 'manage_options';
-    protected $hide_from_client_admin = true;
+    protected $hide_from_client_admin = false;
 
     public function tab(): array {
         return [
@@ -29,13 +29,6 @@ class GeneralSettings extends SettingsBase {
                     'sanitize' => 'sanitize_text_field'
                 ],
 
-                'enable_system' => [
-                    'type' => 'boolean',
-                    'label' => 'Enable System',
-                    'default' => true,
-                    'sanitize' => 'boolval'
-                ],
-
                 'items_per_page' => [
                     'type' => 'integer',
                     'label' => 'Items Per Page',
@@ -48,14 +41,6 @@ class GeneralSettings extends SettingsBase {
                     'label' => 'Admin Email',
                     'default' => '',
                     'sanitize' => 'sanitize_email'
-                ],
-
-                'delete_on_deactivate' => [
-                    'type' => 'boolean',
-                    'label' => 'Delete on deactivation',
-                    'default' => false,
-                    'sanitize' => 'boolval',
-                    'description' => 'WARNING: When set, ALL data will be removed when the plugin is deactivated. USE WITH CARE'
                 ],
 
                 'calendar_date_format' => [

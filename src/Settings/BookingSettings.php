@@ -4,6 +4,7 @@ namespace MyVH\Settings;
 class BookingSettings extends SettingsBase {
 
     protected $option_name = 'myvh_booking_settings';
+    protected $hide_from_client_admin = false;
 
     public function tab(): array {
         return

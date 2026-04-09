@@ -10,6 +10,7 @@ namespace MYVH\Settings;
 class AutoInvoicingSettings extends SettingsBase {
 
     protected $option_name = 'myvh_auto_invoicing_settings';
+    protected $hide_from_client_admin = false;
 
     public function tab(): array {
         return [
