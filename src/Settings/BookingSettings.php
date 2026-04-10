@@ -38,31 +38,52 @@ class BookingSettings extends SettingsBase {
                     'label' => 'Require approval',
                     'type' => 'boolean',
                     'default' => true,
-                    'sanitize' => 'boolval'
+                    'sanitize' => 'boolval',
+                    'description' => 'If enabled, new bookings will require admin approval before they are confirmed.'
+                ],
+
+                'cancellation_allowed_days_before' => [
+                    'label' => 'Cancellations allowed up to (days before booking start)',
+                    'type' => 'number',
+                    'default' => 7,
+                    'sanitize' => 'intval',
+                    'description' => 'How many days before the booking start time users are allowed to cancel their booking.'
                 ],
 
             ]
         ],
 
-        'advanced' => [
-            'title' => 'Advanced',
+        'buffers' => [
+            'title' => 'Buffers',
 
             'fields' => [
 
-                'allow_weekend_bookings' => [
-                    'label' => 'Allow weekend bookings',
+                'set_up_minutes' => [
+                    'label' => 'Minutes allowed for set up before a booking',
+                    'type' => 'number',
+                    'default' => 0,
+                    'sanitize' => 'intval',
+                    'description' => 'How many free minutes are allowed for set up before a booking.'
+                ],
+                'tidy_up_minutes' => [
+                    'label' => 'Minutes allowed for tidy up after a booking',
+                    'type' => 'number',
+                    'default' => 0,
+                    'sanitize' => 'intval',
+                    'description' => 'How many free minutes are allowed for tidy up after a booking.'
+                ],
+                'show_buffer_times_separately' => [
+                    'label' => 'Show buffer times in calendar as separate events',
                     'type' => 'boolean',
                     'default' => true,
                     'sanitize' => 'boolval'
                 ],
-
-                'booking_notes' => [
-                    'label' => 'Booking notes',
-                    'type' => 'textarea',
-                    'default' => '',
-                    'sanitize' => 'sanitize_textarea_field'
+                'buffer_text' => [
+                    'label' => 'Buffer event text',
+                    'type' => 'text',
+                    'default' => 'Buffer',
+                    'sanitize' => 'sanitize_text_field'
                 ]
-
             ]
         ]
 

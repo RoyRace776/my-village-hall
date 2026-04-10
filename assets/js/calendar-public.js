@@ -35,6 +35,7 @@ var CalendarPublic = (function() {
             ajax_url:    myvhCalConfig.ajax_url,
             nonce:      myvhCalConfig.nonce,
             headerDateFormat: myvhCalConfig.headerDateFormat || null,
+            startOfWeek: Number.isInteger(Number(myvhCalConfig.startOfWeek)) ? Number(myvhCalConfig.startOfWeek) : 1,
             visibleStartHour: myvhCalConfig.visibleStartHour,
             visibleEndHour: myvhCalConfig.visibleEndHour,
             schedulerOrientation: String(myvhCalConfig.schedulerOrientation || 'horizontal').toLowerCase(),

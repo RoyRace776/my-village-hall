@@ -47,6 +47,26 @@ window.CalendarCore = (function () {
     function applyEventStatusColors(events, statusColors) {
         return (events || []).map(function(event) {
             const tags = event && event.tags ? event.tags : {};
+
+            // Buffer events keep room background color but use a neutral
+            // left accent bar so they remain visually distinct.
+            if (tags.isBuffer) {
+                const roomColour = normaliseHexColour(tags.roomColour || tags.colour || event.backColor);
+                const backgroundColour = roomColour || DEFAULT_EVENT_BACKGROUND;
+                const bufferAccent = "#9aa0a6";
+
+                return {
+                    ...event,
+                    backColor: backgroundColour,
+                    fontColor: getReadableTextColour(backgroundColour),
+                    borderColor: bufferAccent,
+                    barColor: bufferAccent,
+                    moveDisabled: true,
+                    resizeDisabled: true,
+                    clickDisabled: true,
+                };
+            }
+
             const status = String(tags.status || "").toLowerCase();
             const fallbackColor = statusColors.confirmed || DEFAULT_STATUS_COLORS.confirmed;
             const accentColor = statusColors[status] || fallbackColor;
@@ -158,14 +178,34 @@ window.CalendarCore = (function () {
         const tooltipParts = [];
         const tags = event && event.tags ? event.tags : {};
 
+        // Buffer events (separate display mode): show room name and time only.
+        if (tags.isBuffer) {
+            const room = tags.room || tags.roomName || "";
+            if (String(room).trim() !== "") {
+                tooltipParts.push(String(room).trim());
+            }
+            if (event.start && event.end) {
+                const startTime = formatTimeFromISO(event.start);
+                const endTime = formatTimeFromISO(event.end);
+                if (startTime && endTime) {
+                    tooltipParts.push(startTime + "-" + endTime);
+                }
+            }
+            return tooltipParts.join("\n");
+        }
+
         const room = tags.room || tags.roomName || "";
         if (String(room).trim() !== "") {
             tooltipParts.push(String(room).trim());
         }
 
-        if (event.start && event.end) {
-            const startTime = formatTimeFromISO(event.start);
-            const endTime = formatTimeFromISO(event.end);
+        // For merged-buffer events, use the stored actual booking times in the
+        // tooltip so users see the real booking window, not the visual extension.
+        const displayStart = tags.actualStart || event.start;
+        const displayEnd   = tags.actualEnd   || event.end;
+        if (displayStart && displayEnd) {
+            const startTime = formatTimeFromISO(displayStart);
+            const endTime   = formatTimeFromISO(displayEnd);
             if (startTime && endTime) {
                 tooltipParts.push(startTime + "-" + endTime);
             }
@@ -228,6 +268,14 @@ window.CalendarCore = (function () {
 
         const numeric = Number(raw);
         return Number.isFinite(numeric) ? numeric : fallback;
+    }
+
+    function getWeekStarts(opts = {}) {
+        const raw = Number(opts.startOfWeek);
+        if (Number.isInteger(raw) && raw >= 0 && raw <= 6) {
+            return raw;
+        }
+        return 1;
     }
 
     function getSchedulerStartDate(detail, value) {
@@ -319,10 +367,14 @@ window.CalendarCore = (function () {
 
         const visibleStartHour = parseVisibleHour(opts.visibleStartHour, null);
         const visibleEndHour = parseVisibleHour(opts.visibleEndHour, null);
+        const weekStarts = getWeekStarts(opts);
+        const locale = opts.locale || document.documentElement.lang || "en-us";
 
         calendar = new DayPilot.Calendar(containerId);
         calendar.viewType = detail;
         calendar.startDate = toDayPilotDate(opts.startDate) || DayPilot.Date.today();
+        calendar.locale = locale;
+        calendar.weekStarts = weekStarts;
 
         if (opts.headerDateFormat) {
             calendar.headerDateFormat = opts.headerDateFormat;
@@ -349,7 +401,10 @@ window.CalendarCore = (function () {
         calendar.eventResizeHandling = opts.editable ? "Update" : "Disabled";
         calendar.timeRangeSelectedHandling = opts.selectable ? "Enabled" : "Disabled";
 
-        calendar.onEventClick = args => opts.onEventClick?.(args);
+        calendar.onEventClick = args => {
+            if (args?.e?.data?.tags?.isBuffer) return;
+            opts.onEventClick?.(args);
+        };
         calendar.onEventMoved = args => opts.onEventMoved?.(args);
         calendar.onEventResized = args => opts.onEventResized?.(args);
         calendar.onTimeRangeSelected = args => opts.onTimeRangeSelected?.(args);
@@ -363,12 +418,18 @@ window.CalendarCore = (function () {
     function createMonthCalendar(containerId, opts) {
         destroy();
 
+        const weekStarts = getWeekStarts(opts);
+
         calendar = new DayPilot.Month(containerId, {
             startDate: (toDayPilotDate(opts.startDate) || DayPilot.Date.today()).firstDayOfMonth(),
-            locale: document.documentElement.lang || "en-us",
+            locale: opts.locale || document.documentElement.lang || "en-us",
+            weekStarts: weekStarts,
             eventMoveHandling: opts.editable ? "Update" : "Disabled",
             eventResizeHandling: opts.editable ? "Update" : "Disabled",
-            onEventClick: args => opts.onEventClick?.(args),
+            onEventClick: args => {
+                if (args?.e?.data?.tags?.isBuffer) return;
+                opts.onEventClick?.(args);
+            },
             onEventMoved: args => opts.onEventMoved?.(args),
             onEventResized: args => opts.onEventResized?.(args),
             onTimeRangeSelected: args => opts.onTimeRangeSelected?.(args),
@@ -620,6 +681,7 @@ window.CalendarCore = (function () {
         const schedulerOrientation = String(opts.schedulerOrientation || "horizontal").trim().toLowerCase();
         const visibleStartHour = parseVisibleHour(opts.visibleStartHour, null);
         const visibleEndHour = parseVisibleHour(opts.visibleEndHour, null);
+        const weekStarts = getWeekStarts(opts);
 
         if (schedulerOrientation === "vertical") {
             createVerticalTimetable(containerId, opts, detail);
@@ -632,10 +694,15 @@ window.CalendarCore = (function () {
         let startDate = getSchedulerStartDate(detail, opts.startDate);
         const config = {
             startDate: startDate,
+            locale: opts.locale || document.documentElement.lang || "en-us",
+            weekStarts: weekStarts,
             eventResourceField: "resource",
             rowHeaderWidth: 220,
             timeRangeSelectedHandling: opts.selectable ? "Enabled" : "Disabled",
-            onEventClick: args => opts.onEventClick?.(args),
+            onEventClick: args => {
+                if (args?.e?.data?.tags?.isBuffer) return;
+                opts.onEventClick?.(args);
+            },
             onEventMoved: args => opts.onEventMoved?.(args),
             onEventResized: args => opts.onEventResized?.(args),
             onTimeRangeSelected: args => opts.onTimeRangeSelected?.(args),

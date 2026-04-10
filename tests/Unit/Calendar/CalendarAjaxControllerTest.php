@@ -10,6 +10,7 @@ use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Rooms\RoomRepository;
+use MYVH\Rooms\RoomVisibilityService;
 use MYVH\Tests\Unit\UnitTestCase;
 
 class CalendarAjaxControllerTest extends UnitTestCase {
@@ -19,17 +20,19 @@ class CalendarAjaxControllerTest extends UnitTestCase {
     private $customer_service;
     private $client_admin_service;
     private $room_rate_service;
+    private $room_visibility_service;
     private CalendarAjaxController $controller;
 
     protected function setUp(): void {
         parent::setUp();
 
-        $this->calendar_service = $this->mock(CalendarService::class);
-        $this->booking_service = $this->mock(BookingService::class);
-        $this->room_repository = $this->mock(RoomRepository::class);
-        $this->customer_service = $this->mock(CustomerService::class);
-        $this->client_admin_service = $this->mock(ClientAdminService::class);
-        $this->room_rate_service = $this->mock(RoomRateService::class);
+        $this->calendar_service         = $this->mock(CalendarService::class);
+        $this->booking_service          = $this->mock(BookingService::class);
+        $this->room_repository          = $this->mock(RoomRepository::class);
+        $this->customer_service         = $this->mock(CustomerService::class);
+        $this->client_admin_service     = $this->mock(ClientAdminService::class);
+        $this->room_rate_service        = $this->mock(RoomRateService::class);
+        $this->room_visibility_service  = $this->mock(RoomVisibilityService::class);
 
         $this->controller = new CalendarAjaxController(
             $this->calendar_service,
@@ -37,7 +40,8 @@ class CalendarAjaxControllerTest extends UnitTestCase {
             $this->room_repository,
             $this->customer_service,
             $this->client_admin_service,
-            $this->room_rate_service
+            $this->room_rate_service,
+            $this->room_visibility_service
         );
 
         Functions\stubs([
@@ -105,6 +109,10 @@ class CalendarAjaxControllerTest extends UnitTestCase {
                 ],
             ]);
 
+        $this->room_visibility_service->shouldReceive('filter_rooms_for_user')
+            ->once()
+            ->andReturnArg(0);
+
         $this->room_rate_service->shouldReceive('get_room_ids_with_active_rates')
             ->once()
             ->with([10, 11, 12])
@@ -147,6 +155,10 @@ class CalendarAjaxControllerTest extends UnitTestCase {
                     'VenueName' => 'Village Hall',
                 ],
             ]);
+
+        $this->room_visibility_service->shouldReceive('filter_rooms_for_user')
+            ->once()
+            ->andReturnArg(0);
 
         $this->room_rate_service->shouldReceive('get_room_ids_with_active_rates')
             ->once()

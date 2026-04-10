@@ -286,6 +286,7 @@ var Calendar = (function() {
             nav = new DayPilot.Navigator('myvh-calendar-nav-picker', {
                 showMonths: visibleMonths,
                 skipMonths: visibleMonths,
+                weekStarts: Number.isInteger(Number(myvhCal.startOfWeek)) ? Number(myvhCal.startOfWeek) : 1,
                 selectMode: 'Week',
                 onTimeRangeSelected: function(args) {
                     if (suppressNavSelect) {
@@ -610,6 +611,7 @@ var Calendar = (function() {
                     ajax_url:   myvhCal.ajax_url,
                     nonce:      myvhCal.nonce,
                     headerDateFormat: myvhCal.headerDateFormat || null,
+                    startOfWeek: Number.isInteger(Number(myvhCal.startOfWeek)) ? Number(myvhCal.startOfWeek) : 1,
                     visibleStartHour: myvhCal.visibleStartHour,
                     visibleEndHour: myvhCal.visibleEndHour,
                     schedulerOrientation: String(myvhCal.schedulerOrientation || 'horizontal').toLowerCase(),

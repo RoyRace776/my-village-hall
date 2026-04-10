@@ -854,7 +854,7 @@ class BookingService {
         $status = strtolower((string) ($booking['Status'] ?? ''));
         $start_ts = strtotime((string) $booking['StartDate'] . ' ' . (string) $booking['StartTime']);
         $now_ts = current_time('timestamp');
-        $min_notice_hours = max(0, intval(myvh_setting('booking.general.min_notice_hours', 24)));
+        $min_notice_hours = max(0, intval(myvh_setting('booking.min_notice_hours', 24)));
         $min_notice_days = (int) ceil($min_notice_hours / 24);
 
         if (!$start_ts || $start_ts <= $now_ts) {

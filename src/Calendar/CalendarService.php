@@ -40,12 +40,36 @@ class CalendarService {
         $default_label = $this->get_private_booking_label();
         $events = [];
 
+        $show_separately = (bool) myvh_setting( 'booking.show_buffer_times_separately', false );
+        $setup_minutes   = (int)  myvh_setting( 'booking.set_up_minutes',  0 );
+        $tidy_minutes    = (int)  myvh_setting( 'booking.tidy_up_minutes',  0 );
+        $buffer_text     = (string) myvh_setting( 'booking.buffer_text', 'Buffer' );
+
         foreach ((array) $bookings as $booking) {
             $room_id = isset($booking['RoomId']) ? (int) $booking['RoomId'] : 0;
             if (!$this->is_room_visible($room_id, $context, $viewer_scope)) {
                 continue;
             }
-            $events[] = $this->map_booking_to_event($booking, $context, $room_meta, $viewer_scope, $default_label);
+            $event = $this->map_booking_to_event($booking, $context, $room_meta, $viewer_scope, $default_label);
+
+            [$eff_setup, $eff_tidy] = $this->compute_effective_buffers(
+                $booking, $room_meta[$room_id] ?? [], $setup_minutes, $tidy_minutes
+            );
+
+            if ( $eff_setup > 0 || $eff_tidy > 0 ) {
+                if ( $show_separately ) {
+                    $events[] = $event;
+                    foreach ( $this->generate_separate_buffer_events(
+                        $booking, $event, $eff_setup, $eff_tidy, $buffer_text, $room_meta[$room_id] ?? []
+                    ) as $buf_event ) {
+                        $events[] = $buf_event;
+                    }
+                } else {
+                    $events[] = $this->apply_merged_buffers( $event, $booking, $eff_setup, $eff_tidy );
+                }
+            } else {
+                $events[] = $event;
+            }
         }
 
         return $events;
@@ -64,6 +88,12 @@ class CalendarService {
         $room_meta = $this->get_room_metadata();
         $this->_room_meta_cache = $room_meta;
         $viewer_scope = $this->resolve_viewer_scope($context, $viewer_user_id);
+
+        $show_separately = (bool) myvh_setting( 'booking.show_buffer_times_separately', false );
+        $setup_minutes   = (int)  myvh_setting( 'booking.set_up_minutes',  0 );
+        $tidy_minutes    = (int)  myvh_setting( 'booking.tidy_up_minutes',  0 );
+        $buffer_text     = (string) myvh_setting( 'booking.buffer_text', 'Buffer' );
+
         $events = [];
 
         foreach ((array) $bookings as $booking) {
@@ -71,7 +101,26 @@ class CalendarService {
             if (!$this->is_room_visible($room_id, $context, $viewer_scope)) {
                 continue;
             }
-            $events[] = $this->map_booking_to_public_feed_event($booking, $room_meta, $viewer_scope, $default_label, $context);
+            $event = $this->map_booking_to_public_feed_event($booking, $room_meta, $viewer_scope, $default_label, $context);
+
+            [$eff_setup, $eff_tidy] = $this->compute_effective_buffers(
+                $booking, $room_meta[$room_id] ?? [], $setup_minutes, $tidy_minutes
+            );
+
+            if ( $eff_setup > 0 || $eff_tidy > 0 ) {
+                if ( $show_separately ) {
+                    $events[] = $event;
+                    foreach ( $this->generate_separate_buffer_events(
+                        $booking, $event, $eff_setup, $eff_tidy, $buffer_text, $room_meta[$room_id] ?? []
+                    ) as $buf_event ) {
+                        $events[] = $buf_event;
+                    }
+                } else {
+                    $events[] = $this->apply_merged_buffers( $event, $booking, $eff_setup, $eff_tidy );
+                }
+            } else {
+                $events[] = $event;
+            }
         }
 
         return $events;
@@ -228,10 +277,12 @@ class CalendarService {
             }
 
             $room_meta[$room_id] = [
-                'name'      => isset($room['Name']) ? (string) $room['Name'] : '',
-                'venue'     => isset($room['VenueName']) ? (string) $room['VenueName'] : '',
-                'colour'    => RoomColour::resolve($room['Colour'] ?? '', $room_id),
-                'is_public' => !empty($room['IsPublic']),
+                'name'         => isset($room['Name'])        ? (string) $room['Name']        : '',
+                'venue'        => isset($room['VenueName'])   ? (string) $room['VenueName']   : '',
+                'colour'       => RoomColour::resolve($room['Colour'] ?? '', $room_id),
+                'is_public'    => !empty($room['IsPublic']),
+                'opening_time' => isset($room['OpeningTime']) ? (string) $room['OpeningTime'] : '',
+                'closing_time' => isset($room['ClosingTime']) ? (string) $room['ClosingTime'] : '',
             ];
         }
 
@@ -359,8 +410,123 @@ class CalendarService {
         return $event;
     }
 
-    private function get_private_booking_label(): string {
-        $default_label = myvh_setting(
+    /**
+     * Compute the effective setup and tidy buffer minutes for a booking.
+     *
+     * Setup is waived (0) when the booking starts exactly at the room's opening
+     * time; tidy is waived when it ends exactly at closing time.
+     *
+     * @param array $booking          Raw booking row (StartDate, StartTime, EndDate, EndTime).
+     * @param array $room_meta_entry  Room metadata entry (opening_time, closing_time).
+     * @param int   $setup_minutes    Configured setup minutes from settings.
+     * @param int   $tidy_minutes     Configured tidy minutes from settings.
+     * @return array{int, int}        [effective_setup, effective_tidy].
+     */
+    private function compute_effective_buffers( array $booking, array $room_meta_entry, int $setup_minutes, int $tidy_minutes ): array {
+        if ( $setup_minutes <= 0 && $tidy_minutes <= 0 ) {
+            return [ 0, 0 ];
+        }
+
+        $booking_start = date( 'H:i:s', strtotime( $booking['StartDate'] . ' ' . $booking['StartTime'] ) );
+        $booking_end   = date( 'H:i:s', strtotime( $booking['EndDate']   . ' ' . $booking['EndTime']   ) );
+        $room_open     = date( 'H:i:s', strtotime( '1970-01-01 ' . ( $room_meta_entry['opening_time'] ?? '00:00:00' ) ) );
+        $room_close    = date( 'H:i:s', strtotime( '1970-01-01 ' . ( $room_meta_entry['closing_time'] ?? '23:59:59' ) ) );
+
+        $eff_setup = ( $booking_start === $room_open  ) ? 0 : $setup_minutes;
+        $eff_tidy  = ( $booking_end   === $room_close ) ? 0 : $tidy_minutes;
+
+        return [ $eff_setup, $eff_tidy ];
+    }
+
+    /**
+     * Extend a booking calendar event's start/end to include buffer windows
+     * (merged display mode). Stores actual booking times in tags so tooltips
+     * can still show the real booking time range.
+     */
+    private function apply_merged_buffers( array $event, array $booking, int $eff_setup, int $eff_tidy ): array {
+        $actual_start = $booking['StartDate'] . 'T' . $booking['StartTime'];
+        $actual_end   = $booking['EndDate']   . 'T' . $booking['EndTime'];
+
+        if ( $eff_setup > 0 ) {
+            $ts = strtotime( $actual_start ) - $eff_setup * 60;
+            $event['start'] = date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts );
+        }
+
+        if ( $eff_tidy > 0 ) {
+            $ts = strtotime( $actual_end ) + $eff_tidy * 60;
+            $event['end'] = date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts );
+        }
+
+        // Preserve actual booking times in tags for front-end tooltip rendering.
+        $event['tags']['actualStart'] = $actual_start;
+        $event['tags']['actualEnd']   = $actual_end;
+
+        return $event;
+    }
+
+    /**
+     * Build synthetic setup and/or tidy buffer calendar events for a booking
+     * (separate display mode). These events carry no database ID and are
+     * marked with tags.isBuffer = true so the front-end can identify them as
+     * non-interactive visual aids.
+     *
+     * Hover text uses the room name per specification; event text uses the
+     * configured buffer label.
+     *
+     * @return array  Zero, one, or two synthetic event arrays.
+     */
+    private function generate_separate_buffer_events( array $booking, array $booking_event, int $eff_setup, int $eff_tidy, string $buffer_text, array $room_meta_entry ): array {
+        $events     = [];
+        $resource   = $booking_event['resource'] ?? '';
+        $room_name  = $room_meta_entry['name']   ?? '';
+        $room_colour = $room_meta_entry['colour'] ?? '';
+        $safe_text  = sanitize_text_field( $buffer_text );
+
+        $actual_start = $booking['StartDate'] . 'T' . $booking['StartTime'];
+        $actual_end   = $booking['EndDate']   . 'T' . $booking['EndTime'];
+
+        if ( $eff_setup > 0 ) {
+            $ts = strtotime( $actual_start ) - $eff_setup * 60;
+            $events[] = [
+                'id'       => 'buffer_setup_' . ( $booking['Id'] ?? 0 ),
+                'text'     => $safe_text,
+                'start'    => date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts ),
+                'end'      => $actual_start,
+                'resource' => $resource,
+                'tags'     => [
+                    'isBuffer'   => true,
+                    'bufferType' => 'setup',
+                    'roomId'     => $resource,
+                    'roomName'   => $room_name,
+                    'roomColour' => $room_colour,
+                    'status'     => 'buffer',
+                ],
+            ];
+        }
+
+        if ( $eff_tidy > 0 ) {
+            $ts = strtotime( $actual_end ) + $eff_tidy * 60;
+            $events[] = [
+                'id'       => 'buffer_tidy_' . ( $booking['Id'] ?? 0 ),
+                'text'     => $safe_text,
+                'start'    => $actual_end,
+                'end'      => date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts ),
+                'resource' => $resource,
+                'tags'     => [
+                    'isBuffer'   => true,
+                    'bufferType' => 'tidy',
+                    'roomId'     => $resource,
+                    'roomName'   => $room_name,
+                    'roomColour' => $room_colour,
+                    'status'     => 'buffer',
+                ],
+            ];
+        }
+
+        return $events;
+    }
+
+    private function get_private_booking_label(): string {        $default_label = myvh_setting(
             'general.public_calendar_booking_label',
             __('Private booking', 'my-village-hall')
         );

@@ -118,9 +118,10 @@ class BookingValidator
             return new WP_Error('validation', __('Bookings are not allowed on this day for this room', 'my-village-hall'));
         }
 
-        // Buffer time rule (stub)
-        if (!$this->room_rules->has_buffer_time($room, $start_dt->format('Y-m-d H:i'), $end_dt->format('Y-m-d H:i'))) {
-            return new WP_Error('validation', __('Not enough buffer time for this booking', 'my-village-hall'));
+        // Buffer time rule
+        $exclude_id = ! empty( $data['booking_id'] ) ? (int) $data['booking_id'] : null;
+        if ( ! $this->room_rules->has_buffer_time( $room, $start_dt->format( 'Y-m-d H:i' ), $end_dt->format( 'Y-m-d H:i' ), $exclude_id ) ) {
+            return new WP_Error( 'validation', __( 'Not enough buffer time for this booking', 'my-village-hall' ) );
         }
 
         // Opening hours rule (legacy, can be replaced by room_rules->within_opening_hours if desired)

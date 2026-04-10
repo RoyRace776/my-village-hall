@@ -541,4 +541,37 @@ class BookingRepository extends RepositoryBase
 
         return intval($this->wpdb->get_var($sql)) === 1;
     }
+
+    /**
+     * Check whether any non-cancelled booking occupies the given time window.
+     *
+     * Used to enforce setup and tidy buffer requirements: the window is the
+     * booking interval expanded by the applicable buffer minutes. Any overlap
+     * with another booking means the buffer cannot be honoured.
+     *
+     * @param int      $room_id            Room to check.
+     * @param string   $window_start       Expanded window start (Y-m-d H:i:s).
+     * @param string   $window_end         Expanded window end (Y-m-d H:i:s).
+     * @param int|null $exclude_booking_id Booking to ignore (when updating).
+     * @return bool True if a conflicting booking exists inside the window.
+     */
+    public function has_conflict_in_buffer_window( int $room_id, string $window_start, string $window_end, ?int $exclude_booking_id = null ): bool {
+        $sql = $this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_name}
+             WHERE RoomId = %d
+               AND Status != %s
+               AND CONCAT(StartDate, ' ', StartTime) < %s
+               AND CONCAT(EndDate,   ' ', EndTime)   > %s",
+            $room_id,
+            BookingStatus::CANCELLED,
+            $window_end,
+            $window_start
+        );
+
+        if ( $exclude_booking_id !== null ) {
+            $sql .= $this->wpdb->prepare( ' AND Id != %d', $exclude_booking_id );
+        }
+
+        return (int) $this->wpdb->get_var( $sql ) > 0;
+    }
 }
