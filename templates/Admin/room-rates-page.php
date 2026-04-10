@@ -313,7 +313,7 @@ if ($selected_room_id > 0) {
                         <tr>
                             <th><?php _e('Valid From', 'my-village-hall'); ?></th>
                             <td>
-                                <input type="date" name="valid_from" class="regular-text"
+                                <input type="text" name="valid_from" class="regular-text" data-myvh-picker="date" autocomplete="off"
                                     value="<?php echo $edit_rate ? esc_attr($edit_rate['ValidFrom']) : ''; ?>">
                                 <p class="description"><?php _e('Leave blank for no start date restriction', 'my-village-hall'); ?></p>
                             </td>
@@ -322,7 +322,7 @@ if ($selected_room_id > 0) {
                         <tr>
                             <th><?php _e('Valid To', 'my-village-hall'); ?></th>
                             <td>
-                                <input type="date" name="valid_to" class="regular-text"
+                                <input type="text" name="valid_to" class="regular-text" data-myvh-picker="date" autocomplete="off"
                                     value="<?php echo $edit_rate ? esc_attr($edit_rate['ValidTo']) : ''; ?>">
                                 <p class="description"><?php _e('Leave blank for no end date restriction', 'my-village-hall'); ?></p>
                             </td>

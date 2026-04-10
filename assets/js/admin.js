@@ -1,5 +1,7 @@
 jQuery(document).ready(function($) {
 
+    window.MyvhFlatpickr?.initWithin(document);
+
     // ==================== Helper functions ====================
 
     /**

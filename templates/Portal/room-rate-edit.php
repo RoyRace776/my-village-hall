@@ -99,12 +99,12 @@ $current_org_type_id = (int) ($rate['OrganisationTypeId'] ?? 0);
             <div class="myvh-account-grid">
                 <label class="myvh-account-field">
                     <span>Valid From</span>
-                    <input type="date" name="valid_from" value="<?php echo esc_attr((string) ($rate['ValidFrom'] ?? '')); ?>">
+                    <input type="text" name="valid_from" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr((string) ($rate['ValidFrom'] ?? '')); ?>">
                 </label>
 
                 <label class="myvh-account-field">
                     <span>Valid To</span>
-                    <input type="date" name="valid_to" value="<?php echo esc_attr((string) ($rate['ValidTo'] ?? '')); ?>">
+                    <input type="text" name="valid_to" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr((string) ($rate['ValidTo'] ?? '')); ?>">
                 </label>
             </div>
 

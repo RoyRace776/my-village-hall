@@ -187,7 +187,7 @@ if ($edit_id || $view_id) {
                                 <tr>
                                     <th><?php _e('Start Date', 'my-village-hall'); ?> *</th>
                                     <td>
-                                        <input type="date" name="start_date" required class="regular-text"
+                                        <input type="text" name="start_date" required class="regular-text" data-myvh-picker="date" autocomplete="off"
                                             value="<?php echo esc_attr($pattern['StartDate']); ?>">
                                         <p class="description"><?php _e('Future bookings are generated from this date.', 'my-village-hall'); ?></p>
                                     </td>
@@ -199,7 +199,7 @@ if ($edit_id || $view_id) {
                                             <input type="radio" name="recurrence_end_type" value="date"
                                                 <?php checked(empty($pattern['MaxOccurrences'])); ?> id="rp-end-date-radio">
                                             <?php _e('On date', 'my-village-hall'); ?>
-                                            <input type="date" name="end_date" id="rp-end-date"
+                                            <input type="text" name="end_date" id="rp-end-date" data-myvh-picker="date" autocomplete="off"
                                                 value="<?php echo esc_attr($pattern['EndDate'] ?? ''); ?>">
                                         </label>
                                         <br><br>

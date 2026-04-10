@@ -111,12 +111,12 @@ if (!$selected_room) {
                 <div class="myvh-account-grid">
                     <label class="myvh-account-field">
                         <span>Valid From</span>
-                        <input type="date" name="valid_from">
+                        <input type="text" name="valid_from" data-myvh-picker="date" autocomplete="off">
                     </label>
 
                     <label class="myvh-account-field">
                         <span>Valid To</span>
-                        <input type="date" name="valid_to">
+                        <input type="text" name="valid_to" data-myvh-picker="date" autocomplete="off">
                     </label>
                 </div>
 

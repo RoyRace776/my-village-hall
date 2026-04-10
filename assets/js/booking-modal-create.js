@@ -57,6 +57,8 @@ window.BookingModalCreate = (function() {
             isBound = true;
         }
 
+        initializePickers();
+
         applyNoInvoiceRequiredVisibility();
     }
 
@@ -84,6 +86,30 @@ window.BookingModalCreate = (function() {
         bindRecurringControls();
         bindAddonControls();
         bindDependentControls();
+
+        [
+            "#myvh-modal-start-date",
+            "#myvh-modal-end-date",
+            "#myvh-modal-start-time",
+            "#myvh-modal-end-time"
+        ].forEach((selector) => {
+            const input = form.querySelector(selector);
+            if (!input) {
+                return;
+            }
+
+            input.addEventListener("change", syncHiddenDateTimes);
+            input.addEventListener("input", syncHiddenDateTimes);
+        });
+    }
+
+    function initializePickers() {
+        if (!modal || !window.MyvhFlatpickr) {
+            return;
+        }
+
+        window.MyvhFlatpickr.initWithin(modal);
+        syncPickerValues();
     }
 
     function resetEditState() {
@@ -162,6 +188,8 @@ window.BookingModalCreate = (function() {
                     form.querySelectorAll('input, select, textarea')
                         .forEach(el => el.disabled = true);
 
+                    syncPickerValues();
+
                     const recurringOptions = form.querySelector('#myvh-modal-recurring-options');
                     if (recurringOptions) recurringOptions.style.display = 'none';
 
@@ -238,6 +266,8 @@ window.BookingModalCreate = (function() {
                         }
                     });
 
+                    syncPickerValues();
+
                     applyNoInvoiceRequiredVisibility();
 
                     const recurringOptions = form.querySelector("#myvh-modal-recurring-options");
@@ -258,6 +288,8 @@ window.BookingModalCreate = (function() {
 
                     syncRecurringType();
                     syncEndDateVisibility();
+                    syncPickerValues();
+                    syncHiddenDateTimes();
                     config.onOpen(data);
                 })
                 .catch(err => {
@@ -341,6 +373,8 @@ window.BookingModalCreate = (function() {
         applyNoInvoiceRequiredVisibility();
 
         syncEndDateVisibility();
+        syncPickerValues();
+        syncHiddenDateTimes();
 
         // Show modal in add/edit mode
         modal.classList.remove('hidden');
@@ -356,6 +390,9 @@ window.BookingModalCreate = (function() {
             el.disabled = false;
         });
         applyNoInvoiceRequiredVisibility();
+        syncEndDateVisibility();
+        syncPickerValues();
+        syncHiddenDateTimes();
     }
 
     function bindDependentControls() {
@@ -374,7 +411,18 @@ window.BookingModalCreate = (function() {
         }
 
         if (room) {
-            room.addEventListener("change", syncEndDateVisibility);
+            room.addEventListener("change", () => {
+                syncEndDateVisibility();
+                syncHiddenDateTimes();
+            });
+        }
+
+        const startDate = form.querySelector("#myvh-modal-start-date");
+        if (startDate) {
+            startDate.addEventListener("change", () => {
+                syncEndDateVisibility();
+                syncHiddenDateTimes();
+            });
         }
     }
 
@@ -452,6 +500,7 @@ window.BookingModalCreate = (function() {
 
         if (recurrenceEndDate) {
             recurrenceEndDate.disabled = endType !== "date";
+            window.MyvhFlatpickr?.syncState(recurrenceEndDate);
         }
     }
 
@@ -631,6 +680,30 @@ window.BookingModalCreate = (function() {
         if (endDate) endDate.value = e.date;
         if (startTime) startTime.value = s.time;
         if (endTime) endTime.value = e.time;
+
+        syncPickerValues();
+        syncHiddenDateTimes();
+    }
+
+    function syncPickerValues() {
+        if (!window.MyvhFlatpickr || !form) {
+            return;
+        }
+
+        [
+            form.querySelector("#myvh-modal-start-date"),
+            form.querySelector("#myvh-modal-end-date"),
+            form.querySelector("#myvh-modal-start-time"),
+            form.querySelector("#myvh-modal-end-time"),
+            form.querySelector("[name=recurrence_end_date]")
+        ].forEach((input) => {
+            if (!input) {
+                return;
+            }
+
+            window.MyvhFlatpickr.setValue(input, input.value || "");
+            window.MyvhFlatpickr.syncState(input);
+        });
     }
 
     function parseDateTime(value) {
@@ -659,7 +732,42 @@ window.BookingModalCreate = (function() {
         const row = form.querySelector("#myvh-modal-end-date-row");
         if (!row) return;
 
-        row.style.display = roomAllowsMultiday() ? "" : "none";
+        const allowMultiday = roomAllowsMultiday();
+        const startDate = form.querySelector("#myvh-modal-start-date");
+        const endDate = form.querySelector("#myvh-modal-end-date");
+
+        row.style.display = allowMultiday ? "" : "none";
+
+        if (endDate) {
+            endDate.disabled = !allowMultiday;
+
+            if (!allowMultiday && startDate) {
+                endDate.value = startDate.value || "";
+            }
+
+            window.MyvhFlatpickr?.setValue(endDate, endDate.value || "");
+            window.MyvhFlatpickr?.syncState(endDate);
+        }
+    }
+
+    function syncHiddenDateTimes() {
+        const startDate = form.querySelector("#myvh-modal-start-date")?.value || "";
+        const endDateInput = form.querySelector("#myvh-modal-end-date");
+        const startTime = form.querySelector("#myvh-modal-start-time")?.value || "";
+        const endTime = form.querySelector("#myvh-modal-end-time")?.value || "";
+        const allowMultiday = roomAllowsMultiday();
+        const endDate = allowMultiday ? (endDateInput?.value || startDate) : startDate;
+
+        setValue("start", composeDateTime(startDate, startTime));
+        setValue("end", composeDateTime(endDate, endTime));
+    }
+
+    function composeDateTime(date, time) {
+        if (!date || !time) {
+            return "";
+        }
+
+        return `${date} ${time}`;
     }
 
     function setAndLock(field, value) {
@@ -930,6 +1038,8 @@ window.BookingModalCreate = (function() {
     }
 
     function buildSubmitFormData() {
+
+        syncHiddenDateTimes();
 
         const formData = new FormData(form);
         const publicCheckbox = form.querySelector("[name=public]");

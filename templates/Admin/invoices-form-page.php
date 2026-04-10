@@ -261,7 +261,7 @@ $has_payments = !empty($invoice_payments);
                                 <label for="myvh-payment-date"><strong><?php esc_html_e('Payment Date', 'my-village-hall'); ?></strong></label>
                             </p>
                             <p>
-                                <input id="myvh-payment-date" type="date" name="payment_date" class="regular-text" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
+                                <input id="myvh-payment-date" type="text" name="payment_date" class="regular-text" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
                             </p>
                             <p>
                                 <label for="myvh-payment-amount"><strong><?php esc_html_e('Amount', 'my-village-hall'); ?></strong></label>

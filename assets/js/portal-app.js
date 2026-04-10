@@ -154,6 +154,8 @@ document.addEventListener("DOMContentLoaded", () => {
      * Should be called after each page load or dynamic content update.
      */
     function initPortalPage() {
+        window.MyvhFlatpickr?.initWithin(document);
+
         if (typeof Bookings !== 'undefined' && typeof Bookings.init === 'function') {
             Bookings.init();
         }

@@ -501,7 +501,7 @@ $status_colors = [
                             <tr>
                                 <th><?php _e('Start Date', 'my-village-hall'); ?> *</th>
                                 <td>
-                                    <input type="date" name="start_date" required class="regular-text" id='start-date'
+                                    <input type="text" name="start_date" required class="regular-text" id='start-date' data-myvh-picker="date" autocomplete="off"
                                         value="<?php echo esc_attr($form_start_date); ?>"
                                         min="<?php echo date('Y-m-d'); ?>">
                                 </td>
@@ -510,7 +510,7 @@ $status_colors = [
                             <tr id="end-date-row" style="display: <?php echo $selected_room_allows_multiday ? '' : 'none'; ?>;">
                                 <th><?php _e('End Date', 'my-village-hall'); ?></th>
                                 <td>
-                                    <input type="date" name="end_date" class="regular-text" id='end-date'
+                                    <input type="text" name="end_date" class="regular-text" id='end-date' data-myvh-picker="date" autocomplete="off"
                                         value="<?php echo esc_attr($form_end_date); ?>"
                                         <?php echo !$selected_room_allows_multiday ? 'disabled' : ''; ?>>
                                     <p class="description"><?php _e('Leave blank for same-day booking', 'my-village-hall'); ?></p>
@@ -520,7 +520,7 @@ $status_colors = [
                             <tr>
                                 <th><?php _e('Start Time', 'my-village-hall'); ?> *</th>
                                 <td>
-                                    <input type="time" name="start_time" required class="regular-text" id="start-time"
+                                    <input type="text" name="start_time" required class="regular-text" id="start-time" data-myvh-picker="time" autocomplete="off"
                                         value="<?php echo esc_attr(substr($form_start_time, 0, 5)); ?>">
                                 </td>
                             </tr>
@@ -528,7 +528,7 @@ $status_colors = [
                             <tr>
                                 <th><?php _e('End Time', 'my-village-hall'); ?> *</th>
                                 <td>
-                                    <input type="time" name="end_time" required class="regular-text" id="end-time"
+                                    <input type="text" name="end_time" required class="regular-text" id="end-time" data-myvh-picker="time" autocomplete="off"
                                         value="<?php echo esc_attr(substr($form_end_time, 0, 5)); ?>">
                                     <p class="description" id="duration-display"></p>
                                 </td>
@@ -663,7 +663,7 @@ $status_colors = [
                                             <label>
                                                 <input type="radio" name="recurrence_end_type" value="date" <?php checked($form_recurrence_end_type, 'date'); ?>>
                                                 <?php _e('On', 'my-village-hall'); ?>
-                                                <input type="date" name="recurrence_end_date" class="regular-text"
+                                                <input type="text" name="recurrence_end_date" class="regular-text" data-myvh-picker="date" autocomplete="off"
                                                     value="<?php echo esc_attr($form_recurrence_end_date); ?>">
                                             </label>
                                             <br>
@@ -962,6 +962,22 @@ $status_colors = [
             $('select[name="recurrence_week"], select[name="recurrence_day"]').on('change', updateBfPreview);
             $('#bf-rec-type').on('change', syncBfRecType);
 
+            function syncBfRecurrenceEndMode() {
+                var mode = $('input[name="recurrence_end_type"]:checked').val() || 'date';
+                var $endDate = $('input[name="recurrence_end_date"]');
+                var $maxOccurrences = $('input[name="max_occurrences"]');
+
+                $endDate.prop('disabled', mode !== 'date');
+                $maxOccurrences.prop('disabled', mode === 'date');
+
+                if ($endDate.length) {
+                    window.MyvhFlatpickr?.syncState($endDate.get(0));
+                }
+            }
+
+            $('input[name="recurrence_end_type"]').on('change', syncBfRecurrenceEndMode);
+            syncBfRecurrenceEndMode();
+
             // Calculate and display duration
             function updateDuration() {
 
@@ -1031,4 +1047,6 @@ $status_colors = [
         });
         </script>
     <?php endif; ?>
+            window.MyvhFlatpickr?.initWithin(document.getElementById('booking-form'));
+
 </div>

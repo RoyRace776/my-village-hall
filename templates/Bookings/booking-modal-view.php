@@ -36,19 +36,19 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
             <table class="form-table">
                 <tr>
                     <th>Start Date</th>
-                    <td><input type="date" id="myvh-modal-start-date" readonly></td>
+                    <td><input type="text" id="myvh-modal-start-date" data-myvh-picker="date" data-myvh-allow-input="0" autocomplete="off" readonly></td>
                 </tr>
                     <tr>
                         <th>Start Time</th>
-                        <td><input type="time" id="myvh-modal-start-time" readonly></td>
+                        <td><input type="text" id="myvh-modal-start-time" data-myvh-picker="time" data-myvh-allow-input="0" autocomplete="off" readonly></td>
                     </tr>
                     <tr id="myvh-modal-end-date-row" style="display:none;">
                         <th>End Date</th>
-                        <td><input type="date" id="myvh-modal-end-date" readonly></td>
+                        <td><input type="text" id="myvh-modal-end-date" data-myvh-picker="date" data-myvh-allow-input="0" autocomplete="off" readonly></td>
                     </tr>
                     <tr>
                         <th>End Time</th>
-                        <td><input type="time" id="myvh-modal-end-time" readonly></td>
+                        <td><input type="text" id="myvh-modal-end-time" data-myvh-picker="time" data-myvh-allow-input="0" autocomplete="off" readonly></td>
                     </tr>
                     <tr>
                         <th>Room</th>

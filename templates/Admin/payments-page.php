@@ -100,7 +100,7 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                         <label for="myvh-payment-date"><strong><?php esc_html_e('Payment Date', 'my-village-hall'); ?></strong></label>
                     </p>
                     <p>
-                        <input id="myvh-payment-date" type="date" name="payment_date" class="regular-text" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
+                        <input id="myvh-payment-date" type="text" name="payment_date" class="regular-text" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
                     </p>
 
                     <p>

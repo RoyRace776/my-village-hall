@@ -181,7 +181,7 @@ $has_payments = !empty($invoice_payments);
                                 <div class="myvh-account-grid">
                                     <div>
                                         <label for="myvh-portal-payment-date"><strong>Payment Date</strong></label>
-                                        <input id="myvh-portal-payment-date" type="date" name="payment_date" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
+                                        <input id="myvh-portal-payment-date" type="text" name="payment_date" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
                                     </div>
                                     <div>
                                         <label for="myvh-portal-payment-amount"><strong>Amount</strong></label>

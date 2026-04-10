@@ -2376,6 +2376,7 @@ body .site-main:has(#myvh-portal) {
 #myvh-booking-modal-create input[type='text'],
 #myvh-booking-modal-create input[type='date'],
 #myvh-booking-modal-create input[type='time'],
+#myvh-booking-modal-create input[data-myvh-picker],
 #myvh-booking-modal-create input[type='number'],
 #myvh-booking-modal-create select,
 #myvh-booking-modal-create textarea {
@@ -2397,6 +2398,15 @@ body .site-main:has(#myvh-portal) {
 
 #myvh-booking-modal-create input[readonly] {
   background: #f8fafc;
+}
+
+.flatpickr-calendar {
+  z-index: 10020;
+}
+
+.flatpickr-calendar,
+.flatpickr-input {
+  font-family: 'DM Sans', sans-serif;
 }
 
 #myvh-booking-modal-create #myvh-modal-recurring-options {

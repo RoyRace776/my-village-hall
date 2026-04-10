@@ -323,8 +323,10 @@ class SettingsPage {
 
             case 'date':
                 ?>
-                <input type="date"
+                <input type="text"
                     name="<?php echo esc_attr($name); ?>"
+                    data-myvh-picker="date"
+                    autocomplete="off"
                     value="<?php echo esc_attr($value); ?>">
                 <?php
                 break;

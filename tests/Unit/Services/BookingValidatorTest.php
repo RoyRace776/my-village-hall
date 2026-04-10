@@ -106,6 +106,26 @@ class BookingValidatorTest extends UnitTestCase {
     }
 
     /** @test */
+    public function validate_returns_error_when_start_time_is_not_on_a_fifteen_minute_boundary(): void {
+        $result = $this->validator->validate($this->valid_data([
+            'start_time' => '09:10:00',
+        ]));
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('Bookings must start and end on 15 minute intervals', $result->get_error_message());
+    }
+
+    /** @test */
+    public function validate_returns_error_when_end_time_is_not_on_a_fifteen_minute_boundary(): void {
+        $result = $this->validator->validate($this->valid_data([
+            'end_time' => '11:07:00',
+        ]));
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('Bookings must start and end on 15 minute intervals', $result->get_error_message());
+    }
+
+    /** @test */
     public function validate_returns_error_when_buffer_time_is_insufficient(): void {
         $this->customer_repo->shouldReceive('get_by_id')
             ->once()

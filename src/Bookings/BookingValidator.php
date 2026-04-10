@@ -14,6 +14,7 @@ use DateTime;
 
 class BookingValidator
 {
+    private const BOOKING_INTERVAL_MINUTES = 15;
     private $customer_repo;
     private $organisation_repo;
     private $room_service;
@@ -57,6 +58,13 @@ class BookingValidator
             return new WP_Error('validation', __('Start and end times are required', 'my-village-hall'));
         }
 
+        $start_time = sanitize_text_field($data['start_time']);
+        $end_time = sanitize_text_field($data['end_time']);
+
+        if (!$this->is_valid_booking_interval($start_time) || !$this->is_valid_booking_interval($end_time)) {
+            return new WP_Error('validation', __('Bookings must start and end on 15 minute intervals', 'my-village-hall'));
+        }
+
         $customer_id = intval($data['customer_id']);
         $organisation_id = !empty($data['organisation_id']) ? intval($data['organisation_id']) : 0;
 
@@ -95,8 +103,6 @@ class BookingValidator
 
         $start_date = sanitize_text_field($data['start_date']);
         $end_date = !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : $start_date;
-        $start_time = sanitize_text_field($data['start_time']);
-        $end_time = sanitize_text_field($data['end_time']);
 
         // Multi-day booking rule
         if ($start_date !== $end_date && !$this->room_rules->allows_multi_day($room)) {
@@ -170,6 +176,26 @@ class BookingValidator
         }
 
         return true;
+    }
+
+    private function is_valid_booking_interval(string $time): bool {
+        $normalized = trim($time);
+
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $normalized) !== 1) {
+            if (preg_match('/^\d{2}:\d{2}$/', $normalized) === 1) {
+                $normalized .= ':00';
+            } else {
+                return false;
+            }
+        }
+
+        $date_time = DateTime::createFromFormat('H:i:s', $normalized);
+        if (!$date_time) {
+            return false;
+        }
+
+        return ((int) $date_time->format('i')) % self::BOOKING_INTERVAL_MINUTES === 0
+            && (int) $date_time->format('s') === 0;
     }
 
 }

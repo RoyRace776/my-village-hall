@@ -49,7 +49,7 @@ $redirect_route = $selected_invoice_id > 0 ? 'payments?invoice_id=' . $selected_
 
                 <div class="myvh-account-field">
                     <label for="myvh-portal-payment-date"><strong>Payment Date</strong></label>
-                    <input id="myvh-portal-payment-date" type="date" name="payment_date" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
+                    <input id="myvh-portal-payment-date" type="text" name="payment_date" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
                 </div>
 
                 <div class="myvh-account-field">

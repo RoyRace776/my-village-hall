@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) exit;
 
 class BookingRequestValidator extends RequestValidatorBase
 {
+    private const BOOKING_INTERVAL_MINUTES = 15;
     private const ALLOWED_EDIT_SCOPES = [
         'this_only',
         'all_bookings',
@@ -36,6 +37,10 @@ class BookingRequestValidator extends RequestValidatorBase
             return $this->validation_error(__('Start and end times are required', 'my-village-hall'));
         }
 
+        if (!$this->is_valid_booking_interval($data['start_time']) || !$this->is_valid_booking_interval($data['end_time'])) {
+            return $this->validation_error(__('Bookings must start and end on 15 minute intervals', 'my-village-hall'));
+        }
+
         if (!empty($data['booking_id']) && intval($data['booking_id']) < 0) {
             return $this->validation_error(__('Invalid booking id', 'my-village-hall'));
         }
@@ -45,5 +50,26 @@ class BookingRequestValidator extends RequestValidatorBase
         }
 
         return true;
+    }
+
+    private function is_valid_booking_interval(string $time): bool
+    {
+        $normalized = trim($time);
+
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $normalized) !== 1) {
+            if (preg_match('/^\d{2}:\d{2}$/', $normalized) === 1) {
+                $normalized .= ':00';
+            } else {
+                return false;
+            }
+        }
+
+        $date_time = \DateTime::createFromFormat('H:i:s', $normalized);
+        if (!$date_time) {
+            return false;
+        }
+
+        return ((int) $date_time->format('i')) % self::BOOKING_INTERVAL_MINUTES === 0
+            && (int) $date_time->format('s') === 0;
     }
 }

@@ -265,6 +265,15 @@
     margin-top: 20px;
 }
 
+.flatpickr-calendar {
+    z-index: 10020;
+}
+
+.flatpickr-calendar,
+.flatpickr-input {
+    font-family: inherit;
+}
+
 /* Base modal */
 #myvh-booking-modal.hidden {
     display: none;

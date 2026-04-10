@@ -23,6 +23,34 @@ class AssetLoader {
     }
 
     /**
+     * Register vendored flatpickr assets and the shared integration layer.
+     */
+    private static function register_flatpickr_assets(): void {
+        wp_register_style(
+            'myvh-flatpickr',
+            MYVH_PLUGIN_URL . 'assets/vendor/flatpickr/flatpickr.min.css',
+            [],
+            self::asset_version( 'assets/vendor/flatpickr/flatpickr.min.css' )
+        );
+
+        wp_register_script(
+            'flatpickr',
+            MYVH_PLUGIN_URL . 'assets/vendor/flatpickr/flatpickr.min.js',
+            [],
+            self::asset_version( 'assets/vendor/flatpickr/flatpickr.min.js' ),
+            true
+        );
+
+        wp_register_script(
+            'myvh-flatpickr-init',
+            MYVH_PLUGIN_URL . 'assets/js/flatpickr-init.js',
+            [ 'flatpickr' ],
+            self::asset_version( 'assets/js/flatpickr-init.js' ),
+            true
+        );
+    }
+
+    /**
      * Register hooks to enqueue frontend and admin assets.
      */
     public static function init(): void {
@@ -91,6 +119,9 @@ class AssetLoader {
 
         if ( strpos( $hook, 'myvh' ) === false && strpos( $hook, 'my-village-hall' ) === false ) return;
 
+        self::register_flatpickr_assets();
+        wp_enqueue_style( 'myvh-flatpickr' );
+
         // Shared across all plugin admin pages
         wp_enqueue_style(
             'myvh-admin',
@@ -102,7 +133,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-admin',
             MYVH_PLUGIN_URL . 'assets/js/admin.js',
-            [ 'jquery' ],
+            [ 'jquery', 'myvh-flatpickr-init' ],
             self::asset_version( 'assets/js/admin.js' ),
             true
         );
@@ -147,7 +178,7 @@ class AssetLoader {
             wp_enqueue_script(
                 'myvh-booking-modal-create',
                 MYVH_PLUGIN_URL . 'assets/js/booking-modal-create.js',
-                ['myvh-calendar-core'], // optional but safe
+                ['myvh-calendar-core', 'myvh-flatpickr-init'], // optional but safe
                 self::asset_version( 'assets/js/booking-modal-create.js' ),
                 true
             );
@@ -185,6 +216,8 @@ class AssetLoader {
      */
     public static function enqueue_portal_assets(): void {
 
+        self::register_flatpickr_assets();
+
         // Google Fonts (filterable so the theme can suppress the duplicate)
         $fonts_url = apply_filters(
             'myvh_portal_fonts_url',
@@ -201,6 +234,8 @@ class AssetLoader {
             $fonts_url ? [ 'myvh-google-fonts' ] : [],
             self::asset_version( 'assets/css/dashboard.css' )
         );
+
+        wp_enqueue_style( 'myvh-flatpickr' );
 
         wp_enqueue_style( 'myvh-calendar-theme' );
 
@@ -230,7 +265,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-booking-modal-create',
             MYVH_PLUGIN_URL . 'assets/js/booking-modal-create.js',
-            ['myvh-calendar-core'], // optional but safe
+            ['myvh-calendar-core', 'myvh-flatpickr-init'], // optional but safe
             self::asset_version( 'assets/js/booking-modal-create.js' ),
             true
         );
@@ -270,7 +305,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-portal-app',
             MYVH_PLUGIN_URL . 'assets/js/portal-app.js',
-            [ 'myvh-dashboard' ],
+            [ 'myvh-dashboard', 'myvh-flatpickr-init' ],
             self::asset_version( 'assets/js/portal-app.js' ),
             true
         );

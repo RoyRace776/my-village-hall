@@ -33,18 +33,18 @@ if (!defined('ABSPATH')) exit;
 
                     <label class="myvh-account-field" for="myvh-booking-start-date">
                         <span>Date</span>
-                        <input id="myvh-booking-start-date" type="date" name="start_date" required value="<?php echo esc_attr($booking['StartDate']); ?>">
+                        <input id="myvh-booking-start-date" type="text" name="start_date" data-myvh-picker="date" autocomplete="off" required value="<?php echo esc_attr($booking['StartDate']); ?>">
                     </label>
 
                     <div class="myvh-account-grid">
                         <label class="myvh-account-field" for="myvh-booking-start-time">
                             <span>Start time</span>
-                            <input id="myvh-booking-start-time" type="time" name="start_time" required value="<?php echo esc_attr(substr((string) $booking['StartTime'], 0, 5)); ?>">
+                            <input id="myvh-booking-start-time" type="text" name="start_time" data-myvh-picker="time" autocomplete="off" required value="<?php echo esc_attr(substr((string) $booking['StartTime'], 0, 5)); ?>">
                         </label>
 
                         <label class="myvh-account-field" for="myvh-booking-end-time">
                             <span>End time</span>
-                            <input id="myvh-booking-end-time" type="time" name="end_time" required value="<?php echo esc_attr(substr((string) $booking['EndTime'], 0, 5)); ?>">
+                            <input id="myvh-booking-end-time" type="text" name="end_time" data-myvh-picker="time" autocomplete="off" required value="<?php echo esc_attr(substr((string) $booking['EndTime'], 0, 5)); ?>">
                         </label>
                     </div>
 

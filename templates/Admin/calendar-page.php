@@ -98,19 +98,19 @@ add_action('admin_footer', function() use ($available_addons) {
                 <table class="form-table">
                     <tr>
                         <th>Start Date</th>
-                        <td><input type="date" id="myvh-modal-start-date" readonly></td>
+                        <td><input type="text" id="myvh-modal-start-date" data-myvh-picker="date" autocomplete="off" readonly></td>
                     </tr>
                     <tr id="myvh-modal-end-date-row" style="display:none;">
                         <th>End Date</th>
-                        <td><input type="date" id="myvh-modal-end-date" readonly></td>
+                        <td><input type="text" id="myvh-modal-end-date" data-myvh-picker="date" autocomplete="off" readonly></td>
                     </tr>
                     <tr>
                         <th>Start Time</th>
-                        <td><input type="time" id="myvh-modal-start-time" readonly></td>
+                        <td><input type="text" id="myvh-modal-start-time" data-myvh-picker="time" autocomplete="off" readonly></td>
                     </tr>
                     <tr>
                         <th>End Time</th>
-                        <td><input type="time" id="myvh-modal-end-time" readonly></td>
+                        <td><input type="text" id="myvh-modal-end-time" data-myvh-picker="time" autocomplete="off" readonly></td>
                     </tr>
                     <tr>
                         <th>Room</th>
@@ -214,7 +214,7 @@ add_action('admin_footer', function() use ($available_addons) {
                             <th>Ends</th>
                             <td>
                                 <label><input type="radio" name="recurrence_end_type" value="date" checked> On date</label>
-                                <input type="date" name="recurrence_end_date" value="<?php echo esc_attr(date('Y-m-d', strtotime('+3 months'))); ?>">
+                                <input type="text" name="recurrence_end_date" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr(date('Y-m-d', strtotime('+3 months'))); ?>">
                                 <br>
                                 <label><input type="radio" name="recurrence_end_type" value="count"> After occurrences</label>
                                 <input type="number" name="max_occurrences" value="10" min="1" max="365" class="small-text" disabled>
