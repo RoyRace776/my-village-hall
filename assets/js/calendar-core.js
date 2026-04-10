@@ -337,7 +337,10 @@ window.CalendarCore = (function () {
                 events.forEach(e => {
                     e.toolTip = buildEventTooltip(e, context);
                 });
-                calendar.events.list = applyEventStatusColors(events, statusColors);
+                const calendarEvents = currentDetail === "Month"
+                    ? events.filter(e => !e?.tags?.isBuffer)
+                    : events;
+                calendar.events.list = applyEventStatusColors(calendarEvents, statusColors);
                 calendar.update();
             }).catch(err => console.error("Failed to load calendar events", err));
         }
