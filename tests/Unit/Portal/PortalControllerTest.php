@@ -19,9 +19,11 @@ use MYVH\Pricing\RoomRateRequestValidator;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Rooms\RoomRequestValidator;
 use MYVH\Rooms\RoomService;
+use MYVH\Rooms\RoomHoursRepository;
 use MYVH\Tests\Unit\UnitTestCase;
 use MYVH\Venues\VenueRequestValidator;
 use MYVH\Venues\VenueService;
+use MYVH\Venues\VenueHoursRepository;
 
 class PortalControllerTest extends UnitTestCase {
     private $addon_service;
@@ -91,6 +93,8 @@ class PortalControllerTest extends UnitTestCase {
             'esc_attr' => fn($value) => (string) $value,
             'esc_html' => fn($value) => (string) $value,
             'esc_url_raw' => fn($value) => (string) $value,
+            'checked' => fn($checked, $current = true, $display = true) => ((string) $checked === (string) $current) ? ' checked="checked"' : '',
+            'selected' => fn($selected, $current = true, $display = true) => ((string) $selected === (string) $current) ? ' selected="selected"' : '',
             'is_wp_error' => fn($value) => $value instanceof \WP_Error,
         ]);
 
@@ -347,6 +351,20 @@ class PortalControllerTest extends UnitTestCase {
             'address_line1' => '1 High Street',
             'opening_time' => '09:00',
             'closing_time' => '17:00',
+            'opening_hours_by_day' => [
+                [
+                    'day_of_week' => 1,
+                    'is_closed' => 0,
+                    'opening_time' => '09:00',
+                    'closing_time' => '17:00',
+                ],
+                [
+                    'day_of_week' => 0,
+                    'is_closed' => 1,
+                    'opening_time' => '',
+                    'closing_time' => '',
+                ],
+            ],
         ];
 
         $this->client_admin_service->shouldReceive('can_administer_blog')
@@ -360,7 +378,8 @@ class PortalControllerTest extends UnitTestCase {
                 return $payload['name'] === 'Main Hall'
                     && $payload['short_name'] === 'Hall'
                     && $payload['opening_time'] === '09:00'
-                    && $payload['closing_time'] === '17:00';
+                    && $payload['closing_time'] === '17:00'
+                    && count($payload['opening_hours_by_day']) === 2;
             })
             ->andReturn(true);
 
@@ -368,7 +387,10 @@ class PortalControllerTest extends UnitTestCase {
             ->once()
             ->withArgs(function (array $payload): bool {
                 return empty($payload['venue_id'])
-                    && $payload['name'] === 'Main Hall';
+                    && $payload['name'] === 'Main Hall'
+                    && (int) $payload['opening_hours_by_day'][0]['day_of_week'] === 0
+                    && (int) $payload['opening_hours_by_day'][0]['is_closed'] === 1
+                    && (int) $payload['opening_hours_by_day'][1]['day_of_week'] === 1;
             })
             ->andReturn(41);
 
@@ -471,7 +493,7 @@ class PortalControllerTest extends UnitTestCase {
 
         $availability_service = $this->mock(AvailabilityService::class);
         $availability_service->shouldReceive('get_time_options')
-            ->twice()
+            ->times(16)
             ->andReturn('<option value="09:00">09:00</option>');
 
         $GLOBALS['myvh_container'] = new class($availability_service) {
@@ -489,6 +511,7 @@ class PortalControllerTest extends UnitTestCase {
         $this->assertStringContainsString('Add Venue', $output);
         $this->assertStringContainsString('Create Venue', $output);
         $this->assertStringContainsString('myvh_portal_save_venue', $output);
+        $this->assertStringContainsString('opening_hours_by_day[0][day_of_week]', $output);
     }
 
     /** @test */
@@ -521,16 +544,30 @@ class PortalControllerTest extends UnitTestCase {
                 'ClosingTime' => '17:00',
             ]);
 
+        $venue_hours_repository = $this->mock(VenueHoursRepository::class);
+        $venue_hours_repository->shouldReceive('get_by_venue')
+            ->once()
+            ->with(5)
+            ->andReturn([]);
+
         $availability_service = $this->mock(AvailabilityService::class);
         $availability_service->shouldReceive('get_time_options')
-            ->twice()
+            ->times(16)
             ->andReturn('<option value="09:00">09:00</option>');
 
-        $GLOBALS['myvh_container'] = new class($availability_service) {
-            public function __construct(private $availability_service) {}
+        $GLOBALS['myvh_container'] = new class($availability_service, $venue_hours_repository) {
+            public function __construct(private $availability_service, private $venue_hours_repository) {}
 
             public function get(string $class) {
-                return $this->availability_service;
+                if ($class === AvailabilityService::class) {
+                    return $this->availability_service;
+                }
+
+                if ($class === VenueHoursRepository::class) {
+                    return $this->venue_hours_repository;
+                }
+
+                throw new \RuntimeException('Unexpected service: ' . $class);
             }
         };
 
@@ -541,6 +578,55 @@ class PortalControllerTest extends UnitTestCase {
         $this->assertStringContainsString('Edit Venue', $output);
         $this->assertStringContainsString('Update Venue', $output);
         $this->assertStringContainsString('value="Main Hall"', $output);
+        $this->assertStringContainsString('opening_hours_by_day[0][day_of_week]', $output);
+    }
+
+    /** @test */
+    public function load_page_renders_room_add_form_with_daily_opening_hours(): void {
+        $_GET = [
+            'page' => 'room-add',
+        ];
+
+        $this->customer_service->shouldReceive('get_by_user_id')
+            ->once()
+            ->with(77)
+            ->andReturn([]);
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->once()
+            ->with(77, 9)
+            ->andReturn(true);
+
+        $this->venue_service->shouldReceive('get_all')
+            ->once()
+            ->andReturn([
+                ['Id' => 5, 'Name' => 'Main Hall'],
+            ]);
+
+        $availability_service = $this->mock(AvailabilityService::class);
+        $availability_service->shouldReceive('get_time_options')
+            ->times(16)
+            ->andReturn('<option value="09:00">09:00</option>');
+
+        $GLOBALS['myvh_container'] = new class($availability_service) {
+            public function __construct(private $availability_service) {}
+
+            public function get(string $class) {
+                if ($class === AvailabilityService::class) {
+                    return $this->availability_service;
+                }
+
+                throw new \RuntimeException('Unexpected service: ' . $class);
+            }
+        };
+
+        $output = $this->capture_page_output(function (): void {
+            $this->controller->load_page();
+        });
+
+        $this->assertStringContainsString('Add Room', $output);
+        $this->assertStringContainsString('Create Room', $output);
+        $this->assertStringContainsString('opening_hours_by_day[0][use_venue_hours]', $output);
     }
 
     private function capture_page_output(callable $callback): string {

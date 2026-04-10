@@ -11,11 +11,13 @@ global $myvh_container;
 
 use MYVH\Rooms\RoomService;
 use MYVH\Rooms\RoomColour;
+use MYVH\Rooms\RoomHoursRepository;
 use MYVH\Venues\VenueService;
 use MYVH\Availability\AvailabilityService;
 
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $room_service  = $myvh_container->get(RoomService::class);
+$room_hours_repository = $myvh_container->get(RoomHoursRepository::class);
 $venue_service = $myvh_container->get(VenueService::class);
 $availability_service = $myvh_container->get(AvailabilityService::class);
 
@@ -39,6 +41,63 @@ $form_opening_time = $form_data['opening_time'] ?? ($edit_room['OpeningTime'] ??
 $form_closing_time = $form_data['closing_time'] ?? ($edit_room['ClosingTime'] ?? '17:00');
 $form_allow_multi_day = isset($form_data['allow-multi-day-bookings']) ? 1 : intval($edit_room['AllowMultiDayBookings'] ?? 0);
 $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($edit_room['CalcClosedHours'] ?? 0);
+
+$day_labels = [
+    0 => __('Sunday', 'my-village-hall'),
+    1 => __('Monday', 'my-village-hall'),
+    2 => __('Tuesday', 'my-village-hall'),
+    3 => __('Wednesday', 'my-village-hall'),
+    4 => __('Thursday', 'my-village-hall'),
+    5 => __('Friday', 'my-village-hall'),
+    6 => __('Saturday', 'my-village-hall'),
+];
+
+$room_hours_rows = $edit_id ? $room_hours_repository->get_by_room($edit_id) : [];
+$room_hours_index = [];
+foreach ((array) $room_hours_rows as $row) {
+    $room_hours_index[(int) ($row['DayOfWeek'] ?? -1)] = $row;
+}
+
+$posted_hours = isset($form_data['opening_hours_by_day']) && is_array($form_data['opening_hours_by_day'])
+    ? $form_data['opening_hours_by_day']
+    : [];
+
+$default_open = substr((string) $form_opening_time, 0, 5) ?: '09:00';
+$default_close = substr((string) $form_closing_time, 0, 5) ?: '17:00';
+
+$room_hours_by_day = [];
+for ($day = 0; $day <= 6; $day++) {
+    $posted_row = isset($posted_hours[$day]) && is_array($posted_hours[$day]) ? $posted_hours[$day] : null;
+    $db_row = $room_hours_index[$day] ?? null;
+
+    $use_venue = $posted_row !== null
+        ? (!empty($posted_row['use_venue_hours']) ? 1 : 0)
+        : (!empty($db_row['UseVenueHours']) ? 1 : 0);
+
+    $is_closed = $posted_row !== null
+        ? (!empty($posted_row['is_closed']) ? 1 : 0)
+        : (!empty($db_row['IsClosed']) ? 1 : 0);
+
+    $opening_time = $posted_row !== null
+        ? sanitize_text_field($posted_row['opening_time'] ?? '')
+        : substr((string) ($db_row['OpeningTime'] ?? $default_open), 0, 5);
+
+    $closing_time = $posted_row !== null
+        ? sanitize_text_field($posted_row['closing_time'] ?? '')
+        : substr((string) ($db_row['ClosingTime'] ?? $default_close), 0, 5);
+
+    if ($use_venue || $is_closed) {
+        $opening_time = '';
+        $closing_time = '';
+    }
+
+    $room_hours_by_day[$day] = [
+        'use_venue_hours' => $use_venue,
+        'is_closed' => $is_closed,
+        'opening_time' => $opening_time,
+        'closing_time' => $closing_time,
+    ];
+}
 ?>
 
 <div class="wrap">
@@ -236,6 +295,59 @@ $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($e
                                 <label><input type="checkbox" name="calc-closed-hours" value="1"
                                     <?php checked($form_calc_closed_hours, 1); ?>>
                                     <?php _e('Include closed hours when calculating booking duration', 'my-village-hall'); ?></label>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Daily Opening Hours', 'my-village-hall'); ?></th>
+                            <td>
+                                <table class="widefat striped" style="max-width:680px;">
+                                    <thead>
+                                        <tr>
+                                            <th><?php _e('Day', 'my-village-hall'); ?></th>
+                                            <th><?php _e('Use Venue Hours', 'my-village-hall'); ?></th>
+                                            <th><?php _e('Closed', 'my-village-hall'); ?></th>
+                                            <th><?php _e('Opens', 'my-village-hall'); ?></th>
+                                            <th><?php _e('Closes', 'my-village-hall'); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($day_labels as $day => $label): ?>
+                                            <?php $day_row = $room_hours_by_day[$day]; ?>
+                                            <tr>
+                                                <td>
+                                                    <?php echo esc_html($label); ?>
+                                                    <input type="hidden" name="opening_hours_by_day[<?php echo (int) $day; ?>][day_of_week]" value="<?php echo (int) $day; ?>">
+                                                </td>
+                                                <td>
+                                                    <input type="hidden" name="opening_hours_by_day[<?php echo (int) $day; ?>][use_venue_hours]" value="0">
+                                                    <label>
+                                                        <input type="checkbox" name="opening_hours_by_day[<?php echo (int) $day; ?>][use_venue_hours]" value="1" <?php checked((int) $day_row['use_venue_hours'], 1); ?>>
+                                                        <?php _e('Use venue', 'my-village-hall'); ?>
+                                                    </label>
+                                                </td>
+                                                <td>
+                                                    <input type="hidden" name="opening_hours_by_day[<?php echo (int) $day; ?>][is_closed]" value="0">
+                                                    <label>
+                                                        <input type="checkbox" name="opening_hours_by_day[<?php echo (int) $day; ?>][is_closed]" value="1" <?php checked((int) $day_row['is_closed'], 1); ?>>
+                                                        <?php _e('Closed', 'my-village-hall'); ?>
+                                                    </label>
+                                                </td>
+                                                <td>
+                                                    <select name="opening_hours_by_day[<?php echo (int) $day; ?>][opening_time]">
+                                                        <?php echo $availability_service->get_time_options($day_row['opening_time'] ?: $default_open, 0, 23, true); ?>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select name="opening_hours_by_day[<?php echo (int) $day; ?>][closing_time]">
+                                                        <?php echo $availability_service->get_time_options($day_row['closing_time'] ?: $default_close, 0, 23, true); ?>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                                <p class="description"><?php _e('Enable "Use venue" to inherit venue day hours. If disabled, you can mark the day closed or set custom room hours.', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
                     </table>

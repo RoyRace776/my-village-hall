@@ -10,13 +10,16 @@ if (!defined('ABSPATH')) exit;
 class RoomService {
 
     private $repo;
+    private $room_hours_repository;
     private $availability;
 
     public function __construct(
         RoomRepository $repo,
+        RoomHoursRepository $room_hours_repository,
         AvailabilityService $availability
     ) {
         $this->repo = $repo;
+        $this->room_hours_repository = $room_hours_repository;
         $this->availability = $availability;
     }
 
@@ -66,6 +69,24 @@ class RoomService {
             );
         }
 
+        if (!empty($data['opening_hours_by_day']) && is_array($data['opening_hours_by_day'])) {
+            $hours_by_day_allowed = $this->availability->room_opening_hours_by_day_allowed(
+                $data['opening_hours_by_day'],
+                $venue_id
+            );
+
+            if (is_wp_error($hours_by_day_allowed)) {
+                return $hours_by_day_allowed;
+            }
+
+            if (!$hours_by_day_allowed) {
+                return new WP_Error(
+                    'validation',
+                    __('Room daily opening hours must be within the venue daily opening hours', 'my-village-hall')
+                );
+            }
+        }
+
         $record = [
             'Name'         => sanitize_text_field($data['name']),
             'Colour'       => RoomColour::resolve($data['room_colour'] ?? ($data['room_color'] ?? ''), intval($data['room_id'] ?? 0)),
@@ -90,6 +111,13 @@ class RoomService {
                 return new WP_Error('save', $message);
             }
 
+            if (!empty($data['opening_hours_by_day']) && is_array($data['opening_hours_by_day'])) {
+                $saved = $this->room_hours_repository->replace_for_room(intval($data['room_id']), $data['opening_hours_by_day']);
+                if (!$saved) {
+                    return new WP_Error('save', __('Room opening hours could not be saved', 'my-village-hall'));
+                }
+            }
+
             return intval($data['room_id']);
         }
 
@@ -101,6 +129,13 @@ class RoomService {
                 $message .= ': ' . $db_error;
             }
             return new WP_Error('save', $message);
+        }
+
+        if (!empty($data['opening_hours_by_day']) && is_array($data['opening_hours_by_day'])) {
+            $saved = $this->room_hours_repository->replace_for_room((int) $created, $data['opening_hours_by_day']);
+            if (!$saved) {
+                return new WP_Error('save', __('Room opening hours could not be saved', 'my-village-hall'));
+            }
         }
 
         return (int) $created;

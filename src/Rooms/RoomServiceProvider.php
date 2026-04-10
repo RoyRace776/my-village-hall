@@ -5,6 +5,7 @@ class RoomServiceProvider
 {
     public function register($container): void {
         $container->singleton(RoomRepository::class);
+        $container->singleton(RoomHoursRepository::class);
         $container->singleton(RoomRulesService::class);
         $container->singleton(RoomService::class);
         $container->singleton(RoomVisibilityService::class);

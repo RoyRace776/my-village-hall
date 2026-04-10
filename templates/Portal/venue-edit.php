@@ -2,14 +2,35 @@
 if (!defined('ABSPATH')) exit;
 
 use MYVH\Availability\AvailabilityService;
+use MYVH\Venues\VenueHoursRepository;
 
 $venue = is_array($venue ?? null) ? $venue : null;
 $availability_service = $GLOBALS['myvh_container']->get(AvailabilityService::class);
+$venue_hours_repository = $GLOBALS['myvh_container']->get(VenueHoursRepository::class);
 
 if (!$venue) {
     echo '<div class="myvh-card myvh-error"><p>Venue not found.</p></div>';
     return;
 }
+
+$day_labels = [
+    0 => 'Sunday',
+    1 => 'Monday',
+    2 => 'Tuesday',
+    3 => 'Wednesday',
+    4 => 'Thursday',
+    5 => 'Friday',
+    6 => 'Saturday',
+];
+
+$venue_hours_rows = !empty($venue['Id']) ? $venue_hours_repository->get_by_venue((int) $venue['Id']) : [];
+$venue_hours_index = [];
+foreach ((array) $venue_hours_rows as $row) {
+    $venue_hours_index[(int) ($row['DayOfWeek'] ?? -1)] = $row;
+}
+
+$default_open = substr((string) ($venue['OpeningTime'] ?? '09:00'), 0, 5);
+$default_close = substr((string) ($venue['ClosingTime'] ?? '17:00'), 0, 5);
 ?>
 <div class="myvh-dashboard-section myvh-venues-page">
     <div class="myvh-account-header">
@@ -58,6 +79,50 @@ if (!$venue) {
                         <?php echo $availability_service->get_time_options($venue['ClosingTime'] ?? '17:00', 0, 23, true); ?>
                     </select>
                 </label>
+            </div>
+
+            <div class="myvh-account-field">
+                <span>Daily Opening Hours</span>
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Closed</th>
+                            <th>Opens</th>
+                            <th>Closes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($day_labels as $day => $label): ?>
+                            <?php
+                            $row = $venue_hours_index[$day] ?? null;
+                            $is_closed = !empty($row['IsClosed']) ? 1 : 0;
+                            $opening_time = $is_closed ? '' : substr((string) ($row['OpeningTime'] ?? $default_open), 0, 5);
+                            $closing_time = $is_closed ? '' : substr((string) ($row['ClosingTime'] ?? $default_close), 0, 5);
+                            ?>
+                            <tr>
+                                <td>
+                                    <?php echo esc_html($label); ?>
+                                    <input type="hidden" name="opening_hours_by_day[<?php echo (int) $day; ?>][day_of_week]" value="<?php echo (int) $day; ?>">
+                                </td>
+                                <td>
+                                    <input type="hidden" name="opening_hours_by_day[<?php echo (int) $day; ?>][is_closed]" value="0">
+                                    <input type="checkbox" name="opening_hours_by_day[<?php echo (int) $day; ?>][is_closed]" value="1" <?php checked($is_closed, 1); ?>>
+                                </td>
+                                <td>
+                                    <select name="opening_hours_by_day[<?php echo (int) $day; ?>][opening_time]">
+                                        <?php echo $availability_service->get_time_options($opening_time ?: $default_open, 0, 23, true); ?>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="opening_hours_by_day[<?php echo (int) $day; ?>][closing_time]">
+                                        <?php echo $availability_service->get_time_options($closing_time ?: $default_close, 0, 23, true); ?>
+                                    </select>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
 
             <div class="myvh-account-actions">

@@ -3,6 +3,7 @@
 namespace MYVH\Tests\Unit\Calendar;
 
 use Brain\Monkey\Functions;
+use MYVH\Availability\AvailabilityService;
 use MYVH\Bookings\BookingService;
 use MYVH\Calendar\CalendarService;
 use MYVH\Customers\CustomerService;
@@ -20,8 +21,11 @@ class CalendarServiceTest extends UnitTestCase {
 
     private $booking_service;
     private $room_repository;
+    private $availability_service;
     private $customer_service;
     private $client_admin_service;
+    private string $room_open = '08:00:00';
+    private string $room_close = '22:00:00';
     private CalendarService $service;
 
     protected function setUp(): void {
@@ -29,12 +33,23 @@ class CalendarServiceTest extends UnitTestCase {
 
         $this->booking_service      = $this->mock( BookingService::class );
         $this->room_repository      = $this->mock( RoomRepository::class );
+        $this->availability_service = $this->mock( AvailabilityService::class );
         $this->customer_service     = $this->mock( CustomerService::class );
         $this->client_admin_service = $this->mock( ClientAdminService::class );
+
+        $this->availability_service->shouldReceive('get_effective_room_hours_for_date')
+            ->andReturnUsing(function () {
+                return [
+                    'is_closed' => 0,
+                    'opening_time' => $this->room_open,
+                    'closing_time' => $this->room_close,
+                ];
+            });
 
         $this->service = new CalendarService(
             $this->booking_service,
             $this->room_repository,
+            $this->availability_service,
             $this->customer_service,
             $this->client_admin_service
         );
@@ -79,6 +94,9 @@ class CalendarServiceTest extends UnitTestCase {
     }
 
     private function wire_room_meta( string $open = '08:00:00', string $close = '22:00:00' ): void {
+        $this->room_open = $open;
+        $this->room_close = $close;
+
         $this->room_repository->shouldReceive( 'get_all_with_venues' )
             ->andReturn( [ [
                 'Id'          => 5,

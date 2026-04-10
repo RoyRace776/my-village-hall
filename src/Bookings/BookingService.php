@@ -803,7 +803,9 @@ class BookingService {
         $within_opening_hours = $this->availability->booking_within_opening_hours(
             $room_id,
             $start_time,
-            $end_time
+            $end_time,
+            $start_date,
+            $end_date
         );
 
         if (is_wp_error($within_opening_hours)) {

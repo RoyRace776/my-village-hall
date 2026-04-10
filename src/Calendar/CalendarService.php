@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Calendar;
 
+use MYVH\Availability\AvailabilityService;
 use MYVH\Bookings\BookingService;
 use MYVH\Rooms\RoomRepository;
 use MYVH\Rooms\RoomColour;
@@ -14,17 +15,20 @@ class CalendarService {
 
     private $booking_service;
     private $room_repository;
+    private $availability_service;
     private $customer_service;
     private $client_admin_service;
 
     public function __construct(
         BookingService $booking_service,
         RoomRepository $room_repository,
+        AvailabilityService $availability_service,
         CustomerService $customer_service,
         ClientAdminService $client_admin_service
     ) {
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;
+        $this->availability_service = $availability_service;
         $this->customer_service = $customer_service;
         $this->client_admin_service = $client_admin_service;
     }
@@ -40,10 +44,10 @@ class CalendarService {
         $default_label = $this->get_private_booking_label();
         $events = [];
 
-        $show_separately = (bool) myvh_setting( 'booking.show_buffer_times_separately', false );
-        $setup_minutes   = (int)  myvh_setting( 'booking.set_up_minutes',  0 );
-        $tidy_minutes    = (int)  myvh_setting( 'booking.tidy_up_minutes',  0 );
-        $buffer_text     = (string) myvh_setting( 'booking.buffer_text', 'Buffer' );
+        $show_separately = (bool) $this->get_setting_with_fallback('booking.show_buffer_times_separately', 'booking.buffers.show_buffer_times_separately', false);
+        $setup_minutes   = (int)  $this->get_setting_with_fallback('booking.set_up_minutes', 'booking.buffers.set_up_minutes', 0);
+        $tidy_minutes    = (int)  $this->get_setting_with_fallback('booking.tidy_up_minutes', 'booking.buffers.tidy_up_minutes', 0);
+        $buffer_text     = (string) $this->get_setting_with_fallback('booking.buffer_text', 'booking.buffers.buffer_text', 'Buffer');
 
         foreach ((array) $bookings as $booking) {
             $room_id = isset($booking['RoomId']) ? (int) $booking['RoomId'] : 0;
@@ -53,7 +57,11 @@ class CalendarService {
             $event = $this->map_booking_to_event($booking, $context, $room_meta, $viewer_scope, $default_label);
 
             [$eff_setup, $eff_tidy] = $this->compute_effective_buffers(
-                $booking, $room_meta[$room_id] ?? [], $setup_minutes, $tidy_minutes
+                $booking,
+                $room_id,
+                $room_meta[$room_id] ?? [],
+                $setup_minutes,
+                $tidy_minutes
             );
 
             if ( $eff_setup > 0 || $eff_tidy > 0 ) {
@@ -89,10 +97,10 @@ class CalendarService {
         $this->_room_meta_cache = $room_meta;
         $viewer_scope = $this->resolve_viewer_scope($context, $viewer_user_id);
 
-        $show_separately = (bool) myvh_setting( 'booking.show_buffer_times_separately', false );
-        $setup_minutes   = (int)  myvh_setting( 'booking.set_up_minutes',  0 );
-        $tidy_minutes    = (int)  myvh_setting( 'booking.tidy_up_minutes',  0 );
-        $buffer_text     = (string) myvh_setting( 'booking.buffer_text', 'Buffer' );
+        $show_separately = (bool) $this->get_setting_with_fallback('booking.show_buffer_times_separately', 'booking.buffers.show_buffer_times_separately', false);
+        $setup_minutes   = (int)  $this->get_setting_with_fallback('booking.set_up_minutes', 'booking.buffers.set_up_minutes', 0);
+        $tidy_minutes    = (int)  $this->get_setting_with_fallback('booking.tidy_up_minutes', 'booking.buffers.tidy_up_minutes', 0);
+        $buffer_text     = (string) $this->get_setting_with_fallback('booking.buffer_text', 'booking.buffers.buffer_text', 'Buffer');
 
         $events = [];
 
@@ -104,7 +112,11 @@ class CalendarService {
             $event = $this->map_booking_to_public_feed_event($booking, $room_meta, $viewer_scope, $default_label, $context);
 
             [$eff_setup, $eff_tidy] = $this->compute_effective_buffers(
-                $booking, $room_meta[$room_id] ?? [], $setup_minutes, $tidy_minutes
+                $booking,
+                $room_id,
+                $room_meta[$room_id] ?? [],
+                $setup_minutes,
+                $tidy_minutes
             );
 
             if ( $eff_setup > 0 || $eff_tidy > 0 ) {
@@ -422,20 +434,69 @@ class CalendarService {
      * @param int   $tidy_minutes     Configured tidy minutes from settings.
      * @return array{int, int}        [effective_setup, effective_tidy].
      */
-    private function compute_effective_buffers( array $booking, array $room_meta_entry, int $setup_minutes, int $tidy_minutes ): array {
+    private function compute_effective_buffers( array $booking, int $room_id, array $room_meta_entry, int $setup_minutes, int $tidy_minutes ): array {
         if ( $setup_minutes <= 0 && $tidy_minutes <= 0 ) {
             return [ 0, 0 ];
         }
 
         $booking_start = date( 'H:i:s', strtotime( $booking['StartDate'] . ' ' . $booking['StartTime'] ) );
         $booking_end   = date( 'H:i:s', strtotime( $booking['EndDate']   . ' ' . $booking['EndTime']   ) );
-        $room_open     = date( 'H:i:s', strtotime( '1970-01-01 ' . ( $room_meta_entry['opening_time'] ?? '00:00:00' ) ) );
-        $room_close    = date( 'H:i:s', strtotime( '1970-01-01 ' . ( $room_meta_entry['closing_time'] ?? '23:59:59' ) ) );
+
+        $room_open = $this->normalize_time((string) ($room_meta_entry['opening_time'] ?? '00:00:00')) ?? '00:00:00';
+        $room_close = $this->normalize_time((string) ($room_meta_entry['closing_time'] ?? '23:59:59')) ?? '23:59:59';
+
+        if ($room_id > 0) {
+            $start_date = sanitize_text_field((string) ($booking['StartDate'] ?? ''));
+            $end_date = sanitize_text_field((string) ($booking['EndDate'] ?? $start_date));
+
+            if ($start_date !== '') {
+                $start_day_hours = $this->availability_service->get_effective_room_hours_for_date($room_id, $start_date);
+                if (!is_wp_error($start_day_hours) && empty($start_day_hours['is_closed'])) {
+                    $start_open = $this->normalize_time((string) ($start_day_hours['opening_time'] ?? ''));
+                    if ($start_open !== null) {
+                        $room_open = $start_open;
+                    }
+                }
+            }
+
+            if ($end_date !== '') {
+                $end_day_hours = $this->availability_service->get_effective_room_hours_for_date($room_id, $end_date);
+                if (!is_wp_error($end_day_hours) && empty($end_day_hours['is_closed'])) {
+                    $end_close = $this->normalize_time((string) ($end_day_hours['closing_time'] ?? ''));
+                    if ($end_close !== null) {
+                        $room_close = $end_close;
+                    }
+                }
+            }
+        }
 
         $eff_setup = ( $booking_start === $room_open  ) ? 0 : $setup_minutes;
         $eff_tidy  = ( $booking_end   === $room_close ) ? 0 : $tidy_minutes;
 
         return [ $eff_setup, $eff_tidy ];
+    }
+
+    private function normalize_time(string $value): ?string {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $ts = strtotime('1970-01-01 ' . $value);
+        if ($ts === false) {
+            return null;
+        }
+
+        return date('H:i:s', $ts);
+    }
+
+    private function get_setting_with_fallback(string $primary_key, string $legacy_key, $default = null) {
+        $primary = myvh_setting($primary_key, null);
+        if ($primary !== null && $primary !== '') {
+            return $primary;
+        }
+
+        return myvh_setting($legacy_key, $default);
     }
 
     /**

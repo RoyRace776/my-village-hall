@@ -4,6 +4,15 @@ if (!defined('ABSPATH')) exit;
 use MYVH\Availability\AvailabilityService;
 
 $availability_service = $GLOBALS['myvh_container']->get(AvailabilityService::class);
+$day_labels = [
+    0 => 'Sunday',
+    1 => 'Monday',
+    2 => 'Tuesday',
+    3 => 'Wednesday',
+    4 => 'Thursday',
+    5 => 'Friday',
+    6 => 'Saturday',
+];
 ?>
 <div class="myvh-dashboard-section myvh-venues-page">
     <div class="myvh-account-header">
@@ -51,6 +60,44 @@ $availability_service = $GLOBALS['myvh_container']->get(AvailabilityService::cla
                         <?php echo $availability_service->get_time_options('17:00', 0, 23, true); ?>
                     </select>
                 </label>
+            </div>
+
+            <div class="myvh-account-field">
+                <span>Daily Opening Hours</span>
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Closed</th>
+                            <th>Opens</th>
+                            <th>Closes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($day_labels as $day => $label): ?>
+                            <tr>
+                                <td>
+                                    <?php echo esc_html($label); ?>
+                                    <input type="hidden" name="opening_hours_by_day[<?php echo (int) $day; ?>][day_of_week]" value="<?php echo (int) $day; ?>">
+                                </td>
+                                <td>
+                                    <input type="hidden" name="opening_hours_by_day[<?php echo (int) $day; ?>][is_closed]" value="0">
+                                    <input type="checkbox" name="opening_hours_by_day[<?php echo (int) $day; ?>][is_closed]" value="1">
+                                </td>
+                                <td>
+                                    <select name="opening_hours_by_day[<?php echo (int) $day; ?>][opening_time]">
+                                        <?php echo $availability_service->get_time_options('09:00', 0, 23, true); ?>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="opening_hours_by_day[<?php echo (int) $day; ?>][closing_time]">
+                                        <?php echo $availability_service->get_time_options('17:00', 0, 23, true); ?>
+                                    </select>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
 
             <div class="myvh-account-actions">

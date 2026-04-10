@@ -43,6 +43,7 @@ class Installer {
         $collate = $wpdb->get_charset_collate();
 
         self::create_tables( $wpdb, $collate );
+        self::backfill_opening_hours_by_day( $wpdb );
         self::ensure_room_colour_column( $wpdb );
         self::ensure_room_is_public_column( $wpdb );
         self::ensure_organisation_system_column( $wpdb );
@@ -156,6 +157,31 @@ class Installer {
             INDEX idx_venue (VenueId),
             INDEX idx_name  (Name),
             INDEX idx_public (IsPublic)
+        ) {$collate};" );
+
+        // ── Venue Opening Hours By Day ─────────────────────────────────────
+        dbDelta( "CREATE TABLE {$p}myvh_venue_hours (
+            Id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            VenueId       INT UNSIGNED NOT NULL,
+            DayOfWeek     TINYINT UNSIGNED NOT NULL,
+            IsClosed      TINYINT(1) NOT NULL DEFAULT 0,
+            OpeningTime   TIME NULL,
+            ClosingTime   TIME NULL,
+            UNIQUE KEY uq_venue_day (VenueId, DayOfWeek),
+            INDEX idx_venue (VenueId)
+        ) {$collate};" );
+
+        // ── Room Opening Hours By Day ──────────────────────────────────────
+        dbDelta( "CREATE TABLE {$p}myvh_room_hours (
+            Id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            RoomId         INT UNSIGNED NOT NULL,
+            DayOfWeek      TINYINT UNSIGNED NOT NULL,
+            UseVenueHours  TINYINT(1) NOT NULL DEFAULT 1,
+            IsClosed       TINYINT(1) NOT NULL DEFAULT 0,
+            OpeningTime    TIME NULL,
+            ClosingTime    TIME NULL,
+            UNIQUE KEY uq_room_day (RoomId, DayOfWeek),
+            INDEX idx_room (RoomId)
         ) {$collate};" );
 
         // ── Organisations  ───────────────────────────────────────────────────
@@ -540,6 +566,20 @@ class Installer {
            FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
            ON DELETE RESTRICT ON UPDATE CASCADE" ],
 
+                // Venue Hours → Venues
+                [ "{$p}myvh_venue_hours", 'fk_venue_hours_venue',
+                    "ALTER TABLE {$p}myvh_venue_hours
+                     ADD CONSTRAINT fk_venue_hours_venue
+                     FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
+                     ON DELETE CASCADE ON UPDATE CASCADE" ],
+
+                // Room Hours → Rooms
+                [ "{$p}myvh_room_hours", 'fk_room_hours_room',
+                    "ALTER TABLE {$p}myvh_room_hours
+                     ADD CONSTRAINT fk_room_hours_room
+                     FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
+                     ON DELETE CASCADE ON UPDATE CASCADE" ],
+
         // ── Bookings ──────────────────────────────────────────────────────────────
 
         // Bookings → Customers
@@ -738,6 +778,38 @@ class Installer {
 
         return $results;
     }
+
+        private static function backfill_opening_hours_by_day( wpdb $wpdb ): void {
+                $p = $wpdb->prefix;
+                $venue_table = "{$p}myvh_venues";
+                $room_table = "{$p}myvh_rooms";
+                $venue_hours_table = "{$p}myvh_venue_hours";
+                $room_hours_table = "{$p}myvh_room_hours";
+
+                $days_sql = '(SELECT 0 AS DayOfWeek UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6)';
+
+                $wpdb->query(
+                        "INSERT INTO {$venue_hours_table} (VenueId, DayOfWeek, IsClosed, OpeningTime, ClosingTime)
+                         SELECT v.Id, d.DayOfWeek, 0, v.OpeningTime, v.ClosingTime
+                             FROM {$venue_table} v
+                             JOIN {$days_sql} d
+                             LEFT JOIN {$venue_hours_table} vh
+                                 ON vh.VenueId = v.Id
+                                AND vh.DayOfWeek = d.DayOfWeek
+                            WHERE vh.Id IS NULL"
+                );
+
+                $wpdb->query(
+                        "INSERT INTO {$room_hours_table} (RoomId, DayOfWeek, UseVenueHours, IsClosed, OpeningTime, ClosingTime)
+                         SELECT r.Id, d.DayOfWeek, 1, 0, r.OpeningTime, r.ClosingTime
+                             FROM {$room_table} r
+                             JOIN {$days_sql} d
+                             LEFT JOIN {$room_hours_table} rh
+                                 ON rh.RoomId = r.Id
+                                AND rh.DayOfWeek = d.DayOfWeek
+                            WHERE rh.Id IS NULL"
+                );
+        }
 
     // Set up defaults like organisation types and organisations if they don't already exist
     public static function set_default_data($wpdb): void {
