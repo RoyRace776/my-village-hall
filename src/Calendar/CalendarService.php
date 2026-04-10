@@ -527,7 +527,7 @@ class CalendarService {
     }
 
     private function get_private_booking_label(): string {        $default_label = myvh_setting(
-            'general.public_calendar_booking_label',
+            'calendar.public_calendar_booking_label',
             __('Private booking', 'my-village-hall')
         );
 

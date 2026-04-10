@@ -69,7 +69,7 @@ class CalendarShortcode {
         global $myvh_container;
 
         $default_label = myvh_setting(
-            'general.public_calendar_booking_label',
+            'calendar.public_calendar_booking_label',
             __( 'Private booking', 'my-village-hall' )
         );
         $default_label = apply_filters( 'myvh_public_calendar_booking_label', $default_label );
@@ -193,12 +193,12 @@ class CalendarShortcode {
             'view'                => sanitize_key( $atts['view'] ),
             'height'              => (int) $atts['height'],
             'rooms'               => $public_rooms,
-            'headerDateFormat'    => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+            'headerDateFormat'    => myvh_setting( 'calendar.calendar_date_format', 'd MMM' ),
             'startOfWeek'         => (int) get_option( 'start_of_week', 1 ),
             'maxBookingDaysAhead' => (int) myvh_setting( 'booking.max_booking_days', 365 ),
             'visibleStartHour'    => (int) $visible_hours['start'],
             'visibleEndHour'      => (int) $visible_hours['end'],
-            'schedulerOrientation' => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
+            'schedulerOrientation' => myvh_setting( 'calendar.scheduler_orientation', 'horizontal' ),
             'statusColors'        => CalendarStatusColours::map(),
             'nonce'               => wp_create_nonce( 'wp_rest' ),
             'i18n'                => [

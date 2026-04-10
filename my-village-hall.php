@@ -491,12 +491,12 @@ class MyVillageHall {
         wp_localize_script( 'myvh-calendar-admin', 'myvhCal', [
             'ajax_url'             => admin_url( 'admin-ajax.php' ),
             'nonce'                => wp_create_nonce( 'myvh_calendar' ),
-            'headerDateFormat'     => myvh_setting( 'general.calendar_date_format', 'd MMM' ),
+            'headerDateFormat'     => myvh_setting( 'calendar.calendar_date_format', 'd MMM' ),
             'startOfWeek'          => (int) get_option( 'start_of_week', 1 ),
             'maxBookingDaysAhead'  => (int) myvh_setting( 'booking.max_booking_days', 365 ),
             'visibleStartHour'     => $visible_hours['start'],
             'visibleEndHour'       => $visible_hours['end'],
-            'schedulerOrientation' => myvh_setting( 'general.scheduler_orientation', 'horizontal' ),
+            'schedulerOrientation' => myvh_setting( 'calendar.scheduler_orientation', 'horizontal' ),
             'statusColors'         => CalendarStatusColours::map(),
         ] );
 

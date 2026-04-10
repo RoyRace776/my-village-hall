@@ -242,6 +242,33 @@ class BookingRepository extends RepositoryBase
     }
 
     /**
+     * Extract the date part (YYYY-MM-DD) from a date or datetime string.
+     * Handles both "2025-03-17" and "2025-03-17T08:00:00" formats.
+     *
+     * @param string $value Date or datetime string
+     * @return string Date in YYYY-MM-DD format, or empty string if invalid
+     */
+    private function extract_date_part($value): string {
+        $raw = sanitize_text_field((string) $value);
+        if ($raw === '') {
+            return '';
+        }
+
+        // Try to extract YYYY-MM-DD format (handles both "2025-03-17" and "2025-03-17T08:00:00")
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $raw, $matches)) {
+            return $matches[1];
+        }
+
+        // If that fails, try to parse and reformat
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return date('Y-m-d', $timestamp);
+    }
+
+    /**
      * Count how many bookings exist for a given customer.
      *
      * @param int $customer_id
@@ -288,8 +315,14 @@ class BookingRepository extends RepositoryBase
         ];
         $filters = wp_parse_args($filters, $defaults);
 
+        // Extract date part if datetime strings are provided (e.g., "2025-03-17T08:00:00" -> "2025-03-17")
+        // This is necessary because the database stores DATE columns, not DATETIME, so we need to compare
+        // dates to dates, not dates to datetimes. MySQL's implicit conversion can cause incorrect filtering.
+        $start_date = $this->extract_date_part($start);
+        $end_date = $this->extract_date_part($end);
+
         $where = [ 'b.StartDate < %s', 'b.EndDate >= %s' ];
-        $params = [ $end, $start ];
+        $params = [ $end_date, $start_date ];
 
         if (!empty($filters['room_id'])) {
             $where[] = 'b.RoomId = %d';
