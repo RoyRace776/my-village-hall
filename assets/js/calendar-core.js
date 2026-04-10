@@ -378,6 +378,7 @@ window.CalendarCore = (function () {
         calendar.startDate = toDayPilotDate(opts.startDate) || DayPilot.Date.today();
         calendar.locale = locale;
         calendar.weekStarts = weekStarts;
+        calendar.cellDuration = 15;
 
         if (opts.headerDateFormat) {
             calendar.headerDateFormat = opts.headerDateFormat;
@@ -742,7 +743,7 @@ window.CalendarCore = (function () {
             config.startDate = startDate;
             config.scale = "Hour";
             config.days = Math.max(1, maxBookingDaysAhead);
-            config.cellDuration = 60;
+            config.cellDuration = 15;
             config.timeHeaders = [
                 { groupBy: "Day", format: opts.headerDateFormat || "d MMM" },
                 { groupBy: "Hour" }

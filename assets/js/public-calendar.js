@@ -759,7 +759,7 @@
             base.startDate = DayPilot.Date.today().getDatePart();
             base.scale = 'Hour';
             base.days = Math.max(1, maxBookingDaysAhead);
-            base.cellDuration = 60;
+            base.cellDuration = 15;
             base.timeHeaders = [
                 { groupBy: 'Day', format: headerDateFormat },
                 { groupBy: 'Hour' }
@@ -888,6 +888,7 @@
             viewType           : dayView ? 'Day' : 'Week',
             startDate          : current.date,
             headerDateFormat   : headerDateFormat,
+            cellDuration       : 15,
             businessBeginsHour : startHour,
             businessEndsHour   : endHour,
             dayBeginsHour      : startHour,
