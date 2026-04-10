@@ -45,6 +45,7 @@ if (!defined('ABSPATH')) exit;
                     <a href="#client-admins">Client Admins</a>
                     <a href="#customers">Customers</a>
                     <a href="#organisation-types">Organisation Types</a>
+                    <a href="#venues">Venues</a>
                     <a href="#rooms">Rooms</a>
                     <a href="#room-rates">Room Rates</a>
                     <a href="#addons">Add-ons</a>

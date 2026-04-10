@@ -282,6 +282,10 @@ usort($groups, function ($a, $b) {
               <span class="myvh-portal-quick-action__icon" aria-hidden="true">🛡</span>
               <span class="myvh-portal-quick-action__text">Client Admins</span>
             </a>
+            <a class="myvh-portal-quick-action" href="#venues">
+              <span class="myvh-portal-quick-action__icon" aria-hidden="true">🏛</span>
+              <span class="myvh-portal-quick-action__text">Venues</span>
+            </a>
             <a class="myvh-portal-quick-action" href="#customers">
               <span class="myvh-portal-quick-action__icon" aria-hidden="true">👤</span>
               <span class="myvh-portal-quick-action__text">Customers</span>

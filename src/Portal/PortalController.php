@@ -21,7 +21,9 @@ use MYVH\Portal\Support\BookingAccess;
 use MYVH\Rooms\RoomService;
 use MYVH\Rooms\RoomRequestValidator;
 use MYVH\Rooms\SaveRoomRequest;
+use MYVH\Venues\SaveVenueRequest;
 use MYVH\Venues\VenueService;
+use MYVH\Venues\VenueRequestValidator;
 use MYVH\Settings\SettingsRegistry;
 
 use Throwable;
@@ -42,6 +44,7 @@ class PortalController {
     private $room_rate_service;
     private $room_rate_request_validator;
     private $venue_service;
+    private $venue_request_validator;
 
     public function __construct(
         AddonService $addon_service,
@@ -58,7 +61,8 @@ class PortalController {
         RoomRequestValidator $room_request_validator,
         RoomRateService $room_rate_service,
         RoomRateRequestValidator $room_rate_request_validator,
-        VenueService $venue_service
+        VenueService $venue_service,
+        VenueRequestValidator $venue_request_validator
     ) {
         $this->addon_service = $addon_service;
         $this->addon_request_validator = $addon_request_validator;
@@ -75,6 +79,7 @@ class PortalController {
         $this->room_rate_service = $room_rate_service;
         $this->room_rate_request_validator = $room_rate_request_validator;
         $this->venue_service = $venue_service;
+        $this->venue_request_validator = $venue_request_validator;
     }
 
 
@@ -103,6 +108,8 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_delete_org_type', [$this, 'delete_organisation_type']);
         add_action('wp_ajax_myvh_portal_save_room', [$this, 'save_room']);
         add_action('wp_ajax_myvh_portal_delete_room', [$this, 'delete_room']);
+        add_action('wp_ajax_myvh_portal_save_venue', [$this, 'save_venue']);
+        add_action('wp_ajax_myvh_portal_delete_venue', [$this, 'delete_venue']);
         add_action('wp_ajax_myvh_portal_save_room_rate', [$this, 'save_room_rate']);
         add_action('wp_ajax_myvh_portal_delete_room_rate', [$this, 'delete_room_rate']);
         add_action('wp_ajax_myvh_portal_save_addon', [$this, 'save_addon']);
@@ -335,6 +342,48 @@ class PortalController {
 
                 $rooms = $this->room_service->get_all_with_venues();
                 include MYVH_PLUGIN_DIR . 'templates/Portal/rooms.php';
+                break;
+
+            case 'venues':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $venues = $this->venue_service->get_all();
+                $rooms = $this->room_service->get_all_with_venues();
+                $venue_room_counts = [];
+                foreach ($rooms as $room) {
+                    $venue_id = !empty($room['VenueId']) ? (int) $room['VenueId'] : 0;
+                    if ($venue_id <= 0) {
+                        continue;
+                    }
+
+                    $venue_room_counts[$venue_id] = ($venue_room_counts[$venue_id] ?? 0) + 1;
+                }
+                include MYVH_PLUGIN_DIR . 'templates/Portal/venues.php';
+                break;
+
+            case 'venue-add':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                include MYVH_PLUGIN_DIR . 'templates/Portal/venue-add.php';
+                break;
+
+            case 'venue-edit':
+                if (!$is_client_admin) {
+                    wp_send_json_error('Permission denied', 403);
+                }
+
+                $venue_id = intval($_GET['id'] ?? 0);
+
+                if (!$venue_id) {
+                    wp_send_json_error('Invalid venue ID', 400);
+                }
+
+                $venue = $this->venue_service->get($venue_id);
+                include MYVH_PLUGIN_DIR . 'templates/Portal/venue-edit.php';
                 break;
 
             case 'room-add':
@@ -1159,6 +1208,37 @@ class PortalController {
         ]);
     }
 
+    public function save_venue() {
+        $this->require_client_admin_access();
+
+        $payload = SaveVenueRequest::from_post(wp_unslash($_POST));
+        $validation = $this->venue_request_validator->validate($payload);
+
+        if (is_wp_error($validation)) {
+            wp_send_json_error($validation->get_error_message(), 400);
+        }
+
+        try {
+            $saved = $this->venue_service->save($payload);
+        } catch (Throwable $throwable) {
+            wp_send_json_error($throwable->getMessage(), 400);
+        }
+
+        if (is_wp_error($saved)) {
+            wp_send_json_error($saved->get_error_message(), 400);
+        }
+
+        if (!$saved) {
+            wp_send_json_error('Venue save failed', 400);
+        }
+
+        wp_send_json_success([
+            'message' => !empty($payload['venue_id']) ? 'Venue updated' : 'Venue created',
+            'venue_id' => !empty($payload['venue_id']) ? (int) $payload['venue_id'] : (int) $saved,
+            'redirect' => 'venues',
+        ]);
+    }
+
     public function delete_room() {
         $this->require_client_admin_access();
 
@@ -1179,6 +1259,28 @@ class PortalController {
         }
 
         wp_send_json_success(['message' => 'Room deleted']);
+    }
+
+    public function delete_venue() {
+        $this->require_client_admin_access();
+
+        $venue_id = intval($_POST['venue_id'] ?? 0);
+
+        if ($venue_id <= 0) {
+            wp_send_json_error('Venue ID is required', 400);
+        }
+
+        $deleted = $this->venue_service->delete($venue_id);
+
+        if (is_wp_error($deleted)) {
+            wp_send_json_error($deleted->get_error_message(), 400);
+        }
+
+        if (!$deleted) {
+            wp_send_json_error('Failed to delete venue', 400);
+        }
+
+        wp_send_json_success(['message' => 'Venue deleted']);
     }
 
     public function save_room_rate() {

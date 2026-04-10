@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Venues;
 
+use MYVH\Rooms\RoomRepository;
 use WP_Error;
 
 if (!defined('ABSPATH')) exit;
@@ -8,9 +9,11 @@ if (!defined('ABSPATH')) exit;
 class VenueService {
 
     private $repo;
+    private $room_repository;
 
-    public function __construct(VenueRepository $repo) {
+    public function __construct(VenueRepository $repo, RoomRepository $room_repository) {
         $this->repo = $repo;
+        $this->room_repository = $room_repository;
     }
 
     public function get_all(): array {
@@ -44,6 +47,15 @@ class VenueService {
     }
 
     public function delete($id): bool|WP_Error {
+        $room_count = count($this->room_repository->get_by_venue((int) $id));
+
+        if ($room_count > 0) {
+            return new WP_Error(
+                'venue_has_rooms',
+                __('Delete the rooms in this venue before deleting the venue', 'my-village-hall')
+            );
+        }
+
         return $this->repo->delete_by_id($id);
     }
 }
