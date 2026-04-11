@@ -1,6 +1,8 @@
 <?php
 namespace MYVH\Core\Support;
 
+use MYVH\Audit\AuditTrail;
+
 class RepositoryBase {
     /** @var \wpdb */
     protected $wpdb;
@@ -21,6 +23,9 @@ class RepositoryBase {
     // --- CRUD ---
     public function create($data): int|false {
         $result = $this->wpdb->insert($this->table_name, $data, $this->get_format($data));
+        if ($result) {
+            $data['Id'] = (int) $this->wpdb->insert_id;
+        }
         $this->audit('create', $data);
         return $result ? $this->wpdb->insert_id : false;
     }
@@ -119,7 +124,7 @@ class RepositoryBase {
 
     // --- Audit logging (stub) ---
     protected function audit($action, $data, $where = null): void {
-        // Implement audit log logic here (e.g., write to log table)
+        AuditTrail::record_repository_event($this, (string) $action, (array) $data, is_array($where) ? $where : null);
     }
 
     // --- Pagination ---

@@ -155,6 +155,10 @@ class PortalPageAjaxController {
                 $this->admin_config_page_renderer->render_settings($is_client_admin);
                 break;
 
+            case 'audit-log':
+                $this->admin_config_page_renderer->render_audit_log($is_client_admin);
+                break;
+
             case 'organisations':
                 $this->organisation_page_renderer->render_organisations($customer, $is_client_admin);
                 break;

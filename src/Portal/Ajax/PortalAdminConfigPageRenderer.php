@@ -2,6 +2,7 @@
 namespace MYVH\Portal\Ajax;
 
 use MYVH\Addons\AddonService;
+use MYVH\Audit\AuditTrail;
 use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Rooms\RoomService;
@@ -189,14 +190,47 @@ class PortalAdminConfigPageRenderer {
                 continue;
             }
 
+            $schema = $settings->schema();
+            $portal_limited_fields = [];
+
+            if ($group_key === 'admin' && !$settings->user_can_access($current_user_id)) {
+                $portal_limited_fields = ['enable_auditing'];
+
+                foreach ($schema as $section_key => $section) {
+                    $fields = is_array($section['fields'] ?? null) ? $section['fields'] : [];
+                    $schema[$section_key]['fields'] = array_filter(
+                        $fields,
+                        static fn(string $field_key): bool => in_array($field_key, $portal_limited_fields, true),
+                        ARRAY_FILTER_USE_KEY
+                    );
+                }
+            }
+
             $settings_groups[] = [
                 'key' => $group_key,
                 'label' => $group_meta['label'] ?? ucfirst((string) $group_key),
-                'schema' => $settings->schema(),
+                'schema' => $schema,
                 'values' => $settings->all(),
+                'portal_limited_fields' => $portal_limited_fields,
             ];
         }
 
         include MYVH_PLUGIN_DIR . 'templates/Portal/settings.php';
+    }
+
+    public function render_audit_log(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
+        $audit_enabled = AuditTrail::is_enabled();
+        $page = max(1, intval($_GET['paged'] ?? 1));
+        $result = AuditTrail::query([
+            'page' => $page,
+            'per_page' => 50,
+        ]);
+
+        $rows = $result['rows'] ?? [];
+        include MYVH_PLUGIN_DIR . 'templates/Portal/audit-log.php';
     }
 }

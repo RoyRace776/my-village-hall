@@ -488,6 +488,23 @@ class Installer {
             INDEX idx_invoice (InvoiceId),
             INDEX idx_date    (PaymentDate)
         ) {$collate};" );
+
+        // ── Audit Log ─────────────────────────────────────────────────────────
+        dbDelta( "CREATE TABLE {$p}myvh_audit_log (
+            Id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Action      VARCHAR(20)     NOT NULL,
+            EntityType  VARCHAR(50)     NOT NULL,
+            EntityId    BIGINT UNSIGNED NULL,
+            ActorUserId BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            Origin      VARCHAR(20)     NOT NULL,
+            Summary     LONGTEXT        NULL,
+            CreatedAt   DATETIME        NOT NULL,
+            INDEX idx_action (Action),
+            INDEX idx_entity (EntityType, EntityId),
+            INDEX idx_actor (ActorUserId),
+            INDEX idx_origin (Origin),
+            INDEX idx_created (CreatedAt)
+        ) {$collate};" );
     }
 
     // ── Foreign keys ──────────────────────────────────────────────────────────
@@ -889,6 +906,7 @@ class Installer {
     private static function drop_tables($wpdb): void {
 
         $tables = [
+            'myvh_audit_log',
             'myvh_bookings',
             'myvh_organisations',
             'myvh_organisation_types',

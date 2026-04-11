@@ -319,12 +319,26 @@ class PortalAdminConfigAjaxController {
         }
 
         $current_user_id = get_current_user_id();
-        if (!$settings->is_visible_to_client_admin($current_user_id) || !$settings->user_can_access($current_user_id)) {
+        if (!$settings->is_visible_to_client_admin($current_user_id)) {
             wp_send_json_error('Permission denied for this settings group', 403);
         }
 
         $input = wp_unslash($_POST);
         unset($input['action'], $input['nonce'], $input['settings_group']);
+
+        // Portal client-admins can only toggle auditing from the Admin group.
+        // All other Admin fields remain restricted to full capability users.
+        if ($group === 'admin' && !$settings->user_can_access($current_user_id)) {
+            $all = $settings->all();
+            $all['enable_auditing'] = !empty($input['enable_auditing']);
+            $settings->save($all);
+
+            wp_send_json_success(['message' => 'Client settings updated']);
+        }
+
+        if (!$settings->user_can_access($current_user_id)) {
+            wp_send_json_error('Permission denied for this settings group', 403);
+        }
 
         $settings->save($input);
 

@@ -35,6 +35,7 @@ use MYVH\Portal\ClientAdminService;
 use MYVH\Bootstrap\Network\NetworkDashboard;
 use MYVH\Bootstrap\Installer;
 use MYVH\Login\PasswordResetLoader;
+use MYVH\Audit\AuditTrail;
 use MYVH\Core\Support\AssetLoader;
 use MYVH\Settings\SettingsRegistry;
 use MYVH\Settings\SettingsPage;
@@ -183,6 +184,9 @@ class MyVillageHall {
         $this->on_admin_post( 'myvh_update_invoice_status',  InvoiceController::class, 'update_status' );
         $this->on_admin_post( 'myvh_record_payment',         PaymentController::class, 'create' );
         $this->on_admin_post( 'myvh_delete_payment',         PaymentController::class, 'delete' );
+
+        // Auditing
+        add_action( 'admin_post_myvh_reset_audit_log', [ $this, 'reset_audit_log' ] );
     }
 
     /**
@@ -393,6 +397,17 @@ class MyVillageHall {
             __( 'Recurring Patterns',  'my-village-hall' ),
             'manage_options', 'myvh-recurring', [ $this, 'render_recurring_page' ]
         );
+
+        if ( AuditTrail::is_enabled() ) {
+            add_submenu_page(
+                'my-village-hall',
+                __( 'Audit Log', 'my-village-hall' ),
+                __( 'Audit Log', 'my-village-hall' ),
+                'manage_options',
+                'myvh-audit-log',
+                [ $this, 'render_audit_log_page' ]
+            );
+        }
     }
 
     public function ensure_invoices_menu_item(): void {
@@ -656,6 +671,32 @@ class MyVillageHall {
     public function render_invoices_page():        void { $this->render_page( 'invoices', true ); }
     public function render_invoice_generate_page(): void { $this->render_page( 'invoice-generate' ); }
     public function render_recurring_page():       void { $this->render_page( 'recurring' ); }
+    public function render_audit_log_page():       void { $this->render_page( 'audit-log' ); }
+
+    public function reset_audit_log(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die(
+                esc_html__( 'You do not have sufficient permissions to access this page.', 'my-village-hall' ),
+                esc_html__( 'Access Denied', 'my-village-hall' ),
+                [ 'response' => 403 ]
+            );
+        }
+
+        check_admin_referer( 'myvh_reset_audit_log' );
+
+        AuditTrail::reset();
+
+        wp_safe_redirect(
+            add_query_arg(
+                [
+                    'page' => 'myvh-audit-log',
+                    'reset' => 1,
+                ],
+                admin_url( 'admin.php' )
+            )
+        );
+        exit;
+    }
 
     /**
      * Capability-checks, then includes the view file for $page.

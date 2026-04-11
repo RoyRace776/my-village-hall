@@ -68,6 +68,7 @@ $settings_groups = is_array($settings_groups ?? null) ? $settings_groups : [];
                 $group_label = (string) ($group['label'] ?? ucfirst($group_key));
                 $schema = is_array($group['schema'] ?? null) ? $group['schema'] : [];
                 $values = is_array($group['values'] ?? null) ? $group['values'] : [];
+                $portal_limited_fields = is_array($group['portal_limited_fields'] ?? null) ? $group['portal_limited_fields'] : [];
                 $message_id = 'myvh-settings-message-' . sanitize_html_class($group_key);
                 $group_slug = sanitize_html_class(str_replace('_', '-', strtolower($group_key)));
                 $is_active = ($group_key === $first_group_key);
@@ -84,6 +85,10 @@ $settings_groups = is_array($settings_groups ?? null) ? $settings_groups : [];
                         <h3><?php echo esc_html($group_label); ?></h3>
                         <span class="myvh-settings-group-key"><?php echo esc_html($group_key); ?> settings</span>
                     </div>
+
+                    <?php if (!empty($portal_limited_fields)): ?>
+                        <p class="myvh-muted">Only audit settings are available here for this group.</p>
+                    <?php endif; ?>
 
                     <form class="myvh-account-form myvh-settings-form" data-portal-action="myvh_portal_save_client_settings" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="settings">
                         <input type="hidden" name="settings_group" value="<?php echo esc_attr($group_key); ?>">
