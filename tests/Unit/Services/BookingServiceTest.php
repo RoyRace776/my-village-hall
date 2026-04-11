@@ -61,6 +61,7 @@ class BookingServiceTest extends UnitTestCase {
     private $booking_addon_repo;
     private $addon_service;
     private $validator;
+    private $booking_addon_sync_service;
     private $availability;
     private $pricing;
     private $recurring_pattern_service;
@@ -88,6 +89,7 @@ class BookingServiceTest extends UnitTestCase {
         $this->booking_addon_repo        = $this->mock(\MYVH\Bookings\BookingAddonRepository::class);
         $this->addon_service             = $this->mock(\MYVH\Addons\AddonService::class);
         $this->validator                 = $this->mock(\MYVH\Bookings\BookingValidator::class);
+        $this->booking_addon_sync_service = new \MYVH\Bookings\Services\BookingAddonSyncService($this->addon_service);
         $this->availability              = $this->mock(\MYVH\Availability\AvailabilityService::class);
         $this->pricing                   = $this->mock(\MYVH\Pricing\PricingService::class);
         $this->recurring_pattern_service = $this->mock(\MYVH\Bookings\RecurringPatternService::class);
@@ -129,6 +131,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_addon_repo,
             $this->addon_service,
             $this->validator,
+            $this->booking_addon_sync_service,
             $this->booking_charge_service,
             $this->booking_chargeable_hours_calculator,
             $this->booking_deletion_service,
@@ -150,6 +153,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_addon_repo,
             $this->addon_service,
             $this->validator,
+            $this->booking_addon_sync_service,
             $this->availability,
             $this->pricing,
             $this->recurring_pattern_service,

@@ -5,6 +5,7 @@ namespace MYVH\Bookings;
 use MYVH\Rooms\RoomService;
 use MYVH\Addons\AddonService;
 use MYVH\Bookings\Services\BookingAccessControl;
+use MYVH\Bookings\Services\BookingAddonSyncService;
 use MYVH\Bookings\Services\BookingChargeService;
 use MYVH\Bookings\Services\BookingChargeableHoursCalculator;
 use MYVH\Bookings\Services\BookingDeletionService;
@@ -31,6 +32,7 @@ class BookingService {
     private $booking_addon_repo;
     private $addon_service;
     private $validator;
+    private $booking_addon_sync_service;
     private $booking_charge_service;
     private $booking_chargeable_hours_calculator;
     private $booking_deletion_service;
@@ -48,6 +50,7 @@ class BookingService {
         BookingAddonRepository $booking_addon_repo,
         AddonService $addon_service,
         BookingValidator $validator,
+        BookingAddonSyncService $booking_addon_sync_service,
         BookingChargeService $booking_charge_service,
         BookingChargeableHoursCalculator $booking_chargeable_hours_calculator,
         BookingDeletionService $booking_deletion_service,
@@ -63,6 +66,7 @@ class BookingService {
         $this->booking_addon_repo = $booking_addon_repo;
         $this->addon_service = $addon_service;
         $this->validator = $validator;
+        $this->booking_addon_sync_service = $booking_addon_sync_service;
         $this->booking_charge_service = $booking_charge_service;
         $this->booking_chargeable_hours_calculator = $booking_chargeable_hours_calculator;
         $this->booking_deletion_service = $booking_deletion_service;
@@ -204,23 +208,7 @@ class BookingService {
         }
 
         if (array_key_exists('addons', $data)) {
-            EventDispatcher::dispatch(
-                BookingEvents::BEFORE_ADDONS_CHANGE,
-                [
-                    'booking_id' => $booking_id,
-                    'addons' => $data['addons'] ?? [],
-                    'replace' => true,
-                ]
-            );
-            $this->save_addons($booking_id, $data['addons'] ?? [], true);
-            EventDispatcher::dispatch(
-                BookingEvents::AFTER_ADDONS_CHANGE,
-                [
-                    'booking_id' => $booking_id,
-                    'addons' => $data['addons'] ?? [],
-                    'replace' => true,
-                ]
-            );
+            $this->booking_addon_sync_service->sync($booking_id, $data['addons'] ?? [], true);
         }
 
         $charge_result = $this->recalculate_booking_charges($booking_id);
@@ -286,24 +274,7 @@ class BookingService {
             return new WP_Error('database', __('Failed to create booking', 'my-village-hall'));
         }
 
-        // Addons before/after events
-        EventDispatcher::dispatch(
-            BookingEvents::BEFORE_ADDONS_CHANGE,
-            [
-                'booking_id' => $booking_id,
-                'addons' => $data['addons'] ?? [],
-                'replace' => false
-            ]
-        );
-        $this->save_addons($booking_id, $data['addons'] ?? []);
-        EventDispatcher::dispatch(
-            BookingEvents::AFTER_ADDONS_CHANGE,
-            [
-                'booking_id' => $booking_id,
-                'addons' => $data['addons'] ?? [],
-                'replace' => false
-            ]
-        );
+        $this->booking_addon_sync_service->sync($booking_id, $data['addons'] ?? [], false);
 
         $charge_result = $this->recalculate_booking_charges($booking_id);
         if (is_wp_error($charge_result)) {
