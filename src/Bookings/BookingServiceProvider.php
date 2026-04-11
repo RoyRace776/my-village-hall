@@ -8,6 +8,13 @@ use MYVH\Pricing\PricingService;
 use MYVH\Customers\CustomerRepository;
 use MYVH\Organisations\OrganisationRepository;
 use MYVH\Bookings\Services\BookingAutoConfirm;
+use MYVH\Bookings\Services\BookingAccessControl;
+use MYVH\Bookings\Services\BookingChargeService;
+use MYVH\Bookings\Services\BookingDeletionService;
+use MYVH\Bookings\Services\BookingMovementService;
+use MYVH\Bookings\Services\BookingQueryService;
+use MYVH\Bookings\Services\RecurringBookingCreator;
+use MYVH\Bookings\Services\RecurringBookingUpdater;
 use MYVH\Rooms\RoomService;
 use MYVH\Addons\AddonRepository;
 use MYVH\Addons\AddonService;
@@ -32,5 +39,12 @@ class BookingServiceProvider
         $container->singleton(BookingStatus::class);
         $container->singleton(BookingController::class);
         $container->singleton(BookingAutoConfirm::class);
+        $container->singleton(BookingChargeService::class);
+        $container->singleton(BookingDeletionService::class);
+        $container->singleton(BookingAccessControl::class);
+        $container->singleton(BookingMovementService::class);
+        $container->singleton(BookingQueryService::class);
+        $container->singleton(RecurringBookingCreator::class);
+        $container->singleton(RecurringBookingUpdater::class);
     }
 }
