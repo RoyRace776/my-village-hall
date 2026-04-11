@@ -6,6 +6,7 @@ use MYVH\Rooms\RoomService;
 use MYVH\Addons\AddonService;
 use MYVH\Bookings\Services\BookingAccessControl;
 use MYVH\Bookings\Services\BookingChargeService;
+use MYVH\Bookings\Services\BookingChargeableHoursCalculator;
 use MYVH\Bookings\Services\BookingDeletionService;
 use MYVH\Bookings\Services\BookingMovementService;
 use MYVH\Bookings\Services\BookingQueryService;
@@ -16,7 +17,6 @@ use MYVH\Events\BookingEvents;
 
 use WP_Error;
 use Exception;
-use DateTime;
 
 if (!defined('ABSPATH')) exit;
 
@@ -31,6 +31,7 @@ class BookingService {
     private $addon_service;
     private $validator;
     private $booking_charge_service;
+    private $booking_chargeable_hours_calculator;
     private $booking_deletion_service;
     private $booking_access_control;
     private $booking_movement_service;
@@ -46,6 +47,7 @@ class BookingService {
         AddonService $addon_service,
         BookingValidator $validator,
         BookingChargeService $booking_charge_service,
+        BookingChargeableHoursCalculator $booking_chargeable_hours_calculator,
         BookingDeletionService $booking_deletion_service,
         BookingAccessControl $booking_access_control,
         BookingMovementService $booking_movement_service,
@@ -59,6 +61,7 @@ class BookingService {
         $this->addon_service = $addon_service;
         $this->validator = $validator;
         $this->booking_charge_service = $booking_charge_service;
+        $this->booking_chargeable_hours_calculator = $booking_chargeable_hours_calculator;
         $this->booking_deletion_service = $booking_deletion_service;
         $this->booking_access_control = $booking_access_control;
         $this->booking_movement_service = $booking_movement_service;
@@ -99,7 +102,7 @@ class BookingService {
             $end_time = sanitize_text_field($data['end_time']);
 
             if (!isset($data['chargeable_hours'])) {
-                $chargeable_hours = $this->calculate_chargeable_hours(
+                $chargeable_hours = $this->booking_chargeable_hours_calculator->calculate(
                     $start_date,
                     $start_time,
                     $end_date,
@@ -486,41 +489,6 @@ class BookingService {
             ]
         );
 
-    }
-
-    private function calculate_chargeable_hours($startdate, $start_time, $enddate, $end_time, $room): float {
-        $start = new DateTime($startdate . ' ' . $start_time);
-        $end   = new DateTime($enddate . ' ' . $end_time);
-        $interval = $start->diff($end);
-
-        $hours =
-            ($interval->days * 24) +
-            $interval->h +
-            ($interval->i / 60);
-
-        if (!$room['CalcClosedHours']) {
-            $room_open = strtotime($room['OpeningTime']);
-            $room_close = strtotime($room['ClosingTime']);
-
-            if ($room_open !== false && $room_close !== false) {
-                $open_hours = ($room_close - $room_open) / 3600;
-
-                // Handle schedules that wrap past midnight (e.g. 20:00 to 02:00).
-                if ($open_hours <= 0) {
-                    $open_hours += 24;
-                }
-
-                $closed_hours_per_day = max(0, 24 - $open_hours);
-
-                $start_day = (clone $start)->setTime(0, 0, 0);
-                $end_day = (clone $end)->setTime(0, 0, 0);
-                $days_crossed = $start_day->diff($end_day)->days;
-
-                $hours -= ($closed_hours_per_day * $days_crossed);
-            }
-        }
-
-        return max(0, $hours);
     }
 
     /**

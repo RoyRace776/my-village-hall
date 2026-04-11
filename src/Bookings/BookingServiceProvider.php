@@ -10,6 +10,7 @@ use MYVH\Organisations\OrganisationRepository;
 use MYVH\Bookings\Services\BookingAutoConfirm;
 use MYVH\Bookings\Services\BookingAccessControl;
 use MYVH\Bookings\Services\BookingChargeService;
+use MYVH\Bookings\Services\BookingChargeableHoursCalculator;
 use MYVH\Bookings\Services\BookingDeletionService;
 use MYVH\Bookings\Services\BookingMovementService;
 use MYVH\Bookings\Services\BookingQueryService;
@@ -40,6 +41,7 @@ class BookingServiceProvider
         $container->singleton(BookingController::class);
         $container->singleton(BookingAutoConfirm::class);
         $container->singleton(BookingChargeService::class);
+        $container->singleton(BookingChargeableHoursCalculator::class);
         $container->singleton(BookingDeletionService::class);
         $container->singleton(BookingAccessControl::class);
         $container->singleton(BookingMovementService::class);

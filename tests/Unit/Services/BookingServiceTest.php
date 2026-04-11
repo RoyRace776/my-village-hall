@@ -65,6 +65,7 @@ class BookingServiceTest extends UnitTestCase {
     private $pricing;
     private $recurring_pattern_service;
     private $booking_charge_service;
+    private $booking_chargeable_hours_calculator;
     private $booking_deletion_service;
     private $booking_access_control;
     private $booking_movement_service;
@@ -93,6 +94,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->pricing,
             $this->booking_charge_repo
         );
+        $this->booking_chargeable_hours_calculator = new \MYVH\Bookings\Services\BookingChargeableHoursCalculator();
         $this->booking_deletion_service  = new \MYVH\Bookings\Services\BookingDeletionService(
             $this->booking_repo,
             $this->booking_addon_repo,
@@ -126,6 +128,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->addon_service,
             $this->validator,
             $this->booking_charge_service,
+            $this->booking_chargeable_hours_calculator,
             $this->booking_deletion_service,
             $this->booking_access_control,
             $this->booking_movement_service,
@@ -148,6 +151,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->pricing,
             $this->recurring_pattern_service,
             $this->booking_charge_service,
+            $this->booking_chargeable_hours_calculator,
             $this->booking_deletion_service,
             $this->booking_access_control,
             $this->booking_movement_service,
