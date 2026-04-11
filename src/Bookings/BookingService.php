@@ -10,6 +10,7 @@ use MYVH\Bookings\Services\BookingChargeableHoursCalculator;
 use MYVH\Bookings\Services\BookingDeletionService;
 use MYVH\Bookings\Services\BookingMovementService;
 use MYVH\Bookings\Services\BookingQueryService;
+use MYVH\Bookings\Services\BookingUpdateEventDispatcher;
 use MYVH\Bookings\Services\RecurringBookingCreator;
 use MYVH\Bookings\Services\RecurringBookingUpdater;
 use MYVH\Events\EventDispatcher;
@@ -36,6 +37,7 @@ class BookingService {
     private $booking_access_control;
     private $booking_movement_service;
     private $booking_query_service;
+    private $booking_update_event_dispatcher;
     private $recurring_booking_creator;
     private $recurring_booking_updater;
     private $last_warnings = [];
@@ -52,6 +54,7 @@ class BookingService {
         BookingAccessControl $booking_access_control,
         BookingMovementService $booking_movement_service,
         BookingQueryService $booking_query_service,
+        BookingUpdateEventDispatcher $booking_update_event_dispatcher,
         RecurringBookingCreator $recurring_booking_creator,
         RecurringBookingUpdater $recurring_booking_updater
     ) {
@@ -66,6 +69,7 @@ class BookingService {
         $this->booking_access_control = $booking_access_control;
         $this->booking_movement_service = $booking_movement_service;
         $this->booking_query_service = $booking_query_service;
+        $this->booking_update_event_dispatcher = $booking_update_event_dispatcher;
         $this->recurring_booking_creator = $recurring_booking_creator;
         $this->recurring_booking_updater = $recurring_booking_updater;
     }
@@ -224,7 +228,7 @@ class BookingService {
             return $charge_result;
         }
 
-        $this->dispatch_update_event($data, $current_record['Status'] ?? null);
+        $this->booking_update_event_dispatcher->dispatch($data, $current_record['Status'] ?? null);
 
         if (isset($current_record['Status']) && $current_record['Status'] !== $new_status) {
             EventDispatcher::dispatch(
@@ -448,47 +452,6 @@ class BookingService {
 
     public function get_upcoming_bookings($wp_user): array {
         return $this->booking_query_service->get_upcoming_bookings($wp_user);
-    }
-
-    private function dispatch_update_event($data, $old_status = null): void {
-        // TODO: Update this to handle status changes
-        $new_status = $data['status'];
-        $current_status = $old_status;
-
-        if ($new_status==BookingStatus::CONFIRMED && $current_status<>BookingStatus::CONFIRMED) {
-            EventDispatcher::dispatch(
-                BookingEvents::CONFIRMED,
-                [
-                    'booking_id' => $data['booking_id'],
-                    'room_id' => $data['room_id'],
-                    'start' => $data['start_time'],
-                    'end' => $data['end_time']
-                ]
-            );
-        }
-
-        if ($new_status==BookingStatus::CANCELLED && $current_status<>BookingStatus::CANCELLED) {
-            EventDispatcher::dispatch(
-                BookingEvents::CANCELLED,
-                [
-                    'booking_id' => $data['booking_id'],
-                    'room_id' => $data['room_id'],
-                    'start' => $data['start_time'],
-                    'end' => $data['end_time']
-                ]
-            );
-        }
-
-        EventDispatcher::dispatch(
-            BookingEvents::UPDATED,
-            [
-                'booking_id' => $data['booking_id'],
-                'room_id' => $data['room_id'],
-                'start' => $data['start_time'],
-                'end' => $data['end_time']
-            ]
-        );
-
     }
 
     /**
