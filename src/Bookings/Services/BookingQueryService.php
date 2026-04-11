@@ -3,7 +3,6 @@
 namespace MYVH\Bookings\Services;
 
 use MYVH\Bookings\BookingRepository;
-use MYVH\Bookings\BookingStatus;
 use MYVH\Customers\CustomerRepository;
 
 if (!defined('ABSPATH')) exit;
@@ -12,11 +11,17 @@ class BookingQueryService
 {
     private $booking_repo;
     private $customer_repo;
+    private $booking_list_grouping_service;
 
-    public function __construct(BookingRepository $booking_repo, CustomerRepository $customer_repo)
+    public function __construct(
+        BookingRepository $booking_repo,
+        CustomerRepository $customer_repo,
+        BookingListGroupingService $booking_list_grouping_service
+    )
     {
         $this->booking_repo = $booking_repo;
         $this->customer_repo = $customer_repo;
+        $this->booking_list_grouping_service = $booking_list_grouping_service;
     }
 
     public function get_all_with_details($args = []): array
@@ -70,7 +75,7 @@ class BookingQueryService
         ];
 
         $bookings = $this->booking_repo->get_all_with_details($query_args);
-        $groups = $this->group_bookings($bookings);
+        $groups = $this->booking_list_grouping_service->group_bookings($bookings);
 
         return [
             'groups'           => $groups,
@@ -91,87 +96,4 @@ class BookingQueryService
         return $this->booking_repo->get_upcoming_bookings($customer_id);
     }
 
-    private function group_bookings($bookings): array
-    {
-        $groups = [];
-        $today = date('Y-m-d');
-
-        foreach ($bookings as $booking) {
-            if (!empty($booking['RecurringPatternId'])) {
-                $key = 'r_' . $booking['RecurringPatternId'];
-
-                if (!isset($groups[$key])) {
-                    $groups[$key] = [
-                        'type'     => 'recurring',
-                        'pattern'  => [
-                            'Id'                 => $booking['RecurringPatternId'],
-                            'RecurrenceType'     => $booking['RecurrenceType'],
-                            'RecurrenceInterval' => $booking['RecurrenceInterval'],
-                            'RecurrenceDay'      => $booking['RecurrenceDay'],
-                            'RecurrenceWeek'     => $booking['RecurrenceWeek'],
-                            'StartDate'          => $booking['PatternStartDate'],
-                            'EndDate'            => $booking['PatternEndDate'],
-                            'IsActive'           => $booking['PatternIsActive'],
-                        ],
-                        'bookings' => [],
-                    ];
-                }
-
-                $groups[$key]['bookings'][] = $booking;
-                continue;
-            }
-
-            $groups['b_' . $booking['Id']] = [
-                'type'     => 'standalone',
-                'bookings' => [$booking],
-            ];
-        }
-
-        foreach ($groups as &$group) {
-            if ($group['type'] === 'recurring') {
-                $group['next_booking'] = $this->find_next_booking($group['bookings'], $today);
-                $group['status'] = $this->determine_group_status($group['bookings']);
-                $group['count'] = count($group['bookings']);
-                continue;
-            }
-
-            $booking = $group['bookings'][0];
-            $group['next_booking'] = $booking;
-            $group['status'] = $booking['Status'];
-            $group['count'] = 1;
-        }
-        unset($group);
-
-        return $groups;
-    }
-
-    private function find_next_booking($bookings, $today): ?array
-    {
-        foreach (array_reverse($bookings) as $booking) {
-            if ($booking['StartDate'] >= $today && $booking['Status'] !== BookingStatus::CANCELLED) {
-                return $booking;
-            }
-        }
-
-        return null;
-    }
-
-    private function determine_group_status($members): string
-    {
-        $statuses = array_column($members, 'Status');
-
-        foreach ($statuses as $status) {
-            if ($status === BookingStatus::CONFIRMED) {
-                return BookingStatus::CONFIRMED;
-            }
-        }
-
-        foreach ($statuses as $status) {
-            if ($status === BookingStatus::PENDING) {
-                return BookingStatus::PENDING;
-            }
-        }
-
-        return $statuses[0] ?? BookingStatus::COMPLETED;
-    }
 }

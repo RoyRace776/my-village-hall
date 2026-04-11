@@ -8,6 +8,7 @@ use MYVH\Tests\Unit\UnitTestCase;
 class BookingQueryServiceTest extends UnitTestCase {
     private $booking_repo;
     private $customer_repo;
+    private $grouping_service;
     private $service;
 
     protected function setUp(): void {
@@ -15,10 +16,12 @@ class BookingQueryServiceTest extends UnitTestCase {
 
         $this->booking_repo = $this->mock(\MYVH\Bookings\BookingRepository::class);
         $this->customer_repo = $this->mock(\MYVH\Customers\CustomerRepository::class);
+        $this->grouping_service = new \MYVH\Bookings\Services\BookingListGroupingService();
 
         $this->service = new \MYVH\Bookings\Services\BookingQueryService(
             $this->booking_repo,
-            $this->customer_repo
+            $this->customer_repo,
+            $this->grouping_service
         );
     }
 

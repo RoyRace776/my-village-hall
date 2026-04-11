@@ -67,8 +67,11 @@ class BookingServiceTest extends UnitTestCase {
     private $recurring_pattern_service;
     private $booking_charge_service;
     private $booking_chargeable_hours_calculator;
+    private $booking_creation_event_dispatcher;
     private $booking_deletion_service;
+    private $booking_lifecycle_event_dispatcher;
     private $booking_access_control;
+    private $booking_list_grouping_service;
     private $booking_movement_service;
     private $booking_query_service;
     private $booking_status_transition_dispatcher;
@@ -99,15 +102,18 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_charge_repo
         );
         $this->booking_chargeable_hours_calculator = new \MYVH\Bookings\Services\BookingChargeableHoursCalculator();
+        $this->booking_creation_event_dispatcher = new \MYVH\Bookings\Services\BookingCreationEventDispatcher();
         $this->booking_deletion_service  = new \MYVH\Bookings\Services\BookingDeletionService(
             $this->booking_repo,
             $this->booking_addon_repo,
             $this->booking_charge_repo
         );
+        $this->booking_lifecycle_event_dispatcher = new \MYVH\Bookings\Services\BookingLifecycleEventDispatcher();
         $this->booking_access_control    = new \MYVH\Bookings\Services\BookingAccessControl(
             $this->booking_repo,
             $this->mock(\MYVH\Organisations\OrganisationRepository::class)
         );
+        $this->booking_list_grouping_service = new \MYVH\Bookings\Services\BookingListGroupingService();
         $this->booking_movement_service  = new \MYVH\Bookings\Services\BookingMovementService(
             $this->room_service,
             $this->availability,
@@ -115,7 +121,8 @@ class BookingServiceTest extends UnitTestCase {
         );
         $this->booking_query_service     = new \MYVH\Bookings\Services\BookingQueryService(
             $this->booking_repo,
-            $this->mock(\MYVH\Customers\CustomerRepository::class)
+            $this->mock(\MYVH\Customers\CustomerRepository::class),
+            $this->booking_list_grouping_service
         );
         $this->booking_status_transition_dispatcher = new \MYVH\Bookings\Services\BookingStatusTransitionDispatcher();
         $this->booking_update_event_dispatcher = new \MYVH\Bookings\Services\BookingUpdateEventDispatcher();
@@ -136,7 +143,9 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_addon_sync_service,
             $this->booking_charge_service,
             $this->booking_chargeable_hours_calculator,
+            $this->booking_creation_event_dispatcher,
             $this->booking_deletion_service,
+            $this->booking_lifecycle_event_dispatcher,
             $this->booking_access_control,
             $this->booking_movement_service,
             $this->booking_query_service,
@@ -162,8 +171,11 @@ class BookingServiceTest extends UnitTestCase {
             $this->recurring_pattern_service,
             $this->booking_charge_service,
             $this->booking_chargeable_hours_calculator,
+            $this->booking_creation_event_dispatcher,
             $this->booking_deletion_service,
+            $this->booking_lifecycle_event_dispatcher,
             $this->booking_access_control,
+            $this->booking_list_grouping_service,
             $this->booking_movement_service,
             $this->booking_query_service,
             $this->booking_status_transition_dispatcher,

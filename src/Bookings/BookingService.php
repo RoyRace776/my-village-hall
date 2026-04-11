@@ -8,7 +8,9 @@ use MYVH\Bookings\Services\BookingAccessControl;
 use MYVH\Bookings\Services\BookingAddonSyncService;
 use MYVH\Bookings\Services\BookingChargeService;
 use MYVH\Bookings\Services\BookingChargeableHoursCalculator;
+use MYVH\Bookings\Services\BookingCreationEventDispatcher;
 use MYVH\Bookings\Services\BookingDeletionService;
+use MYVH\Bookings\Services\BookingLifecycleEventDispatcher;
 use MYVH\Bookings\Services\BookingMovementService;
 use MYVH\Bookings\Services\BookingQueryService;
 use MYVH\Bookings\Services\BookingStatusTransitionDispatcher;
@@ -36,7 +38,9 @@ class BookingService {
     private $booking_addon_sync_service;
     private $booking_charge_service;
     private $booking_chargeable_hours_calculator;
+    private $booking_creation_event_dispatcher;
     private $booking_deletion_service;
+    private $booking_lifecycle_event_dispatcher;
     private $booking_access_control;
     private $booking_movement_service;
     private $booking_query_service;
@@ -55,7 +59,9 @@ class BookingService {
         BookingAddonSyncService $booking_addon_sync_service,
         BookingChargeService $booking_charge_service,
         BookingChargeableHoursCalculator $booking_chargeable_hours_calculator,
+        BookingCreationEventDispatcher $booking_creation_event_dispatcher,
         BookingDeletionService $booking_deletion_service,
+        BookingLifecycleEventDispatcher $booking_lifecycle_event_dispatcher,
         BookingAccessControl $booking_access_control,
         BookingMovementService $booking_movement_service,
         BookingQueryService $booking_query_service,
@@ -72,7 +78,9 @@ class BookingService {
         $this->booking_addon_sync_service = $booking_addon_sync_service;
         $this->booking_charge_service = $booking_charge_service;
         $this->booking_chargeable_hours_calculator = $booking_chargeable_hours_calculator;
+        $this->booking_creation_event_dispatcher = $booking_creation_event_dispatcher;
         $this->booking_deletion_service = $booking_deletion_service;
+        $this->booking_lifecycle_event_dispatcher = $booking_lifecycle_event_dispatcher;
         $this->booking_access_control = $booking_access_control;
         $this->booking_movement_service = $booking_movement_service;
         $this->booking_query_service = $booking_query_service;
@@ -86,17 +94,7 @@ class BookingService {
         $this->last_warnings = [];
         $this->booking_repo->begin();
         try {
-            if (!empty($data['booking_id'])) {
-                EventDispatcher::dispatch(
-                    BookingEvents::BEFORE_UPDATE,
-                    $data
-                );
-            } else {
-                EventDispatcher::dispatch(
-                BookingEvents::BEFORE_CREATE,
-                    $data
-                );
-            }
+            $this->booking_lifecycle_event_dispatcher->dispatch_before_save($data);
 
             $validation_result = $this->validator->validate($data);
             if (is_wp_error($validation_result)) {
@@ -224,10 +222,7 @@ class BookingService {
             $data
         );
 
-        EventDispatcher::dispatch(
-            BookingEvents::AFTER_UPDATE,
-            $data
-        );
+        $this->booking_lifecycle_event_dispatcher->dispatch_after_update($data);
 
         return $booking_id;
     }
@@ -277,27 +272,7 @@ class BookingService {
             return $charge_result;
         }
 
-        EventDispatcher::dispatch(
-            BookingEvents::CREATED,
-            [
-                'booking_id' => $booking_id,
-                'room_id' => $data['room_id'],
-                'start' => $data['start_time'],
-                'end' => $data['end_time']
-            ]
-        );
-
-        if ($data['status'] == BookingStatus::CONFIRMED) {
-            EventDispatcher::dispatch(
-                BookingEvents::CONFIRMED,
-                [
-                    'booking_id' => $booking_id,
-                    'room_id' => $data['room_id'],
-                    'start' => $data['start_time'],
-                    'end' => $data['end_time']
-                ]
-            );
-        }
+        $this->booking_creation_event_dispatcher->dispatch_created($booking_id, $data);
 
         $recurring_result = $this->recurring_booking_creator->create_for_booking($booking_id, $data);
         if (is_wp_error($recurring_result)) {
@@ -308,10 +283,7 @@ class BookingService {
             $this->last_warnings = array_merge($this->last_warnings, $recurring_result);
         }
 
-        EventDispatcher::dispatch(
-            BookingEvents::AFTER_CREATE,
-            $data + ['booking_id' => $booking_id]
-        );
+        $this->booking_creation_event_dispatcher->dispatch_after_create($booking_id, $data);
 
         return $booking_id;
     }
