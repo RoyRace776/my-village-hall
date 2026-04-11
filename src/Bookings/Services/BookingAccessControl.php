@@ -57,19 +57,20 @@ class BookingAccessControl
         $min_notice_hours = max(0, intval(myvh_setting('booking.min_notice_hours', 24)));
         $min_notice_days = (int) ceil($min_notice_hours / 24);
 
-        if (!$start_ts || $start_ts <= $now_ts) {
+        // Pending bookings can always be deleted, regardless of date.
+        if ($status === BookingStatus::PENDING) {
             return [
-                'can_delete' => false,
-                'reason' => 'Past bookings cannot be deleted.',
+                'can_delete' => true,
+                'reason' => '',
                 'min_notice_hours' => $min_notice_hours,
                 'min_notice_days' => $min_notice_days,
             ];
         }
 
-        if ($status === BookingStatus::PENDING || $status === strtolower(BookingStatus::PENDING)) {
+        if (!$start_ts || $start_ts <= $now_ts) {
             return [
-                'can_delete' => true,
-                'reason' => '',
+                'can_delete' => false,
+                'reason' => 'Past bookings cannot be deleted.',
                 'min_notice_hours' => $min_notice_hours,
                 'min_notice_days' => $min_notice_days,
             ];

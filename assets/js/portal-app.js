@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return {
                 page: 'bookings',
                 run: function() {
-                    window.MyvhPortalCalendarFlow?.openView(bookingId);
+                    window.MyvhPortalCalendarFlow?.deleteBooking(bookingId);
                 }
             };
         }

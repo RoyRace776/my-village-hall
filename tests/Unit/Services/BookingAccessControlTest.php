@@ -91,6 +91,21 @@ class BookingAccessControlTest extends UnitTestCase {
     }
 
     /** @test */
+    public function can_delete_allows_pending_past_booking(): void {
+        \Brain\Monkey\Functions\when('myvh_setting')->justReturn(24);
+        \Brain\Monkey\Functions\when('current_time')->justReturn(strtotime('2026-04-10 10:00:00'));
+
+        $result = $this->service->can_delete([
+            'StartDate' => '2026-04-01',
+            'StartTime' => '10:00:00',
+            'Status' => BookingStatus::PENDING,
+        ]);
+
+        $this->assertTrue($result['can_delete']);
+        $this->assertSame('', $result['reason']);
+    }
+
+    /** @test */
     public function can_delete_blocks_confirmed_booking_inside_notice_window(): void {
         \Brain\Monkey\Functions\when('myvh_setting')->justReturn(48);
         \Brain\Monkey\Functions\when('current_time')->justReturn(strtotime('2026-04-10 10:00:00'));
