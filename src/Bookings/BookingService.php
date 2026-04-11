@@ -11,6 +11,7 @@ use MYVH\Bookings\Services\BookingChargeableHoursCalculator;
 use MYVH\Bookings\Services\BookingDeletionService;
 use MYVH\Bookings\Services\BookingMovementService;
 use MYVH\Bookings\Services\BookingQueryService;
+use MYVH\Bookings\Services\BookingStatusTransitionDispatcher;
 use MYVH\Bookings\Services\BookingUpdateEventDispatcher;
 use MYVH\Bookings\Services\RecurringBookingCreator;
 use MYVH\Bookings\Services\RecurringBookingUpdater;
@@ -39,6 +40,7 @@ class BookingService {
     private $booking_access_control;
     private $booking_movement_service;
     private $booking_query_service;
+    private $booking_status_transition_dispatcher;
     private $booking_update_event_dispatcher;
     private $recurring_booking_creator;
     private $recurring_booking_updater;
@@ -57,6 +59,7 @@ class BookingService {
         BookingAccessControl $booking_access_control,
         BookingMovementService $booking_movement_service,
         BookingQueryService $booking_query_service,
+        BookingStatusTransitionDispatcher $booking_status_transition_dispatcher,
         BookingUpdateEventDispatcher $booking_update_event_dispatcher,
         RecurringBookingCreator $recurring_booking_creator,
         RecurringBookingUpdater $recurring_booking_updater
@@ -73,6 +76,7 @@ class BookingService {
         $this->booking_access_control = $booking_access_control;
         $this->booking_movement_service = $booking_movement_service;
         $this->booking_query_service = $booking_query_service;
+        $this->booking_status_transition_dispatcher = $booking_status_transition_dispatcher;
         $this->booking_update_event_dispatcher = $booking_update_event_dispatcher;
         $this->recurring_booking_creator = $recurring_booking_creator;
         $this->recurring_booking_updater = $recurring_booking_updater;
@@ -190,17 +194,12 @@ class BookingService {
     private function apply_single_booking_update(int $booking_id, array $data, array $record, array $current_record): int|WP_Error {
         $new_status = sanitize_text_field((string) ($record['Status'] ?? $data['status'] ?? ''));
 
-        if (isset($current_record['Status']) && $current_record['Status'] !== $new_status) {
-            EventDispatcher::dispatch(
-                BookingEvents::BEFORE_STATUS_CHANGE,
-                [
-                    'booking_id' => $booking_id,
-                    'old_status' => $current_record['Status'],
-                    'new_status' => $new_status,
-                    'data' => $data,
-                ]
-            );
-        }
+        $this->booking_status_transition_dispatcher->dispatch_before(
+            $booking_id,
+            $current_record['Status'] ?? null,
+            $new_status,
+            $data
+        );
 
         $result = $this->booking_repo->update($record, ['Id' => $booking_id]);
         if ($result === false) {
@@ -218,17 +217,12 @@ class BookingService {
 
         $this->booking_update_event_dispatcher->dispatch($data, $current_record['Status'] ?? null);
 
-        if (isset($current_record['Status']) && $current_record['Status'] !== $new_status) {
-            EventDispatcher::dispatch(
-                BookingEvents::AFTER_STATUS_CHANGE,
-                [
-                    'booking_id' => $booking_id,
-                    'old_status' => $current_record['Status'],
-                    'new_status' => $new_status,
-                    'data' => $data,
-                ]
-            );
-        }
+        $this->booking_status_transition_dispatcher->dispatch_after(
+            $booking_id,
+            $current_record['Status'] ?? null,
+            $new_status,
+            $data
+        );
 
         EventDispatcher::dispatch(
             BookingEvents::AFTER_UPDATE,

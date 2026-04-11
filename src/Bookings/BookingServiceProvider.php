@@ -15,6 +15,7 @@ use MYVH\Bookings\Services\BookingChargeableHoursCalculator;
 use MYVH\Bookings\Services\BookingDeletionService;
 use MYVH\Bookings\Services\BookingMovementService;
 use MYVH\Bookings\Services\BookingQueryService;
+use MYVH\Bookings\Services\BookingStatusTransitionDispatcher;
 use MYVH\Bookings\Services\BookingUpdateEventDispatcher;
 use MYVH\Bookings\Services\RecurringBookingCreator;
 use MYVH\Bookings\Services\RecurringBookingUpdater;
@@ -49,6 +50,7 @@ class BookingServiceProvider
         $container->singleton(BookingAccessControl::class);
         $container->singleton(BookingMovementService::class);
         $container->singleton(BookingQueryService::class);
+        $container->singleton(BookingStatusTransitionDispatcher::class);
         $container->singleton(BookingUpdateEventDispatcher::class);
         $container->singleton(RecurringBookingCreator::class);
         $container->singleton(RecurringBookingUpdater::class);

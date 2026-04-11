@@ -71,6 +71,7 @@ class BookingServiceTest extends UnitTestCase {
     private $booking_access_control;
     private $booking_movement_service;
     private $booking_query_service;
+    private $booking_status_transition_dispatcher;
     private $booking_update_event_dispatcher;
     private $recurring_booking_creator;
     private $recurring_booking_updater;
@@ -116,6 +117,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_repo,
             $this->mock(\MYVH\Customers\CustomerRepository::class)
         );
+        $this->booking_status_transition_dispatcher = new \MYVH\Bookings\Services\BookingStatusTransitionDispatcher();
         $this->booking_update_event_dispatcher = new \MYVH\Bookings\Services\BookingUpdateEventDispatcher();
         $this->recurring_booking_creator = new \MYVH\Bookings\Services\RecurringBookingCreator(
             $this->recurring_pattern_service
@@ -138,6 +140,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_access_control,
             $this->booking_movement_service,
             $this->booking_query_service,
+            $this->booking_status_transition_dispatcher,
             $this->booking_update_event_dispatcher,
             $this->recurring_booking_creator,
             $this->recurring_booking_updater
@@ -163,6 +166,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_access_control,
             $this->booking_movement_service,
             $this->booking_query_service,
+            $this->booking_status_transition_dispatcher,
             $this->booking_update_event_dispatcher,
             $this->recurring_booking_creator,
             $this->recurring_booking_updater
