@@ -59,15 +59,18 @@ class BookingServiceTest extends UnitTestCase {
     private $booking_repo;
     private $booking_charge_repo;
     private $booking_addon_repo;
-    private $addon_repo;
     private $addon_service;
     private $validator;
     private $availability;
-    private $room_rules;
     private $pricing;
-    private $customer_repo;
-    private $organisation_repo;
     private $recurring_pattern_service;
+    private $booking_charge_service;
+    private $booking_deletion_service;
+    private $booking_access_control;
+    private $booking_movement_service;
+    private $booking_query_service;
+    private $recurring_booking_creator;
+    private $recurring_booking_updater;
 
     /** @var \MYVH\Bookings\BookingService */
     private $service;
@@ -81,30 +84,54 @@ class BookingServiceTest extends UnitTestCase {
         $this->booking_repo              = $this->mock(\MYVH\Bookings\BookingRepository::class);
         $this->booking_charge_repo       = $this->mock(\MYVH\Bookings\BookingChargeRepository::class);
         $this->booking_addon_repo        = $this->mock(\MYVH\Bookings\BookingAddonRepository::class);
-        $this->addon_repo                = $this->mock(\MYVH\Addons\AddonRepository::class);
         $this->addon_service             = $this->mock(\MYVH\Addons\AddonService::class);
         $this->validator                 = $this->mock(\MYVH\Bookings\BookingValidator::class);
         $this->availability              = $this->mock(\MYVH\Availability\AvailabilityService::class);
-        $this->room_rules                = $this->mock(\MYVH\Rooms\RoomRulesService::class);
         $this->pricing                   = $this->mock(\MYVH\Pricing\PricingService::class);
-        $this->customer_repo             = $this->mock(\MYVH\Customers\CustomerRepository::class);
-        $this->organisation_repo         = $this->mock(\MYVH\Organisations\OrganisationRepository::class);
         $this->recurring_pattern_service = $this->mock(\MYVH\Bookings\RecurringPatternService::class);
+        $this->booking_charge_service    = new \MYVH\Bookings\Services\BookingChargeService(
+            $this->pricing,
+            $this->booking_charge_repo
+        );
+        $this->booking_deletion_service  = new \MYVH\Bookings\Services\BookingDeletionService(
+            $this->booking_repo,
+            $this->booking_addon_repo,
+            $this->booking_charge_repo
+        );
+        $this->booking_access_control    = new \MYVH\Bookings\Services\BookingAccessControl(
+            $this->booking_repo,
+            $this->mock(\MYVH\Organisations\OrganisationRepository::class)
+        );
+        $this->booking_movement_service  = new \MYVH\Bookings\Services\BookingMovementService(
+            $this->room_service,
+            $this->availability,
+            $this->booking_repo
+        );
+        $this->booking_query_service     = new \MYVH\Bookings\Services\BookingQueryService(
+            $this->booking_repo,
+            $this->mock(\MYVH\Customers\CustomerRepository::class)
+        );
+        $this->recurring_booking_creator = new \MYVH\Bookings\Services\RecurringBookingCreator(
+            $this->recurring_pattern_service
+        );
+        $this->recurring_booking_updater = new \MYVH\Bookings\Services\RecurringBookingUpdater(
+            $this->booking_repo,
+            $this->recurring_pattern_service
+        );
 
         $this->service = new \MYVH\Bookings\BookingService(
             $this->room_service,
             $this->booking_repo,
-            $this->booking_charge_repo,
             $this->booking_addon_repo,
-            $this->addon_repo,
             $this->addon_service,
             $this->validator,
-            $this->availability,
-            $this->room_rules,
-            $this->pricing,
-            $this->customer_repo,
-            $this->organisation_repo,
-            $this->recurring_pattern_service
+            $this->booking_charge_service,
+            $this->booking_deletion_service,
+            $this->booking_access_control,
+            $this->booking_movement_service,
+            $this->booking_query_service,
+            $this->recurring_booking_creator,
+            $this->recurring_booking_updater
         );
     }
 
@@ -115,15 +142,18 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_repo,
             $this->booking_charge_repo,
             $this->booking_addon_repo,
-            $this->addon_repo,
             $this->addon_service,
             $this->validator,
             $this->availability,
-            $this->room_rules,
             $this->pricing,
-            $this->customer_repo,
-            $this->organisation_repo,
-            $this->recurring_pattern_service
+            $this->recurring_pattern_service,
+            $this->booking_charge_service,
+            $this->booking_deletion_service,
+            $this->booking_access_control,
+            $this->booking_movement_service,
+            $this->booking_query_service,
+            $this->recurring_booking_creator,
+            $this->recurring_booking_updater
         );
         parent::tearDown();
     }
