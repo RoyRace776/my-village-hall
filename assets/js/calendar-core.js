@@ -324,6 +324,7 @@ window.CalendarCore = (function () {
         const statusColors = getStatusColors(opts);
 
         if (calendar) {
+            const targetCalendar = calendar;
             const start = calendar.visibleStart();
             const end = calendar.visibleEnd();
 
@@ -334,18 +335,23 @@ window.CalendarCore = (function () {
             url = appendVenueParam(url, opts);
 
             fetch(url).then(r => r.json()).then(events => {
+                if (!targetCalendar || targetCalendar !== calendar || !targetCalendar.events) {
+                    return;
+                }
+
                 events.forEach(e => {
                     e.toolTip = buildEventTooltip(e, context);
                 });
                 const calendarEvents = currentDetail === "Month"
                     ? events.filter(e => !e?.tags?.isBuffer)
                     : events;
-                calendar.events.list = applyEventStatusColors(calendarEvents, statusColors);
-                calendar.update();
+                targetCalendar.events.list = applyEventStatusColors(calendarEvents, statusColors);
+                targetCalendar.update();
             }).catch(err => console.error("Failed to load calendar events", err));
         }
 
         if (scheduler) {
+            const targetScheduler = scheduler;
             const start = scheduler.startDate;
             const end = scheduler.startDate.addDays(scheduler.days || 1);
 
@@ -356,11 +362,19 @@ window.CalendarCore = (function () {
             url = appendVenueParam(url, opts);
 
             fetch(url).then(r => r.json()).then(events => {
+                if (!targetScheduler || targetScheduler !== scheduler || !targetScheduler.events) {
+                    return;
+                }
+
                 events.forEach(e => {
+                    const resourceValue = (typeof e.resource !== "undefined" && e.resource !== null)
+                        ? e.resource
+                        : (e?.tags?.roomId ?? "");
+                    e.resource = String(resourceValue);
                     e.toolTip = buildEventTooltip(e, context);
                 });
-                scheduler.events.list = applyEventStatusColors(events, statusColors);
-                scheduler.update();
+                targetScheduler.events.list = applyEventStatusColors(events, statusColors);
+                targetScheduler.update();
             }).catch(err => console.error("Failed to load scheduler events", err));
         }
     }
@@ -459,7 +473,7 @@ window.CalendarCore = (function () {
             }
 
             groups[venueId].rooms.push({
-                id: room.id,
+                id: String(room.id),
                 name: room.name || "Room"
             });
         });
@@ -694,7 +708,6 @@ window.CalendarCore = (function () {
 
         destroy();
 
-        const maxBookingDaysAhead = Number.isFinite(Number(opts.maxBookingDaysAhead)) ? Number(opts.maxBookingDaysAhead) : 365;
         let startDate = getSchedulerStartDate(detail, opts.startDate);
         const config = {
             startDate: startDate,
@@ -739,29 +752,31 @@ window.CalendarCore = (function () {
         const schedulerDayHeaderFormat = "ddd d";
 
         if (detail === "Day") {
-            startDate = DayPilot.Date.today().getDatePart();
+            startDate = getSchedulerStartDate("Day", opts.startDate);
             config.startDate = startDate;
-            config.scale = "Hour";
-            config.days = Math.max(1, maxBookingDaysAhead);
+            config.scale = "CellDuration";
+            config.days = 1;
             config.cellDuration = 15;
             config.timeHeaders = [
                 { groupBy: "Day", format: opts.headerDateFormat || "d MMM" },
                 { groupBy: "Hour" }
             ];
         } else if (detail === "Month") {
-            startDate = DayPilot.Date.today().getDatePart();
+            startDate = getSchedulerStartDate("Month", opts.startDate);
+            const monthJsDate = new Date(startDate.toString("yyyy-MM-dd") + "T00:00:00");
+            const daysInMonth = new Date(monthJsDate.getFullYear(), monthJsDate.getMonth() + 1, 0).getDate();
             config.startDate = startDate;
             config.scale = "Day";
-            config.days = Math.max(1, maxBookingDaysAhead);
+            config.days = Math.max(1, daysInMonth);
             config.timeHeaders = [
                 { groupBy: "Month" },
                 { groupBy: "Day", format: schedulerDayHeaderFormat }
             ];
         } else {
-            startDate = DayPilot.Date.today().getDatePart();
+            startDate = getSchedulerStartDate("Week", opts.startDate);
             config.startDate = startDate;
             config.scale = "Day";
-            config.days = Math.max(1, maxBookingDaysAhead);
+            config.days = 7;
             config.timeHeaders = [
                 { groupBy: "Month" },
                 { groupBy: "Day", format: schedulerDayHeaderFormat }
@@ -769,6 +784,8 @@ window.CalendarCore = (function () {
         }
 
         scheduler = new DayPilot.Scheduler(containerId, config);
+        scheduler.resources = [];
+        scheduler.init();
 
         let roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
         roomsUrl = appendVenueParam(roomsUrl, opts);
@@ -781,7 +798,7 @@ window.CalendarCore = (function () {
                     : Object.values(res?.data || res || {});
 
                 scheduler.resources = buildGroupedSchedulerResources(rooms);
-                scheduler.init();
+                scheduler.update();
                 loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
             })
             .catch(err => {

@@ -502,18 +502,38 @@ var Calendar = (function() {
          * Ensure selectable range handlers are set up for calendar and scheduler.
          */
         function ensureSelectableRangeHandlers() {
+            function canSafelyUpdate(control) {
+                if (!control || typeof control.update !== 'function') {
+                    return false;
+                }
+
+                if (control.internal && typeof control.internal.initialized === 'function') {
+                    return !!control.internal.initialized();
+                }
+
+                if ('_initialized' in control) {
+                    return !!control._initialized;
+                }
+
+                return true;
+            }
+
             const cal = api?.calendar;
             if (cal) {
                 cal.timeRangeSelectedHandling = 'Enabled';
                 cal.onTimeRangeSelected = openSelectionModal;
-                cal.update();
+                if (canSafelyUpdate(cal)) {
+                    cal.update();
+                }
             }
 
             const sched = api?.scheduler;
             if (sched) {
                 sched.timeRangeSelectedHandling = 'Enabled';
                 sched.onTimeRangeSelected = openSelectionModal;
-                sched.update();
+                if (canSafelyUpdate(sched)) {
+                    sched.update();
+                }
             }
         }
 
