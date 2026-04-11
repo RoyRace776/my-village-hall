@@ -1,6 +1,4 @@
 window.BookingModalCreate = (function() {
-
-    // TODO take out references to view only mode
     let config = {};
     let modal, form;
     let isBound = false;
@@ -13,7 +11,6 @@ window.BookingModalCreate = (function() {
      * @param {object} userConfig - Configuration overrides and hooks
      */
     function init(userConfig) {
-        console.log("BookingModalCreate init running");
         config = {
             ajax_url: null,
             nonce: 'myvh_calendar',
@@ -125,7 +122,6 @@ window.BookingModalCreate = (function() {
      * @param {object} data - Data to prefill the form
      */
     function open(data = {}) {
-        console.log("BookingModalCreate open called with data:", data);
         // Always define submitBtn at the top so it's available in both modes
         const submitBtn = form.querySelector('button[type="submit"]');
         const editBookingId = data.bookingId || data.args?.id || 0;
@@ -149,13 +145,13 @@ window.BookingModalCreate = (function() {
             }
 
             const nonce = config.context === "portal" ? config.nonce : "myvh_calendar";
+            const loadAction = config.context === 'portal' ? 'myvh_portal_get_booking' : 'myvh_calendar_get_booking';
 
             setLoading(true);
 
-            fetch(`${config.ajax_url}?action=myvh_calendar_get_booking&booking_id=${encodeURIComponent(data.args.id)}&nonce=${encodeURIComponent(nonce)}`)
+            fetch(`${config.ajax_url}?action=${encodeURIComponent(loadAction)}&booking_id=${encodeURIComponent(data.args.id)}&nonce=${encodeURIComponent(nonce)}`)
                 .then(r => r.json())
                 .then(res => {
-                    console.log('Raw response:', res);  // ← add this
                     if (!res || !res.success || !res.data.booking) {
                         throw new Error('Booking not found');
                     }
@@ -169,22 +165,16 @@ window.BookingModalCreate = (function() {
                         .then(() => booking);
                 })
                 .then((booking) => {
-                    //TODO: This needs tidying up - it’s a mix of old and new code, but the key point is to set values first, then disable fields, and avoid any direct DOM manipulation that conflicts with our controlled approach.
-                    // ✅ Safe field mapping
+                    // Set values first, then disable fields to keep controlled inputs stable.
                     setValue('room_id', booking['RoomId']);
                     setValue('customer_id', booking['CustomerId']);
                     setValue('organisation_id', booking['OrganisationId']);
                     setValue('description', booking['Description']);
 
-                    // ✅ Use your helper (don’t manually split)
                     setDisplayedDateTimes(booking['StartDate'], booking['EndDate']);
                     applyExistingAddons(booking.__addons || []);
                     setRecurringEditScopeVisibility(!!booking['RecurringPatternId']);
 
-                    // ❌ REMOVE this (it’s wrong and conflicts)
-                    // form.querySelector("[name=text]").value = booking.Description;
-
-                    // ✅ Disable AFTER values set
                     form.querySelectorAll('input, select, textarea')
                         .forEach(el => el.disabled = true);
 
@@ -220,7 +210,8 @@ window.BookingModalCreate = (function() {
 
             setLoading(true);
 
-            fetch(`${config.ajax_url}?action=myvh_calendar_get_booking&booking_id=${encodeURIComponent(config.editBookingId)}&nonce=${encodeURIComponent(config.nonce)}`)
+            const loadAction = config.context === 'portal' ? 'myvh_portal_get_booking' : 'myvh_calendar_get_booking';
+            fetch(`${config.ajax_url}?action=${encodeURIComponent(loadAction)}&booking_id=${encodeURIComponent(config.editBookingId)}&nonce=${encodeURIComponent(config.nonce)}`)
                 .then(r => r.json())
                 .then(res => {
                     if (!res || !res.success || !res.data.booking) {
@@ -1006,10 +997,12 @@ window.BookingModalCreate = (function() {
         const formData = buildSubmitFormData();
 
         setLoading(true);
-        const action = config.editMode ? "myvh_update_event" : "myvh_create_event";
+        const action = config.context === 'portal'
+            ? (config.editMode ? 'myvh_portal_update_booking_modal' : 'myvh_portal_create_booking')
+            : (config.editMode ? 'myvh_update_event' : 'myvh_create_event');
         formData.append("action", action);
         formData.append("nonce", config.nonce);
-        if (config.context) {
+        if (config.context && config.context !== 'portal') {
             formData.append("context", config.context);
         }
 

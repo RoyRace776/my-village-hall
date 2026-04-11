@@ -382,17 +382,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             targetDiv.innerHTML = renderDrilldownState('Loading bookings...', '');
 
-            // Build AJAX params
-            const params = new URLSearchParams({
-                action: 'myvh_portal_get_uninvoiced_bookings',
-                nonce: myvhPortal.nonce
-            });
-            if (customerId) params.append('customer_id', customerId);
-            if (organisationId) params.append('organisation_id', organisationId);
-
             // Fetch uninvoiced bookings and render table
-            fetch(myvhPortal.ajax_url + '?' + params.toString())
-                .then(r => r.json())
+            window.MyvhPortalAjax.get({
+                action: 'myvh_portal_get_uninvoiced_bookings',
+                customer_id: customerId || '',
+                organisation_id: organisationId || ''
+            }, { scope: 'portal' })
                 .then(res => {
                     if (!res.success || !Array.isArray(res.data.bookings)) {
                         targetDiv.innerHTML = renderDrilldownState('No bookings found or error.', 'Try again in a moment.');
@@ -741,23 +736,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * @returns {Promise<object>} - The JSON response
      */
     function postPortalForm(action, payload) {
-        const formData = (payload instanceof HTMLFormElement)
-            ? new FormData(payload)
-            : new FormData();
-
-        if (!(payload instanceof HTMLFormElement) && payload && typeof payload === 'object') {
-            Object.keys(payload).forEach((key) => {
-                formData.append(key, payload[key]);
-            });
-        }
-
-        formData.append('action', action);
-        formData.append('nonce', myvhPortal.nonce);
-
-        return fetch(myvhPortal.ajax_url, {
-            method: 'POST',
-            body: formData,
-        }).then(r => r.json());
+        return window.MyvhPortalAjax.post(action, payload, { scope: 'portal' });
     }
 
     function resolveMessageText(payload, fallbackText) {

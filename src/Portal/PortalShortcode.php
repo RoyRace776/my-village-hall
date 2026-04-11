@@ -42,6 +42,7 @@ class PortalShortcode implements ShortcodeInterface
         wp_localize_script( 'myvh-calendar-portal', 'myvhCal', [
             'ajax_url'              => admin_url( 'admin-ajax.php' ),
             'nonce'                 => wp_create_nonce( 'myvh_calendar' ),
+            'portalNonce'           => wp_create_nonce( 'myvh_portal' ),
             'headerDateFormat'      => myvh_setting( 'calendar.calendar_date_format', 'd MMM' ),
             'startOfWeek'           => (int) get_option( 'start_of_week', 1 ),
             'maxBookingDaysAhead'   => (int) myvh_setting( 'booking.max_booking_days', 365 ),

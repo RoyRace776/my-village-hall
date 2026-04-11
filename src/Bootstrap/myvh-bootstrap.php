@@ -37,6 +37,9 @@ if ( $myvh_container instanceof Container ) {
     $portal_controller = $myvh_container->get( MYVH\Portal\PortalController::class );
     $portal_controller->register();
 
+    $portal_booking_ajax = $myvh_container->get( MYVH\Portal\Ajax\PortalBookingAjaxController::class );
+    $portal_booking_ajax->register();
+
     $customer_user_sync = $myvh_container->get( MYVH\Customers\CustomerUserSync::class );
     $customer_user_sync->register();
 

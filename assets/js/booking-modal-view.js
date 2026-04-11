@@ -1,6 +1,4 @@
 window.BookingModalView = (function() {
-
-    // TODO take out references to view only mode
     let config = {};
     let modal, form;
     let isBound = false;
@@ -129,6 +127,7 @@ window.BookingModalView = (function() {
         applyNoInvoiceRequiredVisibility();
 
         const nonce = config.context === "portal" ? config.nonce : "myvh_calendar";
+        const loadAction = config.context === 'portal' ? 'myvh_portal_get_booking' : 'myvh_calendar_get_booking';
 
         setLoading(true);
         form.querySelectorAll('button[type="submit"]').forEach(button => {
@@ -136,10 +135,9 @@ window.BookingModalView = (function() {
         });
         modal.classList.remove('hidden');
 
-        fetch(`${config.ajax_url}?action=myvh_calendar_get_booking&booking_id=${encodeURIComponent(bookingId)}&nonce=${encodeURIComponent(nonce)}`)
+        fetch(`${config.ajax_url}?action=${encodeURIComponent(loadAction)}&booking_id=${encodeURIComponent(bookingId)}&nonce=${encodeURIComponent(nonce)}`)
                 .then(r => r.json())
                 .then(res => {
-                    console.log('Raw response:', res);  // ← add this
                     if (!res || !res.success || !res.data.booking) {
                         throw new Error('Booking not found');
                     }
@@ -150,7 +148,8 @@ window.BookingModalView = (function() {
                         canEdit: !!res.data.can_edit,
                         editReason: res.data.edit_reason || '',
                         canDelete: !!res.data.can_delete,
-                        deleteReason: res.data.delete_reason || ''
+                        deleteReason: res.data.delete_reason || '',
+                        canManageNoInvoiceRequired: !!res.data.can_manage_no_invoice_required
                     };
 
                     return payload;

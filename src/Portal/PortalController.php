@@ -97,8 +97,6 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_org_add_member', [$this, 'organisation_add_member']);
         add_action('wp_ajax_myvh_portal_org_remove_member', [$this, 'organisation_remove_member']);
         add_action('wp_ajax_myvh_portal_org_set_admin', [$this, 'organisation_set_member_admin']);
-        //add_action('wp_ajax_myvh_portal_update_booking', [$this, 'update_booking']);
-        //add_action('wp_ajax_myvh_portal_delete_booking', [$this, 'delete_booking']);
         add_action('wp_ajax_myvh_portal_add_client_admin', [$this, 'add_client_admin']);
         add_action('wp_ajax_myvh_portal_remove_client_admin', [$this, 'remove_client_admin']);
         add_action('wp_ajax_myvh_portal_save_customer', [$this, 'save_customer']);
@@ -119,7 +117,6 @@ class PortalController {
         add_action('wp_ajax_myvh_portal_update_invoice_status', [$this, 'update_invoice_status']);
         add_action('wp_ajax_myvh_portal_create_payment', [$this, 'create_payment']);
         add_action('wp_ajax_myvh_portal_delete_payment', [$this, 'delete_payment']);
-        //add_action('wp_ajax_myvh_portal_get_booking', [$this, 'get_booking']);
     }
 
     /**

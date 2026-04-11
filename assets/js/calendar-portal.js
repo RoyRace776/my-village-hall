@@ -310,9 +310,7 @@ var Calendar = (function() {
          * Open the booking modal for a selected range.
          */
         function openSelectionModal(args) {
-            console.log("openSelectionModal", args);
             if (!createModal || !args) {
-                console.log("createModal is null");
                 return;
             }
 
@@ -329,11 +327,9 @@ var Calendar = (function() {
         }
 
         /**
-         * Open the booking modal in read-only mode for an event.
+         * Open the booking view modal for an event.
          */
-        // TODO: Change this to use the view modal form rather than the create form in view only mode
         function openReadOnlyModal(args) {
-            console.log("openReadOnlyModal", args);
             if (!viewModal || !args || !args.e) {
                 return;
             }
@@ -386,16 +382,11 @@ var Calendar = (function() {
                 return Promise.resolve(false);
             }
 
-            const formData = new FormData();
-            formData.append('action', 'myvh_portal_delete_booking');
-            formData.append('nonce', myvhCal.nonce);
-            formData.append('booking_id', String(bookingId));
-
-            return fetch(myvhCal.ajax_url, {
-                method: 'POST',
-                body: formData
-            })
-                .then(function(response) { return response.json(); })
+            return window.MyvhPortalAjax.post(
+                'myvh_portal_delete_booking',
+                { booking_id: String(bookingId) },
+                { scope: 'portal' }
+            )
                 .then(function(result) {
                     if (!result || !result.success) {
                         throw new Error(result && result.data && result.data.message ? result.data.message : (result && result.data) || 'Failed to delete booking');
@@ -435,7 +426,7 @@ var Calendar = (function() {
 
             createModal.init({
                 ajax_url: myvhCal.ajax_url,
-                nonce: myvhCal.nonce,
+                nonce: myvhCal.portalNonce || myvhCal.nonce,
                 context: 'portal',
 
                 loadRooms: function() {
@@ -463,7 +454,7 @@ var Calendar = (function() {
 
             viewModal.init({
                 ajax_url: myvhCal.ajax_url,
-                nonce: myvhCal.nonce,
+                nonce: myvhCal.portalNonce || myvhCal.nonce,
                 context: 'portal',
 
                 loadRooms: function() {

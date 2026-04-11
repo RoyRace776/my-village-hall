@@ -279,9 +279,17 @@ class AssetLoader {
         );
 
         wp_enqueue_script(
+            'myvh-portal-ajax',
+            MYVH_PLUGIN_URL . 'assets/js/portal-ajax.js',
+            [],
+            self::asset_version( 'assets/js/portal-ajax.js' ),
+            true
+        );
+
+        wp_enqueue_script(
             'myvh-calendar-portal',
             MYVH_PLUGIN_URL . 'assets/js/calendar-portal.js',
-            [ 'myvh-booking-modal-create', 'myvh-booking-modal-view' ], // critical dependencies
+            [ 'myvh-booking-modal-create', 'myvh-booking-modal-view', 'myvh-portal-ajax' ], // critical dependencies
             self::asset_version( 'assets/js/calendar-portal.js' ),
             true
         );
@@ -305,7 +313,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-portal-app',
             MYVH_PLUGIN_URL . 'assets/js/portal-app.js',
-            [ 'myvh-dashboard', 'myvh-flatpickr-init' ],
+            [ 'myvh-dashboard', 'myvh-flatpickr-init', 'myvh-portal-ajax' ],
             self::asset_version( 'assets/js/portal-app.js' ),
             true
         );
