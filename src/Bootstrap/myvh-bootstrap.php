@@ -37,6 +37,21 @@ if ( $myvh_container instanceof Container ) {
     $portal_controller = $myvh_container->get( MYVH\Portal\PortalController::class );
     $portal_controller->register();
 
+    $portal_account_ajax = $myvh_container->get( MYVH\Portal\Ajax\PortalAccountAjaxController::class );
+    $portal_account_ajax->register();
+
+    $portal_admin_config_ajax = $myvh_container->get( MYVH\Portal\Ajax\PortalAdminConfigAjaxController::class );
+    $portal_admin_config_ajax->register();
+
+    $portal_people_ajax = $myvh_container->get( MYVH\Portal\Ajax\PortalPeopleAjaxController::class );
+    $portal_people_ajax->register();
+
+    $portal_billing_ajax = $myvh_container->get( MYVH\Portal\Ajax\PortalBillingAjaxController::class );
+    $portal_billing_ajax->register();
+
+    $portal_organisation_ajax = $myvh_container->get( MYVH\Portal\Ajax\PortalOrganisationAjaxController::class );
+    $portal_organisation_ajax->register();
+
     $portal_booking_ajax = $myvh_container->get( MYVH\Portal\Ajax\PortalBookingAjaxController::class );
     $portal_booking_ajax->register();
 

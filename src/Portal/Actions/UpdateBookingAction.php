@@ -17,7 +17,6 @@ class UpdateBookingAction {
     ) {}
 
     public function execute(array $input): void {
-
         $customer = $this->customer_service->get_by_user_id(get_current_user_id());
         $is_admin = $this->client_admin_service->can_administer_blog(
             get_current_user_id(),

@@ -995,6 +995,9 @@ window.BookingModalCreate = (function() {
         }
 
         const formData = buildSubmitFormData();
+        if (!formData) {
+            return;
+        }
 
         setLoading(true);
         const action = config.context === 'portal'
@@ -1053,6 +1056,32 @@ window.BookingModalCreate = (function() {
                 formData.append(el.name, el.value);
             }
         });
+
+        // Portal create/edit can hide or lock selectors; keep IDs explicit to avoid backend 400 validation.
+        if (config.context === "portal") {
+            const customerId = String(formData.get("customer_id") || "").trim();
+            const organisationId = String(formData.get("organisation_id") || "").trim();
+            const defaultCustomerId = String((window.myvhCal && window.myvhCal.currentCustomerId) || "").trim();
+            const defaultOrganisationId = String((window.myvhCal && window.myvhCal.defaultOrganisationId) || "").trim();
+
+            if (!customerId && defaultCustomerId) {
+                formData.set("customer_id", defaultCustomerId);
+            }
+
+            if (!organisationId && defaultOrganisationId) {
+                formData.set("organisation_id", defaultOrganisationId);
+            }
+
+            if (!String(formData.get("customer_id") || "").trim()) {
+                alert("Please select a customer before saving this booking.");
+                return null;
+            }
+
+            if (!String(formData.get("organisation_id") || "").trim()) {
+                alert("Please select an organisation before saving this booking.");
+                return null;
+            }
+        }
 
         return formData;
     }
