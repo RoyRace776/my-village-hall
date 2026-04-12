@@ -7,6 +7,7 @@ use WP_Error;
 
 class BookingValidatorTest extends UnitTestCase {
 
+    private $booking_repo;
     private $customer_repo;
     private $organisation_repo;
     private $room_service;
@@ -19,6 +20,7 @@ class BookingValidatorTest extends UnitTestCase {
     protected function setUp(): void {
         parent::setUp();
 
+        $this->booking_repo = $this->mock(\MYVH\Bookings\BookingRepository::class);
         $this->customer_repo = $this->mock(\MYVH\Customers\CustomerRepository::class);
         $this->organisation_repo = $this->mock(\MYVH\Organisations\OrganisationRepository::class);
         $this->room_service = $this->mock(\MYVH\Rooms\RoomService::class);
@@ -28,6 +30,7 @@ class BookingValidatorTest extends UnitTestCase {
         $this->room_rules = $this->mock(\MYVH\Rooms\RoomRulesService::class);
 
         $this->validator = new \MYVH\Bookings\BookingValidator(
+            $this->booking_repo,
             $this->customer_repo,
             $this->organisation_repo,
             $this->room_service,
@@ -161,6 +164,11 @@ class BookingValidatorTest extends UnitTestCase {
     public function validate_forwards_booking_id_to_has_buffer_time_on_update(): void {
         $data = $this->valid_data(['booking_id' => 77]);
 
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(77)
+            ->andReturnUsing(static fn(): array => ['Id' => 77, 'Status' => 'confirmed']);
+
         $this->customer_repo->shouldReceive('get_by_id')
             ->once()
             ->with(11)
@@ -184,6 +192,177 @@ class BookingValidatorTest extends UnitTestCase {
             ->once()
             ->withArgs(static fn($r, $start, $end, $exclude) => $exclude === 77)
             ->andReturn(true);
+
+        $this->availability->shouldReceive('booking_within_opening_hours')->once()->andReturn(true);
+        $this->availability->shouldReceive('room_is_available')->once()->andReturn(true);
+
+        $this->room_rate_service->shouldReceive('get_booking_rate')
+            ->once()
+            ->andReturnUsing(static fn(): array => ['Id' => 90]);
+
+        $result = $this->validator->validate($data);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function validate_blocks_cancelled_to_pending_when_room_has_no_space(): void {
+        $data = $this->valid_data([
+            'booking_id' => 77,
+            'status' => 'pending',
+        ]);
+
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(77)
+            ->andReturnUsing(static fn(): array => ['Id' => 77, 'Status' => 'cancelled']);
+
+        $this->customer_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(11)
+            ->andReturnUsing(static fn(): array => ['Id' => 11]);
+
+        $room = [
+            'Id' => 5,
+            'AllowMultiDayBookings' => 1,
+            'OpeningTime' => '08:00:00',
+            'ClosingTime' => '22:00:00',
+        ];
+
+        $this->room_service->shouldReceive('get')
+            ->once()
+            ->with(5)
+            ->andReturnUsing(static fn() => $room);
+
+        $this->room_rules->shouldReceive('is_duration_allowed')->once()->andReturn(true);
+        $this->room_rules->shouldReceive('is_day_allowed')->once()->andReturn(true);
+        $this->room_rules->shouldReceive('has_buffer_time')->once()->andReturn(true);
+
+        $this->availability->shouldReceive('booking_within_opening_hours')->once()->andReturn(true);
+        $this->availability->shouldReceive('room_is_available')->once()->andReturn(false);
+
+        $result = $this->validator->validate($data);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('The room no longer has space for this booking, so the status cannot be changed.', $result->get_error_message());
+    }
+
+    /** @test */
+    public function validate_blocks_cancelled_to_confirmed_when_room_has_no_space(): void {
+        $data = $this->valid_data([
+            'booking_id' => 77,
+            'status' => 'confirmed',
+        ]);
+
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(77)
+            ->andReturnUsing(static fn(): array => ['Id' => 77, 'Status' => 'cancelled']);
+
+        $this->customer_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(11)
+            ->andReturnUsing(static fn(): array => ['Id' => 11]);
+
+        $room = [
+            'Id' => 5,
+            'AllowMultiDayBookings' => 1,
+            'OpeningTime' => '08:00:00',
+            'ClosingTime' => '22:00:00',
+        ];
+
+        $this->room_service->shouldReceive('get')
+            ->once()
+            ->with(5)
+            ->andReturnUsing(static fn() => $room);
+
+        $this->room_rules->shouldReceive('is_duration_allowed')->once()->andReturn(true);
+        $this->room_rules->shouldReceive('is_day_allowed')->once()->andReturn(true);
+        $this->room_rules->shouldReceive('has_buffer_time')->once()->andReturn(true);
+
+        $this->availability->shouldReceive('booking_within_opening_hours')->once()->andReturn(true);
+        $this->availability->shouldReceive('room_is_available')->once()->andReturn(false);
+
+        $result = $this->validator->validate($data);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('The room no longer has space for this booking, so the status cannot be changed.', $result->get_error_message());
+    }
+
+    /** @test */
+    public function validate_blocks_cancelled_to_completed_when_room_has_no_space(): void {
+        $data = $this->valid_data([
+            'booking_id' => 77,
+            'status' => 'completed',
+        ]);
+
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(77)
+            ->andReturnUsing(static fn(): array => ['Id' => 77, 'Status' => 'cancelled']);
+
+        $this->customer_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(11)
+            ->andReturnUsing(static fn(): array => ['Id' => 11]);
+
+        $room = [
+            'Id' => 5,
+            'AllowMultiDayBookings' => 1,
+            'OpeningTime' => '08:00:00',
+            'ClosingTime' => '22:00:00',
+        ];
+
+        $this->room_service->shouldReceive('get')
+            ->once()
+            ->with(5)
+            ->andReturnUsing(static fn() => $room);
+
+        $this->room_rules->shouldReceive('is_duration_allowed')->once()->andReturn(true);
+        $this->room_rules->shouldReceive('is_day_allowed')->once()->andReturn(true);
+        $this->room_rules->shouldReceive('has_buffer_time')->once()->andReturn(true);
+
+        $this->availability->shouldReceive('booking_within_opening_hours')->once()->andReturn(true);
+        $this->availability->shouldReceive('room_is_available')->once()->andReturn(false);
+
+        $result = $this->validator->validate($data);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('The room no longer has space for this booking, so the status cannot be changed.', $result->get_error_message());
+    }
+
+    /** @test */
+    public function validate_allows_cancelled_to_confirmed_when_room_has_space(): void {
+        $data = $this->valid_data([
+            'booking_id' => 77,
+            'status' => 'confirmed',
+        ]);
+
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(77)
+            ->andReturnUsing(static fn(): array => ['Id' => 77, 'Status' => 'cancelled']);
+
+        $this->customer_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(11)
+            ->andReturnUsing(static fn(): array => ['Id' => 11]);
+
+        $room = [
+            'Id' => 5,
+            'AllowMultiDayBookings' => 1,
+            'OpeningTime' => '08:00:00',
+            'ClosingTime' => '22:00:00',
+        ];
+
+        $this->room_service->shouldReceive('get')
+            ->once()
+            ->with(5)
+            ->andReturnUsing(static fn() => $room);
+
+        $this->room_rules->shouldReceive('is_duration_allowed')->once()->andReturn(true);
+        $this->room_rules->shouldReceive('is_day_allowed')->once()->andReturn(true);
+        $this->room_rules->shouldReceive('has_buffer_time')->once()->andReturn(true);
 
         $this->availability->shouldReceive('booking_within_opening_hours')->once()->andReturn(true);
         $this->availability->shouldReceive('room_is_available')->once()->andReturn(true);

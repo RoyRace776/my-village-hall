@@ -15,6 +15,13 @@ use DateTime;
 class BookingValidator
 {
     private const BOOKING_INTERVAL_MINUTES = 15;
+    private const STATUSES_REQUIRING_SPACE_ON_REACTIVATION = [
+        BookingStatus::PENDING,
+        BookingStatus::CONFIRMED,
+        BookingStatus::COMPLETED,
+    ];
+
+    private $booking_repo;
     private $customer_repo;
     private $organisation_repo;
     private $room_service;
@@ -24,6 +31,7 @@ class BookingValidator
     private $room_rules;
 
     public function __construct(
+        BookingRepository $booking_repo,
         CustomerRepository $customer_repo,
         OrganisationRepository $organisation_repo,
         RoomService $room_service,
@@ -32,6 +40,7 @@ class BookingValidator
         RoomRateService $room_rate_service,
         RoomRulesService $room_rules
     ) {
+        $this->booking_repo = $booking_repo;
         $this->customer_repo = $customer_repo;
         $this->organisation_repo = $organisation_repo;
         $this->room_service = $room_service;
@@ -152,6 +161,20 @@ class BookingValidator
             );
         }
 
+        $requested_status = strtolower(sanitize_text_field((string) ($data['status'] ?? '')));
+        $previous_status = null;
+        if ($exclude_id !== null) {
+            $existing_booking = $this->booking_repo->get_by_id($exclude_id);
+            if (empty($existing_booking['Id'])) {
+                return new WP_Error('validation', __('Booking not found', 'my-village-hall'));
+            }
+
+            $previous_status = strtolower(sanitize_text_field((string) ($existing_booking['Status'] ?? '')));
+        }
+
+        $is_cancelled_reactivation = $previous_status === BookingStatus::CANCELLED
+            && in_array($requested_status, self::STATUSES_REQUIRING_SPACE_ON_REACTIVATION, true);
+
         $is_available = $this->availability->room_is_available(
             intval($data['room_id']),
             $start_date,
@@ -161,6 +184,13 @@ class BookingValidator
             !empty($data['booking_id']) ? intval($data['booking_id']) : null
         );
         if (!$is_available) {
+            if ($is_cancelled_reactivation) {
+                return new WP_Error(
+                    'validation',
+                    __('The room no longer has space for this booking, so the status cannot be changed.', 'my-village-hall')
+                );
+            }
+
             return new WP_Error(
                 'validation',
                 __('This room is already booked for part or all of the selected time.', 'my-village-hall')
