@@ -23,6 +23,8 @@ var Bookings = (function() {
         var checked = Array.from(document.querySelectorAll('.myvh-status-filter:checked')).map(function(cb) {
             return cb.value;
         });
+
+        // Filter rows with data-status attribute (child rows and standalone bookings)
         var rows = document.querySelectorAll('#myvh-bookings-table tbody tr[data-status]');
         rows.forEach(function(row) {
             var status = row.getAttribute('data-status');
@@ -30,6 +32,31 @@ var Bookings = (function() {
                 row.classList.remove('myvh-hidden-by-filter');
             } else {
                 row.classList.add('myvh-hidden-by-filter');
+            }
+        });
+
+        // Hide/show group headers based on whether any children match the filter
+        var groupHeaders = document.querySelectorAll('#myvh-bookings-table tbody tr.myvh-booking-group-header');
+        groupHeaders.forEach(function(header) {
+            var groupId = header.getAttribute('data-group');
+            if (!groupId) {
+                return;
+            }
+
+            var childRows = document.querySelectorAll('tr.myvh-recurring-child[data-group="' + groupId + '"]');
+            var hasVisibleChild = false;
+
+            childRows.forEach(function(child) {
+                if (!child.classList.contains('myvh-hidden-by-filter')) {
+                    hasVisibleChild = true;
+                }
+            });
+
+            // Show or hide the group header based on visible children
+            if (hasVisibleChild) {
+                header.classList.remove('myvh-hidden-by-filter');
+            } else {
+                header.classList.add('myvh-hidden-by-filter');
             }
         });
     }

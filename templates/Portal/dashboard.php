@@ -28,14 +28,18 @@ usort($groups, function ($a, $b) {
       );
     });
 
+    $today = date('Y-m-d');
+
+    // Find the next upcoming booking (regardless of status) to sort by
     foreach ($members as $member) {
-      if (($member['StartDate'] ?? '') >= date('Y-m-d') && ($member['Status'] ?? '') !== 'cancelled') {
+      if (($member['StartDate'] ?? '') >= $today) {
         return strtotime(($member['StartDate'] ?? '') . ' ' . ($member['StartTime'] ?? '00:00:00')) ?: PHP_INT_MAX;
       }
     }
 
+    // If no upcoming bookings, use the first member's date for chronological ordering
     if (!empty($members[0])) {
-      return (strtotime(($members[0]['StartDate'] ?? '') . ' ' . ($members[0]['StartTime'] ?? '00:00:00')) ?: PHP_INT_MAX) + 315360000;
+      return strtotime(($members[0]['StartDate'] ?? '') . ' ' . ($members[0]['StartTime'] ?? '00:00:00')) ?: PHP_INT_MAX;
     }
 
     return PHP_INT_MAX;
