@@ -130,6 +130,7 @@ class AssetLoader {
             self::asset_version( 'assets/css/admin.css' )
         );
 
+
         wp_enqueue_script(
             'myvh-admin',
             MYVH_PLUGIN_URL . 'assets/js/admin.js',
@@ -311,9 +312,17 @@ class AssetLoader {
         );
 
         wp_enqueue_script(
+            'myvh-portal-email',
+            MYVH_PLUGIN_URL . 'assets/js/portal-email.js',
+            [ 'myvh-portal-ajax' ],
+            self::asset_version( 'assets/js/portal-email.js' ),
+            true
+        );
+
+        wp_enqueue_script(
             'myvh-portal-app',
             MYVH_PLUGIN_URL . 'assets/js/portal-app.js',
-            [ 'myvh-dashboard', 'myvh-flatpickr-init', 'myvh-portal-ajax' ],
+            [ 'myvh-dashboard', 'myvh-flatpickr-init', 'myvh-portal-ajax', 'myvh-portal-email' ],
             self::asset_version( 'assets/js/portal-app.js' ),
             true
         );

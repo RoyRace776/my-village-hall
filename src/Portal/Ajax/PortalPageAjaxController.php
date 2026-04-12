@@ -155,6 +155,14 @@ class PortalPageAjaxController {
                 $this->admin_config_page_renderer->render_settings($is_client_admin);
                 break;
 
+            case 'email-templates':
+                $this->admin_config_page_renderer->render_email_templates($is_client_admin);
+                break;
+
+            case 'email-template-edit':
+                $this->admin_config_page_renderer->render_email_template_edit($is_client_admin);
+                break;
+
             case 'audit-log':
                 $this->admin_config_page_renderer->render_audit_log($is_client_admin);
                 break;

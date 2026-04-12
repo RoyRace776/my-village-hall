@@ -279,6 +279,11 @@ document.addEventListener("DOMContentLoaded", () => {
         initRoomColourPreviews();
         initOrganisationBillingToggles();
         initInvoicesPage();
+
+        if (window.MyvhPortalEmail) {
+            window.MyvhPortalEmail.initEmailTemplatesPage();
+            window.MyvhPortalEmail.initEmailTemplateEditPage();
+        }
     }
 
     /**

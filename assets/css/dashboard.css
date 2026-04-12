@@ -2903,3 +2903,77 @@ body .site-main:has(#myvh-portal) {
     height: 6px;
   }
 }
+.myvh-email-template-status {
+  display: inline-block;
+  font-size: 12px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  border: 1px solid #d6cec2;
+  background: #f7f3ee;
+  color: #6d6256;
+}
+.myvh-email-template-status.is-customized {
+  border-color: #b8d7b2;
+  background: #edf7eb;
+  color: #2d5a27;
+}
+.myvh-email-placeholder-panel {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #e0d8cb;
+  border-radius: 10px;
+  background: #fcf9f4;
+}
+.myvh-email-placeholder-panel h4 {
+  margin-bottom: 6px;
+}
+.myvh-email-placeholder-list {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.myvh-email-placeholder-pill {
+  border: 1px solid #d8cebf;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.myvh-email-placeholder-pill:hover,
+.myvh-email-placeholder-pill:focus {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.myvh-email-preview-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+.myvh-email-preview-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+.myvh-email-preview-modal__dialog {
+  position: relative;
+  width: min(920px, calc(100% - 30px));
+  max-height: calc(100% - 40px);
+  overflow: auto;
+  margin: 20px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  padding: 18px;
+}
+.myvh-email-preview-modal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.myvh-email-preview-modal__content {
+  border-top: 1px solid #e7dece;
+  padding-top: 14px;
+}

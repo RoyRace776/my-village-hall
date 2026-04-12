@@ -3,9 +3,11 @@ namespace MYVH\Portal\Ajax;
 
 use MYVH\Addons\AddonService;
 use MYVH\Audit\AuditTrail;
+use MYVH\Email\EmailTemplateRegistry;
 use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Rooms\RoomService;
+use MYVH\Settings\EmailTemplateSettings;
 use MYVH\Settings\SettingsRegistry;
 use MYVH\Venues\VenueService;
 
@@ -15,7 +17,8 @@ class PortalAdminConfigPageRenderer {
         private RoomService $room_service,
         private RoomRateService $room_rate_service,
         private VenueService $venue_service,
-        private OrganisationTypeService $organisation_type_service
+        private OrganisationTypeService $organisation_type_service,
+        private EmailTemplateSettings $email_template_settings
     ) {}
 
     public function render_rooms(bool $is_client_admin): void {
@@ -216,6 +219,33 @@ class PortalAdminConfigPageRenderer {
         }
 
         include MYVH_PLUGIN_DIR . 'templates/Portal/settings.php';
+    }
+
+    public function render_email_templates(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
+        $templates = $this->email_template_settings->get_all();
+        include MYVH_PLUGIN_DIR . 'templates/Portal/email-templates.php';
+    }
+
+    public function render_email_template_edit(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
+        $slug = sanitize_key((string) ($_GET['slug'] ?? ''));
+        if ($slug === '' || !EmailTemplateRegistry::has($slug)) {
+            wp_send_json_error('Invalid email template', 400);
+        }
+
+        $definition = EmailTemplateRegistry::get($slug);
+        $template = $this->email_template_settings->get_template($slug);
+        $subject = (string) ($template['subject'] ?? EmailTemplateRegistry::default_subject($slug));
+        $html_body = (string) ($template['html_body'] ?? EmailTemplateRegistry::default_html($slug));
+        $is_customized = !empty($template['is_customized']);
+        include MYVH_PLUGIN_DIR . 'templates/Portal/email-template-edit.php';
     }
 
     public function render_audit_log(bool $is_client_admin): void {

@@ -51,6 +51,7 @@ if (!defined('ABSPATH')) exit;
                     <a href="#addons">Add-ons</a>
                     <a href="#payments">Payments</a>
                     <a href="#invoice-generate">Generate Invoices</a>
+                    <a href="#email-templates">Email Templates</a>
                     <a href="#settings">Settings</a>
                     <?php if (\MYVH\Audit\AuditTrail::is_enabled()): ?>
                         <a href="#audit-log">Audit Log</a>

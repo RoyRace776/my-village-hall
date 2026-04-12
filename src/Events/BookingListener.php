@@ -2,6 +2,8 @@
 namespace MYVH\Events;
 
 use MYVH\Bookings\Services\BookingAutoConfirm;
+use MYVH\Bookings\BookingService;
+use MYVH\Customers\CustomerService;
 use MYVH\Email\EmailService;
 use MYVH\Bookings\Services\BookingRecipientResolver;
 
@@ -51,12 +53,52 @@ class BookingListener {
 
         $email_resolver = new BookingRecipientResolver();
         $email = $email_resolver->resolve($booking_id);
+
+        global $myvh_container;
+        $booking_service = $myvh_container->get(BookingService::class);
+        $customer_service = $myvh_container->get(CustomerService::class);
+
+        $booking = $booking_service->get_by_id_with_details((int) $booking_id);
+        $customer = !empty($booking['CustomerId'])
+            ? $customer_service->get_by_id((int) $booking['CustomerId'])
+            : [];
+
+        $booking_date = (string) ($booking['StartDate'] ?? '');
+        if ($booking_date !== '') {
+            $timestamp = strtotime($booking_date);
+            if ($timestamp) {
+                $booking_date = date_i18n(get_option('date_format'), $timestamp);
+            }
+        }
+
+        $start_time = (string) ($booking['StartTime'] ?? '');
+        $end_time = (string) ($booking['EndTime'] ?? '');
+        $booking_time = trim($start_time . ($end_time !== '' ? ' - ' . $end_time : ''));
+
+        $customer_address_parts = array_filter([
+            (string) ($customer['AddressLine1'] ?? ''),
+            (string) ($customer['PostCode'] ?? ''),
+        ]);
+
+        $branding = $this->email_service->get_branding();
+
         $this->email_service->send([
             'to' => $email,
             'subject' => 'Booking confirmed',
             'template' => 'booking-confirmed',
             'template_vars' => [
-
+                'customer_name' => (string) ($booking['CustomerName'] ?? ''),
+                'customer_address' => implode(', ', $customer_address_parts),
+                'booking_ref' => '#' . (int) ($booking['Id'] ?? $booking_id),
+                'booking_description' => (string) ($booking['Description'] ?? ''),
+                'booking_date' => $booking_date,
+                'booking_time' => $booking_time,
+                'venue_name' => (string) ($booking['VenueName'] ?? ''),
+                'room_name' => (string) ($booking['RoomName'] ?? ''),
+                'booking_amount' => (string) ($booking['Rate'] ?? ''),
+                'logo_url' => (string) ($branding['logo_url'] ?? ''),
+                'site_name' => (string) ($branding['site_name'] ?? ''),
+                'site_url' => (string) ($branding['site_url'] ?? ''),
             ],
         ]);
     }
@@ -65,7 +107,16 @@ class BookingListener {
 
         $booking_id = $payload['booking_id'];
 
-        // Processing here
+        $email_resolver = new BookingRecipientResolver();
+        $email = $email_resolver->resolve($booking_id);
+        $this->email_service->send([
+            'to' => $email,
+            'subject' => 'Booking cancelled',
+            'template' => 'booking-cancelled',
+            'template_vars' => [
+
+            ],
+        ]);
     }
 
     public function handle_booking_updated($payload): void {

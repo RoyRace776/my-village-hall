@@ -1,6 +1,8 @@
 <?php
 namespace MYVH\Email;
 
+use MYVH\Settings\EmailTemplateSettings;
+
 /**
  * Email_Service: Modular, multisite-aware email sending for My Village Hall
  */
@@ -25,9 +27,17 @@ class EmailService {
         $headers = $args['headers'] ?? [];
         $attachments = $args['attachments'] ?? [];
 
-        // Load HTML template
-        $html = $this->render_template($template, $template_vars, 'html');
-        $text = $this->render_template($template, $template_vars, 'txt');
+        $settings = new EmailTemplateSettings();
+        $template_config = $settings->get_template($template);
+        $is_customized = !empty($template_config['is_customized']);
+
+        if ($is_customized && !empty($template_config['subject'])) {
+            $subject = $this->replace_placeholders((string) $template_config['subject'], $template, $template_vars);
+        }
+
+        // Load HTML/text template with custom-template override.
+        $html = $this->render($template, $template_vars, 'html');
+        $text = $this->render($template, $template_vars, 'txt');
 
         if ($html) {
             $headers[] = 'Content-Type: text/html; charset=UTF-8';
@@ -42,10 +52,28 @@ class EmailService {
         return $result;
     }
 
+    public function render($template, $vars = [], $type = 'html'): string {
+        $custom_html = $this->render_custom_template($template, $vars);
+
+        if ($custom_html !== '') {
+            if ($type === 'txt') {
+                return trim(wp_strip_all_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $custom_html)));
+            }
+
+            return $custom_html;
+        }
+
+        return $this->render_file_template($template, $vars, $type);
+    }
+
     /**
      * Render an email template (HTML or text)
      */
     protected function render_template($template, $vars, $type = 'html') {
+        return $this->render($template, $vars, $type);
+    }
+
+    protected function render_file_template($template, $vars, $type = 'html') {
         $dir = plugin_dir_path(__FILE__) . 'templates/';
         $file = $dir . $template . '.' . $type . '.php';
         if (!file_exists($file)) return '';
@@ -53,6 +81,45 @@ class EmailService {
         extract($vars, EXTR_SKIP);
         include $file;
         return ob_get_clean();
+    }
+
+    protected function render_custom_template($template, $vars): string {
+        if (!$template || !EmailTemplateRegistry::has((string) $template)) {
+            return '';
+        }
+
+        $settings = new EmailTemplateSettings();
+        $template_config = $settings->get_template((string) $template);
+
+        if (empty($template_config['is_customized'])) {
+            return '';
+        }
+
+        $html_body = (string) ($template_config['html_body'] ?? '');
+        if ($html_body === '') {
+            return '';
+        }
+
+        return $this->replace_placeholders($html_body, (string) $template, $vars);
+    }
+
+    protected function replace_placeholders(string $content, string $template, array $vars): string {
+        if ($content === '') {
+            return '';
+        }
+
+        $branding = $this->get_branding();
+        $merged_vars = array_merge(
+            [
+                'site_name' => $branding['site_name'] ?? '',
+                'site_url' => $branding['site_url'] ?? '',
+                'logo_url' => $branding['logo_url'] ?? '',
+            ],
+            $vars
+        );
+
+        $replacements = EmailTemplateRegistry::replacement_map($template, $merged_vars);
+        return strtr($content, $replacements);
     }
 
     /**

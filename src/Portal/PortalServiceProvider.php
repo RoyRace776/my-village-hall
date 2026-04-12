@@ -10,6 +10,7 @@ use MYVH\Portal\Ajax\PortalAdminConfigPageRenderer;
 use MYVH\Portal\Ajax\PortalBillingAjaxController;
 use MYVH\Portal\Ajax\PortalBookingAjaxController;
 use MYVH\Portal\Ajax\PortalBillingPageRenderer;
+use MYVH\Portal\Ajax\PortalEmailTemplateAjaxController;
 use MYVH\Portal\Ajax\PortalOrganisationAjaxController;
 use MYVH\Portal\Ajax\PortalOrganisationPageRenderer;
 use MYVH\Portal\Ajax\PortalPageAjaxController;
@@ -41,6 +42,7 @@ class PortalServiceProvider {
         $container->singleton(PortalBillingAjaxController::class);
         $container->singleton(PortalBillingPageRenderer::class);
         $container->singleton(PortalBookingAjaxController::class);
+        $container->singleton(PortalEmailTemplateAjaxController::class);
         $container->singleton(PortalOrganisationAjaxController::class);
         $container->singleton(PortalOrganisationPageRenderer::class);
         $container->singleton(PortalPageAjaxController::class);

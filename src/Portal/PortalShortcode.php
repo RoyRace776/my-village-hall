@@ -31,6 +31,7 @@ class PortalShortcode implements ShortcodeInterface
         $portal_data = $this->bootstrap->get();
 
         AssetLoader::enqueue_portal_assets();
+        wp_enqueue_editor();
 
         wp_localize_script( 'myvh-portal-app', 'myvhPortal', [
             'ajax_url'      => admin_url( 'admin-ajax.php' ),
