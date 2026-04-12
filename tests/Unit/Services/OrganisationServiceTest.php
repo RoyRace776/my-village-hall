@@ -25,6 +25,9 @@ class OrganisationServiceTest extends UnitTestCase {
             'is_email' => fn($v) => filter_var($v, FILTER_VALIDATE_EMAIL) !== false,
             'esc_url_raw' => fn($v) => (string) $v,
             'current_time' => fn() => '2026-01-01 00:00:00',
+            'do_action' => static fn() => null,
+            'get_current_user_id' => static fn() => 1,
+            'get_current_blog_id' => static fn() => 1,
         ]);
 
         $this->repo = $this->mock(OrganisationRepository::class);
@@ -53,7 +56,8 @@ class OrganisationServiceTest extends UnitTestCase {
             ->withArgs(function (array $record): bool {
                 return $record['OrganisationTypeId'] === 7
                     && $record['Name'] === 'My New Org'
-                    && $record['IsActive'] === 1;
+                    && $record['IsActive'] === 1
+                    && $record['SendBookingEmailsToOrganisation'] === 0;
             })
             ->andReturn(44);
 
@@ -164,6 +168,141 @@ class OrganisationServiceTest extends UnitTestCase {
             'is_default' => 0,
             'default_public' => 0,
         ], true);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function update_billing_details_by_admin_updates_contact_email_and_phone(): void {
+        $this->member_repo->shouldReceive('is_customer_admin')
+            ->once()
+            ->with(12, 77)
+            ->andReturn(true);
+
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(12)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 12,
+                'ContactEmail' => 'old@example.org',
+                'ContactPhone' => '01234 000000',
+            ]);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->withArgs(function (array $record, array $where): bool {
+                return $record['ContactEmail'] === 'new@example.org'
+                    && $record['ContactPhone'] === '07700 900111'
+                    && $record['SendBookingEmailsToOrganisation'] === 1
+                    && $record['InvoiceOrganisationBookings'] === 1
+                    && $where['Id'] === 12;
+            })
+            ->andReturn(true);
+
+        $result = $this->service->update_billing_details_by_admin(12, 77, [
+            'contact_email' => 'new@example.org',
+            'contact_phone' => '07700 900111',
+            'send_booking_emails_to_organisation' => 1,
+            'invoice_organisation_bookings' => 1,
+            'billing_contact_name' => 'Accounts Team',
+            'billing_email' => 'billing@example.org',
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function update_billing_details_by_admin_uses_existing_contact_details_when_not_provided(): void {
+        $this->member_repo->shouldReceive('is_customer_admin')
+            ->once()
+            ->with(13, 88)
+            ->andReturn(true);
+
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(13)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 13,
+                'ContactEmail' => 'retained@example.org',
+                'ContactPhone' => '01234 111111',
+                'SendBookingEmailsToOrganisation' => 1,
+            ]);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->withArgs(function (array $record, array $where): bool {
+                return $record['ContactEmail'] === 'retained@example.org'
+                    && $record['ContactPhone'] === '01234 111111'
+                    && $record['SendBookingEmailsToOrganisation'] === 1
+                    && $record['InvoiceOrganisationBookings'] === 0
+                    && $where['Id'] === 13;
+            })
+            ->andReturn(true);
+
+        $result = $this->service->update_billing_details_by_admin(13, 88, [
+            'invoice_organisation_bookings' => 0,
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function delete_returns_not_found_when_organisation_does_not_exist(): void {
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(404)
+            ->andReturn(null);
+
+        $result = $this->service->delete(404);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('not_found', $result->get_error_code());
+    }
+
+    /** @test */
+    public function delete_blocks_organisations_with_bookings(): void {
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(14)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 14,
+                'IsSystem' => 0,
+            ]);
+
+        $this->repo->shouldReceive('count_bookings_for_organisation')
+            ->once()
+            ->with(14)
+            ->andReturn(3);
+
+        $this->repo->shouldReceive('delete')->never();
+
+        $result = $this->service->delete(14);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('forbidden', $result->get_error_code());
+    }
+
+    /** @test */
+    public function delete_allows_organisation_without_bookings(): void {
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(15)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 15,
+                'IsSystem' => 0,
+            ]);
+
+        $this->repo->shouldReceive('count_bookings_for_organisation')
+            ->once()
+            ->with(15)
+            ->andReturn(0);
+
+        $this->repo->shouldReceive('delete')
+            ->once()
+            ->with(15)
+            ->andReturn(true);
+
+        $result = $this->service->delete(15);
 
         $this->assertTrue($result);
     }

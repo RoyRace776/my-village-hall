@@ -14,6 +14,7 @@ class SaveOrganisationRequest extends RequestMapperBase {
             'contact_phone'                 => self::as_text($post, 'contact_phone'),
             'website_url'                   => !empty($post['website_url']) ? esc_url_raw($post['website_url']) : null,
             'invoice_organisation_bookings' => self::as_bool_int($post, 'invoice_organisation_bookings'),
+            'send_booking_emails_to_organisation' => self::as_bool_int($post, 'send_booking_emails_to_organisation'),
             'billing_contact_name'          => self::as_text($post, 'billing_contact_name'),
             'billing_email'                 => self::as_email($post, 'billing_email'),
             'billing_address_line1'         => self::as_text($post, 'billing_address_line1'),

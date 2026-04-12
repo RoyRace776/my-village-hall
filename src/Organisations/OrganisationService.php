@@ -1,6 +1,8 @@
 <?php
 namespace MYVH\Organisations;
 
+use MYVH\Events\EventDispatcher;
+use MYVH\Events\OrganisationEvents;
 use WP_Error;
 
 if (!defined('ABSPATH')) exit;
@@ -100,6 +102,9 @@ class OrganisationService {
             $requested_default = 1;
         }
         $invoice_organisation_bookings = !empty($data['invoice_organisation_bookings']) ? 1 : 0;
+        $send_booking_emails_to_organisation = array_key_exists('send_booking_emails_to_organisation', $data)
+            ? (!empty($data['send_booking_emails_to_organisation']) ? 1 : 0)
+            : ($is_new ? 0 : intval($existing['SendBookingEmailsToOrganisation'] ?? 0));
         $record = [
             'Name'               => sanitize_text_field($data['name']),
             'OrganisationTypeId' => $organisation_type_id,
@@ -107,6 +112,7 @@ class OrganisationService {
             'ContactPhone'       => sanitize_text_field($data['contact_phone']),
             'WebsiteUrl'         => !empty($data['website_url']) ? esc_url_raw($data['website_url']) : null,
             'InvoiceOrganisationBookings' => $invoice_organisation_bookings,
+            'SendBookingEmailsToOrganisation' => $send_booking_emails_to_organisation,
             'BillingContactName' => $invoice_organisation_bookings && !empty($data['billing_contact_name']) ? sanitize_text_field($data['billing_contact_name']) : null,
             'BillingEmail'       => $invoice_organisation_bookings && !empty($data['billing_email']) ? sanitize_email($data['billing_email']) : null,
             'BillingAddressLine1'=> $invoice_organisation_bookings && !empty($data['billing_address_line1']) ? sanitize_text_field($data['billing_address_line1']) : null,
@@ -139,14 +145,35 @@ class OrganisationService {
         if ($requested_default) {
             $this->repo->clear_default_except(intval($organisation_id));
         }
+
+        EventDispatcher::dispatch(OrganisationEvents::CREATED, [
+            'organisation_id' => (int) $organisation_id,
+            'organisation_name' => (string) ($record['Name'] ?? ''),
+            'contact_email' => (string) ($record['ContactEmail'] ?? ''),
+            'contact_phone' => (string) ($record['ContactPhone'] ?? ''),
+            'created_by_user_id' => (int) get_current_user_id(),
+            'blog_id' => (int) get_current_blog_id(),
+        ]);
+
         return $organisation_id;
     }
 
     public function delete(int $id) {
         $existing = $this->repo->get_by_id($id);
+        if (empty($existing['Id'])) {
+            return new WP_Error('not_found', __('Organisation not found', 'my-village-hall'));
+        }
         if (!empty($existing['IsSystem'])) {
             return new WP_Error('forbidden', __('System organisations cannot be deleted', 'my-village-hall'));
         }
+
+        if ($this->repo->count_bookings_for_organisation($id) > 0) {
+            return new WP_Error('forbidden', __('Organisations with bookings cannot be deleted', 'my-village-hall'));
+        }
+
+        $this->request_repo->delete_by_organisation($id);
+        $this->member_repo->delete_by_organisation($id);
+
         return $this->repo->delete($id);
     }
     // ── Members ─────────────────────────────
@@ -311,13 +338,36 @@ class OrganisationService {
         if (empty($organisation['Id'])) {
             return new WP_Error('not_found', __('Organisation not found', 'my-village-hall'));
         }
+
+        $contact_email_input = trim((string) ($data['contact_email'] ?? ''));
+        $contact_phone_input = trim((string) ($data['contact_phone'] ?? ''));
+        $contact_email = $contact_email_input !== ''
+            ? sanitize_email($contact_email_input)
+            : sanitize_email((string) ($organisation['ContactEmail'] ?? ''));
+        $contact_phone = $contact_phone_input !== ''
+            ? sanitize_text_field($contact_phone_input)
+            : sanitize_text_field((string) ($organisation['ContactPhone'] ?? ''));
+
+        if ($contact_email === '' || !is_email($contact_email)) {
+            return new WP_Error('validation', __('Contact email must be a valid email address', 'my-village-hall'));
+        }
+        if ($contact_phone === '') {
+            return new WP_Error('validation', __('Contact phone is required', 'my-village-hall'));
+        }
+
         $invoice_organisation_bookings = !empty($data['invoice_organisation_bookings']) ? 1 : 0;
+        $send_booking_emails_to_organisation = array_key_exists('send_booking_emails_to_organisation', $data)
+            ? (!empty($data['send_booking_emails_to_organisation']) ? 1 : 0)
+            : intval($organisation['SendBookingEmailsToOrganisation'] ?? 0);
         $billing_email = sanitize_email($data['billing_email'] ?? '');
         if ($invoice_organisation_bookings && !empty($data['billing_email']) && !is_email($billing_email)) {
             return new WP_Error('validation', __('Billing email must be a valid email address', 'my-village-hall'));
         }
         $updated = $this->repo->update([
+            'ContactEmail'        => $contact_email,
+            'ContactPhone'        => $contact_phone,
             'InvoiceOrganisationBookings' => $invoice_organisation_bookings,
+            'SendBookingEmailsToOrganisation' => $send_booking_emails_to_organisation,
             'BillingContactName'  => $invoice_organisation_bookings && !empty($data['billing_contact_name']) ? sanitize_text_field($data['billing_contact_name']) : null,
             'BillingEmail'        => $invoice_organisation_bookings && !empty($data['billing_email']) ? $billing_email : null,
             'BillingAddressLine1' => $invoice_organisation_bookings && !empty($data['billing_address_line1']) ? sanitize_text_field($data['billing_address_line1']) : null,

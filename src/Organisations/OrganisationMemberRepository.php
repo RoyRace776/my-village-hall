@@ -47,6 +47,7 @@ class OrganisationMemberRepository extends RepositoryBase {
              JOIN {$this->wpdb->prefix}myvh_organisations o ON om.OrganisationId = o.Id
              WHERE om.CustomerId = %d
                AND om.IsOrganisationAdmin = 1
+               AND o.IsSystem = 0
              ORDER BY o.Name",
             $customer_id
         );

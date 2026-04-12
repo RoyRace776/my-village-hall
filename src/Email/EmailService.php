@@ -31,8 +31,21 @@ class EmailService {
         $template_config = $settings->get_template($template);
         $is_customized = !empty($template_config['is_customized']);
 
-        if ($is_customized && !empty($template_config['subject'])) {
-            $subject = $this->replace_placeholders((string) $template_config['subject'], $template, $template_vars);
+        if ($template && EmailTemplateRegistry::has((string) $template)) {
+            $configured_subject = (string) ($template_config['subject'] ?? '');
+
+            if ($is_customized && $configured_subject !== '') {
+                // Keep existing behavior: customized template subject wins.
+                $subject = $configured_subject;
+            } elseif ($subject === '') {
+                $subject = $configured_subject !== ''
+                    ? $configured_subject
+                    : EmailTemplateRegistry::default_subject((string) $template, '');
+            }
+
+            if ($subject !== '') {
+                $subject = $this->replace_placeholders($subject, (string) $template, $template_vars);
+            }
         }
 
         // Load HTML/text template with custom-template override.

@@ -126,6 +126,13 @@ foreach ($organisation_types as $organisation_type) {
                         <span>Approve requests, add and remove members, and manage admin status.</span>
                     </div>
 
+                    <div class="myvh-account-actions" style="margin-bottom:12px;">
+                        <form class="myvh-inline-form" data-portal-action="myvh_portal_delete_organisation" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations" data-confirm="Delete this organisation? This cannot be undone.">
+                            <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
+                            <button type="submit" class="myvh-button myvh-link-danger">Delete Organisation</button>
+                        </form>
+                    </div>
+
                     <?php if ($is_client_admin && !empty($organisation_types)): ?>
                         <div class="myvh-orgs-subsection">
                             <h4>Organisation Type</h4>
@@ -158,11 +165,31 @@ foreach ($organisation_types as $organisation_type) {
                     <?php endif; ?>
 
                     <div class="myvh-orgs-subsection">
-                        <h4>Invoicing Details</h4>
-                        <p class="myvh-muted">Enable organisation invoicing before entering billing contact details.</p>
+                        <h4>Contact Details</h4>
+                        <p class="myvh-muted">These are the main organisation contact details.</p>
 
                         <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_billing" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
                             <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
+
+                            <div class="myvh-field-grid">
+                                <label class="myvh-account-field">
+                                    <span>Contact email</span>
+                                    <input type="email" name="contact_email" required value="<?php echo esc_attr($org['ContactEmail'] ?? ''); ?>" placeholder="contact@example.com">
+                                </label>
+
+                                <label class="myvh-account-field">
+                                    <span>Contact phone</span>
+                                    <input type="text" name="contact_phone" required value="<?php echo esc_attr($org['ContactPhone'] ?? ''); ?>" placeholder="01234 567890">
+                                </label>
+                            </div>
+
+                            <label class="myvh-toggle-row">
+                                <input type="checkbox" name="send_booking_emails_to_organisation" value="1" <?php checked(!empty($org['SendBookingEmailsToOrganisation'])); ?>>
+                                <span>Send booking emails to organisation</span>
+                            </label>
+
+                            <h4>Invoicing Details</h4>
+                            <p class="myvh-muted">Enable organisation invoicing before entering billing contact details.</p>
 
                             <label class="myvh-toggle-row">
                                 <input type="checkbox" name="invoice_organisation_bookings" value="1" class="myvh-org-invoice-toggle" <?php checked(!empty($org['InvoiceOrganisationBookings'])); ?>>
@@ -210,10 +237,10 @@ foreach ($organisation_types as $organisation_type) {
                                     <span>Billing reference</span>
                                     <input type="text" name="billing_reference" value="<?php echo esc_attr($org['BillingReference'] ?? ''); ?>" placeholder="PO number or internal reference">
                                 </label>
+                            </div>
 
-                                <div class="myvh-account-actions">
-                                    <button type="submit" class="button myvh-cal-btn">Save Invoicing Details</button>
-                                </div>
+                            <div class="myvh-account-actions">
+                                <button type="submit" class="button myvh-cal-btn">Save Organisation Details</button>
                             </div>
 
                         </form>

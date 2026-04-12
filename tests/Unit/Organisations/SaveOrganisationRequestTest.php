@@ -25,6 +25,7 @@ class SaveOrganisationRequestTest extends UnitTestCase {
             'name' => 'Portal org',
             'contact_email' => 'portal@example.org',
             'contact_phone' => '01999 000000',
+            'send_booking_emails_to_organisation' => 1,
         ], false);
 
         $this->assertArrayNotHasKey('organisation_type_id', $mapped);
@@ -32,5 +33,6 @@ class SaveOrganisationRequestTest extends UnitTestCase {
         $this->assertArrayNotHasKey('is_active', $mapped);
         $this->assertArrayNotHasKey('default_public', $mapped);
         $this->assertSame('Portal org', $mapped['name']);
+        $this->assertSame(1, $mapped['send_booking_emails_to_organisation']);
     }
 }

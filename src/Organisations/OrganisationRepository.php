@@ -44,4 +44,14 @@ class OrganisationRepository extends RepositoryBase {
         $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name} WHERE IsDefault = 1");
         return $count > 0;
     }
+
+    public function count_bookings_for_organisation(int $organisation_id): int {
+        $bookings_table = $this->wpdb->prefix . 'myvh_bookings';
+        $sql = $this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$bookings_table} WHERE OrganisationId = %d",
+            $organisation_id
+        );
+
+        return (int) $this->wpdb->get_var($sql);
+    }
 }

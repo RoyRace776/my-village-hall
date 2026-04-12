@@ -14,12 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 use MYVH\Container\Container;
 use MYVH\Events\BookingListener;
+use MYVH\Events\OrganisationListener;
 use MYVH\Core\Shortcode\ShortcodeRegistry;
 
 
 global $myvh_container;
 
 ( new BookingListener() )->register();
+( new OrganisationListener() )->register();
 
 if ( $myvh_container instanceof Container ) {
     $calendar_ajax = $myvh_container->get( MYVH\Calendar\CalendarAjaxController::class );

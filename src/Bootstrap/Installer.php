@@ -194,6 +194,7 @@ class Installer {
             ContactPhone       VARCHAR(100),
             WebsiteUrl         VARCHAR(255),
             InvoiceOrganisationBookings TINYINT(1) NOT NULL DEFAULT 0,
+            SendBookingEmailsToOrganisation TINYINT(1) NOT NULL DEFAULT 0,
             AllowAutoConfirm TINYINT(1) NOT NULL DEFAULT 0,
             BillingContactName VARCHAR(150) NULL,
             BillingEmail       VARCHAR(150) NULL,
@@ -213,7 +214,8 @@ class Installer {
             INDEX      idx_default (IsDefault),
             INDEX      idx_system (IsSystem),
             INDEX      idx_default_public (DefaultPublic),
-            INDEX      idx_invoice_org (InvoiceOrganisationBookings)
+            INDEX      idx_invoice_org (InvoiceOrganisationBookings),
+            INDEX      idx_send_booking_emails_org (SendBookingEmailsToOrganisation)
         ) {$collate};" );
 
         // ── Organisation Types ───────────────────────────────────────────────────

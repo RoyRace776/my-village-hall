@@ -127,6 +127,31 @@ class EmailTemplateRegistry {
                     'booking_details' => 'Includes 3 bookings in April 2026.',
                 ],
             ],
+            'organisation-created' => [
+                'label' => 'Organisation Created (Admin)',
+                'description' => 'Sent to client administrators when a new organisation is created.',
+                'default_subject' => 'New organisation created: {{organisation_name}}',
+                'placeholders' => [
+                    'organisation_name' => 'Name of the newly created organisation.',
+                    'organisation_id' => 'Organisation numeric ID.',
+                    'contact_email' => 'Organisation contact email.',
+                    'contact_phone' => 'Organisation contact phone.',
+                    'created_by_name' => 'Display name of the user who created it.',
+                    'created_by_email' => 'Email of the user who created it.',
+                    'site_name' => 'Current site name.',
+                    'site_url' => 'Current site URL.',
+                    'logo_url' => 'Current site icon URL.',
+                ],
+                'default_html' => '<table style="width:100%;max-width:620px;margin:auto;font-family:sans-serif;background:#ffffff;border-radius:8px;box-shadow:0 2px 8px #0001;"><tr><td style="padding:28px 32px 12px 32px;">{{logo_html}}<h2 style="margin:0 0 8px 0;color:#222;">New organisation created</h2><p style="margin:0 0 16px 0;color:#444;">A new organisation has been created on {{site_name}}.</p><p style="margin:0 0 10px 0;"><strong>Name:</strong> {{organisation_name}}<br><strong>ID:</strong> {{organisation_id}}<br><strong>Contact email:</strong> {{contact_email}}<br><strong>Contact phone:</strong> {{contact_phone}}</p><p style="margin:16px 0 0 0;color:#666;"><strong>Created by:</strong> {{created_by_name}} ({{created_by_email}})</p></td></tr><tr><td style="padding:0 32px 24px 32px;color:#999;font-size:12px;">{{site_name}} • {{site_url}}</td></tr></table>',
+                'sample_vars' => [
+                    'organisation_name' => 'Example Community Group',
+                    'organisation_id' => '42',
+                    'contact_email' => 'contact@example.org',
+                    'contact_phone' => '01999 000000',
+                    'created_by_name' => 'Alex Morgan',
+                    'created_by_email' => 'alex@example.org',
+                ],
+            ],
         ];
     }
 

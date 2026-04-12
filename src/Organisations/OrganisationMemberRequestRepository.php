@@ -66,4 +66,12 @@ class OrganisationMemberRequestRepository extends RepositoryBase {
         );
         return $this->wpdb->get_row($sql, ARRAY_A);
     }
+    public function delete_by_organisation(int $org_id): bool {
+        $result = $this->wpdb->delete($this->table_name, [ 'OrganisationId' => $org_id ], [ '%d' ]);
+        if ($result === false) {
+            error_log('MYVH OrganisationMemberRequestRepository Error (delete_by_organisation): ' . $this->wpdb->last_error);
+            return false;
+        }
+        return true;
+    }
 }
