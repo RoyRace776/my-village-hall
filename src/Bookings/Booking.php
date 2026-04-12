@@ -42,14 +42,14 @@ class Booking
     public static function fromArray(array $data): self
     {
         return new self(
-            (int) $data['id'],
-            (int) $data['customer_id'],
-            (int) $data['room_id'],
-            (int) $data['organisation_id'],
-            (string) $data['status'],
-            new \DateTimeImmutable($data['start']),
-            new \DateTimeImmutable($data['end']),
-            isset($data['admin_email']) ? (string) $data['admin_email'] : null
+            (int) $data['Id'],
+            (int) $data['CustomerId'],
+            (int) $data['RoomId'],
+            (int) $data['OrganisationId'],
+            (string) $data['Status'],
+            new \DateTimeImmutable($data['Start']),
+            new \DateTimeImmutable($data['End']),
+            isset($data['AdminEmail']) ? (string) $data['AdminEmail'] : null
         );
     }
 
