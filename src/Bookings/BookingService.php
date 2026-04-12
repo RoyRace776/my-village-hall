@@ -339,7 +339,27 @@ class BookingService {
     }
 
     public function cancel($id): int|false {
-        return $this->update_status($id, BookingStatus::CANCELLED);
+        $current_record = $this->booking_repo->get_by_id($id);
+        if (!$current_record) {
+            return false;
+        }
+
+        $result = $this->update_status($id, BookingStatus::CANCELLED);
+
+        if ($result !== false && ($current_record['Status'] ?? null) !== BookingStatus::CANCELLED) {
+            $this->booking_update_event_dispatcher->dispatch(
+                [
+                    'booking_id' => $id,
+                    'room_id' => $current_record['RoomId'] ?? null,
+                    'start_time' => $current_record['StartTime'] ?? null,
+                    'end_time' => $current_record['EndTime'] ?? null,
+                    'status' => BookingStatus::CANCELLED,
+                ],
+                $current_record['Status'] ?? null
+            );
+        }
+
+        return $result;
     }
 
     public function update_status($id, $status): int|false {
