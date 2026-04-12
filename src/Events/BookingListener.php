@@ -114,7 +114,7 @@ class BookingListener {
             'subject' => 'Booking cancelled',
             'template' => 'booking-cancelled',
             'template_vars' => [
-
+                'booking_ref' => '#' . (int) ($booking_id ?? 0),
             ],
         ]);
     }

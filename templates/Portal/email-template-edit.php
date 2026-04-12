@@ -56,6 +56,7 @@ $description = (string) ($definition['description'] ?? '');
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Save Template</button>
                 <button type="button" class="button" data-email-template-preview="1">Preview</button>
+                <button type="button" class="button" data-email-template-send-test="1">Send Test Email</button>
                 <button type="button" class="button" data-email-template-reset="1">Reset to Default</button>
                 <div id="myvh-email-template-message" class="myvh-muted" aria-live="polite"></div>
             </div>

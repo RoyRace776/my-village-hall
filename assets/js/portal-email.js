@@ -204,6 +204,39 @@ window.MyvhPortalEmail = (function() {
             });
         }
 
+        const sendTestButton = page.querySelector('[data-email-template-send-test="1"]');
+        if (sendTestButton) {
+            sendTestButton.addEventListener('click', function() {
+                const data = new FormData(form);
+                const slug = String(data.get('template') || '');
+                const subject = String(data.get('subject') || '').trim();
+
+                withEditorContent(textarea, function(htmlBody) {
+                    showMessage(message, 'Sending test email...', false);
+                    sendTestButton.disabled = true;
+
+                    window.MyvhPortalAjax.post('myvh_send_test_email_template', {
+                        template: slug,
+                        subject: subject,
+                        html_body: htmlBody
+                    }, { scope: 'portal' })
+                        .then(function(res) {
+                            sendTestButton.disabled = false;
+                            if (!res.success) {
+                                showMessage(message, (res.data && res.data.message) ? res.data.message : 'Failed to send test email', true);
+                                return;
+                            }
+
+                            showMessage(message, (res.data && res.data.message) ? res.data.message : 'Test email sent', false);
+                        })
+                        .catch(function() {
+                            sendTestButton.disabled = false;
+                            showMessage(message, 'Unexpected error while sending test email', true);
+                        });
+                });
+            });
+        }
+
         const resetButton = page.querySelector('.myvh-account-actions [data-email-template-reset="1"]');
         if (resetButton) {
             resetButton.addEventListener('click', function() {
