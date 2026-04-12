@@ -46,6 +46,7 @@ class BookingService {
     private $booking_query_service;
     private $booking_status_transition_dispatcher;
     private $booking_update_event_dispatcher;
+    private $recurring_pattern_service;
     private $recurring_booking_creator;
     private $recurring_booking_updater;
     private $last_warnings = [];
@@ -67,6 +68,7 @@ class BookingService {
         BookingQueryService $booking_query_service,
         BookingStatusTransitionDispatcher $booking_status_transition_dispatcher,
         BookingUpdateEventDispatcher $booking_update_event_dispatcher,
+        RecurringPatternService $recurring_pattern_service,
         RecurringBookingCreator $recurring_booking_creator,
         RecurringBookingUpdater $recurring_booking_updater
     ) {
@@ -86,6 +88,7 @@ class BookingService {
         $this->booking_query_service = $booking_query_service;
         $this->booking_status_transition_dispatcher = $booking_status_transition_dispatcher;
         $this->booking_update_event_dispatcher = $booking_update_event_dispatcher;
+        $this->recurring_pattern_service = $recurring_pattern_service;
         $this->recurring_booking_creator = $recurring_booking_creator;
         $this->recurring_booking_updater = $recurring_booking_updater;
     }
@@ -190,6 +193,16 @@ class BookingService {
     }
 
     private function apply_single_booking_update(int $booking_id, array $data, array $record, array $current_record): int|WP_Error {
+        $edit_scope = $this->normalize_edit_scope($data['edit_scope'] ?? '');
+        $pattern_id = intval($current_record['RecurringPatternId'] ?? 0);
+
+        if ($pattern_id > 0 && $edit_scope === self::EDIT_SCOPE_THIS_ONLY) {
+            $detach_result = $this->detach_booking_from_pattern($booking_id, $pattern_id);
+            if (is_wp_error($detach_result)) {
+                return $detach_result;
+            }
+        }
+
         $new_status = sanitize_text_field((string) ($record['Status'] ?? $data['status'] ?? ''));
 
         $this->booking_status_transition_dispatcher->dispatch_before(
@@ -225,6 +238,68 @@ class BookingService {
         $this->booking_lifecycle_event_dispatcher->dispatch_after_update($data);
 
         return $booking_id;
+    }
+
+    private function detach_booking_from_pattern(int $booking_id, int $pattern_id): bool|WP_Error {
+        $pattern = $this->recurring_pattern_service->get_by_id($pattern_id);
+        if (!$pattern) {
+            return new WP_Error('not_found', __('Recurring booking series not found', 'my-village-hall'));
+        }
+
+        $detached = $this->booking_repo->update(['RecurringPatternId' => null], ['Id' => $booking_id]);
+        if ($detached === false) {
+            return new WP_Error('database', __('Failed to detach booking from recurring series', 'my-village-hall'));
+        }
+
+        $remaining_bookings = $this->booking_repo->get_by_pattern_id($pattern_id);
+        usort($remaining_bookings, static function (array $left, array $right): int {
+            $left_key = sprintf(
+                '%s %s %010d',
+                (string) ($left['StartDate'] ?? ''),
+                (string) ($left['StartTime'] ?? ''),
+                intval($left['Id'] ?? 0)
+            );
+            $right_key = sprintf(
+                '%s %s %010d',
+                (string) ($right['StartDate'] ?? ''),
+                (string) ($right['StartTime'] ?? ''),
+                intval($right['Id'] ?? 0)
+            );
+
+            return strcmp($left_key, $right_key);
+        });
+
+        $remaining_count = count($remaining_bookings);
+        if ($remaining_count <= 0) {
+            $updated = $this->recurring_pattern_service->update_pattern($pattern_id, [
+                'OccurrenceCount' => 0,
+                'IsActive' => 0,
+            ]);
+
+            if ($updated === false) {
+                return new WP_Error('database', __('Failed to update recurring booking series after detaching booking', 'my-village-hall'));
+            }
+
+            return true;
+        }
+
+        $pattern_update = [
+            'OccurrenceCount' => $remaining_count,
+        ];
+
+        $is_parent_booking = intval($pattern['ParentBookingId'] ?? 0) === $booking_id;
+        if ($is_parent_booking) {
+            $new_parent = $remaining_bookings[0];
+            $pattern_update['ParentBookingId'] = intval($new_parent['Id'] ?? 0);
+            $pattern_update['StartDate'] = sanitize_text_field($new_parent['StartDate'] ?? '');
+        }
+
+        $updated = $this->recurring_pattern_service->update_pattern($pattern_id, $pattern_update);
+        if ($updated === false) {
+            return new WP_Error('database', __('Failed to update recurring booking series after detaching booking', 'my-village-hall'));
+        }
+
+        return true;
     }
 
     private function build_single_update_data(array $data, array $record, array $current_record): array {

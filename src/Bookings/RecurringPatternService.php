@@ -41,6 +41,10 @@ class RecurringPatternService {
         return $this->repo->get_by_parent_booking($booking_id);
     }
 
+    public function update_pattern(int $pattern_id, array $record): bool {
+        return $this->repo->update($record, ['Id' => $pattern_id]);
+    }
+
     public function get_bookings_for_pattern($pattern_id): array {
         return $this->get_booking_repo()->get_by_pattern_id($pattern_id);
     }
@@ -149,6 +153,58 @@ class RecurringPatternService {
         $updated_pattern = $this->repo->update($old_pattern_update, ['Id' => $pattern_id]);
         if ($updated_pattern === false) {
             return new WP_Error('database', __('Failed to update the original recurring pattern', 'my-village-hall'));
+        }
+
+        if (count($previous_bookings) === 1) {
+            $remaining_previous_booking_id = intval($previous_bookings[0]['Id'] ?? 0);
+            if ($remaining_previous_booking_id > 0) {
+                $detached_previous = $this->booking_repo->update(
+                    ['RecurringPatternId' => null],
+                    ['Id' => $remaining_previous_booking_id]
+                );
+
+                if ($detached_previous === false) {
+                    return new WP_Error('database', __('Failed to detach single previous booking from recurring pattern', 'my-village-hall'));
+                }
+
+                $previous_bookings[0]['RecurringPatternId'] = null;
+            }
+
+            $deactivated_old_pattern = $this->repo->update(
+                ['OccurrenceCount' => 0, 'IsActive' => 0],
+                ['Id' => $pattern_id]
+            );
+
+            if ($deactivated_old_pattern === false) {
+                return new WP_Error('database', __('Failed to deactivate previous recurring pattern after split', 'my-village-hall'));
+            }
+        }
+
+        if (count($future_bookings) === 1) {
+            $remaining_future_booking_id = intval($future_bookings[0]['Id'] ?? 0);
+            if ($remaining_future_booking_id > 0) {
+                $detached_future = $this->booking_repo->update(
+                    ['RecurringPatternId' => null],
+                    ['Id' => $remaining_future_booking_id]
+                );
+
+                if ($detached_future === false) {
+                    return new WP_Error('database', __('Failed to detach single future booking from recurring pattern', 'my-village-hall'));
+                }
+
+                $future_bookings[0]['RecurringPatternId'] = null;
+            }
+
+            $deactivated_new_pattern = $this->repo->update(
+                ['OccurrenceCount' => 0, 'IsActive' => 0],
+                ['Id' => $new_pattern_id]
+            );
+
+            if ($deactivated_new_pattern === false) {
+                return new WP_Error('database', __('Failed to deactivate future recurring pattern after split', 'my-village-hall'));
+            }
+
+            $new_pattern_id = 0;
         }
 
         return [

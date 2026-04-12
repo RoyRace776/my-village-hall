@@ -990,10 +990,6 @@ window.BookingModalCreate = (function() {
             return;
         }
 
-        if (!confirmRecurringScopeForPortalEdit()) {
-            return;
-        }
-
         const formData = buildSubmitFormData();
         if (!formData) {
             return;
@@ -1084,72 +1080,6 @@ window.BookingModalCreate = (function() {
         }
 
         return formData;
-    }
-
-    function confirmRecurringScopeForPortalEdit() {
-        if (config.context !== 'portal' || !config.editMode) {
-            return true;
-        }
-
-        const scopeRow = form.querySelector('#myvh-modal-edit-scope-row');
-        if (!scopeRow || scopeRow.style.display === 'none') {
-            return true;
-        }
-
-        const currentScope = getSelectedRecurringEditScope();
-        const defaultChoice = recurringScopeToPromptChoice(currentScope);
-        const choice = window.prompt(
-            'Apply this recurring booking update to:\n1. This booking only\n2. All bookings in this series\n3. This booking and all future bookings',
-            defaultChoice
-        );
-
-        if (choice === null) {
-            return false;
-        }
-
-        const selectedScope = promptChoiceToRecurringScope(choice);
-        if (!selectedScope) {
-            window.alert('Please choose 1, 2, or 3.');
-            return false;
-        }
-
-        setRecurringEditScope(selectedScope);
-        return true;
-    }
-
-    function getSelectedRecurringEditScope() {
-        return form.querySelector('input[name=edit_scope]:checked')?.value || 'this_only';
-    }
-
-    function setRecurringEditScope(scope) {
-        form.querySelectorAll('input[name=edit_scope]').forEach((radio) => {
-            radio.checked = radio.value === scope;
-        });
-    }
-
-    function recurringScopeToPromptChoice(scope) {
-        switch (scope) {
-            case 'all_bookings':
-                return '2';
-            case 'this_and_future':
-                return '3';
-            case 'this_only':
-            default:
-                return '1';
-        }
-    }
-
-    function promptChoiceToRecurringScope(choice) {
-        switch (String(choice || '').trim()) {
-            case '1':
-                return 'this_only';
-            case '2':
-                return 'all_bookings';
-            case '3':
-                return 'this_and_future';
-            default:
-                return '';
-        }
     }
 
     // ─────────────────────────────

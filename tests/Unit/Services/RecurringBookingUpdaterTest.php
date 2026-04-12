@@ -132,6 +132,59 @@ class RecurringBookingUpdaterTest extends UnitTestCase {
     }
 
     /** @test */
+    public function update_with_scope_this_and_future_keeps_single_future_booking_standalone_when_split_collapses(): void {
+        $current = $this->recurring_booking(100, ['StartDate' => '2026-06-08', 'EndDate' => '2026-06-08']);
+        $all_bookings = [
+            $this->recurring_booking(99),
+            $current,
+        ];
+        $future_bookings = [
+            $this->recurring_booking(100, ['RecurringPatternId' => null, 'StartDate' => '2026-06-08', 'EndDate' => '2026-06-08']),
+        ];
+
+        $data = [
+            'booking_id' => 100,
+            'description' => 'Updated standalone future',
+            'status' => 'confirmed',
+            'edit_scope' => 'this_and_future',
+        ];
+
+        $record = [
+            'Status' => 'confirmed',
+            'Description' => 'Updated standalone future',
+            'Public' => 0,
+            'NoInvoiceRequired' => 0,
+        ];
+
+        $this->booking_repo->shouldReceive('get_by_pattern_id')->with(200)->once()->andReturn($all_bookings);
+        $this->recurring_pattern_service->shouldReceive('split_pattern_from_booking')
+            ->with(200, 100)
+            ->once()
+            ->andReturn([
+                'new_pattern_id' => 0,
+                'future_bookings' => $future_bookings,
+            ]);
+
+        $seen_standalone = false;
+        $result = $this->service->update_with_scope(
+            $data,
+            $record,
+            $current,
+            200,
+            'this_and_future',
+            function (int $booking_id, array $scoped_data, array $scoped_record, array $current_record) use (&$seen_standalone): int {
+                $seen_standalone = !array_key_exists('RecurringPatternId', $scoped_record)
+                    && empty($current_record['RecurringPatternId']);
+
+                return $booking_id;
+            }
+        );
+
+        $this->assertSame(100, $result);
+        $this->assertTrue($seen_standalone);
+    }
+
+    /** @test */
     public function update_with_scope_rejects_schedule_changes_for_series_update(): void {
         $current = $this->recurring_booking(99, ['StartTime' => '09:00:00']);
         $data = [

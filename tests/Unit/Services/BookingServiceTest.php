@@ -151,6 +151,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_query_service,
             $this->booking_status_transition_dispatcher,
             $this->booking_update_event_dispatcher,
+            $this->recurring_pattern_service,
             $this->recurring_booking_creator,
             $this->recurring_booking_updater
         );
@@ -601,6 +602,199 @@ class BookingServiceTest extends UnitTestCase {
     }
 
     /** @test */
+    public function save_update_with_this_only_scope_detaches_non_parent_booking_from_series(): void {
+        $booking_id = 100;
+        $pattern_id = 200;
+        $data = $this->minimal_create_data([
+            'booking_id' => $booking_id,
+            'start_date' => '2026-06-08',
+            'end_date' => '2026-06-08',
+            'description' => 'Edited single occurrence',
+            'edit_scope' => 'this_only',
+        ]);
+
+        $current = $this->recurring_booking_record($booking_id, [
+            'StartDate' => '2026-06-08',
+            'EndDate' => '2026-06-08',
+        ]);
+
+        $remaining = [
+            $this->recurring_booking_record(99, [
+                'StartDate' => '2026-06-01',
+                'EndDate' => '2026-06-01',
+            ]),
+            $this->recurring_booking_record(101, [
+                'StartDate' => '2026-06-15',
+                'EndDate' => '2026-06-15',
+            ]),
+        ];
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
+        $this->booking_repo->shouldReceive('get_by_id')->with($booking_id)->once()->andReturn($current);
+        $this->recurring_pattern_service->shouldReceive('get_by_id')
+            ->with($pattern_id)
+            ->once()
+            ->andReturnUsing(static fn () => [
+                'Id' => $pattern_id,
+                'ParentBookingId' => 99,
+                'OccurrenceCount' => 3,
+                'IsActive' => 1,
+            ]);
+        $this->booking_repo->shouldReceive('update')
+            ->once()
+            ->with(['RecurringPatternId' => null], ['Id' => $booking_id])
+            ->andReturn(true);
+        $this->booking_repo->shouldReceive('get_by_pattern_id')->with($pattern_id)->once()->andReturn($remaining);
+        $this->recurring_pattern_service->shouldReceive('update_pattern')
+            ->once()
+            ->with($pattern_id, ['OccurrenceCount' => 2])
+            ->andReturn(true);
+        $this->booking_repo->shouldReceive('update')
+            ->once()
+            ->with(Mockery::on(static function (array $record): bool {
+                return ($record['Description'] ?? '') === 'Edited single occurrence';
+            }), ['Id' => $booking_id])
+            ->andReturn(true);
+        $this->addon_service->shouldReceive('save_booking_addons')->once()->withAnyArgs();
+        $this->pricing->shouldReceive('get_charge_snapshot')->with($booking_id)->once()->andReturnUsing(static fn () => []);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with($booking_id)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('create')->once()->andReturn(1);
+
+        $result = $this->service->save($data);
+
+        $this->assertSame($booking_id, $result);
+    }
+
+    /** @test */
+    public function save_update_with_this_only_scope_promotes_next_booking_when_parent_is_detached(): void {
+        $booking_id = 99;
+        $pattern_id = 200;
+        $data = $this->minimal_create_data([
+            'booking_id' => $booking_id,
+            'description' => 'Edited former parent occurrence',
+            'edit_scope' => 'this_only',
+        ]);
+
+        $current = $this->recurring_booking_record($booking_id, [
+            'StartDate' => '2026-06-01',
+            'EndDate' => '2026-06-01',
+        ]);
+
+        $remaining = [
+            $this->recurring_booking_record(100, [
+                'StartDate' => '2026-06-08',
+                'EndDate' => '2026-06-08',
+            ]),
+            $this->recurring_booking_record(101, [
+                'StartDate' => '2026-06-15',
+                'EndDate' => '2026-06-15',
+            ]),
+        ];
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
+        $this->booking_repo->shouldReceive('get_by_id')->with($booking_id)->once()->andReturn($current);
+        $this->recurring_pattern_service->shouldReceive('get_by_id')
+            ->with($pattern_id)
+            ->once()
+            ->andReturnUsing(static fn () => [
+                'Id' => $pattern_id,
+                'ParentBookingId' => $booking_id,
+                'OccurrenceCount' => 3,
+                'IsActive' => 1,
+            ]);
+        $this->booking_repo->shouldReceive('update')
+            ->once()
+            ->with(['RecurringPatternId' => null], ['Id' => $booking_id])
+            ->andReturn(true);
+        $this->booking_repo->shouldReceive('get_by_pattern_id')->with($pattern_id)->once()->andReturn($remaining);
+        $this->recurring_pattern_service->shouldReceive('update_pattern')
+            ->once()
+            ->with($pattern_id, [
+                'OccurrenceCount' => 2,
+                'ParentBookingId' => 100,
+                'StartDate' => '2026-06-08',
+            ])
+            ->andReturn(true);
+        $this->booking_repo->shouldReceive('update')
+            ->once()
+            ->with(Mockery::on(static function (array $record): bool {
+                return ($record['Description'] ?? '') === 'Edited former parent occurrence';
+            }), ['Id' => $booking_id])
+            ->andReturn(true);
+        $this->addon_service->shouldReceive('save_booking_addons')->once()->withAnyArgs();
+        $this->pricing->shouldReceive('get_charge_snapshot')->with($booking_id)->once()->andReturnUsing(static fn () => []);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with($booking_id)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('create')->once()->andReturn(1);
+
+        $result = $this->service->save($data);
+
+        $this->assertSame($booking_id, $result);
+    }
+
+    /** @test */
+    public function save_update_with_this_only_scope_deactivates_pattern_when_no_members_remain(): void {
+        $booking_id = 99;
+        $pattern_id = 200;
+        $data = $this->minimal_create_data([
+            'booking_id' => $booking_id,
+            'description' => 'Edited last recurring booking',
+            'edit_scope' => 'this_only',
+        ]);
+
+        $current = $this->recurring_booking_record($booking_id, [
+            'StartDate' => '2026-06-01',
+            'EndDate' => '2026-06-01',
+        ]);
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('commit')->once();
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
+        $this->booking_repo->shouldReceive('get_by_id')->with($booking_id)->once()->andReturn($current);
+        $this->recurring_pattern_service->shouldReceive('get_by_id')
+            ->with($pattern_id)
+            ->once()
+            ->andReturnUsing(static fn () => [
+                'Id' => $pattern_id,
+                'ParentBookingId' => $booking_id,
+                'OccurrenceCount' => 1,
+                'IsActive' => 1,
+            ]);
+        $this->booking_repo->shouldReceive('update')
+            ->once()
+            ->with(['RecurringPatternId' => null], ['Id' => $booking_id])
+            ->andReturn(true);
+        $this->booking_repo->shouldReceive('get_by_pattern_id')->with($pattern_id)->once()->andReturn([]);
+        $this->recurring_pattern_service->shouldReceive('update_pattern')
+            ->once()
+            ->with($pattern_id, [
+                'OccurrenceCount' => 0,
+                'IsActive' => 0,
+            ])
+            ->andReturn(true);
+        $this->booking_repo->shouldReceive('update')
+            ->once()
+            ->with(Mockery::on(static function (array $record): bool {
+                return ($record['Description'] ?? '') === 'Edited last recurring booking';
+            }), ['Id' => $booking_id])
+            ->andReturn(true);
+        $this->addon_service->shouldReceive('save_booking_addons')->once()->withAnyArgs();
+        $this->pricing->shouldReceive('get_charge_snapshot')->with($booking_id)->once()->andReturnUsing(static fn () => []);
+        $this->booking_charge_repo->shouldReceive('delete_by_booking_id')->with($booking_id)->once()->andReturn(1);
+        $this->booking_charge_repo->shouldReceive('create')->once()->andReturn(1);
+
+        $result = $this->service->save($data);
+
+        $this->assertSame($booking_id, $result);
+    }
+
+    /** @test */
     public function save_update_with_series_scope_rejects_schedule_changes(): void {
         $booking_id = 99;
         $data = $this->minimal_create_data([
@@ -724,6 +918,11 @@ class BookingServiceTest extends UnitTestCase {
 
     /** @test */
     public function cancel_delegates_to_repo_with_cancelled_status(): void {
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->with(15)
+            ->once()
+            ->andReturn($this->recurring_booking_record(15));
+
         $this->booking_repo->shouldReceive('update')
             ->with(
                 Mockery::on(fn($d) => ($d['Status'] ?? '') === 'cancelled'),
