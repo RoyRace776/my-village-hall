@@ -35,6 +35,8 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
             <select id="myvh-calendar-venue-select" class="myvh-cal-btn myvh-calendar-venue-select"></select>
         </div>
 
+        <div id="myvh-calendar-room-filter" class="myvh-calendar-room-filter" style="display:none;"></div>
+
         <div class="myvh-calendar-views myvh-pill-group">
             <button id="myvh-mode-calendar" class="myvh-cal-btn myvh-view-btn myvh-mode-btn active" data-mode="Calendar" type="button">
                 <?php _e('Calendar', 'my-village-hall'); ?>

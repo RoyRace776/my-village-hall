@@ -21,6 +21,7 @@
     var pinnedVenueId = parseInt(cfg.venueId || '0', 10) || 0;
     var VENUE_STORAGE_KEY = 'myvhCalendarVenue_public';
     var lastEvents = [];
+        var selectedRoomIds = new Set();
     var roomNameById = {};
     var loadRequestSeq = 0;
     var suppressNavSelect = false;
@@ -132,11 +133,20 @@
     }
 
     function getVisibleRooms() {
-        if (selectedVenueId <= 0) {
-            return allRooms.slice();
+            var venueFiltered = getVenueFilteredRooms();
+            if (selectedRoomIds.size === 0) {
+                return venueFiltered;
+            }
+            return venueFiltered.filter(function(room) {
+            return !selectedRoomIds.has(parseInt((room && room.id) || 0, 10));
+            });
         }
 
-        return allRooms.filter(function(room) {
+        function getVenueFilteredRooms() {
+            if (selectedVenueId <= 0) {
+                return allRooms.slice();
+            }
+            return allRooms.filter(function(room) {
             var venueId = parseInt((room && room.venueId) || (room && room.venue_id) || '0', 10) || 0;
             return venueId === selectedVenueId;
         });
@@ -202,8 +212,10 @@
             selectedVenueId = parseInt(venueSelect.value || '0', 10) || 0;
             cfg.venueId = selectedVenueId;
             setPersistedVenueId(selectedVenueId);
+                selectedRoomIds = new Set();
             buildRoomIndex();
             renderCalendarKey();
+                renderRoomFilter();
             mountView(current.detail, current.mode);
         });
     }
@@ -303,6 +315,78 @@
             ));
         }
     }
+
+        function renderRoomFilter() {
+            var filterEl = wrap ? wrap.querySelector('.myvh-cal-room-filter') : null;
+            if (!filterEl) {
+                return;
+            }
+
+            var venueRooms = getVenueFilteredRooms();
+
+            if (venueRooms.length <= 1) {
+                filterEl.style.display = 'none';
+                filterEl.innerHTML = '';
+                return;
+            }
+
+            if (current.mode === 'scheduler') {
+                filterEl.style.display = 'none';
+                return;
+            }
+
+            filterEl.style.display = '';
+            filterEl.innerHTML = '';
+
+            venueRooms.forEach(function(room) {
+                var roomId = parseInt((room && room.id) || 0, 10);
+                var roomName = String((room && room.name) || '').trim();
+                var roomColour = normaliseHexColour((room && (room.roomColour || room.colour)) || '');
+                if (!roomName) {
+                    return;
+                }
+
+                var item = document.createElement('label');
+                item.className = 'myvh-room-filter-item';
+
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = !selectedRoomIds.has(roomId);
+                cb.addEventListener('change', function() {
+                    if (cb.checked) {
+                        selectedRoomIds.delete(roomId);
+                    } else {
+                        selectedRoomIds.add(roomId);
+                    }
+                    var allChecked = venueRooms.every(function(r) {
+                        return !selectedRoomIds.has(parseInt((r && r.id) || 0, 10));
+                    });
+                    if (allChecked) {
+                        selectedRoomIds = new Set();
+                    }
+                    buildRoomIndex();
+                    renderCalendarKey();
+                    loadEvents();
+                });
+
+                item.appendChild(cb);
+
+                if (roomColour) {
+                    var swatch = document.createElement('span');
+                    swatch.className = 'myvh-room-filter-swatch';
+                    swatch.style.backgroundColor = roomColour;
+                    swatch.setAttribute('aria-hidden', 'true');
+                    item.appendChild(swatch);
+                }
+
+                var label = document.createElement('span');
+                label.className = 'myvh-room-filter-name';
+                label.textContent = roomName;
+                item.appendChild(label);
+
+                filterEl.appendChild(item);
+            });
+        }
 
     function resolveRoomName(event, tags) {
         var direct = tags.room || tags.roomName || '';
@@ -411,6 +495,7 @@
         initialiseVenueSelector();
         buildRoomIndex();
         renderCalendarKey();
+            renderRoomFilter();
 
         initNavigator();
 
@@ -930,7 +1015,15 @@
 
             lastEvents = data.slice();
 
-            dp.events.list = data.map(function (e) {
+                var eventsToRender = data;
+                if (current.mode !== 'scheduler' && selectedRoomIds.size > 0) {
+                    eventsToRender = data.filter(function(e) {
+                        var rid = parseInt((e.tags && e.tags.roomId) || e.resource || 0, 10);
+                        return !selectedRoomIds.has(rid);
+                    });
+                }
+
+                dp.events.list = eventsToRender.map(function (e) {
                 var normalized = normalizeEventRange(e.start, e.end);
 
                 var tags = e.tags || {};
@@ -1106,6 +1199,7 @@
                 var mode = btn.dataset.mode;
                 if (mode) {
                     mountView(current.detail, mode);
+                        renderRoomFilter();
                 }
                 return;
             }

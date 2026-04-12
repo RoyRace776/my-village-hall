@@ -19,7 +19,6 @@
     gap: 20px;
     flex-wrap: wrap;
     align-items: flex-end;
-    margin-bottom: 14px;
     padding: 12px 15px;
     background: #f9f9f9;
     border: 1px solid #ddd;
@@ -107,6 +106,10 @@
     width: 18px;
     height: 18px;
     border-radius: 3px;
+.myvh-room-filter-name {
+    font-weight: 600;
+    line-height: 1.2;
+}
 }
 
 /* ── Calendar container – must have height for DayPilot to render ───────── */

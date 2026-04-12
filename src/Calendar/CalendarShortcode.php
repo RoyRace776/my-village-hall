@@ -255,6 +255,7 @@ class CalendarShortcode {
                             <label class="screen-reader-text" for="<?php echo esc_attr( $unique_id ); ?>-venue"><?php esc_html_e( 'Venue', 'my-village-hall' ); ?></label>
                             <select id="<?php echo esc_attr( $unique_id ); ?>-venue" class="myvh-cal-venue-select"></select>
                         </div>
+                            <div class="myvh-cal-room-filter" style="display:none;"></div>
                         <div class="myvh-cal-views">
                             <button class="myvh-cal-btn myvh-mode-btn active" data-mode="calendar"><?php esc_html_e( 'Calendar', 'my-village-hall' ); ?></button>
                             <button class="myvh-cal-btn myvh-mode-btn" data-mode="scheduler"><?php esc_html_e( 'Scheduler', 'my-village-hall' ); ?></button>

@@ -16,6 +16,9 @@ var Calendar = (function() {
         };
         var VENUE_STORAGE_KEY = 'myvhCalendarVenue_portal';
 
+            var selectedRoomIds = new Set();
+            var allPortalRooms = [];
+
         function normaliseHexColour(value) {
             var text = String(value || '').trim().toLowerCase();
             return /^#[0-9a-f]{6}$/.test(text) ? text : '';
@@ -95,6 +98,93 @@ var Calendar = (function() {
                 roomWrap.appendChild(createLegendItem('No rooms available', '#dcdcde'));
             }
         }
+
+            function renderRoomFilter(rooms) {
+                var container = document.getElementById('myvh-calendar-room-filter');
+                if (!container) {
+                    return;
+                }
+
+                var venueRooms = (Array.isArray(rooms) ? rooms : []).filter(function(room) {
+                    if (selectedVenueId <= 0) return true;
+                    var vid = parseInt((room && (room.venue_id || room.venueId)) || 0, 10);
+                    return vid === selectedVenueId;
+                });
+
+                if (venueRooms.length <= 1) {
+                    container.style.display = 'none';
+                    container.innerHTML = '';
+                    return;
+                }
+
+                var currentState = api && typeof api.getState === 'function' ? api.getState() : { mode: 'Calendar' };
+                if (currentState.mode === 'Scheduler') {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                container.style.display = '';
+                container.innerHTML = '';
+
+                venueRooms.forEach(function(room) {
+                    var roomId = parseInt(room.id, 10);
+                    var roomName = String(room.name || '').trim();
+                    var roomColour = normaliseHexColour(room.roomColour || room.colour);
+                    if (!roomName) {
+                        return;
+                    }
+
+                    var item = document.createElement('label');
+                    item.className = 'myvh-room-filter-item';
+
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = !selectedRoomIds.has(roomId);
+                    cb.addEventListener('change', function() {
+                        if (cb.checked) {
+                            selectedRoomIds.delete(roomId);
+                        } else {
+                            selectedRoomIds.add(roomId);
+                        }
+                        if (selectedRoomIds.size === venueRooms.length) {
+                            selectedRoomIds = new Set();
+                        }
+                        onRoomFilterChange();
+                    });
+
+                    item.appendChild(cb);
+
+                    if (roomColour) {
+                        var swatch = document.createElement('span');
+                        swatch.className = 'myvh-room-filter-swatch';
+                        swatch.style.backgroundColor = roomColour;
+                        swatch.setAttribute('aria-hidden', 'true');
+                        item.appendChild(swatch);
+                    }
+
+                    var label = document.createElement('span');
+                    label.className = 'myvh-room-filter-name';
+                    label.textContent = roomName;
+                    item.appendChild(label);
+
+                    container.appendChild(item);
+                });
+            }
+
+            function onRoomFilterChange() {
+                var state = api && typeof api.getState === 'function' ? api.getState() : {};
+                if (state.mode === 'Scheduler') {
+                    return;
+                }
+                if (api && typeof api.reload === 'function') {
+                    api.reload();
+                }
+                renderCalendarKey(allPortalRooms);
+            }
+
+            function syncRoomFilterVisibility() {
+                renderRoomFilter(allPortalRooms);
+            }
 
         function getPersistedVenueId() {
             try {
@@ -218,6 +308,7 @@ var Calendar = (function() {
                 var nextVenueId = parseInt(select.value || '0', 10) || 0;
                 selectedVenueId = nextVenueId;
                 setPersistedVenueId(nextVenueId);
+                    selectedRoomIds = new Set();
 
                 if (api && typeof api.rerender === 'function') {
                     api.rerender();
@@ -227,10 +318,13 @@ var Calendar = (function() {
 
                 loadCalendarRooms()
                     .then(function(rooms) {
-                        renderCalendarKey(rooms);
+                            allPortalRooms = rooms;
+                            renderRoomFilter(rooms);
+                            renderCalendarKey(rooms);
                     })
                     .catch(function() {
-                        renderCalendarKey([]);
+                            renderRoomFilter([]);
+                            renderCalendarKey([]);
                     });
             };
         }
@@ -575,6 +669,7 @@ var Calendar = (function() {
                 setActiveModeButton('Calendar');
                 ensureSelectableRangeHandlers();
                 syncNavigator();
+                    syncRoomFilterVisibility();
             });
 
             if (schedulerModeBtn) schedulerModeBtn.addEventListener('click', () => {
@@ -582,6 +677,7 @@ var Calendar = (function() {
                 setActiveModeButton('Scheduler');
                 ensureSelectableRangeHandlers();
                 syncNavigator();
+                    syncRoomFilterVisibility();
             });
 
             if (dayBtn) dayBtn.addEventListener('click', () => {
@@ -638,7 +734,15 @@ var Calendar = (function() {
                     // onEventClick removed: clicking events no longer shows booking
 
                     onTimeRangeSelected: openSelectionModal,
-                    onEventClick : openReadOnlyModal
+                        onEventClick : openReadOnlyModal,
+
+                        filterEvents: function(events) {
+                            if (selectedRoomIds.size === 0) return events;
+                            return events.filter(function(e) {
+                                var rid = parseInt((e.tags && e.tags.roomId) || e.resource || 0, 10);
+                                return !selectedRoomIds.has(rid);
+                            });
+                        }
                 });
 
                 bindControls();
@@ -650,9 +754,12 @@ var Calendar = (function() {
 
                 loadCalendarRooms()
                     .then(function(rooms) {
+                        allPortalRooms = rooms;
+                        renderRoomFilter(rooms);
                         renderCalendarKey(rooms);
                     })
                     .catch(function() {
+                        renderRoomFilter([]);
                         renderCalendarKey([]);
                     });
             }

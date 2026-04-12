@@ -345,7 +345,8 @@ window.CalendarCore = (function () {
                 const calendarEvents = currentDetail === "Month"
                     ? events.filter(e => !e?.tags?.isBuffer)
                     : events;
-                targetCalendar.events.list = applyEventStatusColors(calendarEvents, statusColors);
+                    const filteredCalEvents = (typeof opts.filterEvents === "function") ? opts.filterEvents(calendarEvents) : calendarEvents;
+                    targetCalendar.events.list = applyEventStatusColors(filteredCalEvents, statusColors);
                 targetCalendar.update();
             }).catch(err => console.error("Failed to load calendar events", err));
         }
