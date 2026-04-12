@@ -43,6 +43,22 @@ class GeneralSettings extends SettingsBase {
                     'sanitize' => 'sanitize_email'
                 ],
 
+                'portal_bookings_date_format' => [
+                    'type' => 'select',
+                    'label' => 'Portal Bookings Date Format',
+                    'default' => 'd MMM',
+                    'sanitize' => 'sanitize_text_field',
+                    'options' => [
+                        'd MMM'      => '15 Jan',
+                        'ddd d MMM'  => 'Mon 15 Jan',
+                        'd MMMM'     => '15 January',
+                        'ddd d MMMM' => 'Mon 15 January',
+                        'd/M/yyyy'   => '15/1/2024',
+                        'M/d/yyyy'   => '1/15/2024',
+                        'yyyy-MM-dd' => '2024-01-15',
+                    ],
+                ],
+
             ]
 
         ]

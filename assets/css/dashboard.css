@@ -711,65 +711,75 @@ body .site-main:has(#myvh-portal) {
    8. RECURRING GROUPS (accordion)
    ========================================================================== */
 
-.myvh-booking-group {
+.myvh-portal-bookings-table .myvh-booking-group-header td {
+  background: #f9f6f1;
   border: 1px solid #e8e1d7;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: none;
 }
 
-.myvh-group-header {
+.myvh-portal-bookings-table .myvh-booking-group-header:hover td {
+  background: #f2ebdf;
+}
+
+.myvh-portal-bookings-table .myvh-booking-group-header.is-open td {
+  background: #efe7da;
+}
+
+.myvh-group-header-cell {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
   cursor: pointer;
-  background: #f9f6f1;
-  transition: background .15s;
 }
-
-.myvh-group-header:hover   { background: #f2ebdf; }
-.myvh-group-header.is-open { background: #efe7da; }
 
 .myvh-group-toggle {
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid #d7c8b7;
+  border-radius: 6px;
+  background: #fff;
   color: var(--accent);
+  font-size: 12px;
+  line-height: 1;
   transition: transform .2s;
+  cursor: pointer;
 }
 
-.myvh-group-header.is-open .myvh-group-toggle {
+.myvh-booking-group-header.is-open .myvh-group-toggle {
   transform: rotate(90deg);
 }
 
-.myvh-group-main        { flex: 1; }
-.myvh-group-main strong { font-size: 14px; display: block; }
-.myvh-group-meta        { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.myvh-group-room        { font-weight: 600; font-size: 13px; text-align: right; min-width: 260px; }
+.myvh-group-main {
+  flex: 1;
+  min-width: 0;
+}
 
-.myvh-group-children {
+.myvh-group-main strong {
+  font-size: 14px;
+  display: block;
+}
+
+.myvh-group-main small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.myvh-portal-bookings-table tr.myvh-recurring-child {
   display: none;
-  padding: 8px;
-  background: var(--card-bg);
 }
 
-.myvh-group-children.is-open { display: block; }
-
-.myvh-group-children .myvh-child {
-  margin-bottom: 4px;
+.myvh-portal-bookings-table tr.myvh-recurring-child.is-open {
+  display: table-row;
 }
 
-.myvh-group-children .myvh-child:last-child {
-  margin-bottom: 0;
+.myvh-portal-bookings-table tr.myvh-hidden-by-filter {
+  display: none !important;
 }
 
-.myvh-bookings-list .myvh-booking-card {
-  margin-bottom: 4px;
-}
-
-.myvh-bookings-list .myvh-booking-card:last-child {
-  margin-bottom: 0;
+.myvh-portal-bookings-table tr.myvh-bookings-table-row.is-past td {
+  opacity: 0.68;
 }
 
 /* ==========================================================================

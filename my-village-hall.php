@@ -62,6 +62,7 @@ define( 'MYVH_PLUGIN_BASENAME',  plugin_basename( __FILE__ ) );
 
 ob_start();
 require_once MYVH_PLUGIN_DIR . 'vendor/autoload.php';
+require_once MYVH_PLUGIN_DIR . 'src/Settings/settings-helper.php';
 
 // Dependency-injection container (returns a configured Container instance)
 global $myvh_container;

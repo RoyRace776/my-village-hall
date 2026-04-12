@@ -23,13 +23,13 @@ var Bookings = (function() {
         var checked = Array.from(document.querySelectorAll('.myvh-status-filter:checked')).map(function(cb) {
             return cb.value;
         });
-        var rows = document.querySelectorAll('#myvh-bookings-table tbody tr');
+        var rows = document.querySelectorAll('#myvh-bookings-table tbody tr[data-status]');
         rows.forEach(function(row) {
             var status = row.getAttribute('data-status');
             if (!status || checked.indexOf(status) !== -1) {
-                row.style.display = '';
+                row.classList.remove('myvh-hidden-by-filter');
             } else {
-                row.style.display = 'none';
+                row.classList.add('myvh-hidden-by-filter');
             }
         });
     }
@@ -51,7 +51,7 @@ var Bookings = (function() {
      */
     function bindGroupToggles() {
         document.addEventListener('click', function(e) {
-            var header = e.target.closest('.myvh-group-header');
+            var header = e.target.closest('.myvh-booking-group-header');
             if (!header) {
                 return;
             }
@@ -62,15 +62,26 @@ var Bookings = (function() {
             }
 
             var group = header.getAttribute('data-group');
-            header.classList.toggle('is-open');
+            var groupToggle = header.querySelector('.myvh-group-toggle');
+            var isOpen = !header.classList.contains('is-open');
+
+            header.classList.toggle('is-open', isOpen);
+
+            if (groupToggle) {
+                groupToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
 
             if (!group) {
                 return;
             }
 
-            var children = document.querySelector('.myvh-group-children[data-group="' + group + '"]');
-            if (children) {
-                children.classList.toggle('is-open');
+            var children = document.querySelectorAll('tr.myvh-recurring-child[data-group="' + group + '"]');
+            children.forEach(function(row) {
+                row.classList.toggle('is-open', isOpen);
+            });
+
+            if (e.target.closest('.myvh-group-toggle')) {
+                e.preventDefault();
             }
         });
     }
