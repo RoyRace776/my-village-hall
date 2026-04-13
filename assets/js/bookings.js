@@ -14,7 +14,8 @@
 
 var Bookings = (function() {
 
-    var initialized = false;
+    var globalHandlersBound = false;
+    var boundFilterRoot = null;
 
     /**
      * Filter bookings table rows by selected statuses.
@@ -67,10 +68,10 @@ var Bookings = (function() {
     function bindStatusFilters() {
         var boxes = document.querySelectorAll('.myvh-status-filter');
         boxes.forEach(function(cb) {
-            cb.addEventListener('change', filterByStatus);
+            cb.addEventListener('change', applyAllFilters);
         });
         // Initial filter
-        filterByStatus();
+        applyAllFilters();
     }
 
     /**
@@ -410,12 +411,18 @@ var Bookings = (function() {
      * Initialize bookings logic (accordion, actions). Only runs once.
      */
     function init() {
-        if (initialized) {
+        if (!globalHandlersBound) {
+            bindGroupToggles();
+            bindActions();
+            globalHandlersBound = true;
+        }
+
+        var currentFilterRoot = document.getElementById('myvh-bookings-table') || document.getElementById('myvh-dashboard-bookings-table');
+        if (!currentFilterRoot || currentFilterRoot === boundFilterRoot) {
             return;
         }
-        initialized = true;
-        bindGroupToggles();
-        bindActions();
+
+        boundFilterRoot = currentFilterRoot;
         bindStatusFilters();
         bindExpandedFilters();
     }
