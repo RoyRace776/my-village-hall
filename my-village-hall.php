@@ -4,7 +4,7 @@
  * Plugin Name: My Village Hall
  * Plugin URI: https://example.com/my-village-hall
  * Description: A comprehensive venue and room booking management system with multi-client support, recurring bookings, and customer portal
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: Richard Barrett
  * Author URI: https://example.com
  * License: GPL v2 or later

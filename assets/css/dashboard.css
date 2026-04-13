@@ -778,6 +778,149 @@ body .site-main:has(#myvh-portal) {
   display: none !important;
 }
 
+/* ==========================================================================
+   8a. EXPANDED FILTERS PANEL
+   ========================================================================== */
+
+/* Expanded filters toggle */
+.myvh-bookings-filter-expanded-toggle {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e5e5;
+}
+
+.myvh-filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #0073aa;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.myvh-filter-toggle-btn:hover {
+  color: #005a87;
+}
+
+.myvh-filter-toggle-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+/* Expanded filters section */
+.myvh-bookings-filter-expanded {
+  display: block;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+}
+
+.myvh-bookings-filter-expanded[hidden] {
+  display: none;
+}
+
+.myvh-filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.myvh-filter-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.myvh-filter-field label {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.myvh-booking-filter-select,
+.myvh-booking-filter-text {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.myvh-booking-filter-select:focus,
+.myvh-booking-filter-text:focus {
+  outline: none;
+  border-color: #0073aa;
+  box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.1);
+}
+
+/* Date presets */
+.myvh-filter-date-presets {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.myvh-filter-date-preset {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.myvh-filter-date-preset:hover {
+  border-color: #0073aa;
+  background-color: #f0f6fc;
+}
+
+.myvh-filter-date-preset.is-active {
+  background-color: #0073aa;
+  color: #fff;
+  border-color: #0073aa;
+}
+
+/* Date picker */
+.myvh-filter-date-picker {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.myvh-filter-date-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 14px;
+  flex: 1;
+  max-width: 150px;
+}
+
+/* Filter actions */
+.myvh-filter-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #ddd;
+}
+
+#myvh-filter-clear,
+#myvh-dashboard-filter-clear {
+  font-size: 14px;
+  padding: 0.5rem 1rem;
+}
+
 .myvh-portal-bookings-table tr.myvh-bookings-table-row.is-past td {
   opacity: 0.68;
 }

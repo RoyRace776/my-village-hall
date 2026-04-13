@@ -131,6 +131,282 @@ var Bookings = (function() {
     }
 
     /**
+     * Apply all active filters to the bookings table.
+     */
+    function applyAllFilters() {
+        var rows = document.querySelectorAll('.myvh-bookings-table-row, .myvh-booking-group-header');
+        var groups = {};
+
+        rows.forEach(function(row) {
+            if (row.classList.contains('myvh-booking-group-header')) {
+                return; // Skip group headers for now
+            }
+
+            // Check all filter conditions
+            var filterState = getFilterState();
+            var matchesStatus = checkStatusFilter(row);
+            var matchesRoom = !filterState.room || row.getAttribute('data-room') === filterState.room;
+            var matchesCustomer = !filterState.customer || row.getAttribute('data-customer') === filterState.customer;
+            var matchesOrg = !filterState.organisation || row.getAttribute('data-organisation') === filterState.organisation;
+            var matchesDescription = !filterState.description || (row.getAttribute('data-description-search') || '').includes(filterState.description.toLowerCase());
+            var matchesDate = checkDateFilter(row);
+
+            var isVisible = matchesStatus && matchesRoom && matchesCustomer && matchesOrg && matchesDescription && matchesDate;
+
+            row.classList.toggle('myvh-hidden-by-filter', !isVisible);
+
+            // Track group visibility
+            var groupId = row.getAttribute('data-group');
+            if (!groups[groupId]) {
+                groups[groupId] = false;
+            }
+            if (isVisible) {
+                groups[groupId] = true;
+            }
+        });
+
+        // Show/hide group headers based on child visibility
+        var groupHeaders = document.querySelectorAll('.myvh-booking-group-header');
+        groupHeaders.forEach(function(header) {
+            var groupId = header.getAttribute('data-group');
+            header.classList.toggle('myvh-hidden-by-filter', !groups[groupId]);
+        });
+    }
+
+    /**
+     * Get current filter state from UI elements.
+     */
+    function getFilterState() {
+        // Determine which filter container we're in (bookings page vs dashboard)
+        var bookingsTable = document.getElementById('myvh-bookings-table');
+        var dashboardTable = document.getElementById('myvh-dashboard-bookings-table');
+        var isBookingsPage = !!bookingsTable;
+
+        var prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
+
+        return {
+            room: getSelectValue(prefix + 'room'),
+            customer: getSelectValue(prefix + 'customer'),
+            organisation: getSelectValue(prefix + 'organisation'),
+            datePreset: getDatePreset(prefix),
+            dateStart: getDateInput(prefix + 'date-start'),
+            dateEnd: getDateInput(prefix + 'date-end'),
+            description: (getInputValue(prefix + 'description') || '').toLowerCase()
+        };
+    }
+
+    /**
+     * Get value from a select element.
+     */
+    function getSelectValue(elementId) {
+        var el = document.getElementById(elementId);
+        return el ? el.value : '';
+    }
+
+    /**
+     * Get value from a text input element.
+     */
+    function getInputValue(elementId) {
+        var el = document.getElementById(elementId);
+        return el ? el.value : '';
+    }
+
+    /**
+     * Get Date object from a date input element.
+     */
+    function getDateInput(elementId) {
+        var el = document.getElementById(elementId);
+        if (!el || !el.value) {
+            return null;
+        }
+        return new Date(el.value);
+    }
+
+    /**
+     * Get the currently selected date preset.
+     */
+    function getDatePreset(prefix) {
+        var activePreset = document.querySelector('.' + prefix + 'date-preset.is-active');
+        if (activePreset) {
+            return activePreset.getAttribute('data-preset') || 'all';
+        }
+        return 'all';
+    }
+
+    /**
+     * Check if a row matches the status filter.
+     */
+    function checkStatusFilter(row) {
+        var status = row.getAttribute('data-status');
+        var checkbox = document.querySelector('.myvh-status-filter[value="' + status + '"]');
+        return checkbox ? checkbox.checked : true;
+    }
+
+    /**
+     * Check if a row matches the date filter.
+     */
+    function checkDateFilter(row) {
+        var bookingDateStr = row.getAttribute('data-booking-date');
+        if (!bookingDateStr) {
+            return true;
+        }
+
+        var filterState = getFilterState();
+        var bookingDate = new Date(bookingDateStr);
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (filterState.datePreset === 'upcoming') {
+            return bookingDate >= today;
+        } else if (filterState.datePreset === 'past') {
+            return bookingDate < today;
+        } else if (filterState.datePreset === 'custom') {
+            var matches = true;
+            if (filterState.dateStart) {
+                matches = matches && bookingDate >= filterState.dateStart;
+            }
+            if (filterState.dateEnd) {
+                var endOfDay = new Date(filterState.dateEnd);
+                endOfDay.setHours(23, 59, 59, 999);
+                matches = matches && bookingDate <= endOfDay;
+            }
+            return matches;
+        }
+
+        return true; // 'all' preset shows everything
+    }
+
+    /**
+     * Setup event listeners for expanded filters.
+     */
+    function bindExpandedFilters() {
+        // Determine which page we're on
+        var bookingsTable = document.getElementById('myvh-bookings-table');
+        var isBookingsPage = !!bookingsTable;
+        var prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
+        var expandedFiltersId = isBookingsPage ? 'myvh-expanded-filters' : 'myvh-dashboard-expanded-filters';
+
+        // Collapsible expanded filters toggle
+        var filterToggleBtn = document.querySelector('.myvh-filter-toggle-btn');
+        var expandedFilters = document.getElementById(expandedFiltersId);
+
+        if (filterToggleBtn && expandedFilters) {
+            filterToggleBtn.addEventListener('click', function() {
+                var isExpanded = this.getAttribute('aria-expanded') === 'true';
+                this.setAttribute('aria-expanded', !isExpanded);
+                expandedFilters.hidden = isExpanded;
+                var icon = this.querySelector('.myvh-filter-toggle-icon');
+                if (icon) {
+                    icon.style.transform = isExpanded ? '' : 'rotate(180deg)';
+                }
+            });
+        }
+
+        // Room filter
+        var roomFilter = document.getElementById(prefix + 'room');
+        if (roomFilter) {
+            roomFilter.addEventListener('change', applyAllFilters);
+        }
+
+        // Customer filter
+        var customerFilter = document.getElementById(prefix + 'customer');
+        if (customerFilter) {
+            customerFilter.addEventListener('change', applyAllFilters);
+        }
+
+        // Organisation filter
+        var orgFilter = document.getElementById(prefix + 'organisation');
+        if (orgFilter) {
+            orgFilter.addEventListener('change', applyAllFilters);
+        }
+
+        // Date preset buttons
+        var datePresets = document.querySelectorAll('.' + prefix + 'date-preset');
+        datePresets.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var preset = this.getAttribute('data-preset');
+                var datePicker = document.getElementById(prefix + 'date-picker');
+
+                if (preset === 'custom') {
+                    if (datePicker) {
+                        datePicker.hidden = false;
+                    }
+                    datePresets.forEach(function(b) {
+                        b.classList.remove('is-active');
+                    });
+                    this.classList.add('is-active');
+                } else {
+                    if (datePicker) {
+                        datePicker.hidden = true;
+                    }
+                    datePresets.forEach(function(b) {
+                        b.classList.remove('is-active');
+                    });
+                    this.classList.add('is-active');
+                    applyAllFilters();
+                }
+            });
+        });
+
+        // Set initial active preset to 'All'
+        if (datePresets.length > 0) {
+            datePresets[0].classList.add('is-active');
+        }
+
+        // Custom date picker inputs
+        var dateStart = document.getElementById(prefix + 'date-start');
+        var dateEnd = document.getElementById(prefix + 'date-end');
+
+        if (dateStart) {
+            dateStart.addEventListener('change', applyAllFilters);
+        }
+        if (dateEnd) {
+            dateEnd.addEventListener('change', applyAllFilters);
+        }
+
+        // Description search
+        var descriptionFilter = document.getElementById(prefix + 'description');
+        if (descriptionFilter) {
+            descriptionFilter.addEventListener('input', applyAllFilters);
+        }
+
+        // Clear filters button
+        var clearBtn = document.getElementById(prefix + 'clear');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                // Reset all filter selects
+                if (roomFilter) roomFilter.value = '';
+                if (customerFilter) customerFilter.value = '';
+                if (orgFilter) orgFilter.value = '';
+                if (descriptionFilter) descriptionFilter.value = '';
+                if (dateStart) dateStart.value = '';
+                if (dateEnd) dateEnd.value = '';
+
+                // Hide date picker
+                var datePicker = document.getElementById(prefix + 'date-picker');
+                if (datePicker) {
+                    datePicker.hidden = true;
+                }
+
+                // Reset preset buttons
+                datePresets.forEach(function(b) {
+                    b.classList.remove('is-active');
+                });
+                if (datePresets.length > 0) {
+                    datePresets[0].classList.add('is-active'); // 'All' preset
+                }
+
+                // Reset visible status checkboxes to checked
+                document.querySelectorAll('.myvh-status-filter').forEach(function(cb) {
+                    cb.checked = true;
+                });
+
+                applyAllFilters();
+            });
+        }
+    }
+
+    /**
      * Initialize bookings logic (accordion, actions). Only runs once.
      */
     function init() {
@@ -141,6 +417,7 @@ var Bookings = (function() {
         bindGroupToggles();
         bindActions();
         bindStatusFilters();
+        bindExpandedFilters();
     }
 
     return {

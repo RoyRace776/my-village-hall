@@ -78,6 +78,123 @@ usort($groups, function ($a, $b) {
           <p>Your dashboard will start showing bookings as soon as this account is linked to a customer record.</p>
         </div>
       <?php elseif (!empty($groups)): ?>
+        <!-- Client-side filter section -->
+        <div class="myvh-bookings-filter-panel">
+          <div class="myvh-bookings-filter-expanded-toggle">
+              <button type="button" class="myvh-filter-toggle-btn" aria-expanded="false" aria-controls="myvh-dashboard-expanded-filters">
+                  <span class="myvh-filter-toggle-icon">▼</span>
+                  <span><?php _e('Filters', 'my-village-hall'); ?></span>
+              </button>
+          </div>
+
+          <div id="myvh-dashboard-expanded-filters" class="myvh-bookings-filter-expanded" hidden>
+              <div class="myvh-bookings-filter-panel__head">
+                <strong><?php _e('Show statuses', 'my-village-hall'); ?></strong>
+                <span>Use the filters below to focus on the booking states you want to review.</span>
+              </div>
+              <div class="myvh-bookings-status-checkboxes">
+                <label class="myvh-checkbox-label"><input type="checkbox" class="myvh-status-filter" value="pending" checked> <span><?php _e('Pending', 'my-village-hall'); ?></span></label>
+                <label class="myvh-checkbox-label"><input type="checkbox" class="myvh-status-filter" value="confirmed" checked> <span><?php _e('Confirmed', 'my-village-hall'); ?></span></label>
+                <label class="myvh-checkbox-label"><input type="checkbox" class="myvh-status-filter" value="cancelled" checked> <span><?php _e('Cancelled', 'my-village-hall'); ?></span></label>
+                <label class="myvh-checkbox-label"><input type="checkbox" class="myvh-status-filter" value="completed" checked> <span><?php _e('Completed', 'my-village-hall'); ?></span></label>
+              </div>
+
+              <div class="myvh-filter-row">
+                  <div class="myvh-filter-field">
+                      <label for="myvh-dashboard-filter-room"><?php _e('Room:', 'my-village-hall'); ?></label>
+                      <select id="myvh-dashboard-filter-room" class="myvh-booking-filter-select" data-filter="room">
+                          <option value=""><?php _e('All Rooms', 'my-village-hall'); ?></option>
+                          <?php
+                          $rooms_in_bookings = [];
+                          foreach ($groups as $group) {
+                              foreach ($group['bookings'] as $booking) {
+                                  if (!empty($booking['RoomName']) && $booking['RoomName'] !== 'Room booking') {
+                                      $room_name = $booking['RoomName'];
+                                      if (!isset($rooms_in_bookings[$room_name])) {
+                                          $rooms_in_bookings[$room_name] = true;
+                                          ?>
+                                          <option value="<?php echo esc_attr($room_name); ?>">
+                                              <?php echo esc_html($room_name); ?>
+                                          </option>
+                                          <?php
+                                      }
+                                  }
+                              }
+                          }
+                          ?>
+                      </select>
+                  </div>
+
+                  <?php if ($is_client_admin): ?>
+                      <div class="myvh-filter-field">
+                          <label for="myvh-dashboard-filter-customer"><?php _e('Customer:', 'my-village-hall'); ?></label>
+                          <select id="myvh-dashboard-filter-customer" class="myvh-booking-filter-select" data-filter="customer">
+                              <option value=""><?php _e('All Customers', 'my-village-hall'); ?></option>
+                              <?php
+                              $customers_in_bookings = [];
+                              foreach ($groups as $group) {
+                                  foreach ($group['bookings'] as $booking) {
+                                      if (!empty($booking['CustomerId'])) {
+                                          $customer_id = $booking['CustomerId'];
+                                          $customer_name = $booking['CustomerName'] ?? 'Unknown';
+                                          if (!isset($customers_in_bookings[$customer_id])) {
+                                              $customers_in_bookings[$customer_id] = $customer_name;
+                                              ?>
+                                              <option value="<?php echo esc_attr($customer_id); ?>">
+                                                  <?php echo esc_html($customer_name); ?>
+                                              </option>
+                                              <?php
+                                          }
+                                      }
+                                  }
+                              }
+                              ?>
+                          </select>
+                      </div>
+
+                      <div class="myvh-filter-field">
+                          <label for="myvh-dashboard-filter-organisation"><?php _e('Organisation:', 'my-village-hall'); ?></label>
+                          <select id="myvh-dashboard-filter-organisation" class="myvh-booking-filter-select" data-filter="organisation">
+                              <option value=""><?php _e('All Organisations', 'my-village-hall'); ?></option>
+                              <?php
+                              $organisations_in_bookings = [];
+                              foreach ($groups as $group) {
+                                  foreach ($group['bookings'] as $booking) {
+                                      if (!empty($booking['OrganisationId'])) {
+                                          $org_id = $booking['OrganisationId'];
+                                          $org_name = $booking['OrganisationName'] ?? 'Unknown';
+                                          if (!isset($organisations_in_bookings[$org_id])) {
+                                              $organisations_in_bookings[$org_id] = $org_name;
+                                              ?>
+                                              <option value="<?php echo esc_attr($org_id); ?>">
+                                                  <?php echo esc_html($org_name); ?>
+                                              </option>
+                                              <?php
+                                          }
+                                      }
+                                  }
+                              }
+                              ?>
+                          </select>
+                      </div>
+                  <?php endif; ?>
+              </div>
+
+              <div class="myvh-filter-row">
+                  <div class="myvh-filter-field">
+                      <label for="myvh-dashboard-filter-description"><?php _e('Search Description:', 'my-village-hall'); ?></label>
+                      <input type="text" id="myvh-dashboard-filter-description" class="myvh-booking-filter-text" data-filter="description" placeholder="<?php _e('Enter keyword...', 'my-village-hall'); ?>">
+                  </div>
+              </div>
+
+              <div class="myvh-filter-actions">
+                  <button type="button" class="button button-secondary" id="myvh-dashboard-filter-clear">
+                      <?php _e('Clear Filters', 'my-village-hall'); ?>
+                  </button>
+              </div>
+          </div>
+        </div>
+
         <div class="myvh-bookings-list myvh-portal-dashboard-bookings-list">
           <table id="myvh-dashboard-bookings-table" class="myvh-customer-list-table myvh-portal-bookings-table">
             <thead>
@@ -147,7 +264,14 @@ usort($groups, function ($a, $b) {
                       <?php $is_past = ($b['StartDate'] ?? '') < $today; ?>
                       <?php $status_class = 'is-' . sanitize_html_class($b['Status'] ?? ''); ?>
                       <?php $can_delete = $can_delete_booking($b); ?>
-                      <tr class="myvh-bookings-table-row myvh-recurring-child <?php echo $is_past ? 'is-past' : ''; ?>" data-group="<?php echo esc_attr($group_id); ?>" data-status="<?php echo esc_attr($b['Status'] ?? ''); ?>">
+                      <tr class="myvh-bookings-table-row myvh-recurring-child <?php echo $is_past ? 'is-past' : ''; ?>"
+                          data-group="<?php echo esc_attr($group_id); ?>"
+                          data-status="<?php echo esc_attr(strtolower($b['Status'] ?? '')); ?>"
+                          data-room="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
+                          data-customer="<?php echo esc_attr($b['CustomerId'] ?? ''); ?>"
+                          data-organisation="<?php echo esc_attr($b['OrganisationId'] ?? ''); ?>"
+                          data-description-search="<?php echo esc_attr(strtolower($b['description'] ?? '')); ?>"
+                          data-booking-date="<?php echo esc_attr($b['StartDate'] ?? ''); ?>">
                         <td>
                           <strong>
                             <?php echo esc_html($format_booking_date($b['StartDate'] ?? '')); ?>
@@ -200,7 +324,14 @@ usort($groups, function ($a, $b) {
                     $status_class = 'is-' . sanitize_html_class($b['Status'] ?? '');
                     $can_delete = $can_delete_booking($b);
                     ?>
-                    <tr class="myvh-bookings-table-row <?php echo $is_past ? 'is-past' : ''; ?>" data-status="<?php echo esc_attr($b['Status'] ?? ''); ?>">
+                    <tr class="myvh-bookings-table-row <?php echo $is_past ? 'is-past' : ''; ?>"
+                        data-status="<?php echo esc_attr(strtolower($b['Status'] ?? '')); ?>"
+                        data-room="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
+                        data-customer="<?php echo esc_attr($b['CustomerId'] ?? ''); ?>"
+                        data-organisation="<?php echo esc_attr($b['OrganisationId'] ?? ''); ?>"
+                        data-description-search="<?php echo esc_attr(strtolower($b['description'] ?? '')); ?>"
+                        data-booking-date="<?php echo esc_attr($b['StartDate'] ?? ''); ?>"
+                        data-group="single-<?php echo esc_attr($b['Id'] ?? ''); ?>">
                       <td>
                         <strong>
                           <?php echo esc_html($format_booking_date($b['StartDate'] ?? '')); ?>
