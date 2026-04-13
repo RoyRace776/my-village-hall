@@ -34,6 +34,7 @@ window.BookingModalCreate = (function() {
             onSuccess: () => {},
             onOpen: () => {},
             onClose: () => {},
+            onDelete: () => {},
             beforeSubmit: () => true, // allow validation hook
             lockAddonPrices: false,
             editMode: false,
@@ -70,6 +71,16 @@ window.BookingModalCreate = (function() {
             button.addEventListener("click", function (event) {
                 event.preventDefault();
                 close();
+            });
+        });
+
+        const deleteButtons = modal.querySelectorAll('.myvh-delete-booking');
+        deleteButtons.forEach((button) => {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                if (!button.disabled && config.editBookingId) {
+                    config.onDelete({ bookingId: config.editBookingId });
+                }
             });
         });
 
@@ -220,6 +231,8 @@ window.BookingModalCreate = (function() {
 
                     const booking = res.data.booking;
                     booking.__addons = Array.isArray(res.data.addons) ? res.data.addons : [];
+                    booking.__canDelete = !!res.data.can_delete;
+                    booking.__deleteReason = res.data.delete_reason || '';
 
                     return populateDropdowns()
                         .then(() => {
@@ -281,6 +294,12 @@ window.BookingModalCreate = (function() {
                     syncEndDateVisibility();
                     syncPickerValues();
                     syncHiddenDateTimes();
+
+                    modal.querySelectorAll('.myvh-delete-booking').forEach((button) => {
+                        button.disabled = !booking.__canDelete;
+                        button.title = booking.__canDelete ? '' : (booking.__deleteReason || 'Deleting not available');
+                    });
+
                     config.onOpen(data);
                 })
                 .catch(err => {
@@ -801,6 +820,11 @@ window.BookingModalCreate = (function() {
         submitButtons.forEach((button) => {
             button.style.display = '';
             button.textContent = isEdit ? 'Update Booking' : 'Create Booking';
+        });
+
+        modal.querySelectorAll('.myvh-delete-booking').forEach((button) => {
+            button.style.display = isEdit ? '' : 'none';
+            button.disabled = true;
         });
 
         if (statusRow) {

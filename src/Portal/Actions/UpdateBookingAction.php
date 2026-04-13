@@ -3,6 +3,7 @@ namespace MYVH\Portal\Actions;
 
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationMemberRepository;
 use MYVH\Portal\Support\BookingAccess;
 use MYVH\Portal\ClientAdminService;
 
@@ -13,6 +14,7 @@ class UpdateBookingAction {
     public function __construct(
         private BookingService $booking_service,
         private CustomerService $customer_service,
+        private OrganisationMemberRepository $organisation_member_repo,
         private ClientAdminService $client_admin_service
     ) {}
 
@@ -36,11 +38,18 @@ class UpdateBookingAction {
             $booking_id,
             (int) ($customer['Id'] ?? 0),
             $is_admin,
-            $this->booking_service
+            $this->booking_service,
+            $this->organisation_member_repo
         );
 
         if (!$booking) {
             throw new Exception('Booking not found');
+        }
+
+        $rules = $this->booking_service->can_edit($booking);
+
+        if (empty($rules['can_edit'])) {
+            throw new Exception($rules['reason'] ?? 'Cannot edit booking');
         }
 
         $result = $this->booking_service->save([

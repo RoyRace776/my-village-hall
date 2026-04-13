@@ -7,6 +7,7 @@ use MYVH\Bookings\BookingService;
 use MYVH\Calendar\CalendarAjaxController;
 use MYVH\Calendar\CalendarService;
 use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationMemberRepository;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Rooms\RoomRepository;
@@ -18,6 +19,7 @@ class CalendarAjaxControllerTest extends UnitTestCase {
     private $booking_service;
     private $room_repository;
     private $customer_service;
+    private $organisation_member_repo;
     private $client_admin_service;
     private $room_rate_service;
     private $room_visibility_service;
@@ -30,6 +32,7 @@ class CalendarAjaxControllerTest extends UnitTestCase {
         $this->booking_service          = $this->mock(BookingService::class);
         $this->room_repository          = $this->mock(RoomRepository::class);
         $this->customer_service         = $this->mock(CustomerService::class);
+        $this->organisation_member_repo = $this->mock(OrganisationMemberRepository::class);
         $this->client_admin_service     = $this->mock(ClientAdminService::class);
         $this->room_rate_service        = $this->mock(RoomRateService::class);
         $this->room_visibility_service  = $this->mock(RoomVisibilityService::class);
@@ -39,6 +42,7 @@ class CalendarAjaxControllerTest extends UnitTestCase {
             $this->booking_service,
             $this->room_repository,
             $this->customer_service,
+            $this->organisation_member_repo,
             $this->client_admin_service,
             $this->room_rate_service,
             $this->room_visibility_service
@@ -49,6 +53,7 @@ class CalendarAjaxControllerTest extends UnitTestCase {
             'current_user_can' => true,
             'is_user_logged_in' => true,
             'absint' => fn($value) => abs((int) $value),
+            'wp_unslash' => static fn($value) => $value,
             'get_current_user_id' => 21,
             'get_current_blog_id' => 7,
         ]);
@@ -267,6 +272,102 @@ class CalendarAjaxControllerTest extends UnitTestCase {
         $this->assertTrue($response->success);
         $this->assertSame(1, $response->data['booking']['NoInvoiceRequired']);
         $this->assertTrue($response->data['can_manage_no_invoice_required']);
+    }
+
+    /** @test */
+    public function update_event_blocks_portal_updates_when_can_edit_denies_the_booking(): void {
+        $_POST = [
+            'context' => 'portal',
+            'booking_id' => 55,
+            'start' => '2026-04-15 10:00:00',
+            'end' => '2026-04-15 12:00:00',
+        ];
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->once()
+            ->with(21, 7)
+            ->andReturn(true);
+
+        $this->customer_service->shouldReceive('get_by_user_id')
+            ->once()
+            ->with(21)
+            ->andReturn(['Id' => 9]);
+
+        $this->booking_service->shouldReceive('get_by_id_with_details')
+            ->once()
+            ->with(55)
+            ->andReturn([
+                'Id' => 55,
+                'CustomerId' => 9,
+                'OrganisationId' => 0,
+                'Status' => 'pending',
+            ]);
+
+        $this->booking_service->shouldReceive('can_edit')
+            ->once()
+            ->andReturn(['can_edit' => false, 'reason' => 'Invoiced bookings cannot be edited.']);
+
+        $this->calendar_service->shouldReceive('update_event')->never();
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->update_event();
+        });
+
+        $this->assertFalse($response->success);
+        $this->assertSame(403, $response->statusCode);
+        $this->assertSame('Invoiced bookings cannot be edited.', $response->data);
+    }
+
+    /** @test */
+    public function update_event_allows_portal_updates_for_accessible_bookings_with_edit_permission(): void {
+        $_POST = [
+            'context' => 'portal',
+            'booking_id' => 56,
+            'start' => '2026-04-15 10:00:00',
+            'end' => '2026-04-15 12:00:00',
+            'text' => 'Updated booking',
+        ];
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->once()
+            ->with(21, 7)
+            ->andReturn(false);
+
+        $this->customer_service->shouldReceive('get_by_user_id')
+            ->once()
+            ->with(21)
+            ->andReturn(['Id' => 9]);
+
+        $this->booking_service->shouldReceive('get_by_id_with_details')
+            ->once()
+            ->with(56)
+            ->andReturn([
+                'Id' => 56,
+                'CustomerId' => 9,
+                'OrganisationId' => 0,
+                'Status' => 'pending',
+            ]);
+
+        $this->booking_service->shouldReceive('can_edit')
+            ->once()
+            ->andReturn(['can_edit' => true, 'reason' => '']);
+
+        $this->calendar_service->shouldReceive('update_event')
+            ->once()
+            ->with(
+                \Mockery::on(static function (array $request): bool {
+                    return ($request['context'] ?? '') === 'portal'
+                        && intval($request['booking_id'] ?? 0) === 56;
+                })
+            )
+            ->andReturn(['id' => 56]);
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->update_event();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame(['id' => 56], $response->data);
     }
 
     private function capture_json_response(callable $callback): CalendarJsonResponseException {

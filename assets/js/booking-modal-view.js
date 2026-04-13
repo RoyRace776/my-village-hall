@@ -4,7 +4,6 @@ window.BookingModalView = (function() {
     let isBound = false;
     let currentBookingId = 0;
     let currentCanEdit = false;
-    let currentCanDelete = false;
 
     /**
      * Initialize the booking modal with configuration and bind events.
@@ -33,7 +32,6 @@ window.BookingModalView = (function() {
             // Hooks
             onSuccess: () => {},
             onEdit: () => {},
-            onDelete: () => {},
             onOpen: () => {},
             onClose: () => {},
             beforeSubmit: () => true, // allow validation hook
@@ -48,6 +46,8 @@ window.BookingModalView = (function() {
         if (!modal || !form) {
             return;
         }
+
+        window.MyvhFlatpickr?.initWithin(modal);
 
         if (!isBound) {
             bindEvents();
@@ -86,19 +86,6 @@ window.BookingModalView = (function() {
             });
         });
 
-        const deleteButtons = modal.querySelectorAll('.myvh-delete-booking');
-        deleteButtons.forEach((button) => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-
-                if (!currentCanDelete || !currentBookingId) {
-                    return;
-                }
-
-                config.onDelete({ bookingId: currentBookingId });
-            });
-        });
-
         // Click outside closes modal
         modal.addEventListener("click", function(e) {
             if (e.target === modal) {
@@ -121,9 +108,7 @@ window.BookingModalView = (function() {
 
         currentBookingId = Number(bookingId) || 0;
         currentCanEdit = false;
-        currentCanDelete = false;
         updateEditButtons(false, 'Loading booking permissions...');
-        updateDeleteButtons(false, 'Loading booking permissions...');
         applyNoInvoiceRequiredVisibility();
 
         const nonce = config.context === "portal" ? config.nonce : "myvh_calendar";
@@ -147,8 +132,6 @@ window.BookingModalView = (function() {
                         addons: Array.isArray(res.data.addons) ? res.data.addons : [],
                         canEdit: !!res.data.can_edit,
                         editReason: res.data.edit_reason || '',
-                        canDelete: !!res.data.can_delete,
-                        deleteReason: res.data.delete_reason || '',
                         canManageNoInvoiceRequired: !!res.data.can_manage_no_invoice_required
                     };
 
@@ -169,9 +152,7 @@ window.BookingModalView = (function() {
                     setValue('no_invoice_required', !!booking['NoInvoiceRequired']);
                     applyExistingAddons(payload.addons || []);
                     currentCanEdit = !!payload.canEdit;
-                    currentCanDelete = !!payload.canDelete;
                     updateEditButtons(currentCanEdit, payload.editReason);
-                    updateDeleteButtons(currentCanDelete, payload.deleteReason);
                     applyNoInvoiceRequiredVisibility();
 
                     const startDateTime = `${booking['StartDate'] || ''} ${booking['StartTime'] || ''}`.trim();
@@ -200,9 +181,7 @@ window.BookingModalView = (function() {
         form.reset();
         currentBookingId = 0;
         currentCanEdit = false;
-        currentCanDelete = false;
         updateEditButtons(false, '');
-        updateDeleteButtons(false, '');
         form.querySelectorAll("select, input, textarea").forEach(el => {
             if (el.name === 'room_id' || el.name === 'customer_id' || el.name === 'organisation_id' || el.name === 'public') {
                 el.disabled = true;
@@ -488,10 +467,10 @@ window.BookingModalView = (function() {
         const startTime = form.querySelector("#myvh-modal-start-time");
         const endTime = form.querySelector("#myvh-modal-end-time");
 
-        if (startDate) startDate.value = s.date;
-        if (endDate) endDate.value = e.date;
-        if (startTime) startTime.value = s.time;
-        if (endTime) endTime.value = e.time;
+        if (startDate) window.MyvhFlatpickr ? window.MyvhFlatpickr.setValue(startDate, s.date) : (startDate.value = s.date);
+        if (endDate) window.MyvhFlatpickr ? window.MyvhFlatpickr.setValue(endDate, e.date) : (endDate.value = e.date);
+        if (startTime) window.MyvhFlatpickr ? window.MyvhFlatpickr.setValue(startTime, s.time) : (startTime.value = s.time);
+        if (endTime) window.MyvhFlatpickr ? window.MyvhFlatpickr.setValue(endTime, e.time) : (endTime.value = e.time);
     }
 
     function parseDateTime(value) {
@@ -580,15 +559,9 @@ window.BookingModalView = (function() {
 
     function updateEditButtons(canEdit, reason = '') {
         modal.querySelectorAll('.myvh-edit-booking').forEach((button) => {
+            button.style.display = canEdit ? '' : 'none';
             button.disabled = !canEdit;
             button.title = canEdit ? '' : (reason || 'Editing not available');
-        });
-    }
-
-    function updateDeleteButtons(canDelete, reason = '') {
-        modal.querySelectorAll('.myvh-delete-booking').forEach((button) => {
-            button.disabled = !canDelete;
-            button.title = canDelete ? '' : (reason || 'Deleting not available');
         });
     }
 

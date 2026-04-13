@@ -2,6 +2,7 @@
 namespace MYVH\Portal\Support;
 
 use MYVH\Bookings\BookingService;
+use MYVH\Organisations\OrganisationMemberRepository;
 
 class BookingAccess {
 
@@ -9,7 +10,8 @@ class BookingAccess {
         int $booking_id,
         int $customer_id,
         bool $is_client_admin,
-        BookingService $booking_service
+        BookingService $booking_service,
+        ?OrganisationMemberRepository $organisation_member_repo = null
     ) {
         if ($booking_id <= 0) {
             return null;
@@ -19,6 +21,26 @@ class BookingAccess {
             return $booking_service->get_by_id_with_details($booking_id);
         }
 
-        return $booking_service->get_by_id_with_details_for_customer($booking_id, $customer_id);
+        $booking = $booking_service->get_by_id_with_details($booking_id);
+
+        if (!$booking) {
+            return null;
+        }
+
+        if (intval($booking['CustomerId'] ?? 0) === $customer_id) {
+            return $booking;
+        }
+
+        $organisation_id = intval($booking['OrganisationId'] ?? 0);
+        if (
+            $customer_id > 0
+            && $organisation_id > 0
+            && $organisation_member_repo
+            && $organisation_member_repo->is_customer_admin($organisation_id, $customer_id)
+        ) {
+            return $booking;
+        }
+
+        return null;
     }
 }

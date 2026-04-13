@@ -4,7 +4,10 @@ namespace MYVH\Bookings\Services;
 
 use MYVH\Bookings\BookingRepository;
 use MYVH\Bookings\BookingStatus;
+use MYVH\Customers\CustomerRepository;
+use MYVH\Organisations\OrganisationMemberRepository;
 use MYVH\Organisations\OrganisationRepository;
+use MYVH\Portal\ClientAdminService;
 
 if (!defined('ABSPATH')) exit;
 
@@ -12,11 +15,23 @@ class BookingAccessControl
 {
     private $booking_repo;
     private $organisation_repo;
+    private $customer_repo;
+    private $organisation_member_repo;
+    private $client_admin_service;
 
-    public function __construct(BookingRepository $booking_repo, OrganisationRepository $organisation_repo)
+    public function __construct(
+        BookingRepository $booking_repo,
+        OrganisationRepository $organisation_repo,
+        CustomerRepository $customer_repo,
+        OrganisationMemberRepository $organisation_member_repo,
+        ClientAdminService $client_admin_service
+    )
     {
         $this->booking_repo = $booking_repo;
         $this->organisation_repo = $organisation_repo;
+        $this->customer_repo = $customer_repo;
+        $this->organisation_member_repo = $organisation_member_repo;
+        $this->client_admin_service = $client_admin_service;
     }
 
     public function resolve_public_visibility($data, $organisation_id, $booking_id): int
@@ -109,9 +124,66 @@ class BookingAccessControl
 
     public function can_edit($booking): array
     {
+        $booking_id = intval($booking['Id'] ?? 0);
+        $status = strtolower((string) ($booking['Status'] ?? ''));
+        $current_user_id = intval(get_current_user_id());
+        $current_blog_id = intval(get_current_blog_id());
+        $is_client_admin = $this->client_admin_service->can_administer_blog($current_user_id, $current_blog_id);
+
+        if ($booking_id > 0 && $this->booking_repo->has_invoiced_items($booking_id)) {
+            return [
+                'can_edit' => false,
+                'reason' => 'Invoiced bookings cannot be edited.',
+            ];
+        }
+
+        if ($status === BookingStatus::CONFIRMED || $status === BookingStatus::CANCELLED) {
+            return [
+                'can_edit' => $is_client_admin,
+                'reason' => $is_client_admin ? '' : 'Only client administrators can edit confirmed or cancelled bookings.',
+            ];
+        }
+
+        if ($status !== BookingStatus::PENDING) {
+            return [
+                'can_edit' => false,
+                'reason' => 'This booking cannot be edited.',
+            ];
+        }
+
+        if ($is_client_admin) {
+            return [
+                'can_edit' => true,
+                'reason' => '',
+            ];
+        }
+
+        $current_customer = $current_user_id > 0 ? $this->customer_repo->get_by_user_id($current_user_id) : null;
+        $current_customer_id = intval($current_customer['Id'] ?? 0);
+        $booker_customer_id = intval($booking['CustomerId'] ?? 0);
+        $organisation_id = intval($booking['OrganisationId'] ?? 0);
+
+        if ($current_customer_id > 0 && $current_customer_id === $booker_customer_id) {
+            return [
+                'can_edit' => true,
+                'reason' => '',
+            ];
+        }
+
+        if (
+            $current_customer_id > 0
+            && $organisation_id > 0
+            && $this->organisation_member_repo->is_customer_admin($organisation_id, $current_customer_id)
+        ) {
+            return [
+                'can_edit' => true,
+                'reason' => '',
+            ];
+        }
+
         return [
-            'can_edit' => true,
-            'reason' => '',
+            'can_edit' => false,
+            'reason' => 'Only the booker, an organisation admin, or a client administrator can edit pending bookings.',
         ];
     }
 }

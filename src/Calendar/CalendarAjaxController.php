@@ -6,7 +6,9 @@ use MYVH\Rooms\RoomRepository;
 use MYVH\Rooms\RoomColour;
 use MYVH\Rooms\RoomVisibilityService;
 use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationMemberRepository;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Portal\Support\BookingAccess;
 use MYVH\Pricing\RoomRateService;
 
 use Exception;
@@ -19,6 +21,7 @@ class CalendarAjaxController {
     private $booking_service;
     private $room_repository;
     private $customer_service;
+    private $organisation_member_repo;
     private $client_admin_service;
     private $room_rate_service;
     private $room_visibility_service;
@@ -28,6 +31,7 @@ class CalendarAjaxController {
         BookingService $booking_service,
         RoomRepository $room_repository,
         CustomerService $customer_service,
+        OrganisationMemberRepository $organisation_member_repo,
         ClientAdminService $client_admin_service,
         RoomRateService $room_rate_service,
         RoomVisibilityService $room_visibility_service) {
@@ -36,6 +40,7 @@ class CalendarAjaxController {
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;
         $this->customer_service = $customer_service;
+        $this->organisation_member_repo = $organisation_member_repo;
         $this->client_admin_service = $client_admin_service;
         $this->room_rate_service = $room_rate_service;
         $this->room_visibility_service = $room_visibility_service;
@@ -293,8 +298,31 @@ class CalendarAjaxController {
             if (!is_user_logged_in()) {
                 wp_send_json_error('Login required', 401);
             }
-            if (!$this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id())) {
-                wp_send_json_error('Permission denied', 403);
+
+            $user_id = get_current_user_id();
+            $is_client_admin = $this->client_admin_service->can_administer_blog($user_id, get_current_blog_id());
+            $customer = $this->customer_service->get_by_user_id($user_id);
+            $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
+
+            if ($booking_id <= 0) {
+                wp_send_json_error('Booking ID is required', 400);
+            }
+
+            $booking = BookingAccess::get_accessible_booking(
+                $booking_id,
+                (int) ($customer['Id'] ?? 0),
+                $is_client_admin,
+                $this->booking_service,
+                $this->organisation_member_repo
+            );
+
+            if (!$booking) {
+                wp_send_json_error('Booking not found or not accessible', 404);
+            }
+
+            $edit_rules = $this->booking_service->can_edit($booking);
+            if (empty($edit_rules['can_edit'])) {
+                wp_send_json_error($edit_rules['reason'] ?? 'Permission denied', 403);
             }
         } elseif (!current_user_can('manage_myvh')) {
             wp_send_json_error('Permission denied', 403);
@@ -304,14 +332,15 @@ class CalendarAjaxController {
             $result = $this->calendar_service->update_event($request);
 
             if (is_wp_error($result)) {
-                wp_send_json_error($result->get_error_message());
+                throw new Exception($result->get_error_message(), 400);
             }
 
-            wp_send_json_success($result);
-
         } catch (Exception $e) {
-            wp_send_json_error($e->getMessage());
+            $status = $e->getCode();
+            wp_send_json_error($e->getMessage(), $status >= 400 ? $status : 400);
         }
+
+        wp_send_json_success($result);
 }
 
 

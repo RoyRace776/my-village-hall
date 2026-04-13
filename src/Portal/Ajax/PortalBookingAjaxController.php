@@ -97,24 +97,33 @@ class PortalBookingAjaxController {
     public function update_for_modal(): void {
         PortalAuth::require_user();
 
-        if (!$this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id())) {
-            wp_send_json_error('Permission denied', 403);
-        }
-
         $request = wp_unslash($_POST);
         $request['context'] = 'portal';
+        $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
+
+        if ($booking_id <= 0) {
+            wp_send_json_error('Booking ID is required', 400);
+        }
 
         try {
+            $booking = $this->get_action->execute($booking_id);
+            $edit_rules = $this->booking_service->can_edit($booking);
+
+            if (empty($edit_rules['can_edit'])) {
+                throw new Exception($edit_rules['reason'] ?? 'Permission denied', 403);
+            }
+
             $result = $this->calendar_service->update_event($request);
 
             if (is_wp_error($result)) {
-                wp_send_json_error($result->get_error_message(), 400);
+                throw new Exception($result->get_error_message(), 400);
             }
-
-            wp_send_json_success($result);
         } catch (Exception $e) {
-            wp_send_json_error($e->getMessage(), 400);
+            $status = $e->getCode();
+            wp_send_json_error($e->getMessage(), $status >= 400 ? $status : 400);
         }
+
+        wp_send_json_success($result);
     }
 
     private function current_user_can_manage_no_invoice_required(): bool {

@@ -436,11 +436,32 @@ var Calendar = (function() {
                 return;
             }
 
-            viewModal.open({
-                bookingId: bookingId,
-                args: args.e.data,
-                viewOnly: true
-            });
+            window.MyvhPortalAjax.get(
+                {
+                    action: 'myvh_portal_get_booking',
+                    booking_id: String(bookingId)
+                },
+                { scope: 'portal' }
+            )
+                .then(function(result) {
+                    if (result && result.success && result.data && result.data.can_edit) {
+                        createModal.open({ editMode: true, bookingId: bookingId });
+                        return;
+                    }
+
+                    viewModal.open({
+                        bookingId: bookingId,
+                        args: args.e.data,
+                        viewOnly: true
+                    });
+                })
+                .catch(function() {
+                    viewModal.open({
+                        bookingId: bookingId,
+                        args: args.e.data,
+                        viewOnly: true
+                    });
+                });
         }
 
         function openCreateModal(data) {
@@ -543,7 +564,10 @@ var Calendar = (function() {
                 canManageNoInvoiceRequired: isClientAdmin,
 
                 onClose: () => api?.clearSelection?.(),
-                onSuccess: handleBookingSaved
+                onSuccess: handleBookingSaved,
+                onDelete: ({ bookingId }) => {
+                    deleteBooking(bookingId);
+                }
             });
 
             viewModal.init({
@@ -573,9 +597,6 @@ var Calendar = (function() {
                 onClose: () => api?.clearSelection?.(),
                 onEdit: ({ bookingId }) => {
                     createModal.open({ editMode: true, bookingId: bookingId });
-                },
-                onDelete: ({ bookingId }) => {
-                    deleteBooking(bookingId);
                 },
                 onSuccess: handleBookingSaved
             });

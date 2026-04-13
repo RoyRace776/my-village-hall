@@ -4,6 +4,7 @@ namespace MYVH\Portal\Actions;
 use MYVH\Bookings\BookingService;
 use MYVH\Portal\Support\BookingAccess;
 use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationMemberRepository;
 use MYVH\Portal\ClientAdminService;
 
 use Exception;
@@ -12,6 +13,7 @@ class DeleteBookingAction {
     public function __construct(
         private BookingService $booking_service,
         private CustomerService $customer_service,
+        private OrganisationMemberRepository $organisation_member_repo,
         private ClientAdminService $client_admin_service
     ) {}
 
@@ -26,7 +28,8 @@ class DeleteBookingAction {
             $booking_id,
             (int) ($customer['Id'] ?? 0),
             $is_admin,
-            $this->booking_service
+            $this->booking_service,
+            $this->organisation_member_repo
         );
 
         if (!$booking) {
