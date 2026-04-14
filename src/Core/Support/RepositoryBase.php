@@ -11,7 +11,7 @@ class RepositoryBase {
 
     public function __construct($my_wpdb = null) {
         global $wpdb;
-        $this->wpdb = $wpdb ?: $wpdb;
+        $this->wpdb = $my_wpdb ?: $wpdb;
         $this->table_name = $this->resolve_table_name();
     }
 
@@ -70,6 +70,7 @@ class RepositoryBase {
     // --- Query helpers ---
     public function find($where = [], $order = '', $limit = null, $offset = null): array {
         $sql = "SELECT * FROM {$this->table_name}";
+        $order = esc_sql($order);
         if ($where) {
             $clauses = [];
             foreach ($where as $col => $val) {
