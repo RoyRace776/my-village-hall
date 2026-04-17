@@ -315,4 +315,33 @@ class InvoiceRepository extends RepositoryBase{
         return intval($result) + 1;
     }
 
+    /**
+     * Get the stored PDF path for an invoice, or null if none has been recorded.
+     *
+     * @param int $invoiceId
+     * @return string|null
+     */
+    public function get_pdf_path(int $invoiceId): ?string {
+        $row = $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT PdfPath FROM {$this->table_name} WHERE Id = %d",
+                $invoiceId
+            ),
+            ARRAY_A
+        );
+
+        return isset($row['PdfPath']) ? (string) $row['PdfPath'] : null;
+    }
+
+    /**
+     * Persist the PDF path for an invoice.
+     *
+     * @param int    $invoiceId
+     * @param string $path  Absolute filesystem path to the generated PDF.
+     * @return bool True on success, false on failure.
+     */
+    public function set_pdf_path(int $invoiceId, string $path): bool {
+        return $this->update(['PdfPath' => $path], ['Id' => $invoiceId]);
+    }
+
 }

@@ -3,8 +3,11 @@
 namespace MYVH\Tests\Unit\Services;
 
 use Brain\Monkey\Functions;
+use MYVH\Invoices\InvoiceFileStorage;
+use MYVH\Invoices\InvoicePdfRenderer;
 use MYVH\Invoices\InvoiceRepository;
 use MYVH\Invoices\InvoiceService;
+use MYVH\Invoices\PdfGenerator;
 use MYVH\Payments\PaymentRepository;
 use MYVH\Tests\Unit\UnitTestCase;
 use WP_Error;
@@ -12,6 +15,9 @@ use WP_Error;
 class InvoiceServiceTest extends UnitTestCase {
     private $invoice_repo;
     private $payment_repo;
+    private $pdf_renderer;
+    private $pdf_generator;
+    private $file_storage;
     private InvoiceService $service;
 
     protected function setUp(): void {
@@ -23,13 +29,30 @@ class InvoiceServiceTest extends UnitTestCase {
             '__' => fn($value) => $value,
         ]);
 
-        $this->invoice_repo = $this->mock(InvoiceRepository::class);
-        $this->payment_repo = $this->mock(PaymentRepository::class);
-        $this->service = new InvoiceService($this->invoice_repo, $this->payment_repo);
+        $this->invoice_repo  = $this->mock(InvoiceRepository::class);
+        $this->payment_repo  = $this->mock(PaymentRepository::class);
+        $this->pdf_renderer  = $this->mock(InvoicePdfRenderer::class);
+        $this->pdf_generator = $this->mock(PdfGenerator::class);
+        $this->file_storage  = $this->mock(InvoiceFileStorage::class);
+
+        $this->service = new InvoiceService(
+            $this->invoice_repo,
+            $this->payment_repo,
+            $this->pdf_renderer,
+            $this->pdf_generator,
+            $this->file_storage
+        );
     }
 
     public function tearDown(): void {
-        unset($this->service, $this->invoice_repo, $this->payment_repo);
+        unset(
+            $this->service,
+            $this->invoice_repo,
+            $this->payment_repo,
+            $this->pdf_renderer,
+            $this->pdf_generator,
+            $this->file_storage
+        );
         parent::tearDown();
     }
 
@@ -248,5 +271,233 @@ class InvoiceServiceTest extends UnitTestCase {
         $result = $this->service->delete_payment(55);
 
         $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function delete_returns_wp_error_when_pdf_delete_fails(): void {
+        $this->payment_repo->shouldReceive('count_by_invoice')
+            ->once()
+            ->with(15)
+            ->andReturn(0);
+
+        $this->file_storage->shouldReceive('delete')
+            ->once()
+            ->with(15)
+            ->andReturn(false);
+
+        $this->invoice_repo->shouldNotReceive('delete');
+
+        $result = $this->service->delete(15);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('filesystem', $result->get_error_code());
+    }
+
+    /** @test */
+    public function delete_deletes_pdf_and_invoice_when_valid(): void {
+        $this->payment_repo->shouldReceive('count_by_invoice')
+            ->once()
+            ->with(16)
+            ->andReturn(0);
+
+        $this->file_storage->shouldReceive('delete')
+            ->once()
+            ->with(16)
+            ->andReturn(true);
+
+        $this->invoice_repo->shouldReceive('delete')
+            ->once()
+            ->with(16)
+            ->andReturn(true);
+
+        $result = $this->service->delete(16);
+
+        $this->assertSame(16, $result);
+    }
+
+    // ── generate_pdf ───────────────────────────────────────────────────
+
+    /** @test */
+    public function generate_pdf_returns_existing_path_without_regenerating(): void {
+        $existing_path = '/var/www/uploads/myvh-invoices/2026/04/invoice-INV-000010.pdf';
+
+        $this->file_storage->shouldReceive('exists')
+            ->once()
+            ->with(10)
+            ->andReturn(true);
+
+        $this->file_storage->shouldReceive('getPath')
+            ->once()
+            ->with(10)
+            ->andReturn($existing_path);
+
+        // Renderer, generator, and save must NOT be called on a cache hit.
+        $this->pdf_renderer->shouldNotReceive('renderHtml');
+        $this->pdf_generator->shouldNotReceive('render');
+        $this->file_storage->shouldNotReceive('save');
+        $this->invoice_repo->shouldNotReceive('set_pdf_path');
+
+        $result = $this->service->generate_pdf(10);
+
+        $this->assertSame($existing_path, $result);
+    }
+
+    /** @test */
+    public function generate_pdf_renders_and_saves_when_no_pdf_exists(): void {
+        $invoice_id = 11;
+        $invoice    = [
+            'Id'            => $invoice_id,
+            'InvoiceNumber' => 'INV-000011',
+            'InvoiceDate'   => '2026-04-17',
+            'TotalAmount'   => '150.00',
+        ];
+        $expected_path = '/var/www/uploads/myvh-invoices/2026/04/invoice-INV-000011.pdf';
+
+        $this->file_storage->shouldReceive('exists')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn(false);
+
+        // get_detail internally calls these three repo/payment methods.
+        $this->invoice_repo->shouldReceive('get_detail')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn($invoice);
+
+        $this->invoice_repo->shouldReceive('get_items_for_invoice')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn([]);
+
+        $this->payment_repo->shouldReceive('get_by_invoice')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn([]);
+
+        $this->pdf_renderer->shouldReceive('renderHtml')
+            ->once()
+            ->withArgs(fn(array $inv): bool => $inv['Id'] === $invoice_id)
+            ->andReturn('<html>invoice html</html>');
+
+        $this->pdf_generator->shouldReceive('render')
+            ->once()
+            ->with('<html>invoice html</html>')
+            ->andReturn('%PDF-binary');
+
+        $this->file_storage->shouldReceive('save')
+            ->once()
+            ->with($invoice_id, '%PDF-binary')
+            ->andReturn($expected_path);
+
+        $this->invoice_repo->shouldReceive('set_pdf_path')
+            ->once()
+            ->with($invoice_id, $expected_path)
+            ->andReturn(true);
+
+        $result = $this->service->generate_pdf($invoice_id);
+
+        $this->assertSame($expected_path, $result);
+    }
+
+    /** @test */
+    public function generate_pdf_returns_wp_error_when_invoice_not_found(): void {
+        $this->file_storage->shouldReceive('exists')
+            ->once()
+            ->with(99)
+            ->andReturn(false);
+
+        $this->invoice_repo->shouldReceive('get_detail')
+            ->once()
+            ->with(99)
+            ->andReturn(null);
+
+        $this->invoice_repo->shouldReceive('get_items_for_invoice')
+            ->never();
+
+        $result = $this->service->generate_pdf(99);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('not_found', $result->get_error_code());
+    }
+
+    // ── get_invoice_pdf_url ──────────────────────────────────────────
+
+    /** @test */
+    public function get_invoice_pdf_url_returns_public_url(): void {
+        $invoice_id    = 12;
+        $invoice       = [
+            'Id'            => $invoice_id,
+            'InvoiceNumber' => 'INV-000012',
+            'InvoiceDate'   => '2026-04-17',
+            'TotalAmount'   => '200.00',
+        ];
+        $saved_path    = '/var/www/uploads/myvh-invoices/2026/04/invoice-INV-000012.pdf';
+        $expected_url  = 'https://example.com/wp-content/uploads/myvh-invoices/2026/04/invoice-INV-000012.pdf';
+
+        // PDF does not exist yet — goes through full generation pipeline.
+        $this->file_storage->shouldReceive('exists')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn(false);
+
+        $this->invoice_repo->shouldReceive('get_detail')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn($invoice);
+
+        $this->invoice_repo->shouldReceive('get_items_for_invoice')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn([]);
+
+        $this->payment_repo->shouldReceive('get_by_invoice')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn([]);
+
+        $this->pdf_renderer->shouldReceive('renderHtml')
+            ->once()
+            ->andReturn('<html>ok</html>');
+
+        $this->pdf_generator->shouldReceive('render')
+            ->once()
+            ->andReturn('%PDF-binary');
+
+        $this->file_storage->shouldReceive('save')
+            ->once()
+            ->with($invoice_id, '%PDF-binary')
+            ->andReturn($saved_path);
+
+        $this->invoice_repo->shouldReceive('set_pdf_path')
+            ->once()
+            ->with($invoice_id, $saved_path)
+            ->andReturn(true);
+
+        $this->file_storage->shouldReceive('getUrl')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn($expected_url);
+
+        $result = $this->service->get_invoice_pdf_url($invoice_id);
+
+        $this->assertSame($expected_url, $result);
+    }
+
+    /** @test */
+    public function get_invoice_pdf_url_propagates_wp_error_from_generate_pdf(): void {
+        $this->file_storage->shouldReceive('exists')
+            ->once()
+            ->with(88)
+            ->andReturn(false);
+
+        $this->invoice_repo->shouldReceive('get_detail')
+            ->once()
+            ->with(88)
+            ->andReturn(null);
+
+        $result = $this->service->get_invoice_pdf_url(88);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('not_found', $result->get_error_code());
     }
 }

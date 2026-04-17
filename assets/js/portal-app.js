@@ -380,6 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const settingsPage = document.querySelector('.myvh-client-settings-page');
         if (settingsPage) {
             initSettingsTabs(settingsPage);
+            initSettingsMediaFields(settingsPage);
             initSettingsDirtyState(settingsPage);
         }
 
@@ -795,7 +796,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Only track enabled, non-hidden fields
             const trackedFields = Array.from(form.querySelectorAll('input, select, textarea'))
-                .filter((field) => field.name && field.type !== 'hidden' && !field.disabled);
+                .filter((field) => field.name && !field.disabled)
+                .filter((field) => field.type !== 'hidden' || field.hasAttribute('data-myvh-media-input'));
 
             if (!trackedFields.length) return;
 
@@ -839,6 +841,83 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             syncDirtyState();
+        });
+    }
+
+    /**
+     * Initialize portal settings media picker fields (logo upload/select/remove).
+     */
+    function initSettingsMediaFields(settingsPage) {
+        if (!window.wp || !window.wp.media) {
+            return;
+        }
+
+        const mediaFields = Array.from(settingsPage.querySelectorAll('[data-myvh-media-field]'));
+        if (!mediaFields.length) {
+            return;
+        }
+
+        const updatePreview = (field, url) => {
+            const preview = field.querySelector('[data-myvh-media-preview]');
+            const clearButton = field.querySelector('[data-myvh-media-clear]');
+
+            if (!preview || !clearButton) {
+                return;
+            }
+
+            if (url) {
+                preview.classList.add('has-image');
+                preview.innerHTML = '<img src="' + url.replace(/"/g, '&quot;') + '" alt="Selected logo">';
+                clearButton.style.display = '';
+                return;
+            }
+
+            preview.classList.remove('has-image');
+            preview.innerHTML = '';
+            clearButton.style.display = 'none';
+        };
+
+        mediaFields.forEach((field) => {
+            if (field.dataset.mediaBound === '1') {
+                return;
+            }
+
+            const input = field.querySelector('[data-myvh-media-input]');
+            const selectButton = field.querySelector('[data-myvh-media-select]');
+            const clearButton = field.querySelector('[data-myvh-media-clear]');
+
+            if (!input || !selectButton || !clearButton) {
+                return;
+            }
+
+            selectButton.addEventListener('click', () => {
+                const frame = window.wp.media({
+                    title: 'Select portal logo',
+                    button: { text: 'Use this logo' },
+                    multiple: false,
+                    library: { type: 'image' }
+                });
+
+                frame.on('select', () => {
+                    const attachment = frame.state().get('selection').first().toJSON();
+                    const selectedUrl = attachment.url || '';
+                    input.value = selectedUrl;
+                    updatePreview(field, selectedUrl);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+
+                frame.open();
+            });
+
+            clearButton.addEventListener('click', () => {
+                input.value = '';
+                updatePreview(field, '');
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            field.dataset.mediaBound = '1';
         });
     }
 

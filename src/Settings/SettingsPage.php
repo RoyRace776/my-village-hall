@@ -194,6 +194,70 @@ class SettingsPage {
                 isDirty = false;
             });
 
+            function updateMediaField(field, url) {
+                var preview = field.querySelector('[data-myvh-media-preview]');
+                var clear = field.querySelector('[data-myvh-media-clear]');
+
+                if (!preview || !clear) {
+                    return;
+                }
+
+                if (url) {
+                    preview.classList.add('has-image');
+                    preview.innerHTML = '<img src="' + url.replace(/"/g, '&quot;') + '" alt="Selected logo">';
+                    clear.style.display = '';
+                } else {
+                    preview.classList.remove('has-image');
+                    preview.innerHTML = '';
+                    clear.style.display = 'none';
+                }
+            }
+
+            function initMediaFields() {
+                if (!window.wp || !wp.media) {
+                    return;
+                }
+
+                var fields = form.querySelectorAll('[data-myvh-media-field]');
+
+                fields.forEach(function (field) {
+                    var input = field.querySelector('[data-myvh-media-input]');
+                    var select = field.querySelector('[data-myvh-media-select]');
+                    var clear = field.querySelector('[data-myvh-media-clear]');
+
+                    if (!input || !select || !clear) {
+                        return;
+                    }
+
+                    select.addEventListener('click', function () {
+                        var frame = wp.media({
+                            title: 'Select portal logo',
+                            button: { text: 'Use this logo' },
+                            multiple: false,
+                            library: { type: 'image' }
+                        });
+
+                        frame.on('select', function () {
+                            var attachment = frame.state().get('selection').first().toJSON();
+                            var imageUrl = attachment.url || '';
+                            input.value = imageUrl;
+                            updateMediaField(field, imageUrl);
+                            markDirty();
+                        });
+
+                        frame.open();
+                    });
+
+                    clear.addEventListener('click', function () {
+                        input.value = '';
+                        updateMediaField(field, '');
+                        markDirty();
+                    });
+                });
+            }
+
+            initMediaFields();
+
             window.addEventListener('beforeunload', function (e) {
                 if (isDirty) {
                     e.preventDefault();
@@ -328,6 +392,34 @@ class SettingsPage {
                     data-myvh-picker="date"
                     autocomplete="off"
                     value="<?php echo esc_attr($value); ?>">
+                <?php
+                break;
+
+
+            case 'media':
+                $media_url = is_string($value) ? $value : '';
+                ?>
+                <div class="myvh-media-field" data-myvh-media-field>
+                    <input type="hidden"
+                        name="<?php echo esc_attr($name); ?>"
+                        value="<?php echo esc_attr($media_url); ?>"
+                        data-myvh-media-input>
+
+                    <div class="myvh-media-preview<?php echo $media_url !== '' ? ' has-image' : ''; ?>" data-myvh-media-preview>
+                        <?php if ($media_url !== ''): ?>
+                            <img src="<?php echo esc_url($media_url); ?>" alt="<?php esc_attr_e('Selected logo', 'my-village-hall'); ?>">
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="myvh-media-actions">
+                        <button type="button" class="button" data-myvh-media-select>
+                            <?php esc_html_e('Upload/Select Logo', 'my-village-hall'); ?>
+                        </button>
+                        <button type="button" class="button" data-myvh-media-clear<?php echo $media_url === '' ? ' style="display:none;"' : ''; ?>>
+                            <?php esc_html_e('Remove', 'my-village-hall'); ?>
+                        </button>
+                    </div>
+                </div>
                 <?php
                 break;
 

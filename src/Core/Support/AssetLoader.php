@@ -119,6 +119,10 @@ class AssetLoader {
 
         if ( strpos( $hook, 'myvh' ) === false && strpos( $hook, 'my-village-hall' ) === false ) return;
 
+        if ( strpos( $hook, 'myvh-settings' ) !== false ) {
+            wp_enqueue_media();
+        }
+
         self::register_flatpickr_assets();
         wp_enqueue_style( 'myvh-flatpickr' );
 
@@ -218,6 +222,7 @@ class AssetLoader {
     public static function enqueue_portal_assets(): void {
 
         self::register_flatpickr_assets();
+        wp_enqueue_media();
 
         // Google Fonts (filterable so the theme can suppress the duplicate)
         $fonts_url = apply_filters(

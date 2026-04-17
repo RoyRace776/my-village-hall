@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace MYVH\Invoices;
 
 use MYVH\Payments\PaymentRepository;
@@ -12,10 +15,22 @@ class InvoiceService {
 
     private InvoiceRepository $repo;
     private PaymentRepository $payment_repo;
+    private InvoicePdfRenderer $pdf_renderer;
+    private PdfGenerator $pdf_generator;
+    private InvoiceFileStorage $file_storage;
 
-    public function __construct(InvoiceRepository $repo, PaymentRepository $payment_repo) {
-        $this->repo = $repo;
-        $this->payment_repo = $payment_repo;
+    public function __construct(
+        InvoiceRepository $repo,
+        PaymentRepository $payment_repo,
+        InvoicePdfRenderer $pdf_renderer,
+        PdfGenerator $pdf_generator,
+        InvoiceFileStorage $file_storage
+    ) {
+        $this->repo          = $repo;
+        $this->payment_repo  = $payment_repo;
+        $this->pdf_renderer  = $pdf_renderer;
+        $this->pdf_generator = $pdf_generator;
+        $this->file_storage  = $file_storage;
     }
 
     public function get_all($args = []): array {
@@ -193,7 +208,7 @@ class InvoiceService {
             }
         }
 
-        $invoice_number_formatted = $prefix . str_pad($invoice_number, 6, '0', STR_PAD_LEFT);
+        $invoice_number_formatted = $prefix . str_pad((string) $invoice_number, 6, '0', STR_PAD_LEFT);
         return $invoice_number_formatted;
     }
 
@@ -202,7 +217,17 @@ class InvoiceService {
             return new WP_Error('validation', __('Cannot delete invoice with existing payments', 'my-village-hall'));
         }
 
-        return $this->repo->delete($id);
+        if (!$this->file_storage->delete((int) $id)) {
+            return new WP_Error('filesystem', __('Failed to delete invoice PDF file', 'my-village-hall'));
+        }
+
+        $deleted = $this->repo->delete($id);
+
+        if ($deleted === false) {
+            return new WP_Error('database', __('Failed to delete invoice', 'my-village-hall'));
+        }
+
+        return (int) $id;
     }
 
     public function get_for_portal($customer_id, $statuses = []): ?array {
@@ -339,5 +364,65 @@ class InvoiceService {
         }
 
         return 'sent';
+    }
+
+    // ── PDF generation ────────────────────────────────────────────────────────
+
+    /**
+     * Generate a PDF for the given invoice and return its absolute path.
+     * If a PDF has already been generated for this invoice, the existing path
+     * is returned without regenerating.
+     *
+     * @param int $invoiceId
+     * @return string|WP_Error Absolute file path on success, WP_Error on failure.
+     */
+    public function generate_pdf(int $invoiceId): string|WP_Error {
+        // 1. Return existing PDF if already stored and file still present on disk.
+        if ($this->file_storage->exists($invoiceId)) {
+            return (string) $this->file_storage->getPath($invoiceId);
+        }
+
+        // 2. Load full invoice detail (includes Items, BookingsSummary, Payments).
+        $invoice = $this->get_detail($invoiceId);
+        if (!$invoice) {
+            return new WP_Error('not_found', __('Invoice not found', 'my-village-hall'));
+        }
+
+        // 3. Render HTML.
+        $html = $this->pdf_renderer->renderHtml($invoice);
+
+        // 4. Convert HTML to PDF binary.
+        $pdf_binary = $this->pdf_generator->render($html);
+
+        // 5. Write the binary to the uploads directory.
+        $path = $this->file_storage->save($invoiceId, $pdf_binary);
+
+        // 6. Persist the file path against the invoice record.
+        $this->repo->set_pdf_path($invoiceId, $path);
+
+        return $path;
+    }
+
+    /**
+     * Return a publicly accessible URL for the invoice PDF.
+     * The PDF is generated on first call if it does not already exist.
+     *
+     * @param int $invoiceId
+     * @return string|WP_Error Public URL on success, WP_Error on failure.
+     */
+    public function get_invoice_pdf_url(int $invoiceId): string|WP_Error {
+        $path = $this->generate_pdf($invoiceId);
+
+        if (is_wp_error($path)) {
+            return $path;
+        }
+
+        $url = $this->file_storage->getUrl($invoiceId);
+
+        if ($url === null) {
+            return new WP_Error('url_error', __('Could not determine PDF URL.', 'my-village-hall'));
+        }
+
+        return $url;
     }
 }

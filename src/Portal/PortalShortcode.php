@@ -60,6 +60,7 @@ class PortalShortcode implements ShortcodeInterface
         $accessible_sites = $portal_data['accessible_sites'];
         $is_client_admin  = $portal_data['is_client_admin'];
         $has_customer     = $portal_data['has_customer'];
+        $portal_branding  = $portal_data['portal_branding'] ?? [];
 
         ob_start();
         include MYVH_PLUGIN_DIR . 'templates/Portal/portal-shell.php';

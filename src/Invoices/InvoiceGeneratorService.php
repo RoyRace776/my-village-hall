@@ -240,9 +240,22 @@ class InvoiceGeneratorService {
                 foreach ($addons as $addon) {
                     $subtotal += floatval($addon['TotalAmount'] ?? 0);
 
+                    $description = trim((string) ($addon['Description'] ?? ''));
+                    if ($description === '') {
+                        $description = trim((string) ($addon['AddonName'] ?? ''));
+                    }
+
+                    if ($description === '' && !empty($addon['AddonId'])) {
+                        $addon_record = $this->addon_repo->get_by_id((int) $addon['AddonId']);
+                        $description = trim((string) ($addon_record['Description'] ?? ''));
+                        if ($description === '') {
+                            $description = trim((string) ($addon_record['Name'] ?? ''));
+                        }
+                    }
+
                     $invoice_items[] = [
                         'BookingId' => $booking_id,
-                        'Description' => $addon['Description'] ?? 'Add-on',
+                        'Description' => $description !== '' ? $description : 'Add-on',
                         'Quantity' => $addon['Quantity'] ?? 1,
                         'UnitPrice' => $addon['UnitPrice'] ?? 0,
                         'TaxRate' => 0,  // Addons typically don't have separate tax row

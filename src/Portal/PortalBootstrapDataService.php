@@ -44,6 +44,7 @@ class PortalBootstrapDataService {
      *   is_client_admin: bool,
      *   has_customer: bool,
      *   accessible_sites: array,
+    *   portal_branding: array{site_title: string, logo_url: string},
      *   visible_hours: array{start: int, end: int}
      * }
      */
@@ -54,6 +55,9 @@ class PortalBootstrapDataService {
         }
 
         $raw_hours = $this->availability_service->get_calendar_visible_hours();
+        $site_label = trim((string) myvh_setting('general.site_label', ''));
+        $site_title = $site_label !== '' ? $site_label : (string) get_bloginfo('name');
+        $logo_url = trim((string) myvh_setting('general.portal_logo_url', ''));
 
         $current_customer_id     = 0;
         $default_organisation_id = 0;
@@ -80,6 +84,10 @@ class PortalBootstrapDataService {
             'is_client_admin'         => $is_client_admin,
             'has_customer'            => $has_customer,
             'accessible_sites'        => $accessible_sites,
+            'portal_branding'         => [
+                'site_title' => $site_title,
+                'logo_url'   => $logo_url,
+            ],
             'visible_hours'           => [
                 'start' => isset( $raw_hours['start'] ) ? (int) $raw_hours['start'] : 8,
                 'end'   => isset( $raw_hours['end'] )   ? (int) $raw_hours['end']   : 22,

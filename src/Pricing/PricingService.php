@@ -78,7 +78,7 @@ class PricingService {
             'BookingId'   => $booking_id,
             'RoomRateId'  => intval($room_rate['Id']),
             'ChargeType'  => sanitize_text_field((string) ($room_rate['ChargeType'] ?? $room_rate['RateType'] ?? 'fixed')),
-            'Description' => __('Room charge snapshot', 'my-village-hall'),
+            'Description' => __('Room charge', 'my-village-hall'),
             'Quantity'    => $quantity,
             'UnitPrice'   => $unit_price,
             'TotalAmount' => $total,

@@ -29,6 +29,14 @@ class GeneralSettings extends SettingsBase {
                     'sanitize' => 'sanitize_text_field'
                 ],
 
+                'portal_logo_url' => [
+                    'type' => 'media',
+                    'label' => 'Portal Logo',
+                    'default' => '',
+                    'sanitize' => 'esc_url_raw',
+                    'description' => 'Shown in the portal header next to the site title.'
+                ],
+
                 'items_per_page' => [
                     'type' => 'integer',
                     'label' => 'Items Per Page',

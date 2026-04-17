@@ -49,6 +49,7 @@ class Installer {
         self::ensure_organisation_system_column( $wpdb );
         self::ensure_organisation_type_flag_columns( $wpdb );
         self::ensure_addon_archive_column( $wpdb );
+        self::ensure_invoice_pdf_path_column( $wpdb );
         self::add_foreign_keys( $wpdb );
         self::set_default_data( $wpdb );
     }
@@ -101,6 +102,18 @@ class Installer {
         if ( ! $is_default_col ) {
             $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsDefault TINYINT(1) NOT NULL DEFAULT 0 AFTER IsSystem" );
         }
+    }
+
+    private static function ensure_invoice_pdf_path_column( wpdb $wpdb ): void {
+        $table  = $wpdb->prefix . 'myvh_invoices';
+        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'PdfPath'" );
+
+        if ( $column ) {
+            return;
+        }
+
+        // Fallback for installs where dbDelta did not add the new column.
+        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN PdfPath VARCHAR(500) NULL AFTER Notes" );
     }
 
     private static function ensure_addon_archive_column( wpdb $wpdb ): void {
@@ -452,6 +465,7 @@ class Installer {
             AmountDue     DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
             Status        VARCHAR(50)    NOT NULL DEFAULT 'Draft',
             Notes         TEXT,
+            PdfPath       VARCHAR(500)   NULL,
             Created       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
             Updated       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uq_invoice_number (InvoiceNumber),

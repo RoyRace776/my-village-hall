@@ -10,12 +10,22 @@ $has_payments = !empty($invoice_payments);
 ?>
 
 <div class="myvh-dashboard-section">
+    <?php
+        $portal_pdf_url = add_query_arg([
+            'action' => 'myvh_portal_view_invoice_pdf',
+            'invoice_id' => intval($invoice['Id'] ?? 0),
+            'nonce' => wp_create_nonce('myvh_portal'),
+        ], admin_url('admin-ajax.php'));
+    ?>
     <div class="myvh-account-header">
         <div>
             <h2>View Invoice</h2>
             <p>Review invoice details, related bookings, and current status.</p>
         </div>
         <div>
+            <?php if (!empty($invoice['Id'])): ?>
+                <a href="<?php echo esc_url($portal_pdf_url); ?>" class="myvh-button" target="_blank" rel="noopener noreferrer">View PDF</a>
+            <?php endif; ?>
             <?php if ($is_client_admin): ?>
                 <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
                     <a href="#payments?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>" class="myvh-button">Payments</a>

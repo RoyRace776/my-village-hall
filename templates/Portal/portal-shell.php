@@ -7,6 +7,21 @@ if (!defined('ABSPATH')) exit;
 
 <div id="myvh-portal">
 
+    <?php $brand_title = trim((string) ($portal_branding['site_title'] ?? '')); ?>
+    <?php if ($brand_title === ''): ?>
+        <?php $brand_title = (string) get_bloginfo('name'); ?>
+    <?php endif; ?>
+    <?php $brand_logo = trim((string) ($portal_branding['logo_url'] ?? '')); ?>
+
+    <div class="myvh-portal-brand" aria-label="<?php esc_attr_e('Portal branding', 'my-village-hall'); ?>">
+        <div class="myvh-portal-brand__inner">
+            <?php if ($brand_logo !== ''): ?>
+                <img class="myvh-portal-brand__logo" src="<?php echo esc_url($brand_logo); ?>" alt="<?php echo esc_attr($brand_title); ?>">
+            <?php endif; ?>
+            <span class="myvh-portal-brand__title"><?php echo esc_html($brand_title); ?></span>
+        </div>
+    </div>
+
     <?php if (count($accessible_sites) > 1): ?>
         <div class="myvh-portal-sites">
             <span class="myvh-portal-sites-label">Your clients</span>

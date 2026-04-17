@@ -70,6 +70,13 @@ $invoice_count = is_array($invoices ?? null) ? count($invoices) : 0;
                     </thead>
                     <tbody>
                         <?php foreach ($invoices as $invoice): ?>
+                            <?php
+                                $portal_pdf_url = add_query_arg([
+                                    'action' => 'myvh_portal_view_invoice_pdf',
+                                    'invoice_id' => intval($invoice['Id']),
+                                    'nonce' => wp_create_nonce('myvh_portal'),
+                                ], admin_url('admin-ajax.php'));
+                            ?>
                             <tr class="myvh-invoice-row">
                                 <td class="myvh-invoice-number">
                                     <strong><a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>"><?php echo esc_html($invoice['InvoiceNumber']); ?></a></strong>
@@ -131,6 +138,7 @@ $invoice_count = is_array($invoices ?? null) ? count($invoices) : 0;
                                 </td>
                                 <td>
                                     <a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-button myvh-button-small">View</a>
+                                    <a href="<?php echo esc_url($portal_pdf_url); ?>" class="myvh-button myvh-button-small" target="_blank" rel="noopener noreferrer">View PDF</a>
                                     <?php if ($is_client_admin_view): ?>
                                         <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
                                             <a href="#payments?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-button myvh-button-small">Payments</a>

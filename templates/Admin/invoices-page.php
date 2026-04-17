@@ -89,6 +89,7 @@ $invoices = $invoice_service->get_with_customers() ?: [];
                             </td>
                             <td>
                                 <a href="<?php echo esc_url($view_url); ?>"><?php esc_html_e('View', 'my-village-hall'); ?></a><br>
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_view_invoice_pdf&id=' . intval($invoice['Id']) . '&redirect_page=myvh-invoices'), 'myvh_view_invoice_pdf')); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('View PDF', 'my-village-hall'); ?></a><br>
                                 <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
                                 <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-payments&invoice_id=' . intval($invoice['Id']))); ?>"><?php esc_html_e('Payments', 'my-village-hall'); ?></a><br>
                                 <?php endif; ?>

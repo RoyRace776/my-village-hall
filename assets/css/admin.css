@@ -84,6 +84,42 @@
     font-style: italic;
 }
 
+.myvh-media-field {
+    display: grid;
+    gap: 10px;
+    max-width: 420px;
+}
+
+.myvh-media-preview {
+    width: 100%;
+    min-height: 56px;
+    border: 1px dashed #c3c4c7;
+    border-radius: 8px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+}
+
+.myvh-media-preview.has-image {
+    border-style: solid;
+}
+
+.myvh-media-preview img {
+    max-width: 240px;
+    max-height: 72px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.myvh-media-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 /* Billing sub-section header row inside form-table */
 .myvh-org-billing-fields th[colspan="2"] {
     padding-top: 20px;

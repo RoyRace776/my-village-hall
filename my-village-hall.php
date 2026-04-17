@@ -181,6 +181,7 @@ class MyVillageHall {
         // Invoices & Payments
         $this->on_admin_post( 'myvh_save_invoice',           InvoiceController::class, 'save' );
         $this->on_admin_post( 'myvh_generate_invoices',      InvoiceController::class, 'generate_from_bookings' );
+        $this->on_admin_post( 'myvh_view_invoice_pdf',       InvoiceController::class, 'view_pdf' );
         $this->on_admin_post( 'myvh_delete_invoice',         InvoiceController::class, 'delete' );
         $this->on_admin_post( 'myvh_update_invoice_status',  InvoiceController::class, 'update_status' );
         $this->on_admin_post( 'myvh_record_payment',         PaymentController::class, 'create' );

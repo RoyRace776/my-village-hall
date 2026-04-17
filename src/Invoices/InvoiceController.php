@@ -35,10 +35,27 @@ class InvoiceController {
             exit;
         }
 
+        $is_new = empty($data['invoice_id']);
+
         $result = $this->service->save($data);
         if (is_wp_error($result)) {
             $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'error', $result->get_error_message());
             exit;
+        }
+
+        if ($is_new) {
+            $pdf_result = $this->service->generate_pdf((int) $result);
+            if (is_wp_error($pdf_result)) {
+                $this->redirect_with_message(
+                    $this->get_admin_page_slug('myvh-invoices'),
+                    'error',
+                    sprintf(
+                        __('Invoice created but PDF generation failed: %s', 'my-village-hall'),
+                        $pdf_result->get_error_message()
+                    )
+                );
+                exit;
+            }
         }
 
         $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1');
@@ -80,7 +97,48 @@ class InvoiceController {
             exit;
         }
 
+        foreach ($result as $invoice_id) {
+            $pdf_result = $this->service->generate_pdf((int) $invoice_id);
+            if (is_wp_error($pdf_result)) {
+                $this->redirect_with_message(
+                    'myvh-invoices',
+                    'error',
+                    sprintf(
+                        __('Invoice(s) created but PDF generation failed for #%d: %s', 'my-village-hall'),
+                        (int) $invoice_id,
+                        $pdf_result->get_error_message()
+                    )
+                );
+                exit;
+            }
+        }
+
         $this->redirect_with_message('myvh-invoices', 'generated', (string) count($result));
+        exit;
+    }
+
+    public function view_pdf(): void {
+
+        if (!current_user_can('manage_myvh')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        check_admin_referer('myvh_view_invoice_pdf');
+
+        $id = intval($_REQUEST['id'] ?? 0);
+        $result = $this->service->get_invoice_pdf_url($id);
+
+        if (is_wp_error($result)) {
+            $this->redirect_with_message(
+                $this->get_admin_page_slug('myvh-invoices'),
+                'error',
+                $result->get_error_message(),
+                $this->get_admin_redirect_args()
+            );
+            exit;
+        }
+
+        wp_safe_redirect($result);
         exit;
     }
 

@@ -420,6 +420,37 @@ body .site-main:has(#myvh-portal) {
   margin-top: 4px;
 }
 
+.myvh-portal-brand {
+  max-width: 1600px;
+  margin: 20px auto 14px;
+  padding: 12px 16px;
+  border: 1px solid #e5ddd1;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.myvh-portal-brand__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.myvh-portal-brand__logo {
+  display: block;
+  width: auto;
+  max-width: 220px;
+  max-height: 42px;
+  object-fit: contain;
+}
+
+.myvh-portal-brand__title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.28rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
 .portal-nav {
   max-width: 1600px;
   margin: 0 auto 20px;
@@ -1555,6 +1586,42 @@ body .site-main:has(#myvh-portal) {
   display: block;
 }
 
+.myvh-client-settings-page .myvh-media-field {
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.myvh-client-settings-page .myvh-media-preview {
+  width: 100%;
+  min-height: 56px;
+  border: 1px dashed #d8ccbc;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.myvh-client-settings-page .myvh-media-preview.has-image {
+  border-style: solid;
+}
+
+.myvh-client-settings-page .myvh-media-preview img {
+  max-width: 240px;
+  max-height: 72px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.myvh-client-settings-page .myvh-media-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .myvh-client-settings-page .myvh-settings-checkbox-row {
   display: inline-flex;
   align-items: center;
@@ -2654,6 +2721,19 @@ body .site-main:has(#myvh-portal) {
     width: min(96vw, 96vw);
     max-height: 92vh;
     padding: 16px 14px;
+  }
+
+  .myvh-portal-brand__inner {
+    width: 100%;
+  }
+
+  .myvh-portal-brand__title {
+    font-size: 1.1rem;
+  }
+
+  .myvh-portal-brand__logo {
+    max-width: 160px;
+    max-height: 34px;
   }
 
   .portal-nav {

@@ -127,6 +127,26 @@ $settings_groups = is_array($settings_groups ?? null) ? $settings_groups : [];
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
+                                            <?php elseif ($field_type === 'media'): ?>
+                                                <?php $media_url = is_string($field_value) ? $field_value : ''; ?>
+                                                <div class="myvh-media-field" data-myvh-media-field>
+                                                    <input type="hidden" name="<?php echo esc_attr($field_key); ?>" value="<?php echo esc_attr($media_url); ?>" data-myvh-media-input>
+
+                                                    <div class="myvh-media-preview<?php echo $media_url !== '' ? ' has-image' : ''; ?>" data-myvh-media-preview>
+                                                        <?php if ($media_url !== ''): ?>
+                                                            <img src="<?php echo esc_url($media_url); ?>" alt="<?php esc_attr_e('Selected logo', 'my-village-hall'); ?>">
+                                                        <?php endif; ?>
+                                                    </div>
+
+                                                    <div class="myvh-media-actions">
+                                                        <button type="button" class="button" data-myvh-media-select>
+                                                            <?php esc_html_e('Upload/Select Logo', 'my-village-hall'); ?>
+                                                        </button>
+                                                        <button type="button" class="button" data-myvh-media-clear<?php echo $media_url === '' ? ' style="display:none;"' : ''; ?>>
+                                                            <?php esc_html_e('Remove', 'my-village-hall'); ?>
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             <?php else: ?>
                                                 <?php $input_type = in_array($field_type, ['number', 'integer'], true) ? 'number' : 'text'; ?>
                                                 <input type="<?php echo esc_attr($input_type); ?>" name="<?php echo esc_attr($field_key); ?>" value="<?php echo esc_attr((string) $field_value); ?>">

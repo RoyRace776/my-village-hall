@@ -2,6 +2,7 @@
 namespace MYVH\Portal\Ajax;
 
 use MYVH\Bookings\BookingService;
+use MYVH\Customers\CustomerService;
 use MYVH\Invoices\InvoiceGeneratorService;
 use MYVH\Invoices\InvoiceService;
 use MYVH\Payments\PaymentService;
@@ -11,6 +12,7 @@ use MYVH\Portal\Support\PortalAuth;
 class PortalBillingAjaxController {
     public function __construct(
         private BookingService $booking_service,
+        private CustomerService $customer_service,
         private InvoiceGeneratorService $invoice_generator_service,
         private InvoiceService $invoice_service,
         private PaymentService $payment_service,
@@ -20,9 +22,41 @@ class PortalBillingAjaxController {
     public function register(): void {
         add_action('wp_ajax_myvh_portal_get_uninvoiced_bookings', [$this, 'get_uninvoiced_bookings_for_entity']);
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
+        add_action('wp_ajax_myvh_portal_view_invoice_pdf', [$this, 'view_invoice_pdf']);
         add_action('wp_ajax_myvh_portal_update_invoice_status', [$this, 'update_invoice_status']);
         add_action('wp_ajax_myvh_portal_create_payment', [$this, 'create_payment']);
         add_action('wp_ajax_myvh_portal_delete_payment', [$this, 'delete_payment']);
+    }
+
+    public function view_invoice_pdf(): void {
+        PortalAuth::require_user();
+
+        $invoice_id = intval($_GET['invoice_id'] ?? 0);
+        if ($invoice_id <= 0) {
+            wp_die(__('Invalid invoice ID', 'my-village-hall'));
+        }
+
+        $user_id = get_current_user_id();
+        $is_client_admin = $this->client_admin_service->can_administer_blog($user_id, get_current_blog_id());
+        $customer = $this->customer_service->get_by_user_id($user_id);
+        $customer_id = intval($customer['Id'] ?? 0);
+
+        if (!$is_client_admin && $customer_id <= 0) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        $invoice = $this->invoice_service->get_detail_for_portal($invoice_id, $customer_id, $is_client_admin);
+        if (!$invoice) {
+            wp_die(__('Invoice not found or you do not have permission to view it.', 'my-village-hall'));
+        }
+
+        $result = $this->invoice_service->get_invoice_pdf_url($invoice_id);
+        if (is_wp_error($result)) {
+            wp_die($result->get_error_message());
+        }
+
+        wp_safe_redirect($result);
+        exit;
     }
 
     public function get_uninvoiced_bookings_for_entity(): void {
