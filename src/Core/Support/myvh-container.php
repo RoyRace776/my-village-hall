@@ -10,6 +10,7 @@ use MYVH\Addons\AddonServiceProvider;
 use MYVH\Bookings\BookingServiceProvider;
 use MYVH\Availability\AvailabilityServiceProvider;
 use MYVH\Invoices\InvoiceServiceProvider;
+use MYVH\AutoInvoicing\AutoInvoicingServiceProvider;
 use MYVH\Payments\PaymentServiceProvider;
 use MYVH\Calendar\CalendarServiceProvider;
 use MYVH\Portal\PortalServiceProvider;
@@ -61,6 +62,7 @@ $providers = [
     BookingServiceProvider::class,
     AvailabilityServiceProvider::class,
     InvoiceServiceProvider::class,
+    AutoInvoicingServiceProvider::class,
     PaymentServiceProvider::class,
     CalendarServiceProvider::class,
     PortalServiceProvider::class,

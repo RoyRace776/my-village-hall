@@ -254,7 +254,9 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
 
                     <p class="submit">
                         <button type="submit" class="button button-primary"><?php esc_html_e('Generate Invoices', 'my-village-hall'); ?></button>
+                        <button type="button" class="button" id="myvh-run-auto-invoicing"><?php esc_html_e('Run Auto-Invoicing', 'my-village-hall'); ?></button>
                     </p>
+                    <p id="myvh-auto-invoicing-message" role="status" aria-live="polite"></p>
                 </form>
             </div>
         </div>
@@ -313,10 +315,66 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const autoInvoicingButton = document.getElementById('myvh-run-auto-invoicing');
+    const autoInvoicingMessage = document.getElementById('myvh-auto-invoicing-message');
+    const autoInvoicingAjaxUrl = '<?php echo esc_js(admin_url('admin-ajax.php')); ?>';
+    const autoInvoicingNonce = '<?php echo esc_js(wp_create_nonce('myvh_auto_invoicing')); ?>';
     const tabs = Array.from(document.querySelectorAll('.myvh-admin-booking-type-tab'));
     const panels = Array.from(document.querySelectorAll('.myvh-admin-booking-type-panel'));
     if (!tabs.length || !panels.length) {
         return;
+    }
+
+    function setAutoInvoicingMessage(text, isError) {
+        if (!autoInvoicingMessage) {
+            return;
+        }
+
+        autoInvoicingMessage.textContent = text || '';
+        autoInvoicingMessage.style.color = isError ? '#b32d2e' : '#2d5a27';
+    }
+
+    if (autoInvoicingButton) {
+        autoInvoicingButton.addEventListener('click', function () {
+            autoInvoicingButton.disabled = true;
+            setAutoInvoicingMessage('<?php echo esc_js(__('Running auto-invoicing...', 'my-village-hall')); ?>', false);
+
+            const body = new URLSearchParams();
+            body.set('action', 'myvh_run_auto_invoicing');
+            body.set('nonce', autoInvoicingNonce);
+
+            fetch(autoInvoicingAjaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: body.toString()
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (result) {
+                    if (!result || !result.success) {
+                        const errorMessage = result && result.data && result.data.message
+                            ? result.data.message
+                            : '<?php echo esc_js(__('Auto-invoicing failed. Please try again.', 'my-village-hall')); ?>';
+                        setAutoInvoicingMessage(errorMessage, true);
+                        return;
+                    }
+
+                    const successMessage = result.data && result.data.message
+                        ? result.data.message
+                        : '<?php echo esc_js(__('Auto-invoicing completed.', 'my-village-hall')); ?>';
+                    setAutoInvoicingMessage(successMessage, false);
+                })
+                .catch(function () {
+                    setAutoInvoicingMessage('<?php echo esc_js(__('Unexpected error while running auto-invoicing.', 'my-village-hall')); ?>', true);
+                })
+                .finally(function () {
+                    autoInvoicingButton.disabled = false;
+                });
+        });
     }
 
     function activateTab(tabKey) {

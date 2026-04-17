@@ -291,6 +291,17 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
 
             <p id="myvh-invoice-create-message" class="myvh-form-message" role="status" aria-live="polite"></p>
         </form>
+
+        <form class="myvh-account-form myvh-generate-form"
+              data-portal-action="myvh_portal_run_auto_invoicing"
+              data-message-target="myvh-auto-invoicing-portal-message"
+              data-reload-page="invoice-generate">
+            <div class="myvh-account-actions myvh-generate-submit-row">
+                <button type="submit" class="myvh-button">Run Auto-Invoicing</button>
+                <p class="myvh-account-hint">Use your Auto-Invoicing settings to generate invoices without manually selecting bookings.</p>
+            </div>
+            <p id="myvh-auto-invoicing-portal-message" class="myvh-form-message" role="status" aria-live="polite"></p>
+        </form>
     </div>
 
     <div class="myvh-card myvh-account-card myvh-settings-group myvh-invoices-panel myvh-generate-panel" data-invoices-panel="by-customer" hidden>

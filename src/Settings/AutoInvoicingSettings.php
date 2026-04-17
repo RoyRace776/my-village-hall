@@ -38,24 +38,18 @@ class AutoInvoicingSettings extends SettingsBase {
                     'sanitize' => 'sanitize_key',
                     'options' => [
                         'confirmation' => 'On booking confirmation',
-                        'completion' => 'On booking completion/end date',
-                        'days_after_confirmation' => 'N days after confirmation'
+                        'booking_date' => 'On booking date',
+                        'days_before_booking_date' => 'N days before booking date',
+                        'days_after_booking_date' => 'N days after booking date'
                     ],
                     'description' => 'When should the invoice be automatically generated?'
                 ],
                 'single_trigger_offset_days' => [
-                    'label' => 'Days after confirmation (if applicable)',
+                    'label' => 'Days offset (if applicable)',
                     'type' => 'number',
                     'default' => 0,
                     'sanitize' => 'intval',
-                    'description' => 'Only used if trigger is "N days after confirmation". Set to 0 for immediate.'
-                ],
-                'single_delay_days' => [
-                    'label' => 'Delay before invoice generation (days)',
-                    'type' => 'number',
-                    'default' => 0,
-                    'sanitize' => 'intval',
-                    'description' => 'After the trigger event, wait this many days before creating the invoice.'
+                    'description' => 'Only used if trigger is "N days before/after booking date".'
                 ],
                 'single_group_by' => [
                     'label' => 'Grouping strategy',

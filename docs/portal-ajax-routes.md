@@ -7,6 +7,7 @@ This inventory lists active portal-facing AJAX actions, their current backend ow
 | myvh_portal_page | PortalPageAjaxController::load_page | assets/js/portal-app.js | myvh_portal | Page-shell loader for hash-routed portal content. |
 | myvh_portal_get_uninvoiced_bookings | PortalBillingAjaxController::get_uninvoiced_bookings_for_entity | assets/js/portal-app.js | myvh_portal | Invoices drilldown for customer/organisation rows. |
 | myvh_portal_create_invoice | PortalBillingAjaxController::create_invoice | assets/js/portal-app.js | myvh_portal | Manual invoice creation from selected bookings. |
+| myvh_portal_run_auto_invoicing | AutoInvoicingAjaxController::run_portal | assets/js/portal-app.js | myvh_portal | Runs auto-invoicing using configured rules. |
 | myvh_portal_update_invoice_status | PortalBillingAjaxController::update_invoice_status | assets/js/portal-app.js | myvh_portal | Invoice detail status update form. |
 | myvh_portal_create_payment | PortalBillingAjaxController::create_payment | assets/js/portal-app.js | myvh_portal | Payment create in portal payments view. |
 | myvh_portal_delete_payment | PortalBillingAjaxController::delete_payment | assets/js/portal-app.js | myvh_portal | Payment delete in portal payments view. |

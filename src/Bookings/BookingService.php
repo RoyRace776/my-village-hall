@@ -496,6 +496,10 @@ class BookingService {
         return $this->booking_repo->get_uninvoiced_bookings($args);
     }
 
+    public function get_uninvoiced_single_bookings($args = []): array {
+        return $this->booking_repo->get_uninvoiced_single_bookings($args);
+    }
+
     /**
      * Get uninvoiced booking counts by organisation
      *

@@ -437,6 +437,11 @@ class BookingRepository extends RepositoryBase
             $params[] = intval($args['customer_id']);
         }
 
+        if (isset($args['pattern_id'])) {
+            $where[] = 'b.RecurringPatternId = %d';
+            $params[] = intval($args['pattern_id']);
+        }
+
         $where_sql = implode(' AND ', $where);
         $order_sql = esc_sql($args['orderby']) . ' ' . ('ASC' === strtoupper($args['order']) ? 'ASC' : 'DESC');
         $limit_sql = '';
@@ -477,6 +482,39 @@ class BookingRepository extends RepositoryBase
 
         if ($results === null && $this->wpdb->last_error) {
             error_log('MYVH Booking Repository Error (get_uninvoiced_bookings): ' . $this->wpdb->last_error);
+        }
+
+        return $results ?: [];
+    }
+
+    public function get_uninvoiced_single_bookings($args = []): array {
+        // This method can be used to get uninvoiced bookings that are eligible for single booking auto-invoicing, based on the configured trigger conditions. It can be called by the SingleBookingAutoinvoicing class to find which bookings need to be processed.
+        // For simplicity, this example just returns all uninvoiced bookings, but in a real implementation it would apply additional filtering based on the auto-invoicing trigger settings (e.g. booking date, confirmation date, etc.).
+        $sql = "SELECT
+                    b.*,
+                    c.Name AS CustomerName,
+                    c.Email AS CustomerEmail,
+                    o.Name AS OrganisationName,
+                    r.Name AS RoomName,
+                    v.Name AS VenueName
+                FROM {$this->table_name} b
+                LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_venues v ON r.VenueId = v.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON b.Id = ii.BookingId
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
+                    AND i.Status NOT IN ('cancelled')
+                WHERE b.RecurringPatternId is NULL
+                AND b.Status IN ('confirmed', 'completed')
+                AND b.NoInvoiceRequired = 0
+                GROUP BY b.Id
+                HAVING COUNT(i.Id) = 0";
+
+        $results = $this->wpdb->get_results($sql, ARRAY_A);
+
+        if ($results === null && $this->wpdb->last_error) {
+            error_log('MYVH Booking Repository Error (get_uninvoiced_single_bookings): ' . $this->wpdb->last_error);
         }
 
         return $results ?: [];
