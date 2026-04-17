@@ -149,11 +149,119 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function initTableSort(table) {
+        if (!table || table.dataset.sortBound === '1') {
+            return;
+        }
+
+        const headerCells = Array.from(table.querySelectorAll('thead th'));
+        const tbody = table.querySelector('tbody');
+        if (!headerCells.length || !tbody) {
+            return;
+        }
+
+        const nonSortableLabels = new Set(['actions', 'details']);
+
+        const getCellText = (row, columnIndex) => {
+            const cell = row.cells[columnIndex];
+            if (!cell) {
+                return '';
+            }
+
+            return cell.textContent.replace(/\s+/g, ' ').trim();
+        };
+
+        const toNumericValue = (value) => {
+            const cleaned = value.replace(/[£$,]/g, '').trim();
+            if (cleaned === '') {
+                return null;
+            }
+
+            const parsed = Number.parseFloat(cleaned);
+            return Number.isNaN(parsed) ? null : parsed;
+        };
+
+        headerCells.forEach((headerCell, columnIndex) => {
+            const label = headerCell.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+            if (!label || nonSortableLabels.has(label)) {
+                return;
+            }
+
+            headerCell.classList.add('myvh-th-sortable');
+            headerCell.setAttribute('role', 'button');
+            headerCell.setAttribute('tabindex', '0');
+
+            const sortByColumn = () => {
+                const currentDirection = headerCell.getAttribute('data-sort-dir');
+                const nextDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+                const directionMultiplier = nextDirection === 'asc' ? 1 : -1;
+
+                headerCells.forEach((cell) => {
+                    cell.removeAttribute('data-sort-dir');
+                });
+                headerCell.setAttribute('data-sort-dir', nextDirection);
+
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                const numericSort = rows.every((row) => {
+                    const value = getCellText(row, columnIndex);
+                    return value === '' || toNumericValue(value) !== null;
+                });
+
+                rows.sort((firstRow, secondRow) => {
+                    const firstText = getCellText(firstRow, columnIndex);
+                    const secondText = getCellText(secondRow, columnIndex);
+
+                    if (numericSort) {
+                        const firstNumber = toNumericValue(firstText);
+                        const secondNumber = toNumericValue(secondText);
+
+                        if (firstNumber === null && secondNumber === null) {
+                            return 0;
+                        }
+
+                        if (firstNumber === null) {
+                            return 1;
+                        }
+
+                        if (secondNumber === null) {
+                            return -1;
+                        }
+
+                        return (firstNumber - secondNumber) * directionMultiplier;
+                    }
+
+                    return firstText.localeCompare(secondText, undefined, { sensitivity: 'base', numeric: true }) * directionMultiplier;
+                });
+
+                const fragment = document.createDocumentFragment();
+                rows.forEach((row) => {
+                    fragment.appendChild(row);
+                });
+                tbody.appendChild(fragment);
+            };
+
+            headerCell.addEventListener('click', sortByColumn);
+            headerCell.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') {
+                    return;
+                }
+
+                event.preventDefault();
+                sortByColumn();
+            });
+        });
+
+        table.dataset.sortBound = '1';
+    }
+
     /**
      * Initialize all portal page widgets and logic.
      * Should be called after each page load or dynamic content update.
      */
     function initPortalPage() {
+        document.querySelectorAll('.myvh-customer-list-table').forEach(initTableSort);
+
         window.MyvhFlatpickr?.initWithin(document);
 
         if (typeof Bookings !== 'undefined' && typeof Bookings.init === 'function') {

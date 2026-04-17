@@ -21,6 +21,35 @@
   background: none;
   border-bottom: 2px solid var(--warm);
 }
+.myvh-customer-list-table th.myvh-th-sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 1.6rem;
+}
+.myvh-customer-list-table th.myvh-th-sortable::after {
+  content: '▲';
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-52%);
+  font-size: 0.65rem;
+  opacity: 0.3;
+}
+.myvh-customer-list-table th.myvh-th-sortable:hover::after,
+.myvh-customer-list-table th.myvh-th-sortable:focus::after {
+  opacity: 0.65;
+}
+.myvh-customer-list-table th.myvh-th-sortable[data-sort-dir="asc"]::after {
+  content: '▲';
+  color: var(--accent);
+  opacity: 1;
+}
+.myvh-customer-list-table th.myvh-th-sortable[data-sort-dir="desc"]::after {
+  content: '▼';
+  color: var(--accent);
+  opacity: 1;
+}
 .myvh-customer-list-table td {
   background: #fff;
   border-radius: 6px;
