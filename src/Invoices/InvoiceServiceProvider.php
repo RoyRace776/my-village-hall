@@ -21,5 +21,10 @@ class InvoiceServiceProvider
         $container->singleton(InvoiceRequestValidator::class);
         $container->singleton(InvoiceController::class);
         $container->singleton(InvoiceGeneratorService::class);
+        $container->singleton(InvoiceAutoSendListener::class, static function ($container) {
+            return new InvoiceAutoSendListener(
+                $container->get(InvoiceService::class)
+            );
+        });
     }
 }

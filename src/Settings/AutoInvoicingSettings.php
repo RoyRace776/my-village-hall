@@ -20,8 +20,8 @@ class AutoInvoicingSettings extends SettingsBase {
     }
 
     protected $schema = [
-        'numbering' => [
-            'title' => 'Numbering',
+        'general' => [
+            'title' => 'General Invoicing Settings',
             'description' => 'Prefix for invoice numbering',
             'fields' => [
                 'prefix' => [
@@ -31,6 +31,13 @@ class AutoInvoicingSettings extends SettingsBase {
                     'sanitize' => 'sanitize_text_field',
                     'description' =>
                     'Prefix for invoice numbering.'
+                ],
+                'auto_send' => [
+                    'label' => 'Automatically send invoices to customers after generation',
+                    'type' => 'boolean',
+                    'default' => true,
+                    'sanitize' => 'boolval',
+                    'description' => 'When enabled, invoices are automatically emailed to customers after they are generated. Otherwise, they will need to be sent manually from the invoice detail view.'
                 ],
             ],
         ],

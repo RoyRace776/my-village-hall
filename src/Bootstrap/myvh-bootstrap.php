@@ -60,6 +60,9 @@ if ( $myvh_container instanceof Container ) {
     $auto_invoicing_ajax = $myvh_container->get( MYVH\AutoInvoicing\AutoInvoicingAjaxController::class );
     $auto_invoicing_ajax->register();
 
+    $invoice_auto_send_listener = $myvh_container->get( MYVH\Invoices\InvoiceAutoSendListener::class );
+    $invoice_auto_send_listener->register();
+
     $customer_user_sync = $myvh_container->get( MYVH\Customers\CustomerUserSync::class );
     $customer_user_sync->register();
 
