@@ -696,6 +696,58 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
+        // Email invoice handler
+        invoicesPage.addEventListener('click', function (event) {
+            const emailBtn = event.target.closest('[data-invoice-email]');
+            if (!emailBtn) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const invoiceId = parseInt(emailBtn.getAttribute('data-invoice-email'), 10);
+            if (!invoiceId || invoiceId <= 0) {
+                alert('Invalid invoice ID');
+                return;
+            }
+
+            if (!confirm('Send this invoice to the customer via email?')) {
+                return;
+            }
+
+            emailBtn.disabled = true;
+
+            window.MyvhPortalAjax.post('myvh_portal_email_invoice', {
+                invoice_id: invoiceId
+            }, { scope: 'portal' })
+                .then(res => {
+                    emailBtn.disabled = false;
+                    if (!res.success) {
+                        alert('Error: ' + (res.data?.message || 'Failed to email invoice'));
+                        return;
+                    }
+
+                    // Update the status badge in the table row
+                    const row = emailBtn.closest('tr');
+                    if (row) {
+                        const statusBadge = row.querySelector('.myvh-status-badge');
+                        if (statusBadge) {
+                            const newStatus = res.data?.status || 'sent';
+                            const statusLabel = res.data?.status_label || 'Sent';
+                            statusBadge.className = 'myvh-status-badge myvh-status-' + newStatus;
+                            statusBadge.textContent = statusLabel;
+                        }
+                    }
+
+                    alert(res.data?.message || 'Invoice emailed successfully');
+                })
+                .catch(err => {
+                    emailBtn.disabled = false;
+                    alert('Error: Unexpected error while emailing invoice');
+                    console.error(err);
+                });
+        });
+
         // Select all/clear all for the currently selected booking type only
         invoicesPage.addEventListener('click', function (event) {
             const selectAllBtn = event.target.closest('.myvh-select-all-uninvoiced');

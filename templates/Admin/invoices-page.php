@@ -37,6 +37,9 @@ $invoices = $invoice_service->get_with_customers() ?: [];
     <?php if (isset($_GET['generated'])): ?>
         <div class="notice notice-success is-dismissible"><p><?php echo esc_html(sprintf(__('Generated %d invoice(s).', 'my-village-hall'), intval($_GET['generated']))); ?></p></div>
     <?php endif; ?>
+    <?php if (isset($_GET['emailed'])): ?>
+        <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Invoice emailed and marked as sent.', 'my-village-hall'); ?></p></div>
+    <?php endif; ?>
 
     <div class="myvh-card">
         <h2><?php esc_html_e('All Invoices', 'my-village-hall'); ?></h2>
@@ -90,6 +93,7 @@ $invoices = $invoice_service->get_with_customers() ?: [];
                             <td>
                                 <a href="<?php echo esc_url($view_url); ?>"><?php esc_html_e('View', 'my-village-hall'); ?></a><br>
                                 <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_view_invoice_pdf&id=' . intval($invoice['Id']) . '&redirect_page=myvh-invoices'), 'myvh_view_invoice_pdf')); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('View PDF', 'my-village-hall'); ?></a><br>
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_email_invoice&id=' . intval($invoice['Id']) . '&redirect_page=myvh-invoices'), 'myvh_email_invoice')); ?>"><?php esc_html_e('Email Invoice', 'my-village-hall'); ?></a><br>
                                 <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
                                 <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-payments&invoice_id=' . intval($invoice['Id']))); ?>"><?php esc_html_e('Payments', 'my-village-hall'); ?></a><br>
                                 <?php endif; ?>

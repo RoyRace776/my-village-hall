@@ -23,6 +23,7 @@ class PortalBillingAjaxController {
         add_action('wp_ajax_myvh_portal_get_uninvoiced_bookings', [$this, 'get_uninvoiced_bookings_for_entity']);
         add_action('wp_ajax_myvh_portal_create_invoice', [$this, 'create_invoice']);
         add_action('wp_ajax_myvh_portal_view_invoice_pdf', [$this, 'view_invoice_pdf']);
+        add_action('wp_ajax_myvh_portal_email_invoice', [$this, 'email_invoice']);
         add_action('wp_ajax_myvh_portal_update_invoice_status', [$this, 'update_invoice_status']);
         add_action('wp_ajax_myvh_portal_create_payment', [$this, 'create_payment']);
         add_action('wp_ajax_myvh_portal_delete_payment', [$this, 'delete_payment']);
@@ -196,5 +197,118 @@ class PortalBillingAjaxController {
             'status' => $status,
             'status_label' => $this->invoice_service->get_status_label($status),
         ]);
+    }
+
+    public function email_invoice(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $invoice_id = intval($_POST['invoice_id'] ?? 0);
+        if ($invoice_id <= 0) {
+            wp_send_json_error(['message' => __('Invalid invoice ID.', 'my-village-hall')], 400);
+        }
+
+        $invoice = $this->invoice_service->get_detail($invoice_id);
+        if (empty($invoice)) {
+            wp_send_json_error(['message' => __('Invoice not found.', 'my-village-hall')], 404);
+        }
+
+        $recipient = $this->resolve_recipient($invoice);
+        if ($recipient === '') {
+            wp_send_json_error(['message' => __('No valid recipient email found for this invoice.', 'my-village-hall')], 400);
+        }
+
+        $pdf_path = $this->invoice_service->generate_pdf($invoice_id);
+        if (is_wp_error($pdf_path)) {
+            wp_send_json_error(['message' => $pdf_path->get_error_message()], 400);
+        }
+
+        $email_service = new \MYVH\Email\EmailService();
+        $send_result = $email_service->send([
+            'to' => $recipient,
+            'template' => 'invoice',
+            'template_vars' => $this->build_template_vars($invoice_id, $invoice),
+            'attachments' => [$pdf_path],
+        ]);
+
+        if (!$send_result) {
+            wp_send_json_error(['message' => __('Failed to send invoice email.', 'my-village-hall')], 400);
+        }
+
+        $status_result = $this->invoice_service->update_status($invoice_id, 'sent');
+        if (is_wp_error($status_result) || $status_result === false) {
+            $message = is_wp_error($status_result)
+                ? $status_result->get_error_message()
+                : __('Unknown error while updating invoice status.', 'my-village-hall');
+            wp_send_json_error(['message' => $message], 400);
+        }
+
+        wp_send_json_success([
+            'message' => __('Invoice emailed and marked as sent.', 'my-village-hall'),
+            'status' => 'sent',
+            'status_label' => $this->invoice_service->get_status_label('sent'),
+        ]);
+    }
+
+    private function resolve_recipient(array $invoice): string {
+        $billing_email = sanitize_email((string) ($invoice['BillingEmail'] ?? ''));
+        if ($billing_email !== '' && is_email($billing_email)) {
+            return $billing_email;
+        }
+
+        $customer_email = sanitize_email((string) ($invoice['CustomerEmail'] ?? ''));
+        if ($customer_email !== '' && is_email($customer_email)) {
+            return $customer_email;
+        }
+
+        return '';
+    }
+
+    private function build_template_vars(int $invoice_id, array $invoice): array {
+        $email_service = new \MYVH\Email\EmailService();
+        $branding = $email_service->get_branding();
+        $invoice_url = '';
+
+        $pdf_url = $this->invoice_service->get_invoice_pdf_url($invoice_id);
+        if (!is_wp_error($pdf_url)) {
+            $invoice_url = $pdf_url;
+        }
+
+        return array_merge($branding, [
+            'customer_name' => (string) ($invoice['BillingName'] ?? $invoice['CustomerName'] ?? ''),
+            'customer_address' => $this->build_address_line($invoice),
+            'invoice_ref' => (string) ($invoice['InvoiceNumber'] ?? ('INV-' . $invoice_id)),
+            'invoice_total' => number_format((float) ($invoice['TotalAmount'] ?? 0), 2, '.', ''),
+            'invoice_due_date' => (string) ($invoice['DueDate'] ?? ''),
+            'invoice_status' => $this->invoice_service->get_status_label('sent'),
+            'invoice_url' => $invoice_url,
+            'organisation_name' => (string) ($invoice['BillingOrganisationName'] ?? $invoice['OrganisationName'] ?? ''),
+            'booking_details' => $this->build_booking_details($invoice),
+        ]);
+    }
+
+    private function build_address_line(array $invoice): string {
+        $parts = array_filter([
+            (string) ($invoice['BillingAddressLine1'] ?? ''),
+            (string) ($invoice['BillingAddressLine2'] ?? ''),
+            (string) ($invoice['BillingTownCity'] ?? ''),
+            (string) ($invoice['BillingPostcode'] ?? ''),
+        ]);
+
+        return implode(', ', $parts);
+    }
+
+    private function build_booking_details(array $invoice): string {
+        $bookings = is_array($invoice['BookingsSummary'] ?? null) ? $invoice['BookingsSummary'] : [];
+        $booking_count = intval($invoice['BookingCount'] ?? count($bookings));
+        if ($booking_count <= 0) {
+            return '';
+        }
+
+        $first_booking = $bookings[0] ?? [];
+        if ($booking_count === 1 && !empty($first_booking['Description'])) {
+            return (string) $first_booking['Description'];
+        }
+
+        return sprintf(__('Includes %d booking(s).', 'my-village-hall'), $booking_count);
     }
 }

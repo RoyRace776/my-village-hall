@@ -137,13 +137,14 @@ $invoice_count = is_array($invoices ?? null) ? count($invoices) : 0;
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-button myvh-button-small">View</a>
-                                    <a href="<?php echo esc_url($portal_pdf_url); ?>" class="myvh-button myvh-button-small" target="_blank" rel="noopener noreferrer">View PDF</a>
-                                    <?php if ($is_client_admin_view): ?>
-                                        <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
-                                            <a href="#payments?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-button myvh-button-small">Payments</a>
+                                    <div class="myvh-invoice-actions">
+                                        <a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-action-icon" aria-label="View invoice" title="View invoice">👁</a>
+                                        <a href="<?php echo esc_url($portal_pdf_url); ?>" class="myvh-action-icon" target="_blank" rel="noopener noreferrer" aria-label="View invoice PDF" title="View invoice PDF">📄</a>
+                                        <?php if ($is_client_admin_view && ($invoice['Status'] ?? '') !== 'cancelled'): ?>
+                                            <button type="button" class="myvh-action-icon" data-invoice-email="<?php echo intval($invoice['Id']); ?>" aria-label="Email invoice to customer" title="Email invoice to customer" style="background:none; border:none; padding:0; margin:0; cursor:pointer;">📧</button>
+                                            <a href="#payments?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-action-icon" aria-label="View invoice payments" title="View invoice payments">💳</a>
                                         <?php endif; ?>
-                                    <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
