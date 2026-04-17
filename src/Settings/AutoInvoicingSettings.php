@@ -9,17 +9,31 @@ namespace MYVH\Settings;
  */
 class AutoInvoicingSettings extends SettingsBase {
 
-    protected $option_name = 'myvh_auto_invoicing_settings';
+    protected $option_name = 'myvh_invoicing_settings';
     protected $hide_from_client_admin = false;
 
     public function tab(): array {
         return [
             'key' => 'invoicing',
-            'label' => 'Auto-Invoicing'
+            'label' => 'Invoicing'
         ];
     }
 
     protected $schema = [
+        'numbering' => [
+            'title' => 'Numbering',
+            'description' => 'Prefix for invoice numbering',
+            'fields' => [
+                'prefix' => [
+                    'label' => 'Invoice prefix',
+                    'type' => 'string',
+                    'default' => 'INV-',
+                    'sanitize' => 'sanitize_text_field',
+                    'description' =>
+                    'Prefix for invoice numbering.'
+                ],
+            ],
+        ],
         'single_bookings' => [
             'title' => 'Single Bookings Auto-Invoicing Rule',
             'description' => 'Configure automatic invoice generation for single (non-recurring) bookings.',

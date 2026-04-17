@@ -292,10 +292,20 @@ class InvoiceRepository extends RepositoryBase{
      *
      * @return int The next invoice number
      */
-    public function get_next_invoice_number(): int {
-        $sql = "SELECT MAX(CAST(REGEXP_REPLACE(InvoiceNumber, '[^0-9]', '') AS UNSIGNED)) as MaxNumber FROM $this->table_name";
+    public function get_next_invoice_number($prefix): int {
+        // $sql = "SELECT MAX(CAST(REGEXP_REPLACE(InvoiceNumber, '[^0-9]', '') AS UNSIGNED)) as MaxNumber
+        //         FROM $this->table_name
+        //         WHERE InvoiceNumber LIKE %s";
 
-        $result = $this->wpdb->get_var($sql);
+        $sql = "SELECT MAX(CAST(RIGHT(InvoiceNumber, 6) AS UNSIGNED)) as MaxNumber
+        FROM $this->table_name
+        WHERE InvoiceNumber LIKE %s";
+
+        $result = $this->wpdb->get_var($this->wpdb->prepare($sql, $prefix . '%'));
+        //Put in the check for null as we'll get null if the prefix is changed to a brand new prefix
+        if ($result === null) {
+            $result = 0;
+        }
 
         if ( $this->wpdb->last_error ) {
             error_log( 'MYVH Invoice Repository Error (get_next_invoice_number): ' . $this->wpdb->last_error );

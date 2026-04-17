@@ -122,8 +122,7 @@ class InvoiceService {
         }
 
         if (empty($data['invoice_id'])) {
-            $invoice_number = $this->repo->get_next_invoice_number();
-            $invoice_number_formatted = 'INV-' . str_pad($invoice_number, 6, '0', STR_PAD_LEFT);
+            $invoice_number_formatted = $this->get_next_invoice_number();
         } else {
             $invoice_number_formatted = $data['invoice_number'];
         }
@@ -178,6 +177,24 @@ class InvoiceService {
         }
 
         return $result;
+    }
+
+    protected function get_next_invoice_number(): string {
+        $prefix = myvh_setting('invoicing.prefix', 'INV-');
+        $invoice_number = $this->repo->get_next_invoice_number($prefix);
+
+        if ($invoice_number > 999000) {
+            error_log('MYVH Invoice Service Warning: Maximum invoice number nearly reached for prefix ' . $prefix);
+
+            //TODO: We should ideally have a better strategy for handling this scenario, such as allowing admin to set a new prefix and/or archiving old invoices. For now, we'll just append a '1' to the prefix to allow continued invoicing, but this is not a long-term solution.
+            if ($invoice_number === 999999) {
+                error_log('MYVH Invoice Service Error: Maximum invoice number reached for prefix ' . $prefix);
+                throw new \RuntimeException('Maximum invoice number reached for prefix ' . $prefix);
+            }
+        }
+
+        $invoice_number_formatted = $prefix . str_pad($invoice_number, 6, '0', STR_PAD_LEFT);
+        return $invoice_number_formatted;
     }
 
     public function delete($id): int|WP_Error {
