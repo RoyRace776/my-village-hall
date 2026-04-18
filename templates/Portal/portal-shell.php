@@ -7,6 +7,12 @@ if (!defined('ABSPATH')) exit;
 
 <div id="myvh-portal">
 
+    <?php $current_user = wp_get_current_user(); ?>
+    <?php $account_label = trim((string) ($current_user->display_name ?? '')); ?>
+    <?php if ($account_label === ''): ?>
+        <?php $account_label = __('Account', 'my-village-hall'); ?>
+    <?php endif; ?>
+
     <?php $brand_title = trim((string) ($portal_branding['site_title'] ?? '')); ?>
     <?php if ($brand_title === ''): ?>
         <?php $brand_title = (string) get_bloginfo('name'); ?>
@@ -44,7 +50,6 @@ if (!defined('ABSPATH')) exit;
         <?php if ($has_customer||$is_client_admin): ?>
             <a href="#organisations">Organisations</a>
         <?php endif; ?>
-        <a href="#account">Account</a>
         <?php if ($is_client_admin): ?>
             <div class="myvh-portal-nav-group" data-portal-nav-group>
                 <button
@@ -74,6 +79,21 @@ if (!defined('ABSPATH')) exit;
                 </div>
             </div>
         <?php endif; ?>
+        <div class="myvh-portal-nav-group myvh-portal-nav-group--account" data-portal-nav-group>
+            <button
+                type="button"
+                class="myvh-portal-nav-toggle"
+                aria-expanded="false"
+                aria-controls="myvh-portal-account-menu"
+            >
+                <span><?php echo esc_html($account_label); ?></span>
+                <span class="myvh-portal-nav-toggle-icon" aria-hidden="true"></span>
+            </button>
+            <div id="myvh-portal-account-menu" class="myvh-portal-nav-submenu myvh-portal-nav-submenu--account">
+                <a href="#account">Account</a>
+                <a href="<?php echo esc_url($portal_logout_url); ?>">Logout</a>
+            </div>
+        </div>
 
     </nav>
 

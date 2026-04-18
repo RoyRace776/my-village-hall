@@ -63,9 +63,61 @@ class PortalShortcode implements ShortcodeInterface
         $is_client_admin  = $portal_data['is_client_admin'];
         $has_customer     = $portal_data['has_customer'];
         $portal_branding  = $portal_data['portal_branding'] ?? [];
+        $portal_login_url = $this->resolve_login_page_url();
+        $portal_logout_url = wp_logout_url( $portal_login_url );
 
         ob_start();
         include MYVH_PLUGIN_DIR . 'templates/Portal/portal-shell.php';
         return (string) ob_get_clean();
+    }
+
+    private function resolve_login_page_url(): string
+    {
+        $fallback = home_url('/portal/');
+
+        $filtered = apply_filters( 'myvh_login_page_url', '' );
+        if ( is_string( $filtered ) && $filtered !== '' ) {
+            return esc_url_raw( $filtered );
+        }
+
+        $template_pages = get_pages([
+            'post_type'   => 'page',
+            'post_status' => 'publish',
+            'meta_key'    => '_wp_page_template',
+            'meta_value'  => 'templates/page-login.php',
+            'number'      => 1,
+        ]);
+
+        if ( ! empty( $template_pages ) && ! empty( $template_pages[0]->ID ) ) {
+            return (string) get_permalink( (int) $template_pages[0]->ID );
+        }
+
+        $candidate_pages = get_posts([
+            'post_type'        => 'page',
+            'post_status'      => 'publish',
+            'posts_per_page'   => 200,
+            'orderby'          => 'menu_order title',
+            'order'            => 'ASC',
+            'suppress_filters' => false,
+        ]);
+
+        foreach ( (array) $candidate_pages as $page ) {
+            if ( empty( $page->ID ) ) {
+                continue;
+            }
+
+            if ( has_shortcode( (string) $page->post_content, 'myvh_login' ) ) {
+                return (string) get_permalink( (int) $page->ID );
+            }
+        }
+
+        foreach ( [ 'login', 'sign-in', 'signin', 'account-login' ] as $slug ) {
+            $login_page = get_page_by_path( $slug );
+            if ( $login_page && ! empty( $login_page->ID ) ) {
+                return (string) get_permalink( (int) $login_page->ID );
+            }
+        }
+
+        return $fallback;
     }
 }

@@ -66,7 +66,10 @@ class PortalAccountAjaxController {
             wp_send_json_error('Customer profile not found', 400);
         }
 
-        wp_send_json_success(['message' => 'Account details updated']);
+        wp_send_json_success([
+            'message' => 'Account details updated',
+            'display_name' => $name,
+        ]);
     }
 
     public function change_password(): void {

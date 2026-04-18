@@ -101,36 +101,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
         portalNav.dataset.bound = '1';
 
-        const adminGroup = portalNav.querySelector('[data-portal-nav-group]');
-        const adminToggle = adminGroup ? adminGroup.querySelector('.myvh-portal-nav-toggle') : null;
+        const navGroups = Array.from(portalNav.querySelectorAll('[data-portal-nav-group]'));
 
-        const closeAdminMenu = () => {
-            if (!adminGroup || !adminToggle) {
+        const closeNavGroup = (group) => {
+            if (!group) {
                 return;
             }
 
-            adminGroup.classList.remove('is-open');
-            adminToggle.setAttribute('aria-expanded', 'false');
+            const toggle = group.querySelector('.myvh-portal-nav-toggle');
+            group.classList.remove('is-open');
+
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'false');
+            }
         };
 
-        if (adminGroup && adminToggle) {
-            adminToggle.addEventListener('click', () => {
-                const isOpen = adminGroup.classList.toggle('is-open');
-                adminToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-            });
-
-            document.addEventListener('click', (event) => {
-                if (!adminGroup.contains(event.target)) {
-                    closeAdminMenu();
+        const closeAllNavGroups = (exceptGroup) => {
+            navGroups.forEach((group) => {
+                if (group !== exceptGroup) {
+                    closeNavGroup(group);
                 }
             });
+        };
 
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape') {
-                    closeAdminMenu();
+        navGroups.forEach((group) => {
+            const toggle = group.querySelector('.myvh-portal-nav-toggle');
+            if (!toggle) {
+                return;
+            }
+
+            toggle.addEventListener('click', () => {
+                const willOpen = !group.classList.contains('is-open');
+                closeAllNavGroups(group);
+                group.classList.toggle('is-open', willOpen);
+                toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            });
+        });
+
+        document.addEventListener('click', (event) => {
+            navGroups.forEach((group) => {
+                if (!group.contains(event.target)) {
+                    closeNavGroup(group);
                 }
             });
-        }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            closeAllNavGroups();
+        });
 
         portalNav.addEventListener('click', (event) => {
             const link = event.target.closest('a[href^="#"]');
@@ -144,9 +166,21 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             event.preventDefault();
-            closeAdminMenu();
+            closeAllNavGroups();
             navigateToHash(href);
         });
+    }
+
+    function syncPortalAccountLabel(nextLabel) {
+        const normalizedLabel = String(nextLabel || '').trim();
+        if (!normalizedLabel) {
+            return;
+        }
+
+        const accountToggleLabel = document.querySelector('.myvh-portal-nav-group--account .myvh-portal-nav-toggle span');
+        if (accountToggleLabel) {
+            accountToggleLabel.textContent = normalizedLabel;
+        }
     }
 
     function initTableSort(table) {
@@ -1176,6 +1210,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         showMessage(message, res.data, true, 'Failed to update details');
                         return;
                     }
+                    syncPortalAccountLabel(res.data?.display_name || form.elements.name?.value);
                     showMessage(message, res.data?.message || 'Account details updated', false);
                 })
                 .catch(() => {

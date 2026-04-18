@@ -497,6 +497,10 @@ body .site-main:has(#myvh-portal) {
   gap: 10px;
 }
 
+.myvh-portal-nav-group--account {
+  margin-left: auto;
+}
+
 .myvh-portal-nav-group.is-open .myvh-portal-nav-toggle {
   border-color: var(--accent);
   color: var(--accent);
@@ -528,6 +532,11 @@ body .site-main:has(#myvh-portal) {
   background: #fff;
   box-shadow: 0 14px 32px rgba(28, 26, 23, 0.1);
   z-index: 20;
+}
+
+.myvh-portal-nav-submenu--account {
+  left: auto;
+  right: 0;
 }
 
 .myvh-portal-nav-group.is-open .myvh-portal-nav-submenu {
@@ -2756,6 +2765,10 @@ body .site-main:has(#myvh-portal) {
   .myvh-portal-nav-group,
   .myvh-portal-nav-toggle {
     width: 100%;
+  }
+
+  .myvh-portal-nav-group--account {
+    margin-left: 0;
   }
 
   .myvh-portal-nav-submenu {
