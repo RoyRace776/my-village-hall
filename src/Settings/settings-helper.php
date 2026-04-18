@@ -1,15 +1,8 @@
 <?php
 
+if (!function_exists('myvh_setting')) {
 /**
  * Get a plugin setting value.
- *
- * Usage:
- *   myvh_setting('general.site_label');
- *   myvh_setting('booking.require_approval');
- *
- * @param string $key Dot notation: group.field
- * @param mixed $default Value if not set
- * @return mixed
  */
 function myvh_setting($key, $default = null) {
 
@@ -31,11 +24,11 @@ function myvh_setting($key, $default = null) {
 
     return $value !== null ? $value : $default;
 }
+}
 
+if (!function_exists('myvh_daypilot_to_php_date_format')) {
 /**
  * Convert a DayPilot-like date pattern into a PHP date() pattern.
- *
- * Supported tokens: yyyy, MMMM, MMM, MM, M, ddd, dd, d
  */
 function myvh_daypilot_to_php_date_format(string $pattern, string $fallback = 'M j'): string {
     $pattern = trim($pattern);
@@ -62,7 +55,9 @@ function myvh_daypilot_to_php_date_format(string $pattern, string $fallback = 'M
 
     return is_string($php_pattern) && $php_pattern !== '' ? $php_pattern : $fallback;
 }
+}
 
+if (!function_exists('myvh_format_date_with_pattern')) {
 /**
  * Format a date value using a DayPilot-like pattern string.
  */
@@ -80,4 +75,5 @@ function myvh_format_date_with_pattern($date_value, string $daypilot_pattern, st
     }
 
     return date($php_pattern, $timestamp);
+}
 }

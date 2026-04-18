@@ -71,6 +71,10 @@ class BookingServiceTest extends UnitTestCase {
     private $booking_deletion_service;
     private $booking_lifecycle_event_dispatcher;
     private $booking_access_control;
+    private $customer_repo;
+    private $organisation_repo;
+    private $organisation_member_repo;
+    private $client_admin_service;
     private $booking_list_grouping_service;
     private $booking_movement_service;
     private $booking_query_service;
@@ -101,6 +105,10 @@ class BookingServiceTest extends UnitTestCase {
             $this->pricing,
             $this->booking_charge_repo
         );
+        $this->customer_repo = $this->mock(\MYVH\Customers\CustomerRepository::class);
+        $this->organisation_repo = $this->mock(\MYVH\Organisations\OrganisationRepository::class);
+        $this->organisation_member_repo = $this->mock(\MYVH\Organisations\OrganisationMemberRepository::class);
+        $this->client_admin_service = $this->mock(\MYVH\Portal\ClientAdminService::class);
         $this->booking_chargeable_hours_calculator = new \MYVH\Bookings\Services\BookingChargeableHoursCalculator();
         $this->booking_creation_event_dispatcher = new \MYVH\Bookings\Services\BookingCreationEventDispatcher();
         $this->booking_deletion_service  = new \MYVH\Bookings\Services\BookingDeletionService(
@@ -111,7 +119,10 @@ class BookingServiceTest extends UnitTestCase {
         $this->booking_lifecycle_event_dispatcher = new \MYVH\Bookings\Services\BookingLifecycleEventDispatcher();
         $this->booking_access_control    = new \MYVH\Bookings\Services\BookingAccessControl(
             $this->booking_repo,
-            $this->mock(\MYVH\Organisations\OrganisationRepository::class)
+            $this->organisation_repo,
+            $this->customer_repo,
+            $this->organisation_member_repo,
+            $this->client_admin_service
         );
         $this->booking_list_grouping_service = new \MYVH\Bookings\Services\BookingListGroupingService();
         $this->booking_movement_service  = new \MYVH\Bookings\Services\BookingMovementService(
@@ -121,7 +132,7 @@ class BookingServiceTest extends UnitTestCase {
         );
         $this->booking_query_service     = new \MYVH\Bookings\Services\BookingQueryService(
             $this->booking_repo,
-            $this->mock(\MYVH\Customers\CustomerRepository::class),
+            $this->customer_repo,
             $this->booking_list_grouping_service
         );
         $this->booking_status_transition_dispatcher = new \MYVH\Bookings\Services\BookingStatusTransitionDispatcher();
@@ -176,6 +187,10 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_deletion_service,
             $this->booking_lifecycle_event_dispatcher,
             $this->booking_access_control,
+            $this->customer_repo,
+            $this->organisation_repo,
+            $this->organisation_member_repo,
+            $this->client_admin_service,
             $this->booking_list_grouping_service,
             $this->booking_movement_service,
             $this->booking_query_service,

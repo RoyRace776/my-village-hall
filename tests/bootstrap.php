@@ -22,6 +22,15 @@ if (!class_exists('WP_Error')) {
     }
 }
 
+if (!class_exists('wpdb')) {
+    class wpdb {
+        public $prefix = 'wp_';
+
+        public function __construct($dbuser = '', $dbpassword = '', $dbname = '', $dbhost = '') {
+        }
+    }
+}
+
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 if (!defined('ABSPATH'))         define('ABSPATH', '/tmp/wordpress/');

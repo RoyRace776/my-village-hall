@@ -32,8 +32,8 @@ class RoomRulesServiceTest extends UnitTestCase {
     /** @test */
     public function returns_true_when_both_buffers_are_zero(): void {
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
-            'booking.buffers.set_up_minutes'  => 0,
-            'booking.buffers.tidy_up_minutes' => 0,
+            'booking.set_up_minutes'  => 0,
+            'booking.tidy_up_minutes' => 0,
             default => $default,
         } );
 
@@ -50,8 +50,8 @@ class RoomRulesServiceTest extends UnitTestCase {
     /** @test */
     public function returns_true_when_no_conflict_exists_in_buffer_window(): void {
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
-            'booking.buffers.set_up_minutes'  => 30,
-            'booking.buffers.tidy_up_minutes' => 30,
+            'booking.set_up_minutes'  => 30,
+            'booking.tidy_up_minutes' => 30,
             default => $default,
         } );
 
@@ -70,8 +70,8 @@ class RoomRulesServiceTest extends UnitTestCase {
     /** @test */
     public function returns_false_when_conflict_exists_in_buffer_window(): void {
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
-            'booking.buffers.set_up_minutes'  => 30,
-            'booking.buffers.tidy_up_minutes' => 30,
+            'booking.set_up_minutes'  => 30,
+            'booking.tidy_up_minutes' => 30,
             default => $default,
         } );
 
@@ -89,8 +89,8 @@ class RoomRulesServiceTest extends UnitTestCase {
     /** @test */
     public function setup_buffer_is_waived_when_booking_starts_at_room_opening(): void {
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
-            'booking.buffers.set_up_minutes'  => 30,
-            'booking.buffers.tidy_up_minutes' => 30,
+            'booking.set_up_minutes'  => 30,
+            'booking.tidy_up_minutes' => 30,
             default => $default,
         } );
 
@@ -111,8 +111,8 @@ class RoomRulesServiceTest extends UnitTestCase {
     /** @test */
     public function tidy_buffer_is_waived_when_booking_ends_at_room_closing(): void {
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
-            'booking.buffers.set_up_minutes'  => 30,
-            'booking.buffers.tidy_up_minutes' => 30,
+            'booking.set_up_minutes'  => 30,
+            'booking.tidy_up_minutes' => 30,
             default => $default,
         } );
 
@@ -133,8 +133,8 @@ class RoomRulesServiceTest extends UnitTestCase {
     /** @test */
     public function returns_true_without_repo_call_when_both_boundaries_exempt_buffers(): void {
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
-            'booking.buffers.set_up_minutes'  => 30,
-            'booking.buffers.tidy_up_minutes' => 30,
+            'booking.set_up_minutes'  => 30,
+            'booking.tidy_up_minutes' => 30,
             default => $default,
         } );
 
@@ -151,8 +151,8 @@ class RoomRulesServiceTest extends UnitTestCase {
     /** @test */
     public function exclude_booking_id_is_forwarded_to_repository(): void {
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
-            'booking.buffers.set_up_minutes'  => 15,
-            'booking.buffers.tidy_up_minutes' => 0,
+            'booking.set_up_minutes'  => 15,
+            'booking.tidy_up_minutes' => 0,
             default => $default,
         } );
 

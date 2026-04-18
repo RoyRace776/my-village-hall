@@ -27,6 +27,8 @@ class InvoiceServiceTest extends UnitTestCase {
             'sanitize_key' => fn($value) => (string) $value,
             'current_time' => fn($type) => $type === 'timestamp' ? strtotime('2026-04-09 12:00:00') : '2026-04-09',
             '__' => fn($value) => $value,
+            'is_wp_error' => fn($value) => $value instanceof WP_Error,
+            'MYVH\\Invoices\\is_wp_error' => fn($value) => $value instanceof WP_Error,
         ]);
 
         $this->invoice_repo  = $this->mock(InvoiceRepository::class);
@@ -67,7 +69,7 @@ class InvoiceServiceTest extends UnitTestCase {
             ->once()
             ->with(42)
             ->andReturn([
-                ['Id' => 1, 'InvoiceId' => 42, 'BookingId' => 7],
+                ['Id' => 1, 'InvoiceId' => 42, 'BookingId' => 7, 'BookingDescription' => '', 'Description' => 'Room hire'],
             ]);
 
         $this->payment_repo->shouldReceive('get_by_invoice')

@@ -31,7 +31,12 @@ class BookingServiceProvider
 {
     public function register($container): void
     {
-        $container->singleton(BookingRepository::class);
+        $container->singleton(BookingRepository::class, function ($container) {
+            $wpdb = $container->get(\wpdb::class);
+            $repository = new BookingRepository($wpdb);
+
+            return new CachedBookingRepository($repository);
+        });
         $container->singleton(BookingAddonRepository::class);
         $container->singleton(BookingDiscountRepository::class);
         $container->singleton(BookingChargeRepository::class);

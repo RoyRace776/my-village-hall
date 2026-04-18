@@ -131,16 +131,18 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
     }
 }
 
-class PortalJsonResponseException extends \RuntimeException {
-    public bool $success;
-    public $data;
-    public int $statusCode;
+if (!class_exists(__NAMESPACE__ . '\\PortalJsonResponseException')) {
+    class PortalJsonResponseException extends \RuntimeException {
+        public bool $success;
+        public $data;
+        public int $statusCode;
 
-    public function __construct(bool $success, $data, int $statusCode) {
-        parent::__construct('JSON response intercepted');
+        public function __construct(bool $success, $data, int $statusCode) {
+            parent::__construct('JSON response intercepted');
 
-        $this->success = $success;
-        $this->data = $data;
-        $this->statusCode = $statusCode;
+            $this->success = $success;
+            $this->data = $data;
+            $this->statusCode = $statusCode;
+        }
     }
 }

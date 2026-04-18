@@ -46,12 +46,16 @@ class AuditTrailTest extends UnitTestCase {
             )
             ->andReturn(1);
 
+        $GLOBALS['wpdb'] = $wpdb;
+
         $repository = new BookingRepository($wpdb);
 
         AuditTrail::record_repository_event($repository, 'create', [
             'Id' => 42,
             'Name' => 'Hall booking',
         ]);
+
+        $this->addToAssertionCount(1);
     }
 
     public function test_skips_non_main_entity_repository(): void {
@@ -65,12 +69,16 @@ class AuditTrailTest extends UnitTestCase {
 
         $wpdb->shouldReceive('insert')->never();
 
+        $GLOBALS['wpdb'] = $wpdb;
+
         $repository = new BookingAddonRepository($wpdb);
 
         AuditTrail::record_repository_event($repository, 'create', [
             'Id' => 7,
             'Name' => 'Tea Urn',
         ]);
+
+        $this->addToAssertionCount(1);
     }
 }
 

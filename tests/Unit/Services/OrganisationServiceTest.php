@@ -22,7 +22,7 @@ class OrganisationServiceTest extends UnitTestCase {
 
         \Brain\Monkey\Functions\stubs([
             'sanitize_email' => fn($v) => (string) $v,
-            'is_email' => fn($v) => filter_var($v, FILTER_VALIDATE_EMAIL) !== false,
+            'is_email' => fn($v) => is_string($v) && strpos($v, '@') !== false,
             'esc_url_raw' => fn($v) => (string) $v,
             'current_time' => fn() => '2026-01-01 00:00:00',
             'do_action' => static fn() => null,
@@ -296,6 +296,14 @@ class OrganisationServiceTest extends UnitTestCase {
             ->once()
             ->with(15)
             ->andReturn(0);
+
+        $this->request_repo->shouldReceive('delete_by_organisation')
+            ->once()
+            ->with(15);
+
+        $this->member_repo->shouldReceive('delete_by_organisation')
+            ->once()
+            ->with(15);
 
         $this->repo->shouldReceive('delete')
             ->once()
