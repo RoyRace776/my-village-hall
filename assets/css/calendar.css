@@ -182,6 +182,12 @@ body .scheduler_default_event_inner {
     box-sizing: border-box;
 }
 
+body .myvh-event-private-locked {
+    cursor: default !important;
+    opacity: 0.72;
+    filter: saturate(0.72);
+}
+
 /* Week/Day: time axis */
 .myvh_admin_cal_rowheader {
     background: #f6f7f7;
@@ -696,6 +702,14 @@ body .scheduler_default_event_inner {
 .myvh-tt-event-cell:hover {
     box-shadow: inset 0 0 0 9999px rgba(34, 113, 177, 0.04);
     transform: translateY(-1px);
+}
+
+.myvh-tt-event-cell--locked,
+.myvh-tt-event-cell--locked:hover {
+    cursor: default;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.78;
 }
 
 .myvh-tt-event-inner {

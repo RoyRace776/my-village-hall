@@ -47,6 +47,11 @@ window.CalendarCore = (function () {
     function applyEventStatusColors(events, statusColors) {
         return (events || []).map(function(event) {
             const tags = event && event.tags ? event.tags : {};
+            const isPrivateLocked = !isPublicBooking(tags) && !canViewPrivateBooking(tags);
+            const existingCssClass = String(event && event.cssClass ? event.cssClass : "").trim();
+            const cssClass = isPrivateLocked
+                ? `${existingCssClass} myvh-event-private-locked`.trim()
+                : existingCssClass;
 
             // Buffer events keep room background color but use a neutral
             // left accent bar so they remain visually distinct.
@@ -79,6 +84,8 @@ window.CalendarCore = (function () {
                 fontColor: getReadableTextColour(backgroundColour),
                 borderColor: accentColor,
                 barColor: accentColor,
+                clickDisabled: isPrivateLocked || !!event.clickDisabled,
+                cssClass: cssClass,
             };
         });
     }
@@ -642,7 +649,9 @@ window.CalendarCore = (function () {
                             const endT = formatTimeFromISO(event.end);
                             const timeStr = (startT && endT) ? `${startT}-${endT}` : "";
 
-                            html += `<td class="myvh-tt-event-cell" rowspan="${span}"`
+                            const lockedClass = event.clickDisabled ? " myvh-tt-event-cell--locked" : "";
+
+                            html += `<td class="myvh-tt-event-cell${lockedClass}" rowspan="${span}"`
                                 + ` style="background:${escHtml(color)};color:${escHtml(textColor)};"`
                                 + ` data-event-id="${escHtml(String(event.id || ""))}"`
                                 + ` title="${escHtml(tooltip)}">`;
@@ -665,7 +674,7 @@ window.CalendarCore = (function () {
                 container.querySelectorAll('.myvh-tt-event-cell[data-event-id]').forEach(cell => {
                     const evId = cell.dataset.eventId;
                     const ev = scheduler.events.list.find(e => String(e.id) === evId);
-                    if (ev) {
+                    if (ev && !ev.clickDisabled) {
                         cell.style.cursor = "pointer";
                         cell.addEventListener("click", () => opts.onEventClick({ e: { data: () => ev } }));
                     }

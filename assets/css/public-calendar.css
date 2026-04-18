@@ -173,6 +173,12 @@ body .scheduler_default_event_inner {
     box-sizing: border-box;
 }
 
+body .myvh-event-private-locked {
+    cursor: default !important;
+    opacity: 0.72;
+    filter: saturate(0.72);
+}
+
 .myvh-cal-key {
     display: flex;
     gap: 12px;

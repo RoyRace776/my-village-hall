@@ -445,9 +445,30 @@ var Calendar = (function() {
                 return;
             }
 
+            var eventData = typeof args.e.data === 'function'
+                ? args.e.data()
+                : (args.e.data || {});
+            var tags = eventData && eventData.tags ? eventData.tags : {};
+            var isPublic = !Object.prototype.hasOwnProperty.call(tags, 'isPublic')
+                || tags.isPublic === true
+                || tags.isPublic === 1
+                || tags.isPublic === '1'
+                || String(tags.isPublic).toLowerCase() !== 'false';
+            var canViewPrivate = Object.prototype.hasOwnProperty.call(tags, 'canViewPrivate')
+                && (
+                    tags.canViewPrivate === true
+                    || tags.canViewPrivate === 1
+                    || tags.canViewPrivate === '1'
+                    || String(tags.canViewPrivate).toLowerCase() === 'true'
+                );
+
+            if (!isPublic && !canViewPrivate) {
+                return;
+            }
+
             const bookingId = args.e.id
                 ? args.e.id()
-                : (args.e.data?.id || args.e.data?.Id);
+                : (eventData.id || eventData.Id);
 
             if (!bookingId) {
                 return;
@@ -461,23 +482,23 @@ var Calendar = (function() {
                 { scope: 'portal' }
             )
                 .then(function(result) {
-                    if (result && result.success && result.data && result.data.can_edit) {
+                    if (!result || !result.success || !result.data) {
+                        return;
+                    }
+
+                    if (result.data.can_edit) {
                         createModal.open({ editMode: true, bookingId: bookingId });
                         return;
                     }
 
                     viewModal.open({
                         bookingId: bookingId,
-                        args: args.e.data,
+                        args: eventData,
                         viewOnly: true
                     });
                 })
                 .catch(function() {
-                    viewModal.open({
-                        bookingId: bookingId,
-                        args: args.e.data,
-                        viewOnly: true
-                    });
+                    // Ignore inaccessible bookings and transient request failures.
                 });
         }
 
