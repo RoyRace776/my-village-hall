@@ -544,12 +544,12 @@ class CalendarService {
 
         if ( $eff_setup > 0 ) {
             $ts = $booking->start()->getTimestamp() - $eff_setup * 60;
-            $event['start'] = date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts );
+            $event['start'] = $booking->start()->setTimestamp($ts)->format('Y-m-d\TH:i:s');
         }
 
         if ( $eff_tidy > 0 ) {
             $ts = $booking->end()->getTimestamp() + $eff_tidy * 60;
-            $event['end'] = date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts );
+            $event['end'] = $booking->end()->setTimestamp($ts)->format('Y-m-d\TH:i:s');
         }
 
         // Preserve actual booking times in tags for front-end tooltip rendering.
@@ -586,7 +586,7 @@ class CalendarService {
             $events[] = [
                 'id'       => 'buffer_setup_' . $booking_id,
                 'text'     => $safe_text,
-                'start'    => date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts ),
+                'start'    => $booking->start()->setTimestamp($ts)->format('Y-m-d\TH:i:s'),
                 'end'      => $actual_start,
                 'resource' => $resource,
                 'tags'     => [
@@ -606,7 +606,7 @@ class CalendarService {
                 'id'       => 'buffer_tidy_' . $booking_id,
                 'text'     => $safe_text,
                 'start'    => $actual_end,
-                'end'      => date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts ),
+                'end'      => $booking->end()->setTimestamp($ts)->format('Y-m-d\TH:i:s'),
                 'resource' => $resource,
                 'tags'     => [
                     'isBuffer'   => true,
