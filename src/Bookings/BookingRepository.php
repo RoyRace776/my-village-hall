@@ -345,7 +345,7 @@ class BookingRepository extends RepositoryBase
 
         $where_sql = implode(' AND ', $where);
 
-        $sql = "SELECT b.*, r.Name AS RoomName, v.Name AS VenueName
+        $sql = "SELECT b.*, r.Name AS RoomName, v.Name AS VenueName, r.IsPublic AS IsPublic
             FROM {$this->table_name} b
             LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
             LEFT JOIN {$this->wpdb->prefix}myvh_venues v ON r.VenueId = v.Id
@@ -672,6 +672,11 @@ class BookingRepository extends RepositoryBase
                 $row['EndTime'] ?? null
             ),
             'AdminEmail' => isset($row['AdminEmail']) ? (string) $row['AdminEmail'] : null,
+            'Description' => isset($row['Description']) ? (string) $row['Description'] : '',
+            'Public' => !empty($row['Public']),
+            'RoomName' => isset($row['RoomName']) ? (string) $row['RoomName'] : '',
+            'VenueName' => isset($row['VenueName']) ? (string) $row['VenueName'] : '',
+            'IsPublic' => !empty($row['IsPublic']),
         ]);
     }
 

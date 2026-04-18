@@ -121,16 +121,16 @@ class CalendarServiceTest extends UnitTestCase {
             'Start' => new \DateTimeImmutable(($booking['StartDate'] ?? '2026-06-01') . ' ' . ($booking['StartTime'] ?? '10:00:00')),
             'End' => new \DateTimeImmutable(($booking['EndDate'] ?? '2026-06-01') . ' ' . ($booking['EndTime'] ?? '12:00:00')),
             'AdminEmail' => null,
+            'Description' => (string) ($booking['Description'] ?? ''),
+            'Public' => !empty($booking['Public']),
+            'RoomName' => (string) ($booking['RoomName'] ?? ''),
+            'VenueName' => (string) ($booking['VenueName'] ?? ''),
+            'IsPublic' => !empty($booking['IsPublic']),
         ]);
 
         $this->booking_service->shouldReceive( 'get_between' )
             ->once()
             ->andReturn( [ $booking_entity ] );
-
-        $this->booking_service->shouldReceive( 'get_by_id_with_details' )
-            ->once()
-            ->with( (int) ($booking['Id'] ?? 10) )
-            ->andReturn( $booking );
     }
 
     private function wire_booking_entity( array $overrides = [] ): void {
@@ -143,16 +143,16 @@ class CalendarServiceTest extends UnitTestCase {
             'Start' => $overrides['Start'] ?? new \DateTimeImmutable('2026-06-01 10:00:00'),
             'End' => $overrides['End'] ?? new \DateTimeImmutable('2026-06-01 12:00:00'),
             'AdminEmail' => null,
+            'Description' => (string) ($overrides['Description'] ?? 'Community lunch'),
+            'Public' => !empty($overrides['Public'] ?? 1),
+            'RoomName' => (string) ($overrides['RoomName'] ?? ''),
+            'VenueName' => (string) ($overrides['VenueName'] ?? ''),
+            'IsPublic' => !empty($overrides['IsPublic'] ?? 0),
         ]);
 
         $this->booking_service->shouldReceive( 'get_between' )
             ->once()
             ->andReturn( [ $booking ] );
-
-        $this->booking_service->shouldReceive( 'get_by_id_with_details' )
-            ->once()
-            ->with( 10 )
-            ->andReturn( $this->single_booking() );
     }
 
     // ── No buffers configured ─────────────────────────────────────────────────

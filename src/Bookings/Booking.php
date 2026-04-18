@@ -12,6 +12,11 @@ class Booking
     private readonly \DateTimeImmutable $start;
     private readonly \DateTimeImmutable $end;
     private readonly ?string $adminEmail;
+    private readonly string $description;
+    private readonly bool $isPublic;
+    private readonly string $roomName;
+    private readonly string $venueName;
+    private readonly bool $roomIsPublic;
 
     private function __construct(
         int $id,
@@ -21,7 +26,12 @@ class Booking
         BookingStatus $status,
         \DateTimeImmutable $start,
         \DateTimeImmutable $end,
-        ?string $adminEmail
+        ?string $adminEmail,
+        string $description,
+        bool $isPublic,
+        string $roomName,
+        string $venueName,
+        bool $roomIsPublic
     ) {
         if ($end <= $start) {
             throw new \InvalidArgumentException('Booking end must be after start.');
@@ -35,6 +45,11 @@ class Booking
         $this->start = $start;
         $this->end = $end;
         $this->adminEmail = $adminEmail;
+        $this->description = $description;
+        $this->isPublic = $isPublic;
+        $this->roomName = $roomName;
+        $this->venueName = $venueName;
+        $this->roomIsPublic = $roomIsPublic;
     }
 
     /**
@@ -43,14 +58,25 @@ class Booking
     public static function fromDatabaseRow(array $data): self
     {
         return new self(
-            $data['Id'],
-            $data['CustomerId'],
-            $data['RoomId'],
-            $data['OrganisationId'],
-            $data['Status'],
-            $data['Start'],
-            $data['End'],
-            $data['AdminEmail'] ?? null
+            (int) ($data['Id'] ?? 0),
+            (int) ($data['CustomerId'] ?? 0),
+            (int) ($data['RoomId'] ?? 0),
+            (int) ($data['OrganisationId'] ?? 0),
+            $data['Status'] instanceof BookingStatus
+                ? $data['Status']
+                : BookingStatus::from((string) ($data['Status'] ?? '')),
+            $data['Start'] instanceof \DateTimeImmutable
+                ? $data['Start']
+                : new \DateTimeImmutable((string) ($data['Start'] ?? 'now')),
+            $data['End'] instanceof \DateTimeImmutable
+                ? $data['End']
+                : new \DateTimeImmutable((string) ($data['End'] ?? 'now')),
+            isset($data['AdminEmail']) ? (string) $data['AdminEmail'] : null,
+            (string) ($data['Description'] ?? ''),
+            !empty($data['Public']),
+            (string) ($data['RoomName'] ?? ''),
+            (string) ($data['VenueName'] ?? ''),
+            !empty($data['IsPublic'])
         );
     }
 
@@ -96,6 +122,31 @@ class Booking
     public function adminEmail(): ?string
     {
         return $this->adminEmail;
+    }
+
+    public function description(): string
+    {
+        return $this->description;
+    }
+
+    public function isPublic(): bool
+    {
+        return $this->isPublic;
+    }
+
+    public function roomName(): string
+    {
+        return $this->roomName;
+    }
+
+    public function venueName(): string
+    {
+        return $this->venueName;
+    }
+
+    public function roomIsPublic(): bool
+    {
+        return $this->roomIsPublic;
     }
 
     // -------------------------
@@ -160,7 +211,12 @@ class Booking
             $status,
             $this->start,
             $this->end,
-            $this->adminEmail
+            $this->adminEmail,
+            $this->description,
+            $this->isPublic,
+            $this->roomName,
+            $this->venueName,
+            $this->roomIsPublic
         );
     }
 }
