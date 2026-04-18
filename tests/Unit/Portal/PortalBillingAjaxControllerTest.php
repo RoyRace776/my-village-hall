@@ -52,11 +52,11 @@ class PortalBillingAjaxControllerTest extends UnitTestCase {
         ]);
 
         Functions\when('wp_send_json_success')->alias(function ($data = null, $status_code = null) {
-            throw new PortalJsonResponseException(true, $data, (int) ($status_code ?? 200));
+            throw new PortalBillingJsonResponseException(true, $data, (int) ($status_code ?? 200));
         });
 
         Functions\when('wp_send_json_error')->alias(function ($data = null, $status_code = null) {
-            throw new PortalJsonResponseException(false, $data, (int) ($status_code ?? 400));
+            throw new PortalBillingJsonResponseException(false, $data, (int) ($status_code ?? 400));
         });
 
         // Mock PortalAuth::require_client_admin by ensuring can_administer_blog returns true
@@ -113,7 +113,7 @@ class PortalBillingAjaxControllerTest extends UnitTestCase {
         $this->invoice_service->shouldReceive('get_detail')
             ->once()
             ->with(42)
-            ->andReturn($invoice);
+            ->andReturnUsing(static fn(): array => $invoice);
 
         $response = $this->capture_json_response(function (): void {
             $this->controller->email_invoice();
@@ -123,10 +123,10 @@ class PortalBillingAjaxControllerTest extends UnitTestCase {
         $this->assertSame(400, $response->statusCode);
     }
 
-    private function capture_json_response(callable $callback): PortalJsonResponseException {
+    private function capture_json_response(callable $callback): PortalBillingJsonResponseException {
         try {
             $callback();
-        } catch (PortalJsonResponseException $response) {
+        } catch (PortalBillingJsonResponseException $response) {
             return $response;
         }
 
@@ -134,18 +134,16 @@ class PortalBillingAjaxControllerTest extends UnitTestCase {
     }
 }
 
-if (!class_exists(__NAMESPACE__ . '\\PortalJsonResponseException')) {
-    class PortalJsonResponseException extends \RuntimeException {
-        public bool $success;
-        public $data;
-        public int $statusCode;
+class PortalBillingJsonResponseException extends \Exception {
+    public bool $success;
+    public $data;
+    public int $statusCode;
 
-        public function __construct(bool $success, $data, int $statusCode) {
-            parent::__construct('JSON response intercepted');
+    public function __construct(bool $success, $data, int $statusCode) {
+        parent::__construct('JSON response intercepted');
 
-            $this->success = $success;
-            $this->data = $data;
-            $this->statusCode = $statusCode;
-        }
+        $this->success = $success;
+        $this->data = $data;
+        $this->statusCode = $statusCode;
     }
 }

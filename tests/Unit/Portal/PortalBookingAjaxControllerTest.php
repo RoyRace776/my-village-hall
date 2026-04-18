@@ -48,11 +48,11 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
         ]);
 
         Functions\when('wp_send_json_success')->alias(function ($data = null, $status_code = null) {
-            throw new PortalJsonResponseException(true, $data, (int) ($status_code ?? 200));
+            throw new PortalBookingJsonResponseException(true, $data, (int) ($status_code ?? 200));
         });
 
         Functions\when('wp_send_json_error')->alias(function ($data = null, $status_code = null) {
-            throw new PortalJsonResponseException(false, $data, (int) ($status_code ?? 400));
+            throw new PortalBookingJsonResponseException(false, $data, (int) ($status_code ?? 400));
         });
     }
 
@@ -71,11 +71,11 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
         $this->get_action->shouldReceive('execute')
             ->once()
             ->with(88)
-            ->andReturn(['Id' => 88, 'Status' => 'pending']);
+            ->andReturnUsing(static fn(): array => ['Id' => 88, 'Status' => 'pending']);
 
         $this->booking_service->shouldReceive('can_edit')
             ->once()
-            ->andReturn(['can_edit' => false, 'reason' => 'Invoiced bookings cannot be edited.']);
+            ->andReturnUsing(static fn(): array => ['can_edit' => false, 'reason' => 'Invoiced bookings cannot be edited.']);
 
         $this->calendar_service->shouldReceive('update_event')->never();
 
@@ -98,11 +98,11 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
         $this->get_action->shouldReceive('execute')
             ->once()
             ->with(89)
-            ->andReturn(['Id' => 89, 'Status' => 'pending']);
+            ->andReturnUsing(static fn(): array => ['Id' => 89, 'Status' => 'pending']);
 
         $this->booking_service->shouldReceive('can_edit')
             ->once()
-            ->andReturn(['can_edit' => true, 'reason' => '']);
+            ->andReturnUsing(static fn(): array => ['can_edit' => true, 'reason' => '']);
 
         $this->calendar_service->shouldReceive('update_event')
             ->once()
@@ -110,7 +110,7 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
                 return intval($payload['booking_id'] ?? 0) === 89
                     && ($payload['context'] ?? '') === 'portal';
             }))
-            ->andReturn(['id' => 89]);
+            ->andReturnUsing(static fn(): array => ['id' => 89]);
 
         $response = $this->capture_json_response(function (): void {
             $this->controller->update_for_modal();
@@ -120,10 +120,10 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
         $this->assertSame(['id' => 89], $response->data);
     }
 
-    private function capture_json_response(callable $callback): PortalJsonResponseException {
+    private function capture_json_response(callable $callback): PortalBookingJsonResponseException {
         try {
             $callback();
-        } catch (PortalJsonResponseException $response) {
+        } catch (PortalBookingJsonResponseException $response) {
             return $response;
         }
 
@@ -131,18 +131,16 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
     }
 }
 
-if (!class_exists(__NAMESPACE__ . '\\PortalJsonResponseException')) {
-    class PortalJsonResponseException extends \RuntimeException {
-        public bool $success;
-        public $data;
-        public int $statusCode;
+class PortalBookingJsonResponseException extends \Exception {
+    public bool $success;
+    public $data;
+    public int $statusCode;
 
-        public function __construct(bool $success, $data, int $statusCode) {
-            parent::__construct('JSON response intercepted');
+    public function __construct(bool $success, $data, int $statusCode) {
+        parent::__construct('JSON response intercepted');
 
-            $this->success = $success;
-            $this->data = $data;
-            $this->statusCode = $statusCode;
-        }
+        $this->success = $success;
+        $this->data = $data;
+        $this->statusCode = $statusCode;
     }
 }
