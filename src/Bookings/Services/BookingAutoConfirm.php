@@ -34,11 +34,11 @@ class BookingAutoConfirm
         $customer = $this->customer_repo->get_by_id($booking->customerId());
 
         if ($org['AllowAutoConfirm'] || $customer['AllowAutoConfirm']) {
-             $this->booking_repo->update(['Status' => BookingStatus::CONFIRMED], ['Id' => $booking_id]);
+               $this->booking_repo->update(['Status' => BookingStatus::CONFIRMED->value], ['Id' => $booking_id]);
              do_action('myvh_event_booking.confirmed', ['booking_id' => $booking_id]);
 
         }
 
-        return $booking->status();
+           return $booking->status()->value;
     }
 }

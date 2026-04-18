@@ -22,7 +22,7 @@ class BookingCreationEventDispatcher
             ]
         );
 
-        if (($data['status'] ?? '') == BookingStatus::CONFIRMED) {
+        if (($data['status'] ?? '') == BookingStatus::CONFIRMED->value) {
             EventDispatcher::dispatch(
                 BookingEvents::CONFIRMED,
                 [

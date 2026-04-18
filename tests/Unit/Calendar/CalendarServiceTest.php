@@ -4,6 +4,8 @@ namespace MYVH\Tests\Unit\Calendar;
 
 use Brain\Monkey\Functions;
 use MYVH\Availability\AvailabilityService;
+use MYVH\Bookings\Booking;
+use MYVH\Bookings\BookingStatus;
 use MYVH\Bookings\BookingService;
 use MYVH\Calendar\CalendarService;
 use MYVH\Customers\CustomerService;
@@ -110,9 +112,47 @@ class CalendarServiceTest extends UnitTestCase {
     }
 
     private function wire_booking( array $booking ): void {
+        $booking_entity = Booking::fromDatabaseRow([
+            'Id' => (int) ($booking['Id'] ?? 10),
+            'CustomerId' => (int) ($booking['CustomerId'] ?? 3),
+            'RoomId' => (int) ($booking['RoomId'] ?? 5),
+            'OrganisationId' => (int) ($booking['OrganisationId'] ?? 0),
+            'Status' => BookingStatus::from((string) ($booking['Status'] ?? BookingStatus::CONFIRMED->value)),
+            'Start' => new \DateTimeImmutable(($booking['StartDate'] ?? '2026-06-01') . ' ' . ($booking['StartTime'] ?? '10:00:00')),
+            'End' => new \DateTimeImmutable(($booking['EndDate'] ?? '2026-06-01') . ' ' . ($booking['EndTime'] ?? '12:00:00')),
+            'AdminEmail' => null,
+        ]);
+
+        $this->booking_service->shouldReceive( 'get_between' )
+            ->once()
+            ->andReturn( [ $booking_entity ] );
+
+        $this->booking_service->shouldReceive( 'get_by_id_with_details' )
+            ->once()
+            ->with( (int) ($booking['Id'] ?? 10) )
+            ->andReturn( $booking );
+    }
+
+    private function wire_booking_entity( array $overrides = [] ): void {
+        $booking = Booking::fromDatabaseRow([
+            'Id' => $overrides['Id'] ?? 10,
+            'CustomerId' => $overrides['CustomerId'] ?? 3,
+            'RoomId' => $overrides['RoomId'] ?? 5,
+            'OrganisationId' => $overrides['OrganisationId'] ?? 0,
+            'Status' => $overrides['Status'] ?? BookingStatus::CONFIRMED,
+            'Start' => $overrides['Start'] ?? new \DateTimeImmutable('2026-06-01 10:00:00'),
+            'End' => $overrides['End'] ?? new \DateTimeImmutable('2026-06-01 12:00:00'),
+            'AdminEmail' => null,
+        ]);
+
         $this->booking_service->shouldReceive( 'get_between' )
             ->once()
             ->andReturn( [ $booking ] );
+
+        $this->booking_service->shouldReceive( 'get_by_id_with_details' )
+            ->once()
+            ->with( 10 )
+            ->andReturn( $this->single_booking() );
     }
 
     // ── No buffers configured ─────────────────────────────────────────────────
@@ -138,6 +178,21 @@ class CalendarServiceTest extends UnitTestCase {
         $this->assertSame( '2026-06-01T10:00:00', $events[0]['start'] );
         $this->assertSame( '2026-06-01T12:00:00', $events[0]['end'] );
         $this->assertArrayNotHasKey( 'actualStart', $events[0]['tags'] );
+    }
+
+    /** @test */
+    public function returns_single_event_when_service_returns_booking_entities(): void {
+        $this->stub_settings( 0, 0 );
+        $this->wire_room_meta();
+        $this->wire_booking_entity();
+
+        $events = $this->service->get_events( '2026-06-01', '2026-06-02', 'admin' );
+
+        $this->assertCount( 1, $events );
+        $this->assertSame( 10, $events[0]['id'] );
+        $this->assertSame( 'Community lunch', $events[0]['text'] );
+        $this->assertSame( '2026-06-01T10:00:00', $events[0]['start'] );
+        $this->assertSame( '2026-06-01T12:00:00', $events[0]['end'] );
     }
 
     // ── Merged display mode ───────────────────────────────────────────────────

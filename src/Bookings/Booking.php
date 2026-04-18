@@ -4,32 +4,33 @@ namespace MYVH\Bookings;
 
 class Booking
 {
-    private int $id;
-    private int $customerId;
-    private int $roomId;
-    private int $organisationId;
-
-    private string $status;
-
-    private \DateTimeImmutable $start;
-    private \DateTimeImmutable $end;
-
-    private ?string $adminEmail;
+    private readonly int $id;
+    private readonly int $customerId;
+    private readonly int $roomId;
+    private readonly int $organisationId;
+    private readonly BookingStatus $status;
+    private readonly \DateTimeImmutable $start;
+    private readonly \DateTimeImmutable $end;
+    private readonly ?string $adminEmail;
 
     private function __construct(
         int $id,
         int $customerId,
         int $roomId,
-        int $organsationId,
-        string $status,
+        int $organisationId,
+        BookingStatus $status,
         \DateTimeImmutable $start,
         \DateTimeImmutable $end,
         ?string $adminEmail
     ) {
+        if ($end <= $start) {
+            throw new \InvalidArgumentException('Booking end must be after start.');
+        }
+
         $this->id = $id;
         $this->customerId = $customerId;
         $this->roomId = $roomId;
-        $this->organisationId = $organsationId;
+        $this->organisationId = $organisationId;
         $this->status = $status;
         $this->start = $start;
         $this->end = $end;
@@ -39,35 +40,18 @@ class Booking
     /**
      * Factory: create from DB row (array)
      */
-    public static function fromArray(array $data): self
+    public static function fromDatabaseRow(array $data): self
     {
         return new self(
-            (int) $data['Id'],
-            (int) $data['CustomerId'],
-            (int) $data['RoomId'],
-            (int) $data['OrganisationId'],
-            (string) $data['Status'],
-            new \DateTimeImmutable($data['Start']),
-            new \DateTimeImmutable($data['End']),
-            isset($data['AdminEmail']) ? (string) $data['AdminEmail'] : null
+            $data['Id'],
+            $data['CustomerId'],
+            $data['RoomId'],
+            $data['OrganisationId'],
+            $data['Status'],
+            $data['Start'],
+            $data['End'],
+            $data['AdminEmail'] ?? null
         );
-    }
-
-    /**
-     * Optional: convert back to array (for persistence)
-     */
-    public function toArray(): array
-    {
-        return [
-            'id'            => $this->id,
-            'customer_id'   => $this->customerId,
-            'room_id'       => $this->roomId,
-            'organisation_id' => $this->organisationId,
-            'status'        => $this->status,
-            'start'         => $this->start->format('Y-m-d H:i:s'),
-            'end'           => $this->end->format('Y-m-d H:i:s'),
-            'admin_email'   => $this->adminEmail,
-        ];
     }
 
     // -------------------------
@@ -94,7 +78,7 @@ class Booking
         return $this->organisationId;
     }
 
-    public function status(): string
+    public function status(): BookingStatus
     {
         return $this->status;
     }
@@ -152,21 +136,31 @@ class Booking
     // State changes (optional but powerful)
     // -------------------------
 
-    public function confirm(): void
+    public function confirm(): self
     {
         if ($this->isCancelled()) {
             throw new \DomainException('Cannot confirm a cancelled booking.');
         }
 
-        $this->status = BookingStatus::CONFIRMED;
+        return $this->withStatus(BookingStatus::CONFIRMED);
     }
 
-    public function cancel(): void
+    public function cancel(): self
     {
-        if ($this->isCancelled()) {
-            return;
-        }
+        return $this->withStatus(BookingStatus::CANCELLED);
+    }
 
-        $this->status = BookingStatus::CANCELLED;
+    private function withStatus(BookingStatus $status): self
+    {
+        return new self(
+            $this->id,
+            $this->customerId,
+            $this->roomId,
+            $this->organisationId,
+            $status,
+            $this->start,
+            $this->end,
+            $this->adminEmail
+        );
     }
 }

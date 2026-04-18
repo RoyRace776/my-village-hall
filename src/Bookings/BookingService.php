@@ -134,7 +134,7 @@ class BookingService {
                 'CustomerId'        => $customer_id,
                 'OrganisationId'    => $organisation_id > 0 ? $organisation_id : null,
                 'RoomId'            => intval($data['room_id']),
-                'Status'            => sanitize_text_field($data['status'] ?? (myvh_setting('booking.require_approval', true) ? BookingStatus::PENDING : BookingStatus::CONFIRMED)),
+                'Status'            => sanitize_text_field($data['status'] ?? (myvh_setting('booking.require_approval', true) ? BookingStatus::PENDING->value : BookingStatus::CONFIRMED->value)),
                 'StartDate'         => $start_date,
                 'EndDate'           => $end_date,
                 'StartTime'         => $start_time,
@@ -409,8 +409,18 @@ class BookingService {
         return $this->addon_service->get_addons_for_booking($booking_id);
     }
 
-    public function get_by_id($booking_id): ?array {
-        return $this->booking_repo->get_by_id($booking_id);
+    public function get_by_id($booking_id): ?Booking {
+        $booking_id = (int) $booking_id;
+
+        if ($booking_id <= 0) {
+            return null;
+        }
+
+        try {
+            return $this->booking_repo->get($booking_id);
+        } catch (\RuntimeException $exception) {
+            return null;
+        }
     }
 
     public function cancel($id): int|false {
@@ -419,16 +429,16 @@ class BookingService {
             return false;
         }
 
-        $result = $this->update_status($id, BookingStatus::CANCELLED);
+        $result = $this->update_status($id, BookingStatus::CANCELLED->value);
 
-        if ($result !== false && ($current_record['Status'] ?? null) !== BookingStatus::CANCELLED) {
+        if ($result !== false && ($current_record['Status'] ?? null) !== BookingStatus::CANCELLED->value) {
             $this->booking_update_event_dispatcher->dispatch(
                 [
                     'booking_id' => $id,
                     'room_id' => $current_record['RoomId'] ?? null,
                     'start_time' => $current_record['StartTime'] ?? null,
                     'end_time' => $current_record['EndTime'] ?? null,
-                    'status' => BookingStatus::CANCELLED,
+                    'status' => BookingStatus::CANCELLED->value,
                 ],
                 $current_record['Status'] ?? null
             );

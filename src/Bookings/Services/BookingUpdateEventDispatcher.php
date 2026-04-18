@@ -15,7 +15,7 @@ class BookingUpdateEventDispatcher
         $new_status = $data['status'] ?? '';
         $current_status = $old_status;
 
-        if ($new_status == BookingStatus::CONFIRMED && $current_status != BookingStatus::CONFIRMED) {
+        if ($new_status == BookingStatus::CONFIRMED->value && $current_status != BookingStatus::CONFIRMED->value) {
             EventDispatcher::dispatch(
                 BookingEvents::CONFIRMED,
                 [
@@ -27,7 +27,7 @@ class BookingUpdateEventDispatcher
             );
         }
 
-        if ($new_status == BookingStatus::CANCELLED && $current_status != BookingStatus::CANCELLED) {
+        if ($new_status == BookingStatus::CANCELLED->value && $current_status != BookingStatus::CANCELLED->value) {
             EventDispatcher::dispatch(
                 BookingEvents::CANCELLED,
                 [

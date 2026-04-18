@@ -27,7 +27,7 @@ class BookingListGroupingServiceTest extends UnitTestCase {
                 'PatternEndDate' => '2026-07-01',
                 'PatternIsActive' => 1,
                 'StartDate' => '2026-05-05',
-                'Status' => BookingStatus::PENDING,
+                'Status' => BookingStatus::PENDING->value,
             ],
             [
                 'Id' => 12,
@@ -40,19 +40,19 @@ class BookingListGroupingServiceTest extends UnitTestCase {
                 'PatternEndDate' => '2026-07-01',
                 'PatternIsActive' => 1,
                 'StartDate' => '2026-05-12',
-                'Status' => BookingStatus::CONFIRMED,
+                'Status' => BookingStatus::CONFIRMED->value,
             ],
             [
                 'Id' => 99,
                 'RecurringPatternId' => null,
                 'StartDate' => '2026-05-06',
-                'Status' => BookingStatus::PENDING,
+                'Status' => BookingStatus::PENDING->value,
             ],
         ]);
 
         $this->assertArrayHasKey('r_200', $groups);
         $this->assertArrayHasKey('b_99', $groups);
-        $this->assertSame(BookingStatus::CONFIRMED, $groups['r_200']['status']);
+        $this->assertSame(BookingStatus::CONFIRMED->value, $groups['r_200']['status']);
         $this->assertSame(2, $groups['r_200']['count']);
     }
 }

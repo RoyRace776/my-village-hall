@@ -2,6 +2,7 @@
 
 namespace MYVH\Bookings\Services;
 
+use MYVH\Bookings\Booking;
 use MYVH\Bookings\BookingRepository;
 use MYVH\Customers\CustomerRepository;
 

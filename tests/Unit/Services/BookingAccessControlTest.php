@@ -102,7 +102,7 @@ class BookingAccessControlTest extends UnitTestCase {
         $result = $this->service->can_delete([
             'StartDate' => '2026-04-15',
             'StartTime' => '10:00:00',
-            'Status' => BookingStatus::PENDING,
+            'Status' => BookingStatus::PENDING->value,
         ]);
 
         $this->assertTrue($result['can_delete']);
@@ -117,7 +117,7 @@ class BookingAccessControlTest extends UnitTestCase {
         $result = $this->service->can_delete([
             'StartDate' => '2026-04-01',
             'StartTime' => '10:00:00',
-            'Status' => BookingStatus::PENDING,
+            'Status' => BookingStatus::PENDING->value,
         ]);
 
         $this->assertTrue($result['can_delete']);
@@ -132,7 +132,7 @@ class BookingAccessControlTest extends UnitTestCase {
         $result = $this->service->can_delete([
             'StartDate' => '2026-04-11',
             'StartTime' => '09:00:00',
-            'Status' => BookingStatus::CONFIRMED,
+            'Status' => BookingStatus::CONFIRMED->value,
         ]);
 
         $this->assertFalse($result['can_delete']);
@@ -166,7 +166,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 55,
-            'Status' => BookingStatus::PENDING,
+            'Status' => BookingStatus::PENDING->value,
         ]);
 
         $this->assertFalse($result['can_edit']);
@@ -186,7 +186,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 56,
-            'Status' => BookingStatus::PENDING,
+            'Status' => BookingStatus::PENDING->value,
             'CustomerId' => 9,
             'OrganisationId' => 0,
         ]);
@@ -212,7 +212,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 57,
-            'Status' => BookingStatus::PENDING,
+            'Status' => BookingStatus::PENDING->value,
             'CustomerId' => 99,
             'OrganisationId' => 13,
         ]);
@@ -242,7 +242,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 58,
-            'Status' => BookingStatus::PENDING,
+            'Status' => BookingStatus::PENDING->value,
             'CustomerId' => 99,
             'OrganisationId' => 13,
         ]);
@@ -272,7 +272,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 59,
-            'Status' => BookingStatus::PENDING,
+            'Status' => BookingStatus::PENDING->value,
             'CustomerId' => 99,
             'OrganisationId' => 13,
         ]);
@@ -294,7 +294,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 60,
-            'Status' => BookingStatus::CONFIRMED,
+            'Status' => BookingStatus::CONFIRMED->value,
         ]);
 
         $this->assertTrue($result['can_edit']);
@@ -314,7 +314,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 61,
-            'Status' => BookingStatus::CONFIRMED,
+            'Status' => BookingStatus::CONFIRMED->value,
         ]);
 
         $this->assertFalse($result['can_edit']);
@@ -334,7 +334,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 62,
-            'Status' => BookingStatus::CANCELLED,
+            'Status' => BookingStatus::CANCELLED->value,
         ]);
 
         $this->assertFalse($result['can_edit']);
@@ -354,7 +354,7 @@ class BookingAccessControlTest extends UnitTestCase {
 
         $result = $this->service->can_edit([
             'Id' => 63,
-            'Status' => BookingStatus::COMPLETED,
+            'Status' => BookingStatus::COMPLETED->value,
         ]);
 
         $this->assertFalse($result['can_edit']);

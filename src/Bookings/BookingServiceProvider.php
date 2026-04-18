@@ -43,7 +43,6 @@ class BookingServiceProvider
         $container->singleton(PricingService::class);
 
         $container->singleton(BookingService::class);
-        $container->singleton(BookingStatus::class);
         $container->singleton(BookingController::class);
         $container->singleton(BookingAutoConfirm::class);
         $container->singleton(BookingAddonSyncService::class);

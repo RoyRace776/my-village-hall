@@ -2,6 +2,7 @@
 namespace MYVH\Calendar;
 
 use MYVH\Availability\AvailabilityService;
+use MYVH\Bookings\Booking;
 use MYVH\Bookings\BookingService;
 use MYVH\Rooms\RoomRepository;
 use MYVH\Rooms\RoomColour;
@@ -50,7 +51,7 @@ class CalendarService {
         $buffer_text     = (string) $this->get_setting_with_fallback('booking.buffer_text', 'booking.buffers.buffer_text', 'Buffer');
 
         foreach ((array) $bookings as $booking) {
-            $room_id = isset($booking['RoomId']) ? (int) $booking['RoomId'] : 0;
+            $room_id = $booking->roomId();
             if (!$this->is_room_visible($room_id, $context, $viewer_scope)) {
                 continue;
             }
@@ -85,7 +86,11 @@ class CalendarService {
 
     public function get_public_feed_events($start, $end, $viewer_user_id = 0, $filters = [], $default_label = 'Private booking'): array {
         $context = $viewer_user_id > 0 ? 'portal' : 'public';
-        $status_filters = [BookingStatus::CONFIRMED, BookingStatus::PENDING, BookingStatus::COMPLETED];
+        $status_filters = [
+            BookingStatus::CONFIRMED->value,
+            BookingStatus::PENDING->value,
+            BookingStatus::COMPLETED->value,
+        ];
         $filters = wp_parse_args($filters, [
             'room_id' => 0,
             'venue_id' => 0,
@@ -105,11 +110,12 @@ class CalendarService {
         $events = [];
 
         foreach ((array) $bookings as $booking) {
-            $room_id = isset($booking['RoomId']) ? (int) $booking['RoomId'] : 0;
+            $booking_record = $this->normalizeBookingRecord($booking);
+            $room_id = $booking->roomId();
             if (!$this->is_room_visible($room_id, $context, $viewer_scope)) {
                 continue;
             }
-            $event = $this->map_booking_to_public_feed_event($booking, $room_meta, $viewer_scope, $default_label, $context);
+            $event = $this->map_booking_to_public_feed_event($booking, $booking_record, $room_meta, $viewer_scope, $default_label, $context);
 
             [$eff_setup, $eff_tidy] = $this->compute_effective_buffers(
                 $booking,
@@ -158,7 +164,7 @@ class CalendarService {
             'end_date' => $end_date,
             'end_time' => $end_time,
             'description' => sanitize_text_field($request['text'] ?? ''),
-            'status' => sanitize_text_field($request['status'] ?? BookingStatus::PENDING),
+            'status' => sanitize_text_field($request['status'] ?? BookingStatus::PENDING->value),
             'room_id' => intval($request['room_id'] ?? 0),
             'customer_id' => intval($request['customer_id'] ?? 0),
             'organisation_id' => intval($request['organisation_id'] ?? 0),
@@ -200,7 +206,7 @@ class CalendarService {
 
                 $data['customer_id'] = (int) $portal_customer['Id'];
                 $data['organisation_id'] = $selected_org_id;
-                $data['status'] = BookingStatus::PENDING;
+                $data['status'] = BookingStatus::PENDING->value;
             }
         }
 
@@ -228,7 +234,9 @@ class CalendarService {
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
         $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
         $existing_booking = $booking_id > 0 ? $this->booking_service->get_by_id($booking_id) : null;
-        $current_status = sanitize_text_field((string)($existing_booking['Status'] ?? BookingStatus::PENDING));
+        $current_status = $existing_booking instanceof Booking
+            ? $existing_booking->status()->value
+            : BookingStatus::PENDING->value;
         $addons = $this->normalize_addons($request['addons'] ?? []);
 
         $data = [
@@ -301,6 +309,31 @@ class CalendarService {
         return $room_meta;
     }
 
+    private function normalizeBookingRecord($booking): array {
+        if (!$booking instanceof Booking) {
+            return (array) $booking;
+        }
+
+        $record = [
+            'Id' => $booking->id(),
+            'CustomerId' => $booking->customerId(),
+            'RoomId' => $booking->roomId(),
+            'OrganisationId' => $booking->organisationId(),
+            'Status' => $booking->status()->value,
+            'StartDate' => $booking->start()->format('Y-m-d'),
+            'StartTime' => $booking->start()->format('H:i:s'),
+            'EndDate' => $booking->end()->format('Y-m-d'),
+            'EndTime' => $booking->end()->format('H:i:s'),
+        ];
+
+        $details = $this->booking_service->get_by_id_with_details($booking->id());
+        if (!is_array($details)) {
+            return $record;
+        }
+
+        return $details + $record;
+    }
+
     /**
      * Returns true if the room is visible to the viewer in the given context.
      * Private rooms are only visible to admins and client admins.
@@ -368,17 +401,18 @@ class CalendarService {
         return $scope;
     }
 
-    private function map_booking_to_event($booking, $context, $room_meta, $viewer_scope, $default_label) {
-        $room_id_raw = isset($booking['RoomId']) ? (string) $booking['RoomId'] : '';
+    private function map_booking_to_event(Booking $booking, $context, $room_meta, $viewer_scope, $default_label) {
+        $booking_record = $this->normalizeBookingRecord($booking);
+        $room_id_raw = (string) $booking->roomId();
         $room_id = (int) $room_id_raw;
         $resource_id = $room_id_raw !== '' ? $room_id_raw : (string) $room_id;
-        $status = strtolower( sanitize_text_field( (string) ( $booking['Status'] ?? '' ) ) );
+        $status = strtolower( sanitize_text_field( $booking->status()->value ) );
         $room_name = $room_meta[$room_id]['name'] ?? '';
         $room_colour = $room_meta[$room_id]['colour'] ?? RoomColour::fallback($room_id);
-        $description = isset($booking['Description']) ? (string) $booking['Description'] : '';
-        $is_public = !empty($booking['Public']);
-        $booking_customer_id = isset($booking['CustomerId']) ? (int) $booking['CustomerId'] : 0;
-        $organisation_id = isset($booking['OrganisationId']) ? (int) $booking['OrganisationId'] : 0;
+        $description = isset($booking_record['Description']) ? (string) $booking_record['Description'] : '';
+        $is_public = !empty($booking_record['Public']);
+        $booking_customer_id = $booking->customerId();
+        $organisation_id = $booking->organisationId();
         $can_view_private = $this->can_view_private_booking(
             $context,
             $is_public,
@@ -396,10 +430,10 @@ class CalendarService {
         }
 
         $event = [
-            'id' => $booking['Id'],
+            'id' => $booking->id(),
             'text' => $display_text,
-            'start' => $booking['StartDate'] . 'T' . $booking['StartTime'],
-            'end' => $booking['EndDate'] . 'T' . $booking['EndTime'],
+            'start' => $booking->start()->format('Y-m-d\TH:i:s'),
+            'end' => $booking->end()->format('Y-m-d\TH:i:s'),
             'resource' => $resource_id,
             'tags' => [
                 'roomId' => $resource_id,
@@ -428,26 +462,26 @@ class CalendarService {
      * Setup is waived (0) when the booking starts exactly at the room's opening
      * time; tidy is waived when it ends exactly at closing time.
      *
-     * @param array $booking          Raw booking row (StartDate, StartTime, EndDate, EndTime).
+    * @param Booking $booking        Booking entity.
      * @param array $room_meta_entry  Room metadata entry (opening_time, closing_time).
      * @param int   $setup_minutes    Configured setup minutes from settings.
      * @param int   $tidy_minutes     Configured tidy minutes from settings.
      * @return array{int, int}        [effective_setup, effective_tidy].
      */
-    private function compute_effective_buffers( array $booking, int $room_id, array $room_meta_entry, int $setup_minutes, int $tidy_minutes ): array {
+    private function compute_effective_buffers( Booking $booking, int $room_id, array $room_meta_entry, int $setup_minutes, int $tidy_minutes ): array {
         if ( $setup_minutes <= 0 && $tidy_minutes <= 0 ) {
             return [ 0, 0 ];
         }
 
-        $booking_start = date( 'H:i:s', strtotime( $booking['StartDate'] . ' ' . $booking['StartTime'] ) );
-        $booking_end   = date( 'H:i:s', strtotime( $booking['EndDate']   . ' ' . $booking['EndTime']   ) );
+        $booking_start = $booking->start()->format('H:i:s');
+        $booking_end   = $booking->end()->format('H:i:s');
 
         $room_open = $this->normalize_time((string) ($room_meta_entry['opening_time'] ?? '00:00:00')) ?? '00:00:00';
         $room_close = $this->normalize_time((string) ($room_meta_entry['closing_time'] ?? '23:59:59')) ?? '23:59:59';
 
         if ($room_id > 0) {
-            $start_date = sanitize_text_field((string) ($booking['StartDate'] ?? ''));
-            $end_date = sanitize_text_field((string) ($booking['EndDate'] ?? $start_date));
+            $start_date = sanitize_text_field($booking->start()->format('Y-m-d'));
+            $end_date = sanitize_text_field($booking->end()->format('Y-m-d'));
 
             if ($start_date !== '') {
                 $start_day_hours = $this->availability_service->get_effective_room_hours_for_date($room_id, $start_date);
@@ -504,17 +538,17 @@ class CalendarService {
      * (merged display mode). Stores actual booking times in tags so tooltips
      * can still show the real booking time range.
      */
-    private function apply_merged_buffers( array $event, array $booking, int $eff_setup, int $eff_tidy ): array {
-        $actual_start = $booking['StartDate'] . 'T' . $booking['StartTime'];
-        $actual_end   = $booking['EndDate']   . 'T' . $booking['EndTime'];
+    private function apply_merged_buffers( array $event, Booking $booking, int $eff_setup, int $eff_tidy ): array {
+        $actual_start = $booking->start()->format('Y-m-d\TH:i:s');
+        $actual_end   = $booking->end()->format('Y-m-d\TH:i:s');
 
         if ( $eff_setup > 0 ) {
-            $ts = strtotime( $actual_start ) - $eff_setup * 60;
+            $ts = $booking->start()->getTimestamp() - $eff_setup * 60;
             $event['start'] = date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts );
         }
 
         if ( $eff_tidy > 0 ) {
-            $ts = strtotime( $actual_end ) + $eff_tidy * 60;
+            $ts = $booking->end()->getTimestamp() + $eff_tidy * 60;
             $event['end'] = date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts );
         }
 
@@ -536,20 +570,21 @@ class CalendarService {
      *
      * @return array  Zero, one, or two synthetic event arrays.
      */
-    private function generate_separate_buffer_events( array $booking, array $booking_event, int $eff_setup, int $eff_tidy, string $buffer_text, array $room_meta_entry ): array {
+    private function generate_separate_buffer_events( Booking $booking, array $booking_event, int $eff_setup, int $eff_tidy, string $buffer_text, array $room_meta_entry ): array {
         $events     = [];
         $resource   = $booking_event['resource'] ?? '';
         $room_name  = $room_meta_entry['name']   ?? '';
         $room_colour = $room_meta_entry['colour'] ?? '';
         $safe_text  = sanitize_text_field( $buffer_text );
 
-        $actual_start = $booking['StartDate'] . 'T' . $booking['StartTime'];
-        $actual_end   = $booking['EndDate']   . 'T' . $booking['EndTime'];
+        $actual_start = $booking->start()->format('Y-m-d\TH:i:s');
+        $actual_end   = $booking->end()->format('Y-m-d\TH:i:s');
+        $booking_id = $booking->id();
 
         if ( $eff_setup > 0 ) {
-            $ts = strtotime( $actual_start ) - $eff_setup * 60;
+            $ts = $booking->start()->getTimestamp() - $eff_setup * 60;
             $events[] = [
-                'id'       => 'buffer_setup_' . ( $booking['Id'] ?? 0 ),
+                'id'       => 'buffer_setup_' . $booking_id,
                 'text'     => $safe_text,
                 'start'    => date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts ),
                 'end'      => $actual_start,
@@ -566,9 +601,9 @@ class CalendarService {
         }
 
         if ( $eff_tidy > 0 ) {
-            $ts = strtotime( $actual_end ) + $eff_tidy * 60;
+            $ts = $booking->end()->getTimestamp() + $eff_tidy * 60;
             $events[] = [
-                'id'       => 'buffer_tidy_' . ( $booking['Id'] ?? 0 ),
+                'id'       => 'buffer_tidy_' . $booking_id,
                 'text'     => $safe_text,
                 'start'    => $actual_end,
                 'end'      => date( 'Y-m-d', $ts ) . 'T' . date( 'H:i:s', $ts ),
@@ -623,16 +658,16 @@ class CalendarService {
             && $booking_customer_id === (int) $viewer_scope['customer_id'];
     }
 
-    private function map_booking_to_public_feed_event($booking, $room_meta, $viewer_scope, $default_label, $context) {
-        $room_id = isset($booking['RoomId']) ? (int) $booking['RoomId'] : 0;
-        $status = strtolower( sanitize_text_field( (string) ( $booking['Status'] ?? '' ) ) );
-        $room_name = $room_meta[$room_id]['name'] ?? (string) ($booking['RoomName'] ?? '');
-        $venue_name = $room_meta[$room_id]['venue'] ?? (string) ($booking['VenueName'] ?? '');
+    private function map_booking_to_public_feed_event(Booking $booking, array $booking_details, $room_meta, $viewer_scope, $default_label, $context) {
+        $room_id = $booking->roomId();
+        $status = strtolower( sanitize_text_field( $booking->status()->value ) );
+        $room_name = $room_meta[$room_id]['name'] ?? (string) ($booking_details['RoomName'] ?? '');
+        $venue_name = $room_meta[$room_id]['venue'] ?? (string) ($booking_details['VenueName'] ?? '');
         $room_colour = $room_meta[$room_id]['colour'] ?? RoomColour::fallback($room_id);
-        $description = isset($booking['Description']) ? (string) $booking['Description'] : '';
-        $is_public = !empty($booking['Public']) || !empty($booking['IsPublic']);
-        $booking_customer_id = isset($booking['CustomerId']) ? (int) $booking['CustomerId'] : 0;
-        $organisation_id = isset($booking['OrganisationId']) ? (int) $booking['OrganisationId'] : 0;
+        $description = isset($booking_details['Description']) ? (string) $booking_details['Description'] : '';
+        $is_public = !empty($booking_details['Public']) || !empty($booking_details['IsPublic']);
+        $booking_customer_id = $booking->customerId();
+        $organisation_id = $booking->organisationId();
         $can_view_private = $this->can_view_private_booking(
             $context,
             $is_public,
@@ -647,9 +682,9 @@ class CalendarService {
         }
 
         return [
-            'id' => (int) $booking['Id'],
-            'start' => $booking['StartDate'] . 'T' . $booking['StartTime'],
-            'end' => $booking['EndDate'] . 'T' . $booking['EndTime'],
+            'id' => $booking->id(),
+            'start' => $booking->start()->format('Y-m-d\TH:i:s'),
+            'end' => $booking->end()->format('Y-m-d\TH:i:s'),
             'text' => sanitize_text_field((string) $text),
             'resource' => $room_id,
             'tags' => [

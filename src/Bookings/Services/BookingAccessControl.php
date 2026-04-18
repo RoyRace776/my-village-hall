@@ -73,7 +73,7 @@ class BookingAccessControl
         $min_notice_days = (int) ceil($min_notice_hours / 24);
 
         // Pending bookings can always be deleted, regardless of date.
-        if ($status === BookingStatus::PENDING) {
+        if ($status === BookingStatus::PENDING->value) {
             return [
                 'can_delete' => true,
                 'reason' => '',
@@ -91,7 +91,7 @@ class BookingAccessControl
             ];
         }
 
-        if ($status === BookingStatus::CONFIRMED || $status === strtolower(BookingStatus::CONFIRMED)) {
+        if ($status === BookingStatus::CONFIRMED->value) {
             $threshold_ts = $now_ts + ($min_notice_hours * 3600);
 
             if ($start_ts > $threshold_ts) {
@@ -137,14 +137,14 @@ class BookingAccessControl
             ];
         }
 
-        if ($status === BookingStatus::CONFIRMED || $status === BookingStatus::CANCELLED) {
+        if ($status === BookingStatus::CONFIRMED->value || $status === BookingStatus::CANCELLED->value) {
             return [
                 'can_edit' => $is_client_admin,
                 'reason' => $is_client_admin ? '' : 'Only client administrators can edit confirmed or cancelled bookings.',
             ];
         }
 
-        if ($status !== BookingStatus::PENDING) {
+        if ($status !== BookingStatus::PENDING->value) {
             return [
                 'can_edit' => false,
                 'reason' => 'This booking cannot be edited.',

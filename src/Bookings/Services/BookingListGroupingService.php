@@ -65,7 +65,7 @@ class BookingListGroupingService
     private function find_next_booking(array $bookings, string $today): ?array
     {
         foreach (array_reverse($bookings) as $booking) {
-            if ($booking['StartDate'] >= $today && $booking['Status'] !== BookingStatus::CANCELLED) {
+            if ($booking['StartDate'] >= $today && $booking['Status'] !== BookingStatus::CANCELLED->value) {
                 return $booking;
             }
         }
@@ -78,17 +78,17 @@ class BookingListGroupingService
         $statuses = array_column($members, 'Status');
 
         foreach ($statuses as $status) {
-            if ($status === BookingStatus::CONFIRMED) {
-                return BookingStatus::CONFIRMED;
+            if ($status === BookingStatus::CONFIRMED->value) {
+                return BookingStatus::CONFIRMED->value;
             }
         }
 
         foreach ($statuses as $status) {
-            if ($status === BookingStatus::PENDING) {
-                return BookingStatus::PENDING;
+            if ($status === BookingStatus::PENDING->value) {
+                return BookingStatus::PENDING->value;
             }
         }
 
-        return $statuses[0] ?? BookingStatus::COMPLETED;
+        return $statuses[0] ?? BookingStatus::COMPLETED->value;
     }
 }

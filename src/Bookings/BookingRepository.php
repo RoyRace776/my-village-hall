@@ -33,7 +33,7 @@ class BookingRepository extends RepositoryBase
             throw new \RuntimeException("Booking {$id} not found.");
         }
 
-        return Booking::fromArray($row);
+        return $this->hydrateBooking($row);
     }
 
     public function getAll(): array
@@ -44,7 +44,7 @@ class BookingRepository extends RepositoryBase
         $bookings = [];
         $bookings = array_map(
             function (array $row): Booking {
-                return Booking::fromArray($row);
+                return $this->hydrateBooking($row);
             },
             $rows
         );
@@ -151,10 +151,10 @@ class BookingRepository extends RepositoryBase
             "UPDATE {$this->table_name}
              SET Status = %s
              WHERE RecurringPatternId = %d AND StartDate >= %s AND Status != %s",
-                BookingStatus::CANCELLED,
+                BookingStatus::CANCELLED->value,
                 $pattern_id,
                 date('Y-m-d'),
-                BookingStatus::CANCELLED
+                BookingStatus::CANCELLED->value
         ));
     }
 
@@ -205,7 +205,7 @@ class BookingRepository extends RepositoryBase
              AND CONCAT(StartDate, ' ', StartTime) < %s
              AND CONCAT(EndDate, ' ', EndTime) > %s",
             $room_id,
-            BookingStatus::CANCELLED,
+            BookingStatus::CANCELLED->value,
             $new_end,
             $new_start
         );
@@ -299,7 +299,7 @@ class BookingRepository extends RepositoryBase
             AND CONCAT(EndDate, ' ', EndTime) > %s
             LIMIT 1",
             $room_id,
-            BookingStatus::CANCELLED,
+            BookingStatus::CANCELLED->value,
             $new_end,
             $new_start
         );
@@ -354,7 +354,14 @@ class BookingRepository extends RepositoryBase
 
         $sql = $this->wpdb->prepare($sql, ...$params);
 
-        return $this->wpdb->get_results($sql, ARRAY_A);
+        $rows = $this->wpdb->get_results($sql, ARRAY_A) ?? [];
+
+        return array_map(
+            function (array $row): Booking {
+                return $this->hydrateBooking($row);
+            },
+            $rows
+        );
     }
 
     public function get_upcoming_bookings($customer_id): array {
@@ -634,7 +641,7 @@ class BookingRepository extends RepositoryBase
                AND CONCAT(StartDate, ' ', StartTime) < %s
                AND CONCAT(EndDate,   ' ', EndTime)   > %s",
             $room_id,
-            BookingStatus::CANCELLED,
+            BookingStatus::CANCELLED->value,
             $window_end,
             $window_start
         );
@@ -644,5 +651,43 @@ class BookingRepository extends RepositoryBase
         }
 
         return (int) $this->wpdb->get_var( $sql ) > 0;
+    }
+
+    private function hydrateBooking(array $row): Booking
+    {
+        return Booking::fromDatabaseRow([
+            'Id' => (int) ($row['Id'] ?? 0),
+            'CustomerId' => (int) ($row['CustomerId'] ?? 0),
+            'RoomId' => (int) ($row['RoomId'] ?? 0),
+            'OrganisationId' => (int) ($row['OrganisationId'] ?? 0),
+            'Status' => BookingStatus::from((string) ($row['Status'] ?? '')),
+            'Start' => $this->buildDateTime(
+                $row['Start'] ?? null,
+                $row['StartDate'] ?? null,
+                $row['StartTime'] ?? null
+            ),
+            'End' => $this->buildDateTime(
+                $row['End'] ?? null,
+                $row['EndDate'] ?? null,
+                $row['EndTime'] ?? null
+            ),
+            'AdminEmail' => isset($row['AdminEmail']) ? (string) $row['AdminEmail'] : null,
+        ]);
+    }
+
+    private function buildDateTime(mixed $dateTime, mixed $date, mixed $time): \DateTimeImmutable
+    {
+        if ($dateTime instanceof \DateTimeImmutable) {
+            return $dateTime;
+        }
+
+        if (is_string($dateTime) && $dateTime !== '') {
+            return new \DateTimeImmutable($dateTime);
+        }
+
+        $resolvedDate = (string) ($date ?? '');
+        $resolvedTime = (string) ($time ?? '00:00:00');
+
+        return new \DateTimeImmutable(trim($resolvedDate . ' ' . $resolvedTime));
     }
 }

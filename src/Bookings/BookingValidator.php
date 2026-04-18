@@ -16,9 +16,9 @@ class BookingValidator
 {
     private const BOOKING_INTERVAL_MINUTES = 15;
     private const STATUSES_REQUIRING_SPACE_ON_REACTIVATION = [
-        BookingStatus::PENDING,
-        BookingStatus::CONFIRMED,
-        BookingStatus::COMPLETED,
+        BookingStatus::PENDING->value,
+        BookingStatus::CONFIRMED->value,
+        BookingStatus::COMPLETED->value,
     ];
 
     private $booking_repo;
@@ -172,7 +172,7 @@ class BookingValidator
             $previous_status = strtolower(sanitize_text_field((string) ($existing_booking['Status'] ?? '')));
         }
 
-        $is_cancelled_reactivation = $previous_status === BookingStatus::CANCELLED
+        $is_cancelled_reactivation = $previous_status === BookingStatus::CANCELLED->value
             && in_array($requested_status, self::STATUSES_REQUIRING_SPACE_ON_REACTIVATION, true);
 
         $is_available = $this->availability->room_is_available(

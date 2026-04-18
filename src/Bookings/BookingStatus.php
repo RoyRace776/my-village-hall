@@ -2,12 +2,10 @@
 
 namespace MYVH\Bookings;
 
-
-class BookingStatus
+enum BookingStatus: string
 {
-    const PENDING = 'pending';
-    const CONFIRMED = 'confirmed';
-    const CANCELLED = 'cancelled';
-    const COMPLETED = 'completed';
-
+    case PENDING = 'pending';
+    case CONFIRMED = 'confirmed';
+    case CANCELLED = 'cancelled';
+    case COMPLETED = 'completed';
 }
