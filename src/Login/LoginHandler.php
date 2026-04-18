@@ -69,7 +69,7 @@ class LoginHandler {
             return;
         }
 
-        wp_redirect(home_url('/dashboard'));
+        wp_redirect(home_url('/portal'));
         exit;
     }
 
