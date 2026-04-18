@@ -305,6 +305,7 @@ usort($groups, function ($a, $b) use ($today) {
                                 ?>
                                 <tr class="myvh-bookings-table-row myvh-recurring-child <?php echo $is_past ? 'is-past' : ''; ?>"
                                     data-group="<?php echo esc_attr($group_id); ?>"
+                                    data-booking-id="<?php echo intval($b['Id'] ?? 0); ?>"
                                     data-status="<?php echo esc_attr(strtolower($b['Status'] ?? '')); ?>"
                                     data-room="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                     data-customer="<?php echo esc_attr($b['CustomerId'] ?? ''); ?>"
@@ -364,6 +365,7 @@ usort($groups, function ($a, $b) use ($today) {
                             $can_delete = $can_delete_booking($b);
                             ?>
                             <tr class="myvh-bookings-table-row <?php echo $is_past ? 'is-past' : ''; ?>"
+                                data-booking-id="<?php echo intval($b['Id'] ?? 0); ?>"
                                 data-status="<?php echo esc_attr(strtolower($b['Status'] ?? '')); ?>"
                                 data-room="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                 data-customer="<?php echo esc_attr($b['CustomerId'] ?? ''); ?>"

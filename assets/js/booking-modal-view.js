@@ -5,6 +5,15 @@ window.BookingModalView = (function() {
     let currentBookingId = 0;
     let currentCanEdit = false;
 
+    function portalAlert(message) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
+            return window.MyvhPortalDialog.alert(message);
+        }
+
+        window.alert(message);
+        return Promise.resolve(true);
+    }
+
     /**
      * Initialize the booking modal with configuration and bind events.
      * @param {object} userConfig - Configuration overrides and hooks
@@ -167,7 +176,7 @@ window.BookingModalView = (function() {
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Failed to load booking');
+                    portalAlert('Failed to load booking');
                     close();
                 })
                 .finally(() => {

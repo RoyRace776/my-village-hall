@@ -37,6 +37,7 @@ class PortalShortcode implements ShortcodeInterface
             'ajax_url'      => admin_url( 'admin-ajax.php' ),
             'nonce'         => wp_create_nonce( 'myvh_portal' ),
             'isClientAdmin' => $portal_data['is_client_admin'] ? 1 : 0,
+            'site_name'     => get_bloginfo( 'name' ),
         ] );
 
         // myvhCal is consumed by calendar-core.js via calendar-portal.js
@@ -44,6 +45,7 @@ class PortalShortcode implements ShortcodeInterface
             'ajax_url'              => admin_url( 'admin-ajax.php' ),
             'nonce'                 => wp_create_nonce( 'myvh_calendar' ),
             'portalNonce'           => wp_create_nonce( 'myvh_portal' ),
+            'site_name'             => get_bloginfo( 'name' ),
             'headerDateFormat'      => myvh_setting( 'calendar.calendar_date_format', 'd MMM' ),
             'startOfWeek'           => (int) get_option( 'start_of_week', 1 ),
             'maxBookingDaysAhead'   => (int) myvh_setting( 'booking.max_booking_days', 365 ),

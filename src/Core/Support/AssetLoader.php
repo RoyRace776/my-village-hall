@@ -269,9 +269,17 @@ class AssetLoader {
         );
 
         wp_enqueue_script(
+            'myvh-portal-dialog',
+            MYVH_PLUGIN_URL . 'assets/js/portal-dialog.js',
+            [],
+            self::asset_version( 'assets/js/portal-dialog.js' ),
+            true
+        );
+
+        wp_enqueue_script(
             'myvh-booking-modal-create',
             MYVH_PLUGIN_URL . 'assets/js/booking-modal-create.js',
-            ['myvh-calendar-core', 'myvh-flatpickr-init'], // optional but safe
+            ['myvh-calendar-core', 'myvh-flatpickr-init', 'myvh-portal-dialog'], // optional but safe
             self::asset_version( 'assets/js/booking-modal-create.js' ),
             true
         );
@@ -279,7 +287,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-booking-modal-view',
             MYVH_PLUGIN_URL . 'assets/js/booking-modal-view.js',
-            ['myvh-calendar-core'], // optional but safe
+            ['myvh-calendar-core', 'myvh-portal-dialog'], // optional but safe
             self::asset_version( 'assets/js/booking-modal-view.js' ),
             true
         );
@@ -295,7 +303,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-calendar-portal',
             MYVH_PLUGIN_URL . 'assets/js/calendar-portal.js',
-            [ 'myvh-booking-modal-create', 'myvh-booking-modal-view', 'myvh-portal-ajax' ], // critical dependencies
+            [ 'myvh-booking-modal-create', 'myvh-booking-modal-view', 'myvh-portal-ajax', 'myvh-portal-dialog' ], // critical dependencies
             self::asset_version( 'assets/js/calendar-portal.js' ),
             true
         );
@@ -303,7 +311,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-bookings',
             MYVH_PLUGIN_URL . 'assets/js/bookings.js',
-            [ 'jquery' ],
+            [ 'jquery', 'myvh-portal-dialog' ],
             self::asset_version( 'assets/js/bookings.js' ),
             true
         );
@@ -319,7 +327,7 @@ class AssetLoader {
         wp_enqueue_script(
             'myvh-portal-email',
             MYVH_PLUGIN_URL . 'assets/js/portal-email.js',
-            [ 'myvh-portal-ajax' ],
+            [ 'myvh-portal-ajax', 'myvh-portal-dialog' ],
             self::asset_version( 'assets/js/portal-email.js' ),
             true
         );

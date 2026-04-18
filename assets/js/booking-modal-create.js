@@ -6,6 +6,15 @@ window.BookingModalCreate = (function() {
     let customersCache = null;
     const organisationsCache = {};
 
+    function portalAlert(message) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
+            return window.MyvhPortalDialog.alert(message);
+        }
+
+        window.alert(message);
+        return Promise.resolve(true);
+    }
+
     /**
      * Initialize the booking modal with configuration and bind events.
      * @param {object} userConfig - Configuration overrides and hooks
@@ -199,7 +208,7 @@ window.BookingModalCreate = (function() {
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Failed to load booking');
+                    portalAlert('Failed to load booking');
                 })
                 .finally(() => {
                     setLoading(false);
@@ -304,7 +313,7 @@ window.BookingModalCreate = (function() {
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Failed to load booking');
+                    portalAlert('Failed to load booking');
                     close();
                 })
                 .finally(() => {
@@ -1037,7 +1046,7 @@ window.BookingModalCreate = (function() {
         .then(res => {
 
             if (!res.success) {
-                alert(resolveErrorMessage(res.data, "Failed to save booking"));
+                portalAlert(resolveErrorMessage(res.data, "Failed to save booking"));
                 return;
             }
 
@@ -1046,7 +1055,7 @@ window.BookingModalCreate = (function() {
         })
         .catch(err => {
             console.error(err);
-            alert("Unexpected error saving booking");
+            portalAlert("Unexpected error saving booking");
         })
         .finally(() => {
             setLoading(false);
@@ -1093,12 +1102,12 @@ window.BookingModalCreate = (function() {
             }
 
             if (!String(formData.get("customer_id") || "").trim()) {
-                alert("Please select a customer before saving this booking.");
+                portalAlert("Please select a customer before saving this booking.");
                 return null;
             }
 
             if (!String(formData.get("organisation_id") || "").trim()) {
-                alert("Please select an organisation before saving this booking.");
+                portalAlert("Please select an organisation before saving this booking.");
                 return null;
             }
         }

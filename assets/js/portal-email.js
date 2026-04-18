@@ -1,4 +1,12 @@
 window.MyvhPortalEmail = (function() {
+    function portalConfirm(message) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.confirm === 'function') {
+            return window.MyvhPortalDialog.confirm(message);
+        }
+
+        return Promise.resolve(window.confirm(message));
+    }
+
     function showMessage(target, text, isError) {
         if (!target) {
             return;
@@ -44,16 +52,17 @@ window.MyvhPortalEmail = (function() {
             }
 
             const confirmMessage = form.getAttribute('data-confirm') || '';
-            if (confirmMessage && !window.confirm(confirmMessage)) {
-                return;
-            }
-
             const messageTargetId = form.getAttribute('data-message-target') || '';
             const message = messageTargetId ? document.getElementById(messageTargetId) : null;
 
-            showMessage(message, 'Resetting...', false);
+            portalConfirm(confirmMessage || 'Reset this template to default?').then(function(confirmed) {
+                if (!confirmed) {
+                    return;
+                }
 
-            window.MyvhPortalAjax.post('myvh_reset_email_template', { template: slug }, { scope: 'portal' })
+                showMessage(message, 'Resetting...', false);
+
+                return window.MyvhPortalAjax.post('myvh_reset_email_template', { template: slug }, { scope: 'portal' })
                 .then(function(res) {
                     if (!res.success) {
                         showMessage(message, 'Failed to reset template', true);
@@ -66,6 +75,7 @@ window.MyvhPortalEmail = (function() {
                 .catch(function() {
                     showMessage(message, 'Unexpected error while resetting template', true);
                 });
+            });
         });
     }
 
@@ -245,13 +255,14 @@ window.MyvhPortalEmail = (function() {
                     return;
                 }
 
-                if (!window.confirm('Reset this template to default?')) {
-                    return;
-                }
+                portalConfirm('Reset this template to default?').then(function(confirmed) {
+                    if (!confirmed) {
+                        return;
+                    }
 
-                showMessage(message, 'Resetting...', false);
+                    showMessage(message, 'Resetting...', false);
 
-                window.MyvhPortalAjax.post('myvh_reset_email_template', { template: slug }, { scope: 'portal' })
+                    return window.MyvhPortalAjax.post('myvh_reset_email_template', { template: slug }, { scope: 'portal' })
                     .then(function(res) {
                         if (!res.success) {
                             showMessage(message, 'Failed to reset template', true);
@@ -264,6 +275,7 @@ window.MyvhPortalEmail = (function() {
                     .catch(function() {
                         showMessage(message, 'Unexpected error while resetting template', true);
                     });
+                });
             });
         }
 

@@ -30,6 +30,23 @@ var Calendar = (function() {
                 .replace(/\b\w/g, function(match) { return match.toUpperCase(); });
         }
 
+        function portalAlert(message) {
+            if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
+                return window.MyvhPortalDialog.alert(message);
+            }
+
+            window.alert(message);
+            return Promise.resolve(true);
+        }
+
+        function portalConfirm(message) {
+            if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.confirm === 'function') {
+                return window.MyvhPortalDialog.confirm(message);
+            }
+
+            return Promise.resolve(window.confirm(message));
+        }
+
         function createLegendItem(label, colour) {
             var item = document.createElement('span');
             item.className = 'myvh-calendar-key-item';
@@ -493,15 +510,17 @@ var Calendar = (function() {
                 return Promise.resolve(false);
             }
 
-            if (!window.confirm('Delete this booking? This action cannot be undone.')) {
-                return Promise.resolve(false);
-            }
+            return portalConfirm('Delete this booking? This action cannot be undone.')
+                .then(function(confirmed) {
+                    if (!confirmed) {
+                        return false;
+                    }
 
-            return window.MyvhPortalAjax.post(
-                'myvh_portal_delete_booking',
-                { booking_id: String(bookingId) },
-                { scope: 'portal' }
-            )
+                    return window.MyvhPortalAjax.post(
+                        'myvh_portal_delete_booking',
+                        { booking_id: String(bookingId) },
+                        { scope: 'portal' }
+                    )
                 .then(function(result) {
                     if (!result || !result.success) {
                         throw new Error(result && result.data && result.data.message ? result.data.message : (result && result.data) || 'Failed to delete booking');
@@ -517,8 +536,10 @@ var Calendar = (function() {
                     return true;
                 })
                 .catch(function(error) {
-                    window.alert(error && error.message ? error.message : 'Failed to delete booking');
-                    return false;
+                    return portalAlert(error && error.message ? error.message : 'Failed to delete booking').then(function() {
+                        return false;
+                    });
+                });
                 });
         }
 

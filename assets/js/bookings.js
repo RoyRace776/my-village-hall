@@ -17,6 +17,23 @@ var Bookings = (function() {
     var globalHandlersBound = false;
     var boundFilterRoot = null;
 
+    function portalAlert(message) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
+            return window.MyvhPortalDialog.alert(message);
+        }
+
+        window.alert(message);
+        return Promise.resolve(true);
+    }
+
+    function portalConfirm(message) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.confirm === 'function') {
+            return window.MyvhPortalDialog.confirm(message);
+        }
+
+        return Promise.resolve(window.confirm(message));
+    }
+
     /**
      * Filter bookings table rows by selected statuses.
      */
@@ -124,10 +141,103 @@ var Bookings = (function() {
                 return;
             }
 
-            if (!window.confirm('Cancel this booking?')) {
-                e.preventDefault();
+            e.preventDefault();
+
+            portalConfirm('Cancel this booking?').then(function(confirmed) {
+                if (!confirmed) {
+                    return;
+                }
+
+                if (cancelBtn.tagName === 'A' && cancelBtn.href) {
+                    window.location.href = cancelBtn.href;
+                    return;
+                }
+
+                if (cancelBtn.form) {
+                    cancelBtn.form.submit();
+                }
+            });
+        });
+
+        document.addEventListener('contextmenu', function(e) {
+            var statusChip = e.target.closest('.myvh-status-chip');
+            if (!statusChip) {
                 return;
             }
+
+            var row = statusChip.closest('tr.myvh-bookings-table-row');
+            if (!row || row.getAttribute('data-status') !== 'pending') {
+                return;
+            }
+
+            var bookingId = parseInt(row.getAttribute('data-booking-id') || '0', 10);
+            if (!bookingId || !window.MyvhPortalAjax) {
+                return;
+            }
+
+            e.preventDefault();
+
+            if (row.dataset.confirmingStatus === '1') {
+                return;
+            }
+
+            portalConfirm('Change this booking status from Pending to Confirmed?').then(function(confirmed) {
+                if (!confirmed) {
+                    return;
+                }
+
+                row.dataset.confirmingStatus = '1';
+
+                return window.MyvhPortalAjax.get(
+                    {
+                        action: 'myvh_portal_get_booking',
+                        booking_id: String(bookingId)
+                    },
+                    { scope: 'portal' }
+                )
+            .then(function(result) {
+                if (!result || !result.success || !result.data || !result.data.booking) {
+                    throw new Error('Unable to load booking details.');
+                }
+
+                var booking = result.data.booking;
+                var startDate = booking.StartDate || '';
+                var endDate = booking.EndDate || startDate;
+                var startTime = String(booking.StartTime || '00:00:00').slice(0, 8);
+                var endTime = String(booking.EndTime || '00:00:00').slice(0, 8);
+                var payload = {
+                    booking_id: String(bookingId),
+                    start: startDate + ' ' + startTime,
+                    end: endDate + ' ' + endTime,
+                    room_id: String(booking.RoomId || ''),
+                    customer_id: String(booking.CustomerId || ''),
+                    organisation_id: String(booking.OrganisationId || ''),
+                    text: String(booking.Description || ''),
+                    status: 'confirmed',
+                    public: String(parseInt(booking.Public || 0, 10) ? 1 : 0),
+                    no_invoice_required: String(parseInt(booking.NoInvoiceRequired || 0, 10) ? 1 : 0)
+                };
+
+                return window.MyvhPortalAjax.post('myvh_portal_update_booking_modal', payload, { scope: 'portal' });
+            })
+            .then(function(result) {
+                if (!result || !result.success) {
+                    var message = (result && result.data) ? String(result.data) : 'Could not update booking status.';
+                    throw new Error(message);
+                }
+
+                row.setAttribute('data-status', 'confirmed');
+                statusChip.className = statusChip.className.replace(/\bis-[^\s]+\b/g, '').trim() + ' is-confirmed';
+                statusChip.textContent = 'Confirmed';
+                applyAllFilters();
+            })
+            .catch(function(err) {
+                return portalAlert(err && err.message ? err.message : 'Could not update booking status.');
+            })
+            .finally(function() {
+                delete row.dataset.confirmingStatus;
+            });
+            });
         });
     }
 
