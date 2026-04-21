@@ -5,6 +5,7 @@ namespace MYVH\Tests\Unit\Bookings;
 use MYVH\Bookings\Booking;
 use MYVH\Bookings\BookingStatus;
 use MYVH\Tests\Unit\UnitTestCase;
+use Tests\Support\Factories\BookingFactory;
 
 class BookingTest extends UnitTestCase
 {
@@ -53,15 +54,6 @@ class BookingTest extends UnitTestCase
 
     private function createBooking(): Booking
     {
-        return Booking::fromDatabaseRow([
-            'Id' => 1,
-            'CustomerId' => 2,
-            'RoomId' => 3,
-            'OrganisationId' => 4,
-            'Status' => BookingStatus::PENDING,
-            'Start' => new \DateTimeImmutable('2026-06-01 09:00:00'),
-            'End' => new \DateTimeImmutable('2026-06-01 10:30:00'),
-            'AdminEmail' => 'admin@example.com',
-        ]);
+        return BookingFactory::make(['Status' => BookingStatus::PENDING]);
     }
 }

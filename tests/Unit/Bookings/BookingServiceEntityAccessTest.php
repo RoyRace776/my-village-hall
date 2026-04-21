@@ -4,8 +4,8 @@ namespace MYVH\Tests\Unit\Bookings;
 
 use MYVH\Bookings\Booking;
 use MYVH\Bookings\BookingService;
-use MYVH\Bookings\BookingStatus;
 use MYVH\Tests\Unit\UnitTestCase;
+use Tests\Support\Factories\BookingFactory;
 
 class BookingServiceEntityAccessTest extends UnitTestCase
 {
@@ -101,15 +101,6 @@ class BookingServiceEntityAccessTest extends UnitTestCase
 
     private function createBooking(): Booking
     {
-        return Booking::fromDatabaseRow([
-            'Id' => 10,
-            'CustomerId' => 2,
-            'RoomId' => 5,
-            'OrganisationId' => 0,
-            'Status' => BookingStatus::CONFIRMED,
-            'Start' => new \DateTimeImmutable('2026-06-01 09:00:00'),
-            'End' => new \DateTimeImmutable('2026-06-01 10:00:00'),
-            'AdminEmail' => null,
-        ]);
+        return BookingFactory::make(['Id' => 10, 'RoomId' => 5]);
     }
 }

@@ -3,6 +3,7 @@
 namespace MYVH\Tests\Unit\Services;
 
 use MYVH\Tests\Unit\UnitTestCase;
+use Tests\Support\Factories\RoomFactory;
 use WP_Error;
 
 class BookingValidatorTest extends UnitTestCase {
@@ -59,12 +60,12 @@ class BookingValidatorTest extends UnitTestCase {
             ->with(11)
             ->andReturnUsing(static fn(): array => ['Id' => 11]);
 
-        $room = [
+        $room = RoomFactory::make([
             'Id' => 5,
             'AllowMultiDayBookings' => 1,
             'OpeningTime' => '08:00:00',
             'ClosingTime' => '22:00:00',
-        ];
+        ]);
 
         $this->room_service->shouldReceive('get')
             ->once()

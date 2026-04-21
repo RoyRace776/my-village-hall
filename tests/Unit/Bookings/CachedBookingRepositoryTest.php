@@ -17,9 +17,9 @@ namespace MYVH\Tests\Unit\Bookings {
 use Brain\Monkey\Functions;
 use MYVH\Bookings\Booking;
 use MYVH\Bookings\BookingRepository;
-use MYVH\Bookings\BookingStatus;
 use MYVH\Bookings\CachedBookingRepository;
 use MYVH\Tests\Unit\UnitTestCase;
+use Tests\Support\Factories\BookingFactory;
 
 class CachedBookingRepositoryTest extends UnitTestCase
 {
@@ -191,14 +191,12 @@ class CachedBookingRepositoryTest extends UnitTestCase
 
     private function makeBooking(int $id): Booking
     {
-        return Booking::fromDatabaseRow([
+        return BookingFactory::make([
             'Id' => $id,
             'CustomerId' => 20,
             'RoomId' => 30,
-            'OrganisationId' => 0,
-            'Status' => BookingStatus::CONFIRMED,
-            'Start' => new \DateTimeImmutable('2026-06-01 09:00:00'),
-            'End' => new \DateTimeImmutable('2026-06-01 10:00:00'),
+            'Start' => '2026-06-01 09:00:00',
+            'End' => '2026-06-01 10:00:00',
         ]);
     }
 }

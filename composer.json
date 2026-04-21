@@ -10,7 +10,8 @@
         "phpunit/phpunit": "^10",
         "brain/monkey": "^2.6",
         "mockery/mockery": "^1.6",
-        "php-stubs/wordpress-stubs": "^6.9"
+        "php-stubs/wordpress-stubs": "^6.9",
+        "fakerphp/faker": "^1.24"
     },
     "autoload": {
         "psr-4": {
@@ -19,7 +20,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "MYVH\\Tests\\": "tests/"
+            "MYVH\\Tests\\": "tests/",
+            "Tests\\": "tests/"
         }
     },
     "scripts": {

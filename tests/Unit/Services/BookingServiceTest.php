@@ -3,6 +3,7 @@
 namespace MYVH\Tests\Unit\Services;
 
 use Mockery;
+use Tests\Support\Factories\RoomFactory;
 use MYVH\Tests\Unit\Unit_Test_Case;
 use WP_Error;
 use \MYVH\Tests\Unit\UnitTestCase;
@@ -230,13 +231,12 @@ class BookingServiceTest extends UnitTestCase {
      * Returns a minimal room record array.
      */
     private function minimal_room(array $overrides = []): array {
-        return array_merge([
-            'Id'                    => 5,
-            'CalcClosedHours'       => 1,
-            'OpeningTime'           => '08:00:00',
-            'ClosingTime'           => '22:00:00',
-            'AllowMultiDayBookings' => 0,
-        ], $overrides);
+        return RoomFactory::make(array_merge([
+            'Id'              => 5,
+            'CalcClosedHours' => 1,
+            'OpeningTime'     => '08:00:00',
+            'ClosingTime'     => '22:00:00',
+        ], $overrides));
     }
 
     private function recurring_booking_record(int $booking_id, array $overrides = []): array {

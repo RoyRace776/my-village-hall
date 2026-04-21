@@ -5,6 +5,7 @@ namespace MYVH\Tests\Unit\Services;
 use MYVH\Bookings\Booking;
 use MYVH\Bookings\BookingStatus;
 use MYVH\Tests\Unit\UnitTestCase;
+use Tests\Support\Factories\BookingFactory;
 
 class BookingQueryServiceTest extends UnitTestCase {
     private $booking_repo;
@@ -53,15 +54,12 @@ class BookingQueryServiceTest extends UnitTestCase {
 
     /** @test */
     public function get_between_delegates_to_repository(): void {
-        $booking = Booking::fromDatabaseRow([
+        $booking = BookingFactory::make([
             'Id' => 1,
             'CustomerId' => 2,
             'RoomId' => 5,
-            'OrganisationId' => 0,
-            'Status' => BookingStatus::CONFIRMED,
-            'Start' => new \DateTimeImmutable('2026-05-01 09:00:00'),
-            'End' => new \DateTimeImmutable('2026-05-01 10:00:00'),
-            'AdminEmail' => null,
+            'Start' => '2026-05-01 09:00:00',
+            'End' => '2026-05-01 10:00:00',
         ]);
 
         $this->booking_repo->shouldReceive('get_between')
