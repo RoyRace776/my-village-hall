@@ -1,30 +1,17 @@
 /**
  * Calendar Core Tests
  * Tests for the calendar-core.js module
+ * Imports from calendar-core-utils.js for testable functions
  */
 
+const {
+  normaliseHexColour,
+  getReadableTextColour,
+  getStatusColors,
+  applyEventStatusColors
+} = require('../../assets/js/utils/calendar-core-utils.js');
+
 describe('Calendar Core - Color Utilities', () => {
-  // We'll create local versions of the functions to test since they're in an IIFE
-
-  const normaliseHexColour = (value) => {
-    const text = String(value || "").trim().toLowerCase();
-    return /^#[0-9a-f]{6}$/.test(text) ? text : "";
-  };
-
-  const getReadableTextColour = (backgroundColour) => {
-    const hex = normaliseHexColour(backgroundColour);
-    if (!hex) {
-      return "#1f2933";
-    }
-
-    const red = parseInt(hex.slice(1, 3), 16);
-    const green = parseInt(hex.slice(3, 5), 16);
-    const blue = parseInt(hex.slice(5, 7), 16);
-    const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
-
-    return brightness < 145 ? "#ffffff" : "#1f2933";
-  };
-
   describe('normaliseHexColour', () => {
     test('should accept valid hex colors', () => {
       expect(normaliseHexColour('#2271b1')).toBe('#2271b1');
@@ -80,24 +67,6 @@ describe('Calendar Core - Color Utilities', () => {
   });
 
   describe('getStatusColors', () => {
-    const getStatusColors = (opts = {}) => {
-      const DEFAULT_STATUS_COLORS = {
-        confirmed: "#2271b1",
-        pending: "#f0a500",
-        cancelled: "#9aa0a6",
-        completed: "#2d8f45",
-      };
-
-      if (!opts.statusColors || typeof opts.statusColors !== "object") {
-        return DEFAULT_STATUS_COLORS;
-      }
-
-      return {
-        ...DEFAULT_STATUS_COLORS,
-        ...opts.statusColors,
-      };
-    };
-
     test('should return default colors when no options provided', () => {
       const colors = getStatusColors();
       expect(colors).toHaveProperty('confirmed', '#2271b1');
@@ -121,6 +90,34 @@ describe('Calendar Core - Color Utilities', () => {
       expect(colors1).toHaveProperty('confirmed');
       expect(colors2).toHaveProperty('confirmed');
       expect(colors3).toHaveProperty('confirmed');
+    });
+  });
+
+  describe('applyEventStatusColors', () => {
+    test('should apply status colors to events', () => {
+      const events = [
+        { id: 1, tags: { status: 'confirmed' } },
+        { id: 2, tags: { status: 'pending' } }
+      ];
+
+      const result = applyEventStatusColors(events, getStatusColors());
+
+      expect(result[0].barColor).toBe('#2271b1');
+      expect(result[1].barColor).toBe('#f0a500');
+    });
+
+    test('should handle buffer events', () => {
+      const events = [{ id: 1, tags: { isBuffer: true } }];
+      const result = applyEventStatusColors(events, getStatusColors());
+
+      expect(result[0].moveDisabled).toBe(true);
+      expect(result[0].resizeDisabled).toBe(true);
+      expect(result[0].clickDisabled).toBe(true);
+    });
+
+    test('should handle empty event array', () => {
+      const result = applyEventStatusColors([], getStatusColors());
+      expect(result).toEqual([]);
     });
   });
 });

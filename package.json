@@ -24,6 +24,8 @@
   "homepage": "https://github.com/RoyRace776/my-village-hall#readme",
   "devDependencies": {
     "@babel/preset-env": "^7.29.2",
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0",
     "babel-jest": "^30.3.0",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0"
