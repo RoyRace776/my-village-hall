@@ -437,10 +437,49 @@ var Calendar = (function() {
             api?.clearSelection?.();
         }
 
+        function openReadOnlyModal(args) {
+            if (!viewModal || !args || !args.e) return;
+
+            var eventData = typeof args.e.data === 'function' ? args.e.data() : (args.e.data || {});
+            var tags = eventData.tags || {};
+
+            // Visibility check (unchanged)
+            var isPublic = !Object.prototype.hasOwnProperty.call(tags, 'isPublic')
+                || tags.isPublic === true || tags.isPublic === 1
+                || tags.isPublic === '1'
+                || String(tags.isPublic).toLowerCase() !== 'false';
+            var canViewPrivate = Object.prototype.hasOwnProperty.call(tags, 'canViewPrivate')
+                && (tags.canViewPrivate === true || tags.canViewPrivate === 1
+                    || tags.canViewPrivate === '1'
+                    || String(tags.canViewPrivate).toLowerCase() === 'true');
+
+            if (!isPublic && !canViewPrivate) return;
+
+            const bookingId = args.e.id ? args.e.id() : (eventData.id || eventData.Id);
+            if (!bookingId) return;
+
+            // Read can_edit from tags — no AJAX needed
+            if (tags.canEdit) {
+                createModal.open({ editMode: true, bookingId: bookingId });
+            } else {
+                viewModal.open({
+                    bookingId: bookingId,
+                    args: eventData,
+                    viewOnly: true,
+                    prefill: {
+                        start: eventData.start?.toString(),   // DayPilot event start
+                        end:   eventData.end?.toString(),     // DayPilot event end
+                        roomId:   tags.roomId   || null,
+                        roomName: tags.roomName || null,
+                    }
+                });
+            }
+        }
+
         /**
          * Open the booking view modal for an event.
          */
-        function openReadOnlyModal(args) {
+        function old_openReadOnlyModal(args) {
             if (!viewModal || !args || !args.e) {
                 return;
             }
