@@ -202,24 +202,6 @@ class CachedBookingRepository extends BookingRepository
         return $this->repository->paginate($page, $per_page, $where);
     }
 
-    public function bulk_insert($rows): void
-    {
-        $this->repository->bulk_insert($rows);
-        $this->incrementCacheVersion();
-    }
-
-    public function bulk_update($rows, $key = 'Id'): void
-    {
-        $this->repository->bulk_update($rows, $key);
-        $this->incrementCacheVersion();
-    }
-
-    public function bulk_delete($ids): void
-    {
-        $this->repository->bulk_delete($ids);
-        $this->incrementCacheVersion();
-    }
-
     public function get_by_pattern_id($pattern_id): array
     {
         return $this->repository->get_by_pattern_id($pattern_id);

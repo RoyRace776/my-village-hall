@@ -134,24 +134,4 @@ class RepositoryBase {
         return $this->find($where, '', $per_page, $offset);
     }
 
-    // --- Validation (stub) ---
-    protected function validate($data): bool {
-        // Implement schema validation logic here
-        return true;
-    }
-
-    // --- Caching (stub) ---
-    protected function cache_get($key): bool { return false; }
-    protected function cache_set($key, $value, $ttl = 300): bool { return true; }
-
-    // --- Batch/bulk operations (stub) ---
-    public function bulk_insert($rows): void {
-        foreach ($rows as $row) $this->create($row);
-    }
-    public function bulk_update($rows, $key = 'Id'): void {
-        foreach ($rows as $row) if (isset($row[$key])) $this->update($row, [$key => $row[$key]]);
-    }
-    public function bulk_delete($ids): void {
-        foreach ($ids as $id) $this->delete_by_id($id);
-    }
 }
