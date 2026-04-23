@@ -529,7 +529,7 @@ var CalendarAdmin = (function() {
     // ─────────────────────────────
     function init() {
 
-        const modal = BookingModal;
+        const modal = BookingModalCreate;
 
         modal.init({
             ajax_url: myvhCal.ajax_url,
