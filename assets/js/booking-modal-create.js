@@ -228,6 +228,29 @@ window.BookingModalCreate = (function() {
             setValue('booking_id', config.editBookingId);
             modal.classList.remove('hidden');
 
+            const prefill = data.prefill || {};
+            if (prefill.start || prefill.end) {
+                setDisplayedDateTimes(prefill.start || '', prefill.end || '');
+                setValue('start', prefill.start || '');
+                setValue('end', prefill.end || '');
+            }
+            if (prefill.roomId && prefill.roomName) {
+                setSelectDisplayOption('room_id', prefill.roomId, prefill.roomName);
+                syncEndDateVisibility();
+            }
+            if (prefill.customerId && prefill.customerName) {
+                setSelectDisplayOption('customer_id', prefill.customerId, prefill.customerName);
+            }
+            if (prefill.organisationId && prefill.organisationName) {
+                setSelectDisplayOption('organisation_id', prefill.organisationId, prefill.organisationName);
+            }
+            if (prefill.description !== undefined && prefill.description !== null) {
+                setValue('text', prefill.description);
+            }
+            if (prefill.status) {
+                setValue('status', String(prefill.status).toLowerCase());
+            }
+
             setLoading(true);
 
             const loadAction = config.context === 'portal' ? 'myvh_portal_get_booking' : 'myvh_calendar_get_booking';
@@ -796,6 +819,25 @@ window.BookingModalCreate = (function() {
         el.value = value;
         el.disabled = true;
         el.dataset.locked = "true"; // 👈 mark as intentionally locked
+    }
+
+    function setSelectDisplayOption(field, value, label, options = {}) {
+        const el = form.querySelector(`[name=${field}]`);
+        if (!el) return;
+
+        const text = String(label || value || '-');
+        el.innerHTML = '';
+
+        const opt = document.createElement('option');
+        opt.value = value || '';
+        opt.text = text;
+
+        if (options.allowMultiday !== undefined) {
+            opt.dataset.allowMultiday = String(options.allowMultiday ? 1 : 0);
+        }
+
+        el.appendChild(opt);
+        el.value = value || '';
     }
 
     function setValue(field, value) {

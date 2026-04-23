@@ -215,6 +215,18 @@ window.BookingModalView = (function() {
         if (prefill.roomId && prefill.roomName) {
             setSelectDisplayOption('room_id', prefill.roomId, prefill.roomName);
         }
+        if (prefill.customerId && prefill.customerName) {
+            setSelectDisplayOption('customer_id', prefill.customerId, prefill.customerName);
+        }
+        if (prefill.organisationId && prefill.organisationName) {
+            setSelectDisplayOption('organisation_id', prefill.organisationId, prefill.organisationName);
+        }
+            if (prefill.status) {
+                setValue('status', formatStatus(prefill.status));
+            }
+            if (prefill.description !== undefined && prefill.description !== null) {
+                setValue('description', prefill.description);
+            }
 
         const incomingPayload = data.payload && typeof data.payload === 'object' ? data.payload : null;
         if (isCompletePayload(incomingPayload)) {

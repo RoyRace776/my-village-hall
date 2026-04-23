@@ -399,6 +399,17 @@ class CalendarService {
             $safe_description = '';
         }
 
+        $portal_prefill_tags = [];
+        if ($context === 'portal' && $can_view_private) {
+            $booking_details = $this->booking_service->get_by_id_with_details($booking->id()) ?: [];
+            $portal_prefill_tags = [
+                'customerId' => (int) ($booking_details['CustomerId'] ?? $booking_customer_id),
+                'customerName' => (string) ($booking_details['CustomerName'] ?? ''),
+                'organisationId' => (int) ($booking_details['OrganisationId'] ?? $organisation_id),
+                'organisationName' => (string) ($booking_details['OrganisationName'] ?? ''),
+            ];
+        }
+
         $event = [
             'id' => $booking->id(),
             'text' => $display_text,
@@ -415,6 +426,9 @@ class CalendarService {
                 'organisationId' => $organisation_id,
                 'canViewPrivate' => $can_view_private,
                 'privateLabel' => $default_label,
+                'customerId' => $portal_prefill_tags['customerId'] ?? 0,
+                'customerName' => $portal_prefill_tags['customerName'] ?? '',
+                'organisationName' => $portal_prefill_tags['organisationName'] ?? '',
             ],
         ];
 
