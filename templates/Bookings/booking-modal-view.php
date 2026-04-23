@@ -27,6 +27,7 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
         <button type="button" class="button button-primary myvh-edit-booking" disabled>Edit Booking</button>
         <button type="button" class="button myvh-cancel">Close</button>
     </p>
+    <p id="myvh-modal-view-edit-reason" class="myvh-account-hint" style="display:none; margin-top: -6px; margin-bottom: 14px;"></p>
 
     <form id="myvh-booking-form-view">
         <div class="myvh-modal-group myvh-modal-group-main">

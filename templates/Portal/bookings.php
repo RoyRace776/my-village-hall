@@ -307,11 +307,20 @@ usort($groups, function ($a, $b) use ($today) {
                                     data-group="<?php echo esc_attr($group_id); ?>"
                                     data-booking-id="<?php echo intval($b['Id'] ?? 0); ?>"
                                     data-status="<?php echo esc_attr(strtolower($b['Status'] ?? '')); ?>"
+                                    data-room-id="<?php echo intval($b['RoomId'] ?? 0); ?>"
+                                    data-room-name="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                     data-room="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                     data-customer="<?php echo esc_attr($b['CustomerId'] ?? ''); ?>"
+                                    data-customer-name="<?php echo esc_attr($b['CustomerName'] ?? ''); ?>"
                                     data-organisation="<?php echo esc_attr($b['OrganisationId'] ?? ''); ?>"
+                                    data-organisation-name="<?php echo esc_attr($b['OrganisationName'] ?? ''); ?>"
+                                    data-description="<?php echo esc_attr($b['Description'] ?? ''); ?>"
                                     data-description-search="<?php echo esc_attr(strtolower($b['description'] ?? '')); ?>"
-                                    data-booking-date="<?php echo esc_attr($b['StartDate'] ?? ''); ?>">
+                                    data-booking-date="<?php echo esc_attr($b['StartDate'] ?? ''); ?>"
+                                    data-start-date="<?php echo esc_attr($b['StartDate'] ?? ''); ?>"
+                                    data-start-time="<?php echo esc_attr($b['StartTime'] ?? ''); ?>"
+                                    data-end-date="<?php echo esc_attr($b['EndDate'] ?? ($b['StartDate'] ?? '')); ?>"
+                                    data-end-time="<?php echo esc_attr($b['EndTime'] ?? ''); ?>">
                                     <td>
                                         <strong>
                                             <?php echo esc_html($format_booking_date($b['StartDate'] ?? '')); ?>
@@ -367,11 +376,20 @@ usort($groups, function ($a, $b) use ($today) {
                             <tr class="myvh-bookings-table-row <?php echo $is_past ? 'is-past' : ''; ?>"
                                 data-booking-id="<?php echo intval($b['Id'] ?? 0); ?>"
                                 data-status="<?php echo esc_attr(strtolower($b['Status'] ?? '')); ?>"
+                                data-room-id="<?php echo intval($b['RoomId'] ?? 0); ?>"
+                                data-room-name="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                 data-room="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                 data-customer="<?php echo esc_attr($b['CustomerId'] ?? ''); ?>"
+                                data-customer-name="<?php echo esc_attr($b['CustomerName'] ?? ''); ?>"
                                 data-organisation="<?php echo esc_attr($b['OrganisationId'] ?? ''); ?>"
+                                data-organisation-name="<?php echo esc_attr($b['OrganisationName'] ?? ''); ?>"
+                                data-description="<?php echo esc_attr($b['Description'] ?? ''); ?>"
                                 data-description-search="<?php echo esc_attr(strtolower($b['description'] ?? '')); ?>"
                                 data-booking-date="<?php echo esc_attr($b['StartDate'] ?? ''); ?>"
+                                data-start-date="<?php echo esc_attr($b['StartDate'] ?? ''); ?>"
+                                data-start-time="<?php echo esc_attr($b['StartTime'] ?? ''); ?>"
+                                data-end-date="<?php echo esc_attr($b['EndDate'] ?? ($b['StartDate'] ?? '')); ?>"
+                                data-end-time="<?php echo esc_attr($b['EndTime'] ?? ''); ?>"
                                 data-group="single-<?php echo esc_attr($b['Id'] ?? ''); ?>">
                                 <td>
                                     <strong>

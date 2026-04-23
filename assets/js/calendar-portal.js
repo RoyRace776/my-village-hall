@@ -493,20 +493,34 @@ var Calendar = (function() {
             createModal.open(data || {});
         }
 
-        function openEditModal(bookingId) {
+        function openEditModal(bookingId, options) {
             if (!createModal || !bookingId) {
                 return;
             }
 
-            createModal.open({ editMode: true, bookingId: bookingId });
+            var prefill = options && options.prefill ? options.prefill : null;
+
+            createModal.open({
+                editMode: true,
+                bookingId: bookingId,
+                prefill: prefill
+            });
         }
 
-        function openViewModal(bookingId) {
+        function openViewModal(bookingId, options) {
             if (!viewModal || !bookingId) {
                 return;
             }
 
-            viewModal.open({ bookingId: bookingId, viewOnly: true });
+            var prefill = options && options.prefill ? options.prefill : null;
+            var payload = options && options.payload ? options.payload : null;
+
+            viewModal.open({
+                bookingId: bookingId,
+                viewOnly: true,
+                prefill: prefill,
+                payload: payload
+            });
         }
 
         function deleteBooking(bookingId) {

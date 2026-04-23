@@ -311,31 +311,6 @@ document.addEventListener("DOMContentLoaded", () => {
             Calendar.init();
         }
 
-        // Initialize bookings list if present
-        if (document.querySelector('.myvh-bookings-list')) {
-            // Portal-specific client-side status filtering
-            function filterPortalBookingsByStatus() {
-                var checked = Array.from(document.querySelectorAll('.myvh-status-filter:checked')).map(function(cb) {
-                    return cb.value;
-                });
-                var cards = document.querySelectorAll('.myvh-booking-card');
-                cards.forEach(function(card) {
-                    var status = card.getAttribute('data-status');
-                    if (!status || checked.indexOf(status) !== -1) {
-                        card.style.display = '';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-            }
-            var boxes = document.querySelectorAll('.myvh-status-filter');
-            boxes.forEach(function(cb) {
-                cb.addEventListener('change', filterPortalBookingsByStatus);
-            });
-            // Initial filter
-            filterPortalBookingsByStatus();
-        }
-
         // Booking edit form: enable/disable submit button based on changes
         const bookingEditForm = document.getElementById('myvh-booking-edit-form');
         if (bookingEditForm) {

@@ -34,6 +34,130 @@ var Bookings = (function() {
         return Promise.resolve(window.confirm(message));
     }
 
+    function runWhenBookingFlowReady(action) {
+        if (typeof action !== 'function') {
+            return;
+        }
+
+        if (window.MyvhPortalCalendarFlow) {
+            action();
+            return;
+        }
+
+        var onReady = function() {
+            document.removeEventListener('myvh:portal-booking-flow-ready', onReady);
+            action();
+        };
+
+        document.addEventListener('myvh:portal-booking-flow-ready', onReady, { once: true });
+    }
+
+    function getRowDataValue(row, name) {
+        var value = row.getAttribute('data-' + name);
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        return String(value);
+    }
+
+    function normalizeTimeValue(timeValue) {
+        var raw = String(timeValue || '').trim();
+        if (!raw) {
+            return '';
+        }
+
+        if (/^\d{2}:\d{2}:\d{2}$/.test(raw)) {
+            return raw;
+        }
+
+        if (/^\d{2}:\d{2}$/.test(raw)) {
+            return raw + ':00';
+        }
+
+        return raw;
+    }
+
+    function toDateTimeString(dateValue, timeValue) {
+        var date = String(dateValue || '').trim();
+        var time = normalizeTimeValue(timeValue);
+
+        if (!date) {
+            return '';
+        }
+
+        if (!time) {
+            return date;
+        }
+
+        return date + ' ' + time;
+    }
+
+    function buildPrefillFromRow(row) {
+        var startDate = getRowDataValue(row, 'start-date');
+        var endDate = getRowDataValue(row, 'end-date') || startDate;
+
+        return {
+            start: toDateTimeString(startDate, getRowDataValue(row, 'start-time')),
+            end: toDateTimeString(endDate, getRowDataValue(row, 'end-time')),
+            roomId: getRowDataValue(row, 'room-id'),
+            roomName: getRowDataValue(row, 'room-name'),
+            customerId: getRowDataValue(row, 'customer'),
+            customerName: getRowDataValue(row, 'customer-name'),
+            organisationId: getRowDataValue(row, 'organisation'),
+            organisationName: getRowDataValue(row, 'organisation-name'),
+            description: getRowDataValue(row, 'description'),
+            status: getRowDataValue(row, 'status')
+        };
+    }
+
+    function handlePortalBookingActionClick(event) {
+        var actionLink = event.target.closest('.myvh-booking-actions-inline .myvh-action-icon[href^="#booking-"]');
+        if (!actionLink) {
+            return;
+        }
+
+        var row = actionLink.closest('tr.myvh-bookings-table-row');
+        if (!row || !row.hasAttribute('data-booking-id')) {
+            return;
+        }
+
+        var bookingId = parseInt(row.getAttribute('data-booking-id') || '0', 10);
+        if (!bookingId) {
+            return;
+        }
+
+        var href = String(actionLink.getAttribute('href') || '');
+        if (!href) {
+            return;
+        }
+
+        var prefill = buildPrefillFromRow(row);
+
+        event.preventDefault();
+
+        runWhenBookingFlowReady(function() {
+            var flow = window.MyvhPortalCalendarFlow;
+            if (!flow) {
+                return;
+            }
+
+            if (href.indexOf('#booking-edit') === 0 && typeof flow.openEdit === 'function') {
+                flow.openEdit(bookingId, { prefill: prefill });
+                return;
+            }
+
+            if (href.indexOf('#booking-delete') === 0 && typeof flow.deleteBooking === 'function') {
+                flow.deleteBooking(bookingId);
+                return;
+            }
+
+            if (typeof flow.openView === 'function') {
+                flow.openView(bookingId, { prefill: prefill });
+            }
+        });
+    }
+
     /**
      * Filter bookings table rows by selected statuses.
      */
@@ -136,6 +260,8 @@ var Bookings = (function() {
      */
     function bindActions() {
         document.addEventListener('click', function(e) {
+            handlePortalBookingActionClick(e);
+
             var cancelBtn = e.target.closest('.myvh-cancel-booking');
             if (!cancelBtn) {
                 return;

@@ -197,7 +197,7 @@ window.BookingModalView = (function() {
 
         currentBookingId = Number(bookingId) || 0;
         currentCanEdit = false;
-        updateEditButtons(false, 'Loading booking permissions...');
+        updateEditButtons(false, '');
         applyNoInvoiceRequiredVisibility();
 
         modal.classList.remove('hidden');
@@ -637,11 +637,27 @@ window.BookingModalView = (function() {
     }
 
     function updateEditButtons(canEdit, reason = '') {
+        const reasonText = String(reason || '').trim();
+        const reasonNode = modal.querySelector('#myvh-modal-view-edit-reason');
+
         modal.querySelectorAll('.myvh-edit-booking').forEach((button) => {
             button.style.display = canEdit ? '' : 'none';
             button.disabled = !canEdit;
-            button.title = canEdit ? '' : (reason || 'Editing not available');
+            button.title = canEdit ? '' : (reasonText || 'Editing not available');
         });
+
+        if (!reasonNode) {
+            return;
+        }
+
+        if (canEdit) {
+            reasonNode.textContent = '';
+            reasonNode.style.display = 'none';
+            return;
+        }
+
+        reasonNode.textContent = reasonText || 'This booking cannot be edited.';
+        reasonNode.style.display = '';
     }
 
     // ─────────────────────────────
