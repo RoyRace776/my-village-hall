@@ -10,7 +10,12 @@ class RoomServiceProvider
 
             return new CachedRoomRepository($repository);
         });
-        $container->singleton(RoomHoursRepository::class);
+        $container->singleton(RoomHoursRepository::class, function ($container) {
+            $wpdb = $container->get(\wpdb::class);
+            $repository = new RoomHoursRepository($wpdb);
+
+            return new CachedRoomHoursRepository($repository);
+        });
         $container->singleton(RoomRulesService::class);
         $container->singleton(RoomService::class);
         $container->singleton(RoomVisibilityService::class);

@@ -105,6 +105,86 @@ window.BookingModalView = (function() {
         bindDependentControls();
     }
 
+    function normalizePayloadFromResponse(res) {
+        if (!res || !res.success || !res.data.booking) {
+            throw new Error('Booking not found');
+        }
+
+        return {
+            booking: res.data.booking,
+            addons: Array.isArray(res.data.addons) ? res.data.addons : [],
+            canEdit: !!res.data.can_edit,
+            editReason: res.data.edit_reason || '',
+            canManageNoInvoiceRequired: !!res.data.can_manage_no_invoice_required
+        };
+    }
+
+    function isCompletePayload(payload) {
+        if (!payload || typeof payload !== 'object' || !payload.booking || typeof payload.booking !== 'object') {
+            return false;
+        }
+
+        const booking = payload.booking;
+
+        if (!Object.prototype.hasOwnProperty.call(payload, 'addons') || !Array.isArray(payload.addons)) {
+            return false;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(payload, 'canEdit')) {
+            return false;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(payload, 'editReason')) {
+            return false;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(payload, 'canManageNoInvoiceRequired')) {
+            return false;
+        }
+
+        return !!(
+            booking['RoomId'] &&
+            booking['RoomName'] &&
+            booking['CustomerId'] &&
+            booking['CustomerName'] &&
+            booking['OrganisationId'] &&
+            booking['OrganisationName'] &&
+            booking['StartDate'] &&
+            booking['StartTime'] &&
+            booking['EndTime'] &&
+            Object.prototype.hasOwnProperty.call(booking, 'NoInvoiceRequired')
+        );
+    }
+
+    function applyPayloadToForm(payload, data) {
+        const booking = payload.booking;
+        config.canManageNoInvoiceRequired = !!payload.canManageNoInvoiceRequired;
+
+        setSelectDisplayOption('room_id', booking['RoomId'], booking['RoomName'], {
+            allowMultiday: booking['AllowMultiDayBookings']
+        });
+        setSelectDisplayOption('customer_id', booking['CustomerId'], booking['CustomerName']);
+        setSelectDisplayOption('organisation_id', booking['OrganisationId'], booking['OrganisationName']);
+        setValue('status', formatStatus(booking['Status']));
+        setValue('description', booking['Description']);
+        setValue('public', !!booking['Public']);
+        setValue('no_invoice_required', !!booking['NoInvoiceRequired']);
+        applyExistingAddons(payload.addons || []);
+        currentCanEdit = !!payload.canEdit;
+        updateEditButtons(currentCanEdit, payload.editReason);
+        applyNoInvoiceRequiredVisibility();
+
+        const startDateTime = `${booking['StartDate'] || ''} ${booking['StartTime'] || ''}`.trim();
+        const endDate = booking['EndDate'] || booking['StartDate'] || '';
+        const endDateTime = `${endDate} ${booking['EndTime'] || ''}`.trim();
+        setDisplayedDateTimes(startDateTime, endDateTime);
+        syncEndDateVisibilityFromBooking(booking['StartDate'], endDate);
+
+        form.querySelectorAll('input, select, textarea')
+            .forEach(el => el.disabled = true);
+        config.onOpen(data);
+    }
+
     /**
      * Open the modal and populate with data.
      * @param {object} data - Data to prefill the form
@@ -136,51 +216,21 @@ window.BookingModalView = (function() {
             setSelectDisplayOption('room_id', prefill.roomId, prefill.roomName);
         }
 
+        const incomingPayload = data.payload && typeof data.payload === 'object' ? data.payload : null;
+        if (isCompletePayload(incomingPayload)) {
+            applyPayloadToForm(incomingPayload, data);
+            setLoading(false);
+            return;
+        }
+
         const nonce = config.context === 'portal' ? config.nonce : 'myvh_calendar';
         const loadAction = config.context === 'portal' ? 'myvh_portal_get_booking' : 'myvh_calendar_get_booking';
 
         fetch(`${config.ajax_url}?action=${encodeURIComponent(loadAction)}&booking_id=${encodeURIComponent(bookingId)}&nonce=${encodeURIComponent(nonce)}`)
             .then(r => r.json())
-            .then(res => {
-                if (!res || !res.success || !res.data.booking) {
-                    throw new Error('Booking not found');
-                }
-
-                return {
-                    booking: res.data.booking,
-                    addons: Array.isArray(res.data.addons) ? res.data.addons : [],
-                    canEdit: !!res.data.can_edit,
-                    editReason: res.data.edit_reason || '',
-                    canManageNoInvoiceRequired: !!res.data.can_manage_no_invoice_required
-                };
-            })
+            .then(normalizePayloadFromResponse)
             .then((payload) => {
-                const booking = payload.booking;
-                config.canManageNoInvoiceRequired = !!payload.canManageNoInvoiceRequired;
-
-                setSelectDisplayOption('room_id', booking['RoomId'], booking['RoomName'], {
-                    allowMultiday: booking['AllowMultiDayBookings']
-                });
-                setSelectDisplayOption('customer_id', booking['CustomerId'], booking['CustomerName']);
-                setSelectDisplayOption('organisation_id', booking['OrganisationId'], booking['OrganisationName']);
-                setValue('status', formatStatus(booking['Status']));
-                setValue('description', booking['Description']);
-                setValue('public', !!booking['Public']);
-                setValue('no_invoice_required', !!booking['NoInvoiceRequired']);
-                applyExistingAddons(payload.addons || []);
-                currentCanEdit = !!payload.canEdit;
-                updateEditButtons(currentCanEdit, payload.editReason);
-                applyNoInvoiceRequiredVisibility();
-
-                const startDateTime = `${booking['StartDate'] || ''} ${booking['StartTime'] || ''}`.trim();
-                const endDate = booking['EndDate'] || booking['StartDate'] || '';
-                const endDateTime = `${endDate} ${booking['EndTime'] || ''}`.trim();
-                setDisplayedDateTimes(startDateTime, endDateTime);
-                syncEndDateVisibilityFromBooking(booking['StartDate'], endDate);
-
-                form.querySelectorAll('input, select, textarea')
-                    .forEach(el => el.disabled = true);
-                config.onOpen(data);
+                applyPayloadToForm(payload, data);
             })
             .catch(err => {
                 console.error(err);

@@ -466,6 +466,7 @@ var Calendar = (function() {
                     bookingId: bookingId,
                     args: eventData,
                     viewOnly: true,
+                    payload: tags.viewPayload || null,
                     prefill: {
                         start: eventData.start?.toString(),   // DayPilot event start
                         end:   eventData.end?.toString(),     // DayPilot event end
