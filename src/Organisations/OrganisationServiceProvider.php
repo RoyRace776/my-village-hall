@@ -5,8 +5,18 @@ if (!defined('ABSPATH')) exit;
 
 class OrganisationServiceProvider {
     public function register($container): void {
-        $container->singleton(OrganisationRepository::class);
-        $container->singleton(OrganisationTypeRepository::class);
+        $container->singleton(OrganisationRepository::class, function ($container) {
+            $wpdb = $container->get(\wpdb::class);
+            $repository = new OrganisationRepository($wpdb);
+
+            return new CachedOrganisationRepository($repository);
+        });
+        $container->singleton(OrganisationTypeRepository::class, function ($container) {
+            $wpdb = $container->get(\wpdb::class);
+            $repository = new OrganisationTypeRepository($wpdb);
+
+            return new CachedOrganisationTypeRepository($repository);
+        });
         $container->singleton(OrganisationMemberRepository::class);
         $container->singleton(OrganisationMemberRequestRepository::class);
         $container->singleton(OrganisationService::class);

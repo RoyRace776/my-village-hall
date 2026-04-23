@@ -471,6 +471,8 @@ var Calendar = (function() {
                         end:   eventData.end?.toString(),     // DayPilot event end
                         roomId:   tags.roomId   || null,
                         roomName: tags.roomName || null,
+                        description: tags.description || null,
+                        status: tags.status || null,
                     }
                 });
             }

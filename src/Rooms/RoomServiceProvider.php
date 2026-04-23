@@ -4,7 +4,12 @@ namespace MYVH\Rooms;
 class RoomServiceProvider
 {
     public function register($container): void {
-        $container->singleton(RoomRepository::class);
+        $container->singleton(RoomRepository::class, function ($container) {
+            $wpdb = $container->get(\wpdb::class);
+            $repository = new RoomRepository($wpdb);
+
+            return new CachedRoomRepository($repository);
+        });
         $container->singleton(RoomHoursRepository::class);
         $container->singleton(RoomRulesService::class);
         $container->singleton(RoomService::class);
