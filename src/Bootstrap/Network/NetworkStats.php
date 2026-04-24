@@ -29,7 +29,7 @@ class NetworkStats {
 
             if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_like))) {
 
-                $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM $table");
+                $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM `$table`");
 
                 if ($count > 0) $active++;
                 $total += $count;

@@ -21,7 +21,8 @@ class OrganisationRepository extends RepositoryBase {
         $defaults = [ 'orderby' => 'o.Name', 'order' => 'ASC', 'active_only' => false ];
         $args     = wp_parse_args($args, $defaults);
         $where = $args['active_only'] ? 'WHERE o.IsActive = 1' : '';
-        $order = esc_sql($args['orderby']) . ' ' . (strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC');
+        $orderby = $this->sanitize_identifier($args['orderby']);
+        $order   = ($orderby !== '' ? $orderby : 'o.Name') . ' ' . $this->normalize_order($args['order']);
         $sql = "SELECT o.*, ot.Name AS OrganisationTypeName
                 FROM {$this->table_name} o
                 LEFT JOIN {$this->types_table} ot ON o.OrganisationTypeId = ot.Id

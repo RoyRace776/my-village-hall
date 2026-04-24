@@ -41,7 +41,7 @@ class NetworkSitesTable extends WP_List_Table {
             $count = 0;
 
             if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_like))) {
-                $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM $table");
+                $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM `$table`");
             }
 
             restore_current_blog();

@@ -49,6 +49,9 @@ class DiscountRepository extends RepositoryBase {
      * @param array $args Optional query arguments (orderby, order, limit, offset)
      * @return array|null Array of records or null on failure
      */
+    /** Columns that callers are allowed to sort by. */
+    private const ALLOWED_ORDERBY = ['Id', 'Code', 'Amount', 'Type', 'IsActive', 'CreatedAt'];
+
     public function get_all($args = array()): array {
         $defaults = array(
             'orderby' => 'Id',
@@ -59,8 +62,11 @@ class DiscountRepository extends RepositoryBase {
 
         $args = wp_parse_args($args, $defaults);
 
-        $sql = "SELECT * FROM $this->table_name";
-        $sql .= " ORDER BY {$args['orderby']} {$args['order']}";
+        $orderby = in_array($args['orderby'], self::ALLOWED_ORDERBY, true) ? $args['orderby'] : 'Id';
+        $order   = 'DESC' === strtoupper((string) $args['order']) ? 'DESC' : 'ASC';
+
+        $sql = "SELECT * FROM {$this->table_name}";
+        $sql .= " ORDER BY `{$orderby}` {$order}";
 
         if ($args['limit'] !== null) {
             $sql .= " LIMIT " . intval($args['limit']);

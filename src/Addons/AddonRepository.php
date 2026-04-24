@@ -61,7 +61,9 @@ class AddonRepository extends RepositoryBase {
         $sql = "SELECT * FROM {$this->table_name} WHERE ArchivedAt IS NULL";
 
         if (!empty($args['orderby'])) {
-            $sql .= " ORDER BY " . esc_sql($args['orderby']) . ' ' . esc_sql($args['order'] ?? 'ASC');
+            $orderby = $this->sanitize_identifier($args['orderby']);
+            $order   = $this->normalize_order($args['order'] ?? 'ASC');
+            $sql .= $orderby !== '' ? " ORDER BY {$orderby} {$order}" : ' ORDER BY DisplayOrder, Name';
         } else {
             $sql .= ' ORDER BY DisplayOrder, Name';
         }

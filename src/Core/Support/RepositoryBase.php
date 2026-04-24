@@ -37,9 +37,12 @@ class RepositoryBase {
 
     public function get_all($args = []): array {
         $sql = "SELECT * FROM {$this->table_name}";
-        // Add order, limit, offset if present
         if (!empty($args['orderby'])) {
-            $sql .= " ORDER BY " . esc_sql($args['orderby']) . ' ' . esc_sql($args['order'] ?? 'ASC');
+            $orderby = $this->sanitize_identifier($args['orderby']);
+            $order   = $this->normalize_order($args['order'] ?? 'ASC');
+            if ($orderby !== '') {
+                $sql .= " ORDER BY {$orderby} {$order}";
+            }
         }
         if (!empty($args['limit'])) {
             $sql .= " LIMIT " . intval($args['limit']);
@@ -70,18 +73,54 @@ class RepositoryBase {
     // --- Query helpers ---
     public function find($where = [], $order = '', $limit = null, $offset = null): array {
         $sql = "SELECT * FROM {$this->table_name}";
-        $order = esc_sql($order);
         if ($where) {
             $clauses = [];
             foreach ($where as $col => $val) {
-                $clauses[] = $this->wpdb->prepare("`$col` = %s", $val);
+                $safe_col = $this->sanitize_identifier($col);
+                if ($safe_col === '') {
+                    continue; // skip any column key that doesn't pass validation
+                }
+                $clauses[] = $this->wpdb->prepare("{$safe_col} = %s", $val);
             }
-            $sql .= " WHERE " . implode(' AND ', $clauses);
+            if (!empty($clauses)) {
+                $sql .= " WHERE " . implode(' AND ', $clauses);
+            }
         }
-        if ($order) $sql .= " ORDER BY $order";
+        if ($order !== '') {
+            $order = $this->sanitize_identifier($order);
+            if ($order !== '') {
+                $sql .= " ORDER BY {$order}";
+            }
+        }
         if ($limit) $sql .= " LIMIT " . intval($limit);
         if ($offset) $sql .= " OFFSET " . intval($offset);
         return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    /**
+     * Validate a SQL identifier (column or table-qualified column).
+     * Accepts bare column names (e.g. `Name`) and table-qualified names (e.g. `b.StartDate`).
+     * Rejects anything containing characters outside [A-Za-z0-9_.] to prevent injection.
+     *
+     * @param string $identifier
+     * @return string The validated identifier, or empty string if invalid.
+     */
+    protected function sanitize_identifier(string $identifier): string {
+        $identifier = trim($identifier);
+        if ($identifier === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_.]*$/', $identifier)) {
+            return '';
+        }
+        return $identifier;
+    }
+
+    /**
+     * Normalise a sort direction to either 'ASC' or 'DESC'.
+     *
+     * @param mixed $order
+     * @return string
+     */
+    protected function normalize_order($order): string {
+        return 'DESC' === strtoupper((string) $order) ? 'DESC' : 'ASC';
     }
 
     // --- Table name resolution ---

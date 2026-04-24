@@ -92,7 +92,8 @@ class BookingRepository extends RepositoryBase
         }
 
         $where_sql = implode(' AND ', $where);
-        $order_sql = esc_sql($args['orderby']) . ' ' . ('ASC' === strtoupper($args['order']) ? 'ASC' : 'DESC');
+        $orderby   = $this->sanitize_identifier($args['orderby']);
+        $order_sql = ($orderby !== '' ? $orderby : 'b.StartDate') . ' ' . $this->normalize_order($args['order']);
 
         $sql = "SELECT
                     b.*,
@@ -450,7 +451,8 @@ class BookingRepository extends RepositoryBase
         }
 
         $where_sql = implode(' AND ', $where);
-        $order_sql = esc_sql($args['orderby']) . ' ' . ('ASC' === strtoupper($args['order']) ? 'ASC' : 'DESC');
+        $orderby   = $this->sanitize_identifier($args['orderby']);
+        $order_sql = ($orderby !== '' ? $orderby : 'b.StartDate') . ' ' . $this->normalize_order($args['order']);
         $limit_sql = '';
 
         if ($args['limit'] !== null) {
