@@ -171,11 +171,6 @@ class CachedRoomRepository extends RoomRepository
         $this->repository->rollback();
     }
 
-    public function ensure_colour_column_exists(): void
-    {
-        $this->repository->ensure_colour_column_exists();
-    }
-
     public function last_error(): string
     {
         return $this->repository->last_error();

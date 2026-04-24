@@ -122,7 +122,6 @@ class MyVillageHall {
         // 1. Core WordPress integration
         add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
         add_action( 'admin_menu',     [ $this, 'register_admin_menu' ] );
-        add_action( 'admin_menu',     [ $this, 'ensure_invoices_menu_item' ], 99 );
 
         AssetLoader::init();
 
@@ -411,32 +410,6 @@ class MyVillageHall {
                 [ $this, 'render_audit_log_page' ]
             );
         }
-    }
-
-    public function ensure_invoices_menu_item(): void {
-        global $submenu;
-
-        $parent_slug = 'my-village-hall';
-        $target_slug = 'myvh-invoices';
-
-        if (empty($submenu[$parent_slug]) || !is_array($submenu[$parent_slug])) {
-            return;
-        }
-
-        foreach ($submenu[$parent_slug] as $item) {
-            if (!empty($item[2]) && $item[2] === $target_slug) {
-                return;
-            }
-        }
-
-        add_submenu_page(
-            $parent_slug,
-            __( 'View Invoices', 'my-village-hall' ),
-            __( 'View Invoices', 'my-village-hall' ),
-            'manage_options',
-            $target_slug,
-            [ $this, 'render_invoices_page' ]
-        );
     }
 
     /**

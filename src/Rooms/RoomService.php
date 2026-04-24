@@ -37,9 +37,6 @@ class RoomService {
 
     public function save($data): int|WP_Error {
 
-        // Defensive migration guard: ensures save works even if installer did not run yet.
-        $this->repo->ensure_colour_column_exists();
-
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Room name is required', 'my-village-hall'));
         }

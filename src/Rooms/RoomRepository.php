@@ -19,20 +19,6 @@ class RoomRepository extends RepositoryBase {
         $this->table_name = $wpdb->prefix . 'myvh_rooms';
     }
 
-    public function ensure_colour_column_exists(): void {
-        if (self::$colour_column_checked) {
-            return;
-        }
-
-        $exists = $this->wpdb->get_var("SHOW COLUMNS FROM {$this->table_name} LIKE 'Colour'");
-
-        if (!$exists) {
-            $this->wpdb->query("ALTER TABLE {$this->table_name} ADD COLUMN Colour VARCHAR(7) NULL AFTER Name");
-        }
-
-        self::$colour_column_checked = true;
-    }
-
     public function last_error(): string {
         return (string) ($this->wpdb->last_error ?? '');
     }

@@ -44,88 +44,8 @@ class Installer {
 
         self::create_tables( $wpdb, $collate );
         self::backfill_opening_hours_by_day( $wpdb );
-        self::ensure_room_colour_column( $wpdb );
-        self::ensure_room_is_public_column( $wpdb );
-        self::ensure_organisation_system_column( $wpdb );
-        self::ensure_organisation_type_flag_columns( $wpdb );
-        self::ensure_addon_archive_column( $wpdb );
-        self::ensure_invoice_pdf_path_column( $wpdb );
         self::add_foreign_keys( $wpdb );
         self::set_default_data( $wpdb );
-    }
-
-    private static function ensure_room_colour_column( wpdb $wpdb ): void {
-        $table = $wpdb->prefix . 'myvh_rooms';
-        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'Colour'" );
-
-        if ( $column ) {
-            return;
-        }
-
-        // Fallback for installs where dbDelta did not add the new column.
-        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN Colour VARCHAR(7) NULL AFTER Name" );
-    }
-
-    private static function ensure_room_is_public_column( wpdb $wpdb ): void {
-        $table = $wpdb->prefix . 'myvh_rooms';
-        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'IsPublic'" );
-
-        if ( $column ) {
-            return;
-        }
-
-        // Fallback for installs where dbDelta did not add the new column.
-        // Existing rooms default to public to preserve visibility.
-        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsPublic TINYINT(1) NOT NULL DEFAULT 1 AFTER CalcClosedHours" );
-    }
-
-    private static function ensure_organisation_system_column( wpdb $wpdb ): void {
-        $table = $wpdb->prefix . 'myvh_organisations';
-        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'IsSystem'" );
-
-        if ( $column ) {
-            return;
-        }
-
-        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsSystem TINYINT(1) NOT NULL DEFAULT 0 AFTER IsDefault" );
-    }
-
-    private static function ensure_organisation_type_flag_columns( wpdb $wpdb ): void {
-        $table = $wpdb->prefix . 'myvh_organisation_types';
-
-        $is_system_col = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'IsSystem'" );
-        if ( ! $is_system_col ) {
-            $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsSystem TINYINT(1) NOT NULL DEFAULT 0 AFTER Description" );
-        }
-
-        $is_default_col = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'IsDefault'" );
-        if ( ! $is_default_col ) {
-            $wpdb->query( "ALTER TABLE {$table} ADD COLUMN IsDefault TINYINT(1) NOT NULL DEFAULT 0 AFTER IsSystem" );
-        }
-    }
-
-    private static function ensure_invoice_pdf_path_column( wpdb $wpdb ): void {
-        $table  = $wpdb->prefix . 'myvh_invoices';
-        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'PdfPath'" );
-
-        if ( $column ) {
-            return;
-        }
-
-        // Fallback for installs where dbDelta did not add the new column.
-        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN PdfPath VARCHAR(500) NULL AFTER Notes" );
-    }
-
-    private static function ensure_addon_archive_column( wpdb $wpdb ): void {
-        $table = $wpdb->prefix . 'myvh_addons';
-        $column = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'ArchivedAt'" );
-
-        if ( $column ) {
-            return;
-        }
-
-        $wpdb->query( "ALTER TABLE {$table} ADD COLUMN ArchivedAt DATETIME NULL AFTER Created" );
-        $wpdb->query( "ALTER TABLE {$table} ADD INDEX idx_archived (ArchivedAt)" );
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
