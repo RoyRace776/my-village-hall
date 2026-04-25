@@ -778,6 +778,18 @@ add_action( 'wp_initialize_site', function ( $new_site ) {
     restore_current_blog();
 } );
 
+/**
+ * Hides the front-end admin bar for portal users without plugin admin access.
+ */
+function myvh_show_admin_bar( bool $show ): bool {
+    if ( is_admin() || ! is_user_logged_in() ) {
+        return $show;
+    }
+
+    return current_user_can( 'manage_myvh' ) ? $show : false;
+}
+add_filter( 'show_admin_bar', 'myvh_show_admin_bar' );
+
 // ── Plugin initialisation ─────────────────────────────────────────────────────
 
 /**

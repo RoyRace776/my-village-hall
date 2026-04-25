@@ -420,13 +420,24 @@ body .site-main:has(#myvh-portal) {
   margin-top: 4px;
 }
 
+/* Portal header: sticky container for brand and client switcher */
+.myvh-portal-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  width: 100%;
+}
+
 .myvh-portal-brand {
   max-width: 1600px;
-  margin: 20px auto 14px;
+  margin: 0 auto;
   padding: 12px 16px;
-  border: 1px solid #e5ddd1;
-  border-radius: 12px;
+  border-bottom: 1px solid #e5ddd1;
+  border-radius: 0;
   background: #fff;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .myvh-portal-brand__inner {
@@ -453,11 +464,16 @@ body .site-main:has(#myvh-portal) {
 
 .portal-nav {
   max-width: 1600px;
-  margin: 0 auto 20px;
+  margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: flex-start;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e5ddd1;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .portal-nav > a,
@@ -562,11 +578,13 @@ body .site-main:has(#myvh-portal) {
 
 .myvh-portal-sites {
   max-width: 1600px;
-  margin: 20px auto 14px;
+  margin: 0 auto;
   padding: 12px 16px;
-  border: 1px solid #e5ddd1;
-  border-radius: 12px;
+  border-bottom: 1px solid #e5ddd1;
+  border-radius: 0;
   background: #fff;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .myvh-portal-sites-label {

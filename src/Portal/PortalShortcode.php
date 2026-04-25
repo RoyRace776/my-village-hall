@@ -120,4 +120,5 @@ class PortalShortcode implements ShortcodeInterface
 
         return $fallback;
     }
+
 }
