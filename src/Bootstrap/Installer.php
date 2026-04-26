@@ -860,7 +860,9 @@ class Installer {
             'myvh_booking_charges',
             'myvh_discounts',
             'myvh_booking_discounts',
-            'myvh_payments'
+            'myvh_payments',
+            'myvh_venue_hours',
+            'myvh_room_hours',
         ];
 
         foreach ($tables as $table) {

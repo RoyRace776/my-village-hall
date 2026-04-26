@@ -29,6 +29,9 @@ class PortalPageAjaxController {
 
         $page = sanitize_text_field($_GET['page'] ?? 'dashboard');
         $customer = $this->customer_service->get_by_user_id(get_current_user_id());
+        if ($customer == null) {
+            $customer = [];
+        }
         $is_client_admin = $this->current_user_is_client_admin();
         $has_customer = !empty($customer['Id']);
 
