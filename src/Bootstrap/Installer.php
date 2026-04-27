@@ -202,6 +202,7 @@ class Installer {
             AddressLine1    VARCHAR(100),
             AddressLine2    VARCHAR(100),
             AllowAutoConfirm   TINYINT(1)   NOT NULL DEFAULT 0,
+            IsSystem        TINYINT(1)   NOT NULL DEFAULT 0,
             Created         DATETIME     DEFAULT CURRENT_TIMESTAMP,
             Updated         DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX      idx_email          (Email),
@@ -764,11 +765,93 @@ class Installer {
                 );
         }
 
-    // Set up defaults like organisation types and organisations if they don't already exist
-    public static function set_default_data($wpdb): void {
+    /**
+     * Create or update the system customer record, linking it to the WordPress super/admin user.
+     *
+     * On multisite: uses the first super admin (lowest user ID).
+     * On single-site: uses the first user with manage_options capability (lowest user ID).
+     *
+     * If no qualifying admin exists, creates a minimal system customer with safe defaults.
+     *
+     * @global wpdb $wpdb
+     */
+    public static function add_system_customer(): void {
+        global $wpdb;
 
+        $customers_table = $wpdb->prefix . 'myvh_customers';
+
+        // Fetch the WordPress admin user
+        $wp_user = self::get_wp_admin_user();
+
+        // Determine Name and Email for the system customer
+        $name = 'System';
+        $email = '';
+        $wp_user_id = null;
+
+        if ( $wp_user ) {
+            $name = sanitize_text_field( $wp_user->display_name ?: $wp_user->user_login );
+            $email = sanitize_email( $wp_user->user_email );
+            $wp_user_id = (int) $wp_user->ID;
+        }
+
+        // Check if a system customer already exists
+        $system_customer = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$customers_table} WHERE IsSystem = 1 LIMIT 1"),
+            'ARRAY_A'
+        );
+
+        if ( empty($system_customer['Id']) ) {
+            // Insert new system customer
+            $insert_data = [
+                'Name' => $name,
+                'Email' => $email,
+                'IsSystem' => 1,
+            ];
+
+            if ( $wp_user_id ) {
+                $insert_data['WPUserId'] = $wp_user_id;
+            }
+
+            $wpdb->insert($customers_table, $insert_data);
+        }
+    }
+
+    /**
+     * Retrieve the WordPress super admin or first admin user.
+     *
+     * On multisite: returns the first super admin (by lowest user ID).
+     * On single-site: returns the first user with manage_options capability (by lowest user ID).
+     *
+     * @return \WP_User|null The admin user, or null if none found.
+     */
+    private static function get_wp_admin_user(): ?\WP_User {
+        if ( is_multisite() ) {
+            // Get all super admins, sorted by user ID (lowest first)
+            $super_admins = get_super_admins();
+
+            if ( empty($super_admins) ) {
+                return null;
+            }
+
+            // Get the user object for the first super admin
+            $user = get_user_by('login', $super_admins[0]);
+            return $user instanceof \WP_User ? $user : null;
+        } else {
+            // On single-site, get the first user with manage_options capability (lowest ID)
+            $users = get_users([
+                'capability' => 'manage_options',
+                'orderby' => 'ID',
+                'order' => 'ASC',
+                'number' => 1,
+                'fields' => 'all_with_meta',
+            ]);
+
+            return ! empty($users) ? $users[0] : null;
+        }
+    }
+
+    public static function add_personal_organisation_type($wpdb): int {
         $types_table = $wpdb->prefix . 'myvh_organisation_types';
-        $orgs_table = $wpdb->prefix . 'myvh_organisations';
 
         $person_type = $wpdb->get_row(
             $wpdb->prepare("SELECT * FROM {$types_table} WHERE Name = %s LIMIT 1", 'Person'),
@@ -791,9 +874,37 @@ class Installer {
             ], ['Id' => $person_type_id]);
         }
 
+        return $person_type_id;
+    }
+
+    public static function add_personal_organisation($wpdb, $org_type) : void {
+        $orgs_table = $wpdb->prefix . 'myvh_organisations';
+
+        $personal_org = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$orgs_table} WHERE Name = %s LIMIT 1", 'Personal booking'),
+            'ARRAY_A'
+        );
+
+        if ( empty($personal_org['Id']) ) {
+            $wpdb->insert($orgs_table, [
+                'Name' => 'Personal booking',
+                'OrganisationTypeId' => $org_type,
+                'IsDefault' => 1,
+                'IsSystem' => 1,
+                'IsActive' => 1,
+            ]);
+        }
+    }
+
+    public static function add_default_organisation_type($wpdb) : void {
+        $types_table = $wpdb->prefix . 'myvh_organisation_types';
+
         $default_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$types_table} WHERE IsDefault = 1");
-        if ( $default_count === 0 && $person_type_id > 0 ) {
-            $wpdb->update($types_table, ['IsDefault' => 1], ['Id' => $person_type_id]);
+        if ( $default_count === 0 ) {
+            $wpdb->insert($types_table, ['Name' => 'Default',
+                                        'Description' => 'Default Organsisation Type',
+                                        'IsDefault' => 1,
+                                        'IsSystem' => 0]);
             $default_count = 1;
         }
 
@@ -806,28 +917,16 @@ class Installer {
                 ));
             }
         }
+    }
 
-        if ( $person_type_id > 0 ) {
-            $personal_booking = $wpdb->get_row(
-                $wpdb->prepare("SELECT * FROM {$orgs_table} WHERE Name = %s LIMIT 1", 'Personal booking'),
-                'ARRAY_A'
-            );
+    // Set up defaults like organisation types and organisations if they don't already exist
+    public static function set_default_data($wpdb): void {
 
-            if ( empty($personal_booking['Id']) ) {
-                $wpdb->insert($orgs_table, [
-                    'Name' => 'Personal booking',
-                    'OrganisationTypeId' => $person_type_id,
-                    'IsDefault' => 1,
-                    'IsSystem' => 1,
-                    'IsActive' => 1,
-                ]);
-            } else {
-                $wpdb->update($orgs_table, [
-                    'OrganisationTypeId' => $person_type_id,
-                    'IsSystem' => 1,
-                ], ['Id' => (int) $personal_booking['Id']]);
-            }
-        }
+        // Create or update the system customer linked to the WP admin user
+        self::add_system_customer($wpdb);
+        $personal_org_type = self::add_personal_organisation_type($wpdb);
+        self::add_default_organisation_type($wpdb);
+        self::add_personal_organisation($wpdb, $personal_org_type);
 
     }
 

@@ -15,6 +15,24 @@ class CustomerRepository extends RepositoryBase {
         $this->table_name = $wpdb->prefix . 'myvh_customers';
     }
 
+    public function get_all($args = []): array {
+        $sql = "SELECT * FROM {$this->table_name} WHERE IsSystem = 0";
+        if (!empty($args['orderby'])) {
+            $orderby = $this->sanitize_identifier($args['orderby']);
+            $order   = $this->normalize_order($args['order'] ?? 'ASC');
+            if ($orderby !== '') {
+                $sql .= " ORDER BY {$orderby} {$order}";
+            }
+        }
+        if (!empty($args['limit'])) {
+            $sql .= " LIMIT " . intval($args['limit']);
+            if (!empty($args['offset'])) {
+                $sql .= " OFFSET " . intval($args['offset']);
+            }
+        }
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
     /**
      * Get all customers, each with a comma-separated list of their organisation names
      * resolved via myvh_organisation_members.CustomerId -> myvh_customers.CustomerId.

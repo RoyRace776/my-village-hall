@@ -1,5 +1,5 @@
 <?php
-namespace MYVH\Bootstrap\Network;
+namespace MYVH\Network;
 
 use WP_Site;
 use WP_List_Table;
