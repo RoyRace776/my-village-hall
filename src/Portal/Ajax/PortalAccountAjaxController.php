@@ -2,13 +2,15 @@
 namespace MYVH\Portal\Ajax;
 
 use MYVH\Customers\CustomerService;
+use MYVH\Login\PasswordValidator;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\PortalAuth;
 
 class PortalAccountAjaxController {
     public function __construct(
         private CustomerService $customer_service,
-        private ClientAdminService $client_admin_service
+        private ClientAdminService $client_admin_service,
+        private PasswordValidator $password_validator
     ) {}
 
     public function register(): void {
@@ -88,8 +90,9 @@ class PortalAccountAjaxController {
             wp_send_json_error('New password and confirmation do not match', 400);
         }
 
-        if (strlen($new_password) < 8) {
-            wp_send_json_error('New password must be at least 8 characters', 400);
+        $password_error = $this->password_validator->validate($new_password);
+        if ($password_error !== null) {
+            wp_send_json_error($password_error, 400);
         }
 
         $user = get_userdata($user_id);

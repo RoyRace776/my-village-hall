@@ -97,12 +97,29 @@ class Container
         foreach ($constructor->getParameters() as $param) {
             $type = $param->getType();
 
-            if (!$type) {
-                throw new \Exception("Cannot resolve {$param->getName()} in {$class}");
+            // Only named, non-built-in types can be resolved from the container.
+            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+                try {
+                    $dependencies[] = $this->get($type->getName());
+                    continue;
+                } catch (\Exception $e) {
+                    // Fall through to default/null handling below.
+                }
             }
 
-            // Recursively resolve dependency
-            $dependencies[] = $this->get($type->getName());
+            // Use the parameter's default value when available.
+            if ($param->isOptional()) {
+                $dependencies[] = $param->getDefaultValue();
+                continue;
+            }
+
+            // Nullable parameters without a default can safely receive null.
+            if ($type && $type->allowsNull()) {
+                $dependencies[] = null;
+                continue;
+            }
+
+            throw new \Exception("Cannot resolve {$param->getName()} in {$class}");
         }
 
         // Instantiate with resolved dependencies

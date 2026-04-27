@@ -4,12 +4,19 @@
  */
 namespace MYVH\Login;
 
+use MYVH\Container\Container;
+
 class PasswordResetLoader {
     public function init() {
         // Register shortcode
         add_shortcode('myvh_password_reset', [$this, 'render_shortcode']);
         // Init handler
-        $handler = new PasswordResetHandler();
+        global $myvh_container;
+
+        $handler = $myvh_container instanceof Container
+            ? $myvh_container->get(PasswordResetHandler::class)
+            : new PasswordResetHandler();
+
         $handler->init();
         $handler->hook_invalidate_on_change();
     }

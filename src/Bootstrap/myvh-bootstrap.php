@@ -32,8 +32,9 @@ if ( $myvh_container instanceof Container ) {
 
     $registry->add( $myvh_container->get( MYVH\Login\LoginShortcode::class ) );
     $registry->add( $myvh_container->get( MYVH\Portal\PortalShortcode::class ) );
+    $registry->add( $myvh_container->get( MYVH\Network\CreateSiteShortcode::class ) );
 
-    $login_handler = new MYVH\Login\LoginHandler();
+    $login_handler = $myvh_container->get( MYVH\Login\LoginHandler::class );
     $login_handler->init();
 
     $portal_controller = $myvh_container->get( MYVH\Portal\PortalController::class );

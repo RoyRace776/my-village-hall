@@ -5,6 +5,9 @@ use Exception;
 use MYVH\Customers\CustomerService;
 
 class LoginHandler {
+    public function __construct(
+        private PasswordValidator $password_validator
+    ) {}
 
     private function delete_user_safe(int $user_id): void {
         if (!function_exists('wp_delete_user')) {
@@ -12,30 +15,6 @@ class LoginHandler {
         }
 
         wp_delete_user($user_id);
-    }
-
-    private function validate_password_strength(string $password): ?string {
-        if (strlen($password) < 9) {
-            return 'Password must be at least 9 characters.';
-        }
-
-        if (!preg_match('/[A-Z]/', $password)) {
-            return 'Password must include at least one uppercase letter.';
-        }
-
-        if (!preg_match('/[a-z]/', $password)) {
-            return 'Password must include at least one lowercase letter.';
-        }
-
-        if (!preg_match('/\d/', $password)) {
-            return 'Password must include at least one number.';
-        }
-
-        if (!preg_match('/[^A-Za-z0-9]/', $password)) {
-            return 'Password must include at least one symbol.';
-        }
-
-        return null;
     }
 
     public function init(): void {
@@ -106,7 +85,7 @@ class LoginHandler {
             return;
         }
 
-        $password_error = $this->validate_password_strength($password);
+        $password_error = $this->password_validator->validate($password);
         if ($password_error !== null) {
             set_transient('myvh_register_error', $password_error, 30);
             return;

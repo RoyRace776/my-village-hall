@@ -13,7 +13,9 @@ use MYVH\Invoices\InvoiceServiceProvider;
 use MYVH\AutoInvoicing\AutoInvoicingServiceProvider;
 use MYVH\Payments\PaymentServiceProvider;
 use MYVH\Calendar\CalendarServiceProvider;
+use MYVH\Login\LoginServiceProvider;
 use MYVH\Portal\PortalServiceProvider;
+use MYVH\Network\NetworkServiceProvider;
 
 use wpdb;
 
@@ -65,7 +67,9 @@ $providers = [
     AutoInvoicingServiceProvider::class,
     PaymentServiceProvider::class,
     CalendarServiceProvider::class,
+    LoginServiceProvider::class,
     PortalServiceProvider::class,
+    NetworkServiceProvider::class,
 ];
 
 foreach ( $providers as $provider ) {

@@ -7,10 +7,12 @@ use MYVH\Email\EmailService;
  */
 class PasswordResetHandler {
     protected $email_service;
+    protected PasswordValidator $password_validator;
     protected $token_ttl = 60 * 60; // 1 hour
 
-    public function __construct($email_service = null) {
+    public function __construct(?EmailService $email_service = null, ?PasswordValidator $password_validator = null) {
         $this->email_service = $email_service ?: new EmailService();
+        $this->password_validator = $password_validator ?: new PasswordValidator();
     }
 
     public function init() {
@@ -73,7 +75,7 @@ class PasswordResetHandler {
         if (isset($_POST['myvh_reset_confirm_nonce'])) {
             if (!wp_verify_nonce($_POST['myvh_reset_confirm_nonce'], 'myvh_reset_confirm')) wp_die('Invalid request.');
             $password = $_POST['new_password'] ?? '';
-            $error = $this->validate_password($password);
+            $error = $this->password_validator->validate((string) $password);
             if ($error) {
                 set_transient('myvh_reset_error', $error, 30);
                 wp_safe_redirect($_SERVER['REQUEST_URI']); exit;
@@ -110,19 +112,6 @@ class PasswordResetHandler {
     public function invalidate_token($user_id) {
         delete_transient('myvh_reset_token_' . $user_id);
     }
-
-    /**
-     * Validate password strength (reuse login handler logic if possible)
-     */
-    protected function validate_password($password) {
-        if (strlen($password) < 10) return 'Password must be at least 10 characters.';
-        if (!preg_match('/[A-Z]/', $password)) return 'Password must include at least one uppercase letter.';
-        if (!preg_match('/[a-z]/', $password)) return 'Password must include at least one lowercase letter.';
-        if (!preg_match('/\d/', $password)) return 'Password must include at least one number.';
-        if (!preg_match('/[^A-Za-z0-9]/', $password)) return 'Password must include at least one symbol.';
-        return null;
-    }
-
     /**
      * Invalidate token on password change (hooked externally)
      */
