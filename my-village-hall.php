@@ -32,13 +32,16 @@ use MYVH\Calendar\CalendarShortcode;
 use MYVH\Calendar\CalendarStatusColours;
 use MYVH\Availability\AvailabilityService;
 use MYVH\Portal\ClientAdminService;
-use MYVH\Bootstrap\Network\NetworkDashboard;
+use MYVH\Network\NetworkDashboard;
 use MYVH\Bootstrap\Installer;
 use MYVH\Login\PasswordResetLoader;
 use MYVH\Audit\AuditTrail;
 use MYVH\Core\Support\AssetLoader;
 use MYVH\Settings\SettingsRegistry;
 use MYVH\Settings\SettingsPage;
+use MYVH\Network\SiteProvisioningRepository;
+use MYVH\Network\SiteProvisioningService;
+use MYVH\Network\SiteProvisioningRequestHandler;
 
 use Exception;
 use WP_Site;
@@ -51,7 +54,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Plugin constants ──────────────────────────────────────────────────────────
 
-define( 'MYVH_VERSION',          '0.2.2' );
+define( 'MYVH_VERSION',          '0.3.0' );
 define( 'MYVH_PLUGIN_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'MYVH_PLUGIN_URL',       plugin_dir_url( __FILE__ ) );
 define( 'MYVH_PLUGIN_BASENAME',  plugin_basename( __FILE__ ) );
@@ -123,6 +126,7 @@ class MyVillageHall {
         add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
         add_action( 'admin_menu',     [ $this, 'register_admin_menu' ] );
 
+        // AssetLoader handles enqueuing for both admin and frontend, so we just need to call its init method here.
         AssetLoader::init();
 
         // 2. Settings
@@ -131,6 +135,24 @@ class MyVillageHall {
 
         // 3. Form-submission handlers (admin-post actions)
         $this->register_admin_post_actions();
+
+        // 4. Other event listeners that don't fit cleanly into a service provider.
+        add_action('myvh_event_site.clone_failed', function($data) {
+            if (empty($data['provision_id'])) return;
+
+            $repo = new SiteProvisioningRepository();
+
+            $repo->update_status($data['provision_id'], 'failed', [
+                'error' => $data['reason'] ?? '',
+            ]);
+
+         add_action('myvh_site_cloned', function ($blog_id, $context) {
+
+            $seeder = new \MYVH\Network\SiteSeeder();
+            $seeder->seed($blog_id, $context);
+
+            }, 10, 2);
+        });
     }
 
     /**
@@ -242,7 +264,6 @@ class MyVillageHall {
             Installer::run();
             update_option( 'myvh_version', MYVH_VERSION );
         }
-
     }
 
     // ── Admin menu ────────────────────────────────────────────────────────────
@@ -454,7 +475,10 @@ class MyVillageHall {
     // Each method checks capability then includes the relevant view file.
     // A private helper keeps things DRY.
 
-    public function render_bookings_page():        void { $this->render_page( 'bookings',        true ); }
+    public function render_bookings_page(): void {
+        $this->render_page( 'bookings', true );
+    }
+
     public function render_calendar_page(): void {
 
         // Resolve visible hours here so AssetLoader stays free of database calls.
@@ -493,7 +517,7 @@ class MyVillageHall {
 
         $this->render_page( 'calendar' );
     }
-    public function render_customers_page():       void { $this->render_page( 'customers' ); }
+    public function render_customers_page(): void { $this->render_page( 'customers' ); }
     public function render_organisations_page():   void {
         if ( isset( $_GET['add'] ) ) {
             wp_safe_redirect( admin_url( 'admin.php?page=myvh-organisation-add' ) );
@@ -815,6 +839,24 @@ function myvh_init(): MyVillageHall {
     if ( is_multisite() && is_network_admin() ) {
         ( new NetworkDashboard() )->init();
     }
+
+    //Set up cloning handlers for site provisioning
+    global $myvh_container;
+    $service = $myvh_container->get(SiteProvisioningService::class);
+    SiteProvisioningRequestHandler::register($service);
+
+    // // ✅ Register cloner implementation
+    // add_filter('myvh_network_ns_cloner_execute', function ($result, $args) {
+
+    //     $cloner = new \MYVH\Network\WpSiteCloner();
+
+    //     return $cloner->clone(
+    //         $args['source_id'],
+    //         $args['target'],
+    //         $args['context'] ?? []
+    //     );
+
+    // }, 10, 2);
 
     return $plugin;
 }

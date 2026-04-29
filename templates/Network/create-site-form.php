@@ -50,11 +50,17 @@ if (!defined('ABSPATH')) {
 
             <label>
                 <span><?php echo esc_html__('Admin password', 'my-village-hall'); ?></span>
-                <input type="password" name="admin_password" required minlength="10">
+                <input type="password" name="admin_password" required minlength="9">
             </label>
 
-            <input type="hidden" name="captcha_token" value="<?php echo esc_attr(apply_filters('myvh_network_captcha_token', '')); ?>">
+            <input type="hidden" name="captcha_token" id="myvh-captcha-token" value="">
         </div>
+
+        <?php if (!empty($captcha_site_key)): ?>
+            <p class="description" data-myvh-captcha-site-key="<?php echo esc_attr($captcha_site_key); ?>">
+                <?php echo esc_html__('CAPTCHA is enabled. Your front-end CAPTCHA widget should write its response token into the hidden captcha_token field.', 'my-village-hall'); ?>
+            </p>
+        <?php endif; ?>
 
         <?php wp_nonce_field('myvh_create_site_request', 'myvh_create_site_nonce'); ?>
         <input type="hidden" name="myvh_create_site_action" value="1">

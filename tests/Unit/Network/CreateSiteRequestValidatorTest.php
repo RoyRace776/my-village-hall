@@ -36,4 +36,43 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
         $this->assertInstanceOf(WP_Error::class, $result);
         $this->assertSame('Password must include at least one uppercase letter.', $result->get_error_message());
     }
+
+    /** @test */
+    public function validate_accepts_hyphenated_subdomain(): void {
+        Functions\stubs([
+            'is_multisite' => true,
+            'is_subdomain_install' => true,
+            'get_network' => (object) [
+                'domain' => 'example.com',
+                'id' => 1,
+            ],
+            'domain_exists' => false,
+        ]);
+
+        $result = $this->validator->validate([
+            'site_name' => 'Test Site',
+            'subdomain' => 'site-five',
+            'admin_email' => 'admin@example.com',
+            'admin_first_name' => 'Test',
+            'admin_last_name' => 'User',
+            'admin_password' => 'Password1!',
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function validate_rejects_subdomain_starting_with_hyphen(): void {
+        $result = $this->validator->validate([
+            'site_name' => 'Test Site',
+            'subdomain' => '-sitefive',
+            'admin_email' => 'admin@example.com',
+            'admin_first_name' => 'Test',
+            'admin_last_name' => 'User',
+            'admin_password' => 'Password1!',
+        ]);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('Subdomain cannot begin or end with a hyphen.', $result->get_error_message());
+    }
 }

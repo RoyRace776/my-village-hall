@@ -73,15 +73,15 @@ $profile_post_code = !empty($customer['PostCode']) ? $customer['PostCode'] : '';
 
                 <label class="myvh-account-field" for="myvh-new-password">
                     <span>New password</span>
-                    <input id="myvh-new-password" type="password" name="new_password" required minlength="8" autocomplete="new-password">
+                    <input id="myvh-new-password" type="password" name="new_password" required minlength="9" autocomplete="new-password">
                 </label>
 
                 <label class="myvh-account-field" for="myvh-confirm-password">
                     <span>Confirm new password</span>
-                    <input id="myvh-confirm-password" type="password" name="confirm_password" required minlength="8" autocomplete="new-password">
+                    <input id="myvh-confirm-password" type="password" name="confirm_password" required minlength="9" autocomplete="new-password">
                 </label>
 
-                <p class="myvh-account-hint">Use at least 8 characters and avoid reusing old passwords.</p>
+                <p class="myvh-account-hint">Use at least 9 characters with uppercase, lowercase, number, and symbol.</p>
 
                 <div class="myvh-account-actions">
                     <button type="submit" class="button button-primary">Update Password</button>

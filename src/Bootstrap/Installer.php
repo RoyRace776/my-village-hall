@@ -442,6 +442,35 @@ class Installer {
             INDEX idx_origin (Origin),
             INDEX idx_created (CreatedAt)
         ) {$collate};" );
+
+        // Site Provisioning Service.  Uses base_prefix since it operates at the network level and needs to be accessible from the main site.
+        if ( is_multisite() ) {
+            $table = $wpdb->base_prefix . 'myvh_site_provisioning';
+            $sql = "CREATE TABLE $table (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                token VARCHAR(64) NOT NULL,
+                subdomain VARCHAR(100) NOT NULL,
+                site_name VARCHAR(255) NOT NULL,
+                admin_email VARCHAR(255) NOT NULL,
+                admin_first_name VARCHAR(255) NOT NULL,
+                admin_last_name VARCHAR(255) NOT NULL,
+                admin_password VARCHAR(255) NOT NULL,
+                logo_url VARCHAR(255) NULL,
+                user_id BIGINT UNSIGNED NULL,
+                blog_id BIGINT UNSIGNED NULL,
+                status VARCHAR(20) NOT NULL,
+                error TEXT NULL,
+                logo_url VARCHAR(255) NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY token (token),
+                KEY status (status),
+                KEY blog_id (blog_id)
+            ) $collate;";
+
+            dbDelta($sql);
+        }
     }
 
     // ── Foreign keys ──────────────────────────────────────────────────────────
@@ -733,37 +762,37 @@ class Installer {
         return $results;
     }
 
-        private static function backfill_opening_hours_by_day( wpdb $wpdb ): void {
-                $p = $wpdb->prefix;
-                $venue_table = "{$p}myvh_venues";
-                $room_table = "{$p}myvh_rooms";
-                $venue_hours_table = "{$p}myvh_venue_hours";
-                $room_hours_table = "{$p}myvh_room_hours";
+    public static function backfill_opening_hours_by_day( wpdb $wpdb ): void {
+            $p = $wpdb->prefix;
+            $venue_table = "{$p}myvh_venues";
+            $room_table = "{$p}myvh_rooms";
+            $venue_hours_table = "{$p}myvh_venue_hours";
+            $room_hours_table = "{$p}myvh_room_hours";
 
-                $days_sql = '(SELECT 0 AS DayOfWeek UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6)';
+            $days_sql = '(SELECT 0 AS DayOfWeek UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6)';
 
-                $wpdb->query(
-                        "INSERT INTO {$venue_hours_table} (VenueId, DayOfWeek, IsClosed, OpeningTime, ClosingTime)
-                         SELECT v.Id, d.DayOfWeek, 0, v.OpeningTime, v.ClosingTime
-                             FROM {$venue_table} v
-                             JOIN {$days_sql} d
-                             LEFT JOIN {$venue_hours_table} vh
-                                 ON vh.VenueId = v.Id
-                                AND vh.DayOfWeek = d.DayOfWeek
-                            WHERE vh.Id IS NULL"
-                );
+            $wpdb->query(
+                    "INSERT INTO {$venue_hours_table} (VenueId, DayOfWeek, IsClosed, OpeningTime, ClosingTime)
+                        SELECT v.Id, d.DayOfWeek, 0, v.OpeningTime, v.ClosingTime
+                            FROM {$venue_table} v
+                            JOIN {$days_sql} d
+                            LEFT JOIN {$venue_hours_table} vh
+                                ON vh.VenueId = v.Id
+                            AND vh.DayOfWeek = d.DayOfWeek
+                        WHERE vh.Id IS NULL"
+            );
 
-                $wpdb->query(
-                        "INSERT INTO {$room_hours_table} (RoomId, DayOfWeek, UseVenueHours, IsClosed, OpeningTime, ClosingTime)
-                         SELECT r.Id, d.DayOfWeek, 1, 0, r.OpeningTime, r.ClosingTime
-                             FROM {$room_table} r
-                             JOIN {$days_sql} d
-                             LEFT JOIN {$room_hours_table} rh
-                                 ON rh.RoomId = r.Id
-                                AND rh.DayOfWeek = d.DayOfWeek
-                            WHERE rh.Id IS NULL"
-                );
-        }
+            $wpdb->query(
+                    "INSERT INTO {$room_hours_table} (RoomId, DayOfWeek, UseVenueHours, IsClosed, OpeningTime, ClosingTime)
+                        SELECT r.Id, d.DayOfWeek, 1, 0, r.OpeningTime, r.ClosingTime
+                            FROM {$room_table} r
+                            JOIN {$days_sql} d
+                            LEFT JOIN {$room_hours_table} rh
+                                ON rh.RoomId = r.Id
+                            AND rh.DayOfWeek = d.DayOfWeek
+                        WHERE rh.Id IS NULL"
+            );
+    }
 
     /**
      * Create or update the system customer record, linking it to the WordPress super/admin user.

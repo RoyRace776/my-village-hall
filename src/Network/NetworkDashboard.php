@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) exit;
 class NetworkDashboard {
 
     private const CLIENT_ADMINS_PAGE = 'myvh-network-client-admins';
+    private const PROVISIONING_SETTINGS_PAGE = 'myvh-network-provisioning-settings';
 
     public function init(): void {
         add_action('network_admin_menu', [$this, 'add_menu']);
@@ -33,6 +34,15 @@ class NetworkDashboard {
             'manage_network_options',
             self::CLIENT_ADMINS_PAGE,
             [$this, 'render_client_admins_page']
+        );
+
+        add_submenu_page(
+            'myvh-network',
+            'Provisioning Settings',
+            'Provisioning Settings',
+            'manage_network_options',
+            self::PROVISIONING_SETTINGS_PAGE,
+            [$this, 'render_provisioning_settings_page']
         );
     }
 
@@ -236,6 +246,74 @@ class NetworkDashboard {
             echo '</tbody></table>';
         }
 
+        echo '</div>';
+    }
+
+    public function render_provisioning_settings_page(): void {
+        if (!current_user_can('manage_network_options')) {
+            wp_die('Sorry, you are not allowed to access this page.');
+        }
+
+        $saved_notice = false;
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['myvh_save_provisioning_settings'])) {
+            check_admin_referer('myvh_network_provisioning_settings');
+
+            NetworkProvisioningSettings::save([
+                'template_site_id' => $_POST['template_site_id'] ?? 0,
+                'captcha_site_key' => $_POST['captcha_site_key'] ?? '',
+                'captcha_secret_key' => $_POST['captcha_secret_key'] ?? '',
+            ]);
+
+            $saved_notice = true;
+        }
+
+        $settings = NetworkProvisioningSettings::get();
+        $notice = sanitize_key($_GET['myvh_notice'] ?? '');
+
+        echo '<div class="wrap">';
+        echo '<h1>Provisioning Settings</h1>';
+        echo '<p>Configure clone template and CAPTCHA keys for public site provisioning.</p>';
+
+        if ($saved_notice || $notice === 'saved') {
+            echo '<div class="notice notice-success is-dismissible"><p>Provisioning settings saved.</p></div>';
+        }
+
+        echo '<form method="post" action="' . esc_url(add_query_arg([
+            'page' => self::PROVISIONING_SETTINGS_PAGE,
+        ], network_admin_url('admin.php'))) . '">';
+
+        wp_nonce_field('myvh_network_provisioning_settings');
+
+        echo '<table class="form-table" role="presentation"><tbody>';
+        echo '<tr>';
+        echo '<th scope="row"><label for="myvh-template-site-id">Template site ID</label></th>';
+        echo '<td>';
+        echo '<input id="myvh-template-site-id" type="number" min="1" class="small-text" name="template_site_id" value="' . esc_attr((string) $settings['template_site_id']) . '">';
+        echo '<p class="description">Existing site ID used as the source template for NS Cloner.</p>';
+        echo '</td>';
+        echo '</tr>';
+
+        echo '<tr>';
+        echo '<th scope="row"><label for="myvh-captcha-site-key">CAPTCHA site key</label></th>';
+        echo '<td>';
+        echo '<input id="myvh-captcha-site-key" type="text" class="regular-text" name="captcha_site_key" value="' . esc_attr((string) $settings['captcha_site_key']) . '">';
+        echo '<p class="description">Public key used by the front-end CAPTCHA widget.</p>';
+        echo '</td>';
+        echo '</tr>';
+
+        echo '<tr>';
+        echo '<th scope="row"><label for="myvh-captcha-secret-key">CAPTCHA secret key</label></th>';
+        echo '<td>';
+        echo '<input id="myvh-captcha-secret-key" type="password" class="regular-text" name="captcha_secret_key" value="' . esc_attr((string) $settings['captcha_secret_key']) . '" autocomplete="off">';
+        echo '<p class="description">Server-side secret used to validate CAPTCHA tokens.</p>';
+        echo '</td>';
+        echo '</tr>';
+        echo '</tbody></table>';
+
+        echo '<input type="hidden" name="myvh_save_provisioning_settings" value="1">';
+        submit_button('Save Settings');
+        echo '</form>';
         echo '</div>';
     }
 }

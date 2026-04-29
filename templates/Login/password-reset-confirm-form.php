@@ -34,7 +34,7 @@ $login_url = $login_page ? get_permalink($login_page->ID) : home_url('/login/');
                     <label for="myvh-new-password">New password</label>
                     <input id="myvh-new-password" type="password" name="new_password" required autocomplete="new-password" class="myvh-login-input">
                 </div>
-                <p class="myvh-password-hint">Use at least 10 characters with uppercase, lowercase, number, and symbol.</p>
+                <p class="myvh-password-hint">Use at least 9 characters with uppercase, lowercase, number, and symbol.</p>
                 <button type="submit" class="myvh-login-button">Set password</button>
                 <div class="myvh-form-footer myvh-form-footer--secondary">
                     <a href="<?php echo esc_url($login_url); ?>">Back to sign in</a>

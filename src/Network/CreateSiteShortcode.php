@@ -57,6 +57,7 @@ class CreateSiteShortcode implements ShortcodeInterface {
             'admin_first_name' => sanitize_text_field($_POST['admin_first_name'] ?? ''),
             'admin_last_name' => sanitize_text_field($_POST['admin_last_name'] ?? ''),
         ];
+        $captcha_site_key = NetworkProvisioningSettings::captcha_site_key();
 
         ob_start();
         include MYVH_PLUGIN_DIR . 'templates/Network/create-site-form.php';

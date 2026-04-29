@@ -75,10 +75,6 @@ class CreateSiteRequestValidator extends RequestValidatorBase {
         }
 
         $domain = $subdomain . '.' . preg_replace('/^www\./', '', (string) $network->domain);
-        $signup = wpmu_validate_blog_signup($subdomain, (string) $data['site_name']);
-        if (!empty($signup['errors']) && $signup['errors'] instanceof \WP_Error && $signup['errors']->has_errors()) {
-            return $this->validation_error($signup['errors']->get_error_message());
-        }
 
         if (domain_exists($domain, '/', (int) $network->id)) {
             return $this->validation_error(__('That subdomain is already in use.', 'my-village-hall'));

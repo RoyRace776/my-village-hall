@@ -20,8 +20,10 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "MYVH\\Tests\\": "tests/",
-            "Tests\\": "tests/"
+            "MYVH\\Tests\\Unit\\": "tests/Unit/",
+            "MYVH\\Tests\\stubs\\": "tests/stubs/",
+            "Tests\\Support\\Factories\\": "tests/Support/Factories/",
+            "Tests\\Support\\Seeders\\": "tests/Support/Seeders/"
         }
     },
     "scripts": {

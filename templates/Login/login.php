@@ -183,15 +183,15 @@ if ($show_reset_request) {
 
         <div class="myvh-form-group">
             <label for="myvh-register-password">Password</label>
-            <input type="password" id="myvh-register-password" name="password" minlength="10" required>
+            <input type="password" id="myvh-register-password" name="password" minlength="9" required>
         </div>
 
         <div class="myvh-form-group">
             <label for="myvh-register-password-confirm">Confirm password</label>
-            <input type="password" id="myvh-register-password-confirm" name="confirm_password" minlength="10" required>
+            <input type="password" id="myvh-register-password-confirm" name="confirm_password" minlength="9" required>
         </div>
 
-        <p class="myvh-password-hint">Use at least 10 characters with uppercase, lowercase, number, and symbol.</p>
+        <p class="myvh-password-hint">Use at least 9 characters with uppercase, lowercase, number, and symbol.</p>
 
         <button type="submit" class="myvh-login-button">Create Account</button>
 

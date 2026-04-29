@@ -7,7 +7,7 @@ use Mockery;
 use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
 use MYVH\Tests\stubs\EventDispatcher;
-use MYVH\Tests\BookingStatus;
+use MYVH\Tests\stubs\BookingStatus;
 
 /**
  * Base class for all MYVH unit tests.
