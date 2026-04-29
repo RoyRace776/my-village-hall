@@ -146,9 +146,11 @@ class SiteProvisioningService {
             ];
         }
 
+        $this->repo->update_status($provision_id, 'site cloned');
+
         return [
             'ok' => true,
-            'message' => __('Site is being created.', 'my-village-hall'),
+            'message' => __('Site has been cloned.', 'my-village-hall'),
         ];
     }
 

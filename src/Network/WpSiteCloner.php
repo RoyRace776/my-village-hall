@@ -11,6 +11,7 @@ class WpSiteCloner {
         // 1. Create site
         $network = get_network();
         $subdomain = sanitize_title($target['name']);
+        $provision_id = $context['provision_id'];
 
         if (is_subdomain_install()) {
             // ✅ Subdomain mode

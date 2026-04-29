@@ -145,14 +145,14 @@ class MyVillageHall {
             $repo->update_status($data['provision_id'], 'failed', [
                 'error' => $data['reason'] ?? '',
             ]);
-
-         add_action('myvh_site_cloned', function ($blog_id, $context) {
-
-            $seeder = new \MYVH\Network\SiteSeeder();
-            $seeder->seed($blog_id, $context);
-
-            }, 10, 2);
         });
+
+        add_action('myvh_site_cloned', function ($blog_id, $context) {
+
+        $seeder = new \MYVH\Network\SiteSeeder();
+        $seeder->seed($blog_id, $context);
+
+        }, 10, 2);
     }
 
     /**

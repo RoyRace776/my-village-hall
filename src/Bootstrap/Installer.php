@@ -892,7 +892,7 @@ class Installer {
                 'Name' => 'Person',
                 'Description' => 'Individual person',
                 'IsSystem' => 1,
-                'IsDefault' => 1,
+                'IsDefault' => 0,
             ]);
             $person_type_id = (int) $wpdb->insert_id;
         } else {
@@ -900,6 +900,7 @@ class Installer {
             $wpdb->update($types_table, [
                 'Description' => 'Individual person',
                 'IsSystem' => 1,
+                'IsDefault' => 0,
             ], ['Id' => $person_type_id]);
         }
 
