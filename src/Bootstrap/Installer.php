@@ -31,7 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Installer {
 
     /**
-     * Entry point: create all tables then apply foreign-key constraints.
+     * Entry point: create all tables.
      *
      * @global wpdb $wpdb
      */
@@ -44,7 +44,6 @@ class Installer {
 
         self::create_tables( $wpdb, $collate );
         self::backfill_opening_hours_by_day( $wpdb );
-        self::add_foreign_keys( $wpdb );
         self::set_default_data( $wpdb );
     }
 
@@ -473,295 +472,6 @@ class Installer {
         }
     }
 
-    // ── Foreign keys ──────────────────────────────────────────────────────────
-
-    /**
-     * Add all foreign-key constraints.
-     *
-     * Each constraint is checked for existence before being applied, so this
-     * method is idempotent and safe to call on re-activation.
-     *
-     * @param  wpdb  $wpdb
-     * @return array Result log: [ ['constraint'=>…, 'status'=>'added|skipped|error', 'message'=>…] ]
-     */
-    private static function add_foreign_keys( wpdb $wpdb ): array {
-
-        $p = $wpdb->prefix;
-
-        /**
-         * Each entry: [ table, constraint name, ALTER TABLE SQL ]
-         *
-         * ON DELETE RESTRICT  — prevents orphaned records.
-         * ON UPDATE CASCADE   — keeps FKs in sync if a parent PK changes.
-         */
-        $foreign_keys = [
-
-        // ── Organisations ─────────────────────────────────────────────────────────
-
-        // Organisations → Organisation Types
-        [ "{$p}myvh_organisations", 'fk_organisations_org_type',
-          "ALTER TABLE {$p}myvh_organisations
-           ADD CONSTRAINT fk_organisations_org_type
-           FOREIGN KEY (OrganisationTypeId) REFERENCES {$p}myvh_organisation_types(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Organisation Members → Organisations
-        [ "{$p}myvh_organisation_members", 'fk_org_members_organisation',
-          "ALTER TABLE {$p}myvh_organisation_members
-           ADD CONSTRAINT fk_org_members_organisation
-           FOREIGN KEY (OrganisationId) REFERENCES {$p}myvh_organisations(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Organisation Members → Users
-        [ "{$p}myvh_organisation_members", 'fk_org_members_user',
-          "ALTER TABLE {$p}myvh_organisation_members
-           ADD CONSTRAINT fk_org_members_user
-           FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-                // Organisation Member Requests → Organisations
-                [ "{$p}myvh_organisation_member_requests", 'fk_org_member_requests_organisation',
-                    "ALTER TABLE {$p}myvh_organisation_member_requests
-                     ADD CONSTRAINT fk_org_member_requests_organisation
-                     FOREIGN KEY (OrganisationId) REFERENCES {$p}myvh_organisations(Id)
-                     ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-                // Organisation Member Requests → Customers (requesting member)
-                [ "{$p}myvh_organisation_member_requests", 'fk_org_member_requests_customer',
-                    "ALTER TABLE {$p}myvh_organisation_member_requests
-                     ADD CONSTRAINT fk_org_member_requests_customer
-                     FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
-                     ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-                // Organisation Member Requests → Customers (reviewing admin)
-                [ "{$p}myvh_organisation_member_requests", 'fk_org_member_requests_reviewer',
-                    "ALTER TABLE {$p}myvh_organisation_member_requests
-                     ADD CONSTRAINT fk_org_member_requests_reviewer
-                     FOREIGN KEY (ReviewedByCustomerId) REFERENCES {$p}myvh_customers(Id)
-                     ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // ── Venues & Rooms ────────────────────────────────────────────────────────
-
-        // Rooms → Venues
-        [ "{$p}myvh_rooms", 'fk_rooms_venue',
-          "ALTER TABLE {$p}myvh_rooms
-           ADD CONSTRAINT fk_rooms_venue
-           FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-                // Venue Hours → Venues
-                [ "{$p}myvh_venue_hours", 'fk_venue_hours_venue',
-                    "ALTER TABLE {$p}myvh_venue_hours
-                     ADD CONSTRAINT fk_venue_hours_venue
-                     FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
-                     ON DELETE CASCADE ON UPDATE CASCADE" ],
-
-                // Room Hours → Rooms
-                [ "{$p}myvh_room_hours", 'fk_room_hours_room',
-                    "ALTER TABLE {$p}myvh_room_hours
-                     ADD CONSTRAINT fk_room_hours_room
-                     FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-                     ON DELETE CASCADE ON UPDATE CASCADE" ],
-
-        // ── Bookings ──────────────────────────────────────────────────────────────
-
-        // Bookings → Customers
-        [ "{$p}myvh_bookings", 'fk_bookings_customer',
-          "ALTER TABLE {$p}myvh_bookings
-           ADD CONSTRAINT fk_bookings_customer
-           FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Bookings → Organisations
-        [ "{$p}myvh_bookings", 'fk_bookings_organisation',
-          "ALTER TABLE {$p}myvh_bookings
-           ADD CONSTRAINT fk_bookings_organisation
-           FOREIGN KEY (OrganisationId) REFERENCES {$p}myvh_organisations(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Bookings → Rooms
-        [ "{$p}myvh_bookings", 'fk_bookings_room',
-          "ALTER TABLE {$p}myvh_bookings
-           ADD CONSTRAINT fk_bookings_room
-           FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Bookings → Recurring Patterns (nullable — SET NULL on delete)
-        [ "{$p}myvh_bookings", 'fk_bookings_recurring_pattern',
-          "ALTER TABLE {$p}myvh_bookings
-           ADD CONSTRAINT fk_bookings_recurring_pattern
-           FOREIGN KEY (RecurringPatternId) REFERENCES {$p}myvh_recurring_patterns(Id)
-           ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // Recurring Patterns → Bookings (parent)
-        [ "{$p}myvh_recurring_patterns", 'fk_recurring_patterns_parent_booking',
-          "ALTER TABLE {$p}myvh_recurring_patterns
-           ADD CONSTRAINT fk_recurring_patterns_parent_booking
-           FOREIGN KEY (ParentBookingId) REFERENCES {$p}myvh_bookings(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // ── Room Rates ────────────────────────────────────────────────────────────
-
-        // Room Rates → Rooms
-        [ "{$p}myvh_room_rates", 'fk_room_rates_room',
-          "ALTER TABLE {$p}myvh_room_rates
-           ADD CONSTRAINT fk_room_rates_room
-           FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Room Rates → Organisation Types (nullable)
-        [ "{$p}myvh_room_rates", 'fk_room_rates_org_type',
-          "ALTER TABLE {$p}myvh_room_rates
-           ADD CONSTRAINT fk_room_rates_org_type
-           FOREIGN KEY (OrganisationTypeId) REFERENCES {$p}myvh_organisation_types(Id)
-           ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // ── Add-ons ───────────────────────────────────────────────────────────────
-
-        // Add-ons → Rooms (nullable)
-        [ "{$p}myvh_addons", 'fk_addons_room',
-          "ALTER TABLE {$p}myvh_addons
-           ADD CONSTRAINT fk_addons_room
-           FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-           ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // Add-ons → Venues (nullable)
-        [ "{$p}myvh_addons", 'fk_addons_venue',
-          "ALTER TABLE {$p}myvh_addons
-           ADD CONSTRAINT fk_addons_venue
-           FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
-           ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // ── Booking Charges ───────────────────────────────────────────────────────
-
-        // Booking Charges → Bookings
-        [ "{$p}myvh_booking_charges", 'fk_booking_charges_booking',
-          "ALTER TABLE {$p}myvh_booking_charges
-           ADD CONSTRAINT fk_booking_charges_booking
-           FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Booking Charges → Room Rates
-        [ "{$p}myvh_booking_charges", 'fk_booking_charges_room_rate',
-          "ALTER TABLE {$p}myvh_booking_charges
-           ADD CONSTRAINT fk_booking_charges_room_rate
-           FOREIGN KEY (RoomRateId) REFERENCES {$p}myvh_room_rates(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // ── Booking Add-ons ───────────────────────────────────────────────────────
-
-        // Booking Add-ons → Bookings
-        [ "{$p}myvh_booking_addons", 'fk_booking_addons_booking',
-          "ALTER TABLE {$p}myvh_booking_addons
-           ADD CONSTRAINT fk_booking_addons_booking
-           FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Booking Add-ons → Add-ons
-        [ "{$p}myvh_booking_addons", 'fk_booking_addons_addon',
-          "ALTER TABLE {$p}myvh_booking_addons
-           ADD CONSTRAINT fk_booking_addons_addon
-           FOREIGN KEY (AddonId) REFERENCES {$p}myvh_addons(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // ── Discounts ─────────────────────────────────────────────────────────────
-
-        // Discounts → Rooms (nullable)
-        [ "{$p}myvh_discounts", 'fk_discounts_room',
-          "ALTER TABLE {$p}myvh_discounts
-           ADD CONSTRAINT fk_discounts_room
-           FOREIGN KEY (RoomId) REFERENCES {$p}myvh_rooms(Id)
-           ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // Discounts → Venues (nullable)
-        [ "{$p}myvh_discounts", 'fk_discounts_venue',
-          "ALTER TABLE {$p}myvh_discounts
-           ADD CONSTRAINT fk_discounts_venue
-           FOREIGN KEY (VenueId) REFERENCES {$p}myvh_venues(Id)
-           ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // ── Booking Discounts ─────────────────────────────────────────────────────
-
-        // Booking Discounts → Bookings
-        [ "{$p}myvh_booking_discounts", 'fk_booking_discounts_booking',
-          "ALTER TABLE {$p}myvh_booking_discounts
-           ADD CONSTRAINT fk_booking_discounts_booking
-           FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Booking Discounts → Discounts (nullable — discount code may be ad-hoc)
-        [ "{$p}myvh_booking_discounts", 'fk_booking_discounts_discount',
-          "ALTER TABLE {$p}myvh_booking_discounts
-           ADD CONSTRAINT fk_booking_discounts_discount
-           FOREIGN KEY (DiscountId) REFERENCES {$p}myvh_discounts(Id)
-           ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // ── Invoices ──────────────────────────────────────────────────────────────
-
-        // Invoices → Customers
-        [ "{$p}myvh_invoices", 'fk_invoices_customer',
-          "ALTER TABLE {$p}myvh_invoices
-           ADD CONSTRAINT fk_invoices_customer
-           FOREIGN KEY (CustomerId) REFERENCES {$p}myvh_customers(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // ── Invoice Items ─────────────────────────────────────────────────────────
-
-        // Invoice Items → Invoices
-        [ "{$p}myvh_invoice_items", 'fk_invoice_items_invoice',
-          "ALTER TABLE {$p}myvh_invoice_items
-           ADD CONSTRAINT fk_invoice_items_invoice
-           FOREIGN KEY (InvoiceId) REFERENCES {$p}myvh_invoices(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-        // Invoice Items → Bookings (nullable)
-        [ "{$p}myvh_invoice_items", 'fk_invoice_items_booking',
-          "ALTER TABLE {$p}myvh_invoice_items
-           ADD CONSTRAINT fk_invoice_items_booking
-           FOREIGN KEY (BookingId) REFERENCES {$p}myvh_bookings(Id)
-           ON DELETE SET NULL ON UPDATE CASCADE" ],
-
-        // ── Payments ──────────────────────────────────────────────────────────────
-
-        // Payments → Invoices
-        [ "{$p}myvh_payments", 'fk_payments_invoice',
-          "ALTER TABLE {$p}myvh_payments
-           ADD CONSTRAINT fk_payments_invoice
-           FOREIGN KEY (InvoiceId) REFERENCES {$p}myvh_invoices(Id)
-           ON DELETE RESTRICT ON UPDATE CASCADE" ],
-
-    ];
-        $results = [];
-
-        foreach ( $foreign_keys as [ $table, $constraint, $sql ] ) {
-
-            // Skip if the constraint already exists (safe for re-activation)
-            $exists = (int) $wpdb->get_var( $wpdb->prepare(
-                "SELECT COUNT(*)
-                   FROM information_schema.TABLE_CONSTRAINTS
-                  WHERE CONSTRAINT_SCHEMA = DATABASE()
-                    AND TABLE_NAME        = %s
-                    AND CONSTRAINT_NAME   = %s
-                    AND CONSTRAINT_TYPE   = 'FOREIGN KEY'",
-                $table,
-                $constraint
-            ) );
-
-            if ( $exists ) {
-                $results[] = [ 'constraint' => $constraint, 'status' => 'skipped', 'message' => 'Already exists' ];
-                continue;
-            }
-
-            $ok = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-
-            $results[] = $ok !== false
-                ? [ 'constraint' => $constraint, 'status' => 'added',   'message' => 'Added successfully' ]
-                : [ 'constraint' => $constraint, 'status' => 'error',   'message' => $wpdb->last_error ];
-        }
-
-        return $results;
-    }
-
     public static function backfill_opening_hours_by_day( wpdb $wpdb ): void {
             $p = $wpdb->prefix;
             $venue_table = "{$p}myvh_venues";
@@ -968,7 +678,7 @@ class Installer {
         self::delete_all_transients($wpdb);
     }
 
-    private static function drop_tables($wpdb): void {
+    public static function drop_tables($wpdb): void {
 
         $tables = [
             'myvh_audit_log',
@@ -995,10 +705,7 @@ class Installer {
         ];
 
         foreach ($tables as $table) {
-            $sql = "SET FOREIGN_KEY_CHECKS = 0;";
-            $wpdb->query($sql);
-            $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}{$table};
-                    SET FOREIGN_KEY_CHECKS = 1;";
+            $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}";
             $wpdb->query($sql);
         }
     }

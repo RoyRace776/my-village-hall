@@ -149,10 +149,26 @@ class MyVillageHall {
 
         add_action('myvh_site_cloned', function ($blog_id, $context) {
 
-        $seeder = new \MYVH\Network\SiteSeeder();
-        $seeder->seed($blog_id, $context);
+            $seeder = new \MYVH\Network\SiteSeeder();
+            $seeder->seed($blog_id, $context);
 
         }, 10, 2);
+
+        add_action('wp_delete_site', [$this, 'handle_site_deleted'], 10, 1);
+
+    }
+
+    public function handle_site_deleted($site): void {
+
+        global $wpdb;
+        Installer::drop_tables($wpdb);
+
+        $site_id = is_object($site) ? $site->blog_id : (int) $site;
+        $repo = new SiteProvisioningRepository();
+        $provisioning_records = $repo->get_by_site_id($site_id);
+        foreach ($provisioning_records as $record) {
+            $repo->delete($record->id);
+            }
     }
 
     /**

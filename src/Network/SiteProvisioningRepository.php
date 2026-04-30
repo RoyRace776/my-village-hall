@@ -51,4 +51,20 @@ class SiteProvisioningRepository {
 
         $wpdb->update($this->table, $data, ['id' => $id]);
     }
+
+    public function delete(int $id): void {
+        global $wpdb;
+        $wpdb->delete($this->table, ['id' => $id]);
+    }
+
+    public function get_by_site_id(int $site_id): ?array {
+        global $wpdb;
+
+        $row = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$this->table} WHERE site_id = %d", $site_id),
+            ARRAY_A
+        );
+
+        return $row ?: null;
+    }
 }
