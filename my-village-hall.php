@@ -41,7 +41,6 @@ use MYVH\Settings\SettingsRegistry;
 use MYVH\Settings\SettingsPage;
 use MYVH\Network\SiteProvisioningRepository;
 use MYVH\Network\SiteProvisioningService;
-use MYVH\Network\SiteProvisioningRequestHandler;
 
 use Exception;
 use WP_Site;
@@ -165,10 +164,11 @@ class MyVillageHall {
 
         $site_id = is_object($site) ? $site->blog_id : (int) $site;
         $repo = new SiteProvisioningRepository();
-        $provisioning_records = $repo->get_by_site_id($site_id);
-        foreach ($provisioning_records as $record) {
-            $repo->delete($record->id);
+        if ($provisioning_records = $repo->get_by_site_id($site_id)) {
+             foreach ($provisioning_records as $record) {
+                $repo->delete($record->id);
             }
+        }
     }
 
     /**
@@ -855,11 +855,6 @@ function myvh_init(): MyVillageHall {
     if ( is_multisite() && is_network_admin() ) {
         ( new NetworkDashboard() )->init();
     }
-
-    //Set up cloning handlers for site provisioning
-    global $myvh_container;
-    $service = $myvh_container->get(SiteProvisioningService::class);
-    SiteProvisioningRequestHandler::register($service);
 
     // // ✅ Register cloner implementation
     // add_filter('myvh_network_ns_cloner_execute', function ($result, $args) {

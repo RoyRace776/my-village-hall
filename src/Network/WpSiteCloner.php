@@ -37,14 +37,17 @@ class WpSiteCloner {
 
         // 2. Copy data
         $this->copy_options($source_id, $blog_id);
-        $this->copy_posts($source_id, $blog_id);
+        $post_map = $this->copy_posts($source_id, $blog_id);
 
-        // 3. Assign admin
+        // 3. Fix front page
+        $this->fix_front_page($source_id, $blog_id, $post_map);
+
+        // 4. Assign admin
         if (!empty($context['user_id'])) {
             add_user_to_blog($blog_id, $context['user_id'], 'administrator');
         }
 
-        // 4. Custom hooks (your system)
+        // 5. Custom hooks (your system)
         do_action('myvh_site_cloned', $blog_id, $context);
 
         return (int) $blog_id;
@@ -75,12 +78,14 @@ class WpSiteCloner {
         restore_current_blog();
     }
 
-    private function copy_posts(int $source_id, int $target_id): void {
+    private function copy_posts(int $source_id, int $target_id): array {
+
+        $map = [];
 
         switch_to_blog($source_id);
 
         $posts = get_posts([
-            'post_type' => ['page', 'post'],
+            'post_type'   => ['page', 'post'],
             'numberposts' => -1,
         ]);
 
@@ -98,12 +103,16 @@ class WpSiteCloner {
             ]);
 
             if ($new_id && !is_wp_error($new_id)) {
+                $map[$post->ID] = $new_id;
+
                 $this->copy_post_meta($post->ID, $new_id, $source_id);
             }
         }
 
         restore_current_blog();
-    }
+
+        return $map;
+}
 
     private function copy_post_meta(int $source_post_id, int $target_post_id, int $source_blog_id): void {
 
@@ -116,5 +125,28 @@ class WpSiteCloner {
                 add_post_meta($target_post_id, $key, maybe_unserialize($value));
             }
         }
+    }
+
+    private function fix_front_page(int $source_id, int $target_id, array $map): void {
+
+        // Get original setting
+        switch_to_blog($source_id);
+
+        $front_page_id = get_option('page_on_front');
+        $show_on_front = get_option('show_on_front');
+
+        restore_current_blog();
+
+        if ($show_on_front !== 'page' || empty($map[$front_page_id])) {
+            return;
+        }
+
+        // Apply mapped ID
+        switch_to_blog($target_id);
+
+        update_option('show_on_front', 'page');
+        update_option('page_on_front', $map[$front_page_id]);
+
+        restore_current_blog();
     }
 }
