@@ -4,7 +4,7 @@ namespace MYVH\Admin;
 class AdminNotices {
     private static $transient_key = 'myvh_admin_notices';
 
-    public static function add($type = 'success', $message) {
+    public static function add($message, $type = 'success') {
 
         $notices = get_transient(self::$transient_key);
 
@@ -21,15 +21,15 @@ class AdminNotices {
     }
 
     public static function success($message) {
-        self::add('success', $message);
+        self::add($message, 'success');
     }
 
     public static function error($message) {
-        self::add('error', $message);
+        self::add($message, 'error');
     }
 
     public static function warning($message) {
-        self::add('warning', $message);
+        self::add($message, 'warning');
     }
 
     public static function render() {

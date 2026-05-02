@@ -1061,6 +1061,10 @@ window.BookingModalCreate = (function() {
 
         e.preventDefault();
 
+        if (modal && modal.dataset.loading === '1') {
+            return;
+        }
+
         if (!config.beforeSubmit(form)) {
             return;
         }

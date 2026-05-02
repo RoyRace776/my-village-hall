@@ -4,6 +4,25 @@ namespace MYVH\Email;
 class EmailTemplateRegistry {
     public static function all(): array {
         return [
+            'customer-email-verification' => [
+                'label' => 'Customer Email Verification',
+                'description' => 'Sent when a new customer registers and needs to verify their email address.',
+                'default_subject' => 'Verify your email address',
+                'placeholders' => [
+                    'customer_name' => 'Customer full name.',
+                    'verification_url' => 'One-time verification link.',
+                    'verification_ttl_hours' => 'How long the verification link remains valid, in hours.',
+                    'site_name' => 'Current site name.',
+                    'site_url' => 'Current site URL.',
+                    'logo_url' => 'Current site icon URL.',
+                ],
+                'default_html' => '<table style="width:100%;max-width:560px;margin:auto;font-family:sans-serif;background:#ffffff;border-radius:8px;box-shadow:0 2px 8px #0001;"><tr><td style="padding:28px 32px 12px 32px;text-align:center;">{{logo_html}}<h2 style="margin:0 0 8px 0;color:#222;">Verify your email</h2><p style="margin:0 0 20px 0;color:#444;">Hello {{customer_name}}, please verify your email address to finish setting up your account on {{site_name}}.</p><p style="margin:0 0 24px 0;"><a href="{{verification_url}}" style="display:inline-block;padding:12px 24px;background:#2a7ae2;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;">Verify email address</a></p><p style="color:#888;font-size:13px;margin:0;">This link expires in {{verification_ttl_hours}} hour(s).</p></td></tr><tr><td style="padding:0 32px 24px 32px;text-align:center;color:#bbb;font-size:12px;">&copy; {{year}} {{site_name}}</td></tr></table>',
+                'sample_vars' => [
+                    'customer_name' => 'Alex Morgan',
+                    'verification_url' => 'https://example.com/login/?myvh_verify_email=1&uid=42&token=abc123',
+                    'verification_ttl_hours' => '24',
+                ],
+            ],
             'password-setup' => [
                 'label' => 'Password Setup',
                 'description' => 'Sent when a customer account is created and they need to set a password.',

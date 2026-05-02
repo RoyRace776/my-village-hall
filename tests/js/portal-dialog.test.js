@@ -72,4 +72,46 @@ describe('MyvhPortalDialog', () => {
     document.querySelector('.myvh-portal-dialog__btn--primary').click();
     await promise;
   });
+
+  test('traps Tab navigation within confirm buttons', async () => {
+    jest.useFakeTimers();
+
+    const promise = window.MyvhPortalDialog.confirm('Focus test');
+    jest.runOnlyPendingTimers();
+
+    const buttons = document.querySelectorAll('.myvh-portal-dialog__btn');
+    const cancelButton = buttons[0];
+    const okButton = buttons[1];
+
+    expect(document.activeElement).toBe(cancelButton);
+
+    okButton.focus();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(cancelButton);
+
+    cancelButton.focus();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(okButton);
+
+    okButton.click();
+    await expect(promise).resolves.toBe(true);
+    jest.useRealTimers();
+  });
+
+  test('keeps focus on OK button when tabbing alert dialog', async () => {
+    jest.useFakeTimers();
+
+    const promise = window.MyvhPortalDialog.alert('Single button');
+    jest.runOnlyPendingTimers();
+
+    const okButton = document.querySelector('.myvh-portal-dialog__btn--primary');
+    expect(document.activeElement).toBe(okButton);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(okButton);
+
+    okButton.click();
+    await expect(promise).resolves.toBe(true);
+    jest.useRealTimers();
+  });
 });

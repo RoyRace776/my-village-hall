@@ -33,6 +33,11 @@ class InstallerTest extends UnitTestCase {
             ->andReturnUsing(fn($query, ...$args) => $query)
             ->byDefault();
 
+        // Stub get_var() to return null by default (skips org membership insertion)
+        $this->wpdb->shouldReceive('get_var')
+            ->andReturn(null)
+            ->byDefault();
+
         // Setup default stubs for WordPress functions
         Monkey\Functions\stubs([
             'get_users' => [],
@@ -73,44 +78,34 @@ class InstallerTest extends UnitTestCase {
                 )
             );
 
-        Installer::add_system_customer();
+        Installer::add_system_customer(1);
 
         // Verify the Mockery expectations were called
         $this->assertTrue(true);
     }
 
     /** @test */
-    public function it_updates_existing_system_customer_with_admin_details(): void {
+    public function it_skips_insert_when_system_customer_already_exists(): void {
         global $wpdb;
         $wpdb = $this->wpdb;
 
-        // Mock: system customer exists
+        // Mock: system customer already exists
         $existing_customer = ['Id' => 5, 'Name' => 'System', 'Email' => '', 'IsSystem' => 1];
         $this->wpdb->shouldReceive('get_row')
             ->once()
             ->with(Mockery::type('string'), 'ARRAY_A')
             ->andReturn($existing_customer);
 
-        // Mock: get_users returns an admin
+        // Mock: get_users returns an admin (resolved but not used for update)
         Monkey\Functions\when('get_users')
             ->justReturn([$this->create_mock_user(2, 'New Admin', 'newadmin@example.com')]);
 
-        // Mock: update should be called
-        $this->wpdb->shouldReceive('update')
-            ->once()
-            ->with(
-                'wp_myvh_customers',
-                Mockery::on(fn($data) =>
-                    $data['Name'] === 'New Admin'
-                    && $data['Email'] === 'newadmin@example.com'
-                    && $data['WPUserId'] === 2
-                ),
-                ['Id' => 5]
-            );
+        // Neither insert nor update should be called for the customer table
+        $this->wpdb->shouldNotReceive('insert');
+        $this->wpdb->shouldNotReceive('update');
 
-        Installer::add_system_customer();
+        Installer::add_system_customer(1);
 
-        // Verify the Mockery expectations were called
         $this->assertTrue(true);
     }
 
@@ -138,7 +133,7 @@ class InstallerTest extends UnitTestCase {
                 )
             );
 
-        Installer::add_system_customer();
+        Installer::add_system_customer(1);
 
         // Verify the Mockery expectations were called
         $this->assertTrue(true);
@@ -175,7 +170,7 @@ class InstallerTest extends UnitTestCase {
                 )
             );
 
-        Installer::add_system_customer();
+        Installer::add_system_customer(1);
 
         // Verify the Mockery expectations were called
         $this->assertTrue(true);

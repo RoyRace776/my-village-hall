@@ -7,6 +7,12 @@ delete_transient('myvh_login_error');
 $register_error = get_transient('myvh_register_error');
 delete_transient('myvh_register_error');
 
+$verification_error = get_transient('myvh_verification_error');
+delete_transient('myvh_verification_error');
+
+$verification_success = get_transient('myvh_verification_success');
+delete_transient('myvh_verification_success');
+
 $existing_email = get_transient('myvh_register_existing_email');
 delete_transient('myvh_register_existing_email');
 
@@ -148,6 +154,22 @@ if ($show_reset_request) {
                     <path d="M10 6v4m0 2v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
                 <span><?php echo esc_html($error); ?></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($verification_error): ?>
+            <div class="myvh-error-message">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+                    <path d="M10 6v4m0 2v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span><?php echo esc_html($verification_error); ?></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($verification_success): ?>
+            <div class="myvh-note-message">
+                <span><?php echo esc_html($verification_success); ?></span>
             </div>
         <?php endif; ?>
 

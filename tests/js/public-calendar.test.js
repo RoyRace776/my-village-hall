@@ -55,8 +55,10 @@ function makeFakeDayPilotDate(input) {
 }
 
 function installDayPilotStub() {
+  let latestView = null;
+
   function createView(config) {
-    return {
+    latestView = {
       startDate: config.startDate,
       events: { list: [] },
       init: jest.fn(),
@@ -65,6 +67,8 @@ function installDayPilotStub() {
       visibleStart: () => makeFakeDayPilotDate('2026-05-01T00:00:00'),
       visibleEnd: () => makeFakeDayPilotDate('2026-06-01T00:00:00')
     };
+
+    return latestView;
   }
 
   window.DayPilot = {
@@ -91,9 +95,15 @@ function installDayPilotStub() {
   };
 
   window.DayPilot.Date.today = () => makeFakeDayPilotDate('2026-05-01T00:00:00');
+
+  return {
+    getLatestView: () => latestView
+  };
 }
 
 describe('public-calendar.js', () => {
+  let dayPilotState;
+
   beforeEach(() => {
     jest.restoreAllMocks();
     window.localStorage.clear();
@@ -120,7 +130,7 @@ describe('public-calendar.js', () => {
       </div>
     `;
 
-    installDayPilotStub();
+    dayPilotState = installDayPilotStub();
 
     window.fetch = jest.fn().mockResolvedValue({
       json: () => Promise.resolve([])
@@ -175,13 +185,13 @@ describe('public-calendar.js', () => {
     const initialFetchCalls = window.fetch.mock.calls.length;
 
     const venueSelect = document.querySelector('.myvh-cal-venue-select');
-    venueSelect.value = '101';
+    venueSelect.value = '102';
     venueSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     await flushPromises();
     await flushPromises();
 
-    expect(window.localStorage.getItem('myvhCalendarVenue_public')).toBe('101');
+    expect(window.localStorage.getItem('myvhCalendarVenue_public')).toBe('102');
     expect(window.fetch.mock.calls.length).toBeGreaterThan(initialFetchCalls);
   });
 
@@ -224,5 +234,63 @@ describe('public-calendar.js', () => {
     expect(statusItems.length).toBeGreaterThan(0);
     expect(roomItems.length).toBeGreaterThan(0);
     expect(document.querySelector('.myvh-cal-key-room-items').textContent).toContain('Main Hall');
+  });
+
+  test('logs error when events endpoint returns malformed payload', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    window.fetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ invalid: true })
+    });
+
+    window.eval(scriptSource);
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    await flushPromises();
+    await flushPromises();
+
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  test('ignores stale event response when a newer load finishes first', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    let resolveFirst;
+    let resolveSecond;
+
+    window.fetch
+      .mockReturnValueOnce(new Promise((resolve) => {
+        resolveFirst = resolve;
+      }))
+      .mockReturnValueOnce(new Promise((resolve) => {
+        resolveSecond = resolve;
+      }));
+
+    window.eval(scriptSource);
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    await flushPromises();
+
+    const venueSelect = document.querySelector('.myvh-cal-venue-select');
+    venueSelect.value = '102';
+    venueSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(window.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    resolveSecond({
+      json: () => Promise.resolve([
+        { id: 'newer', start: '2026-05-02T09:00:00', end: '2026-05-02T10:00:00', text: 'Newer', tags: { status: 'confirmed', roomId: 2 }, resource: 2 }
+      ])
+    });
+    await flushPromises();
+    await flushPromises();
+
+    resolveFirst({
+      json: () => Promise.resolve({ invalid: true })
+    });
+    await flushPromises();
+    await flushPromises();
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });

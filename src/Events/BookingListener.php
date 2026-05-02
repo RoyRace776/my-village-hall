@@ -73,12 +73,12 @@ class BookingListener {
         ]);
     }
 
-    private function resolve_email(int $booking_id): string {
+    protected function resolve_email(int $booking_id): string {
         $email_resolver = new BookingRecipientResolver();
         return $email_resolver->resolve_for_booking($booking_id);
     }
 
-    private function get_booking_template_vars(int $booking_id): array {
+    protected function get_booking_template_vars(int $booking_id): array {
         global $myvh_container;
         $booking_service = $myvh_container->get(BookingService::class);
         $customer_service = $myvh_container->get(CustomerService::class);

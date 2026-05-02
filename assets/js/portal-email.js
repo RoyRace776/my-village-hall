@@ -36,6 +36,8 @@ window.MyvhPortalEmail = (function() {
             return;
         }
 
+        let isResettingTemplate = false;
+
         page.dataset.bound = '1';
 
         page.addEventListener('submit', function(event) {
@@ -60,6 +62,11 @@ window.MyvhPortalEmail = (function() {
                     return;
                 }
 
+                if (isResettingTemplate) {
+                    return;
+                }
+                isResettingTemplate = true;
+
                 showMessage(message, 'Resetting...', false);
 
                 return window.MyvhPortalAjax.post('myvh_reset_email_template', { template: slug }, { scope: 'portal' })
@@ -74,6 +81,9 @@ window.MyvhPortalEmail = (function() {
                 })
                 .catch(function() {
                     showMessage(message, 'Unexpected error while resetting template', true);
+                })
+                .finally(function() {
+                    isResettingTemplate = false;
                 });
             });
         });
@@ -94,6 +104,11 @@ window.MyvhPortalEmail = (function() {
         if (!form || !textarea) {
             return;
         }
+
+        let isSavingTemplate = false;
+        let isPreviewingTemplate = false;
+        let isSendingTestTemplate = false;
+        let isResettingTemplate = false;
 
         const initEditor = function() {
             if (!window.tinymce) {
@@ -141,6 +156,10 @@ window.MyvhPortalEmail = (function() {
         form.addEventListener('submit', function(event) {
             event.preventDefault();
 
+            if (isSavingTemplate) {
+                return;
+            }
+
             const data = new FormData(form);
             const slug = String(data.get('template') || '');
             const subject = String(data.get('subject') || '').trim();
@@ -152,6 +171,7 @@ window.MyvhPortalEmail = (function() {
                 }
 
                 showMessage(message, 'Saving...', false);
+                isSavingTemplate = true;
 
                 window.MyvhPortalAjax.post('myvh_save_email_template', {
                     template: slug,
@@ -168,6 +188,9 @@ window.MyvhPortalEmail = (function() {
                     })
                     .catch(function() {
                         showMessage(message, 'Unexpected error while saving template', true);
+                    })
+                    .finally(function() {
+                        isSavingTemplate = false;
                     });
             });
         });
@@ -175,12 +198,17 @@ window.MyvhPortalEmail = (function() {
         const previewButton = page.querySelector('[data-email-template-preview="1"]');
         if (previewButton) {
             previewButton.addEventListener('click', function() {
+                if (isPreviewingTemplate) {
+                    return;
+                }
+
                 const data = new FormData(form);
                 const slug = String(data.get('template') || '');
                 const subject = String(data.get('subject') || '').trim();
 
                 withEditorContent(textarea, function(htmlBody) {
                     showMessage(message, 'Building preview...', false);
+                    isPreviewingTemplate = true;
 
                     window.MyvhPortalAjax.post('myvh_preview_email_template', {
                         template: slug,
@@ -209,6 +237,9 @@ window.MyvhPortalEmail = (function() {
                         })
                         .catch(function() {
                             showMessage(message, 'Unexpected error while previewing template', true);
+                        })
+                        .finally(function() {
+                            isPreviewingTemplate = false;
                         });
                 });
             });
@@ -217,6 +248,10 @@ window.MyvhPortalEmail = (function() {
         const sendTestButton = page.querySelector('[data-email-template-send-test="1"]');
         if (sendTestButton) {
             sendTestButton.addEventListener('click', function() {
+                if (isSendingTestTemplate) {
+                    return;
+                }
+
                 const data = new FormData(form);
                 const slug = String(data.get('template') || '');
                 const subject = String(data.get('subject') || '').trim();
@@ -224,6 +259,7 @@ window.MyvhPortalEmail = (function() {
                 withEditorContent(textarea, function(htmlBody) {
                     showMessage(message, 'Sending test email...', false);
                     sendTestButton.disabled = true;
+                    isSendingTestTemplate = true;
 
                     window.MyvhPortalAjax.post('myvh_send_test_email_template', {
                         template: slug,
@@ -242,6 +278,9 @@ window.MyvhPortalEmail = (function() {
                         .catch(function() {
                             sendTestButton.disabled = false;
                             showMessage(message, 'Unexpected error while sending test email', true);
+                        })
+                        .finally(function() {
+                            isSendingTestTemplate = false;
                         });
                 });
             });
@@ -260,6 +299,12 @@ window.MyvhPortalEmail = (function() {
                         return;
                     }
 
+                    if (isResettingTemplate) {
+                        return;
+                    }
+
+                    isResettingTemplate = true;
+
                     showMessage(message, 'Resetting...', false);
 
                     return window.MyvhPortalAjax.post('myvh_reset_email_template', { template: slug }, { scope: 'portal' })
@@ -274,6 +319,9 @@ window.MyvhPortalEmail = (function() {
                     })
                     .catch(function() {
                         showMessage(message, 'Unexpected error while resetting template', true);
+                    })
+                    .finally(function() {
+                        isResettingTemplate = false;
                     });
                 });
             });

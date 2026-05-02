@@ -3,11 +3,24 @@ namespace MYVH\Login;
 
 use Exception;
 use MYVH\Customers\CustomerService;
+use MYVH\Events\CustomerEvents;
+use MYVH\Events\EventDispatcher;
 
 class LoginHandler {
     public function __construct(
-        private PasswordValidator $password_validator
+        private PasswordValidator $password_validator,
+        private ?CustomerEmailVerificationService $verification_service = null
     ) {}
+
+    private function get_verification_service(): CustomerEmailVerificationService {
+        if ($this->verification_service instanceof CustomerEmailVerificationService) {
+            return $this->verification_service;
+        }
+
+        $this->verification_service = new CustomerEmailVerificationService();
+
+        return $this->verification_service;
+    }
 
     private function delete_user_safe(int $user_id): void {
         if (!function_exists('wp_delete_user')) {
@@ -20,6 +33,7 @@ class LoginHandler {
     public function init(): void {
         add_action('init', [$this, 'handle_login']);
         add_action('init', [$this, 'handle_registration']);
+        add_action('init', [$this, 'handle_email_verification']);
     }
 
     private function resolve_login_page_url(): string {
@@ -228,7 +242,7 @@ class LoginHandler {
                     'name' => $name,
                     'email' => $email,
                     'phone_number' => $phone,
-                    'email_verified' => true,
+                    'email_verified' => false,
                     'user_id' => (int) $user_id,
                 ]);
             } else {
@@ -236,7 +250,7 @@ class LoginHandler {
                     'name' => $name,
                     'email' => $email,
                     'phone_number' => $phone,
-                    'email_verified' => true,
+                    'email_verified' => false,
                     'user_id' => (int) $user_id,
                 ]);
             }
@@ -245,6 +259,13 @@ class LoginHandler {
                 $this->delete_user_safe((int) $user_id);
                 $this->redirect_registration_error($saved->get_error_message());
             }
+
+            EventDispatcher::dispatch(CustomerEvents::REGISTERED, [
+                'customer_id' => (int) $saved,
+                'user_id' => (int) $user_id,
+                'email' => $email,
+                'name' => $name,
+            ]);
         } catch (Exception $e) {
             $this->delete_user_safe((int) $user_id);
             $this->redirect_registration_error($e->getMessage());
@@ -259,6 +280,26 @@ class LoginHandler {
         delete_transient('myvh_login_prefill_username');
 
         wp_safe_redirect($this->resolve_portal_page_url());
+        exit;
+    }
+
+    public function handle_email_verification(): void {
+        if (empty($_GET['myvh_verify_email']) || empty($_GET['uid']) || empty($_GET['token'])) {
+            return;
+        }
+
+        $user_id = (int) $_GET['uid'];
+        $token = (string) $_GET['token'];
+
+        $verified = $this->get_verification_service()->verify_token($user_id, $token);
+
+        if ($verified) {
+            set_transient('myvh_verification_success', 'Email address verified. You can now sign in.', 60);
+        } else {
+            set_transient('myvh_verification_error', 'Invalid or expired verification link.', 60);
+        }
+
+        wp_safe_redirect($this->resolve_login_page_url());
         exit;
     }
 }

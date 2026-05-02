@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 use MYVH\Container\Container;
 use MYVH\Events\BookingListener;
+use MYVH\Events\CustomerListener;
 use MYVH\Events\OrganisationListener;
 use MYVH\Core\Shortcode\ShortcodeRegistry;
 
@@ -21,6 +22,7 @@ use MYVH\Core\Shortcode\ShortcodeRegistry;
 global $myvh_container;
 
 ( new BookingListener() )->register();
+( new CustomerListener() )->register();
 ( new OrganisationListener() )->register();
 
 if ( $myvh_container instanceof Container ) {

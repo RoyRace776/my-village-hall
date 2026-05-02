@@ -84,6 +84,31 @@ describe('BookingModalView', () => {
     window.eval(scriptSource);
   });
 
+  test('shows alert and closes when fetch returns invalid payload', async () => {
+    const alertSpy = jest.fn().mockResolvedValue(true);
+    window.MyvhPortalDialog = {
+      alert: alertSpy
+    };
+
+    window.fetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ success: false })
+    });
+
+    window.BookingModalView.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal'
+    });
+
+    window.BookingModalView.open({ bookingId: 41 });
+
+    await flushPromises();
+    await flushPromises();
+
+    expect(alertSpy).toHaveBeenCalledWith('Failed to load booking');
+    expect(document.getElementById('myvh-booking-modal-view').classList.contains('hidden')).toBe(true);
+  });
+
   test('uses complete payload without fetch and enables edit button when allowed', async () => {
     const onOpen = jest.fn();
 

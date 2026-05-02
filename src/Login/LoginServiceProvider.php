@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 class LoginServiceProvider {
     public function register($container): void {
         $container->singleton(PasswordValidator::class);
+        $container->singleton(CustomerEmailVerificationService::class);
         $container->singleton(LoginHandler::class);
         $container->singleton(PasswordResetHandler::class);
     }

@@ -215,4 +215,38 @@ describe('BookingModalCreate', () => {
     expect(document.querySelector('h2').textContent).toBe('Edit Booking');
     expect(document.querySelector('.myvh-delete-booking').style.display).toBe('');
   });
+
+  test('ignores rapid duplicate submit while request is in flight', async () => {
+    let resolveRequest;
+    window.fetch.mockReturnValueOnce(new Promise((resolve) => {
+      resolveRequest = resolve;
+    }));
+
+    window.myvhCal = {
+      currentCustomerId: 55,
+      defaultOrganisationId: 88
+    };
+
+    document.querySelector('[name="room_id"]').innerHTML = '<option value="14">Main Hall</option>';
+    document.querySelector('[name="room_id"]').value = '14';
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal'
+    });
+
+    const form = document.getElementById('myvh-booking-form-create');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(window.fetch).toHaveBeenCalledTimes(1);
+
+    resolveRequest({
+      json: () => Promise.resolve({ success: true, data: { booking_id: 999 } })
+    });
+
+    await flushPromises();
+    await flushPromises();
+  });
 });

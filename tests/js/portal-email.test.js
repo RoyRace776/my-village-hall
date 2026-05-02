@@ -123,4 +123,101 @@ describe('MyvhPortalEmail', () => {
     expect(document.getElementById('myvh-email-template-preview-modal').hidden).toBe(false);
     expect(document.querySelector('[data-email-preview-content]').innerHTML).toContain('<h4>Preview</h4>');
   });
+
+  test('prevents duplicate rapid save submits while saving is in progress', async () => {
+    let resolveSave;
+    window.MyvhPortalAjax.post.mockReturnValueOnce(new Promise((resolve) => {
+      resolveSave = resolve;
+    }));
+
+    document.body.innerHTML = `
+      <div class="myvh-email-template-edit-page" data-template-slug="welcome">
+        <form id="myvh-email-template-form">
+          <input name="template" value="welcome" />
+          <input name="subject" value="Save Subject" />
+          <textarea id="myvh-email-template-body"><p>Body</p></textarea>
+        </form>
+        <div id="myvh-email-template-message"></div>
+      </div>
+    `;
+
+    window.MyvhPortalEmail.initEmailTemplateEditPage();
+
+    const form = document.getElementById('myvh-email-template-form');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(window.MyvhPortalAjax.post).toHaveBeenCalledTimes(1);
+
+    resolveSave({ success: true, data: { message: 'Saved' } });
+    await flushPromises();
+    await flushPromises();
+  });
+
+  test('prevents duplicate rapid preview clicks while preview is in progress', async () => {
+    let resolvePreview;
+    window.MyvhPortalAjax.post.mockReturnValueOnce(new Promise((resolve) => {
+      resolvePreview = resolve;
+    }));
+
+    document.body.innerHTML = `
+      <div class="myvh-email-template-edit-page" data-template-slug="welcome">
+        <form id="myvh-email-template-form">
+          <input name="template" value="welcome" />
+          <input name="subject" value="Preview Subject" />
+          <textarea id="myvh-email-template-body"><p>Body</p></textarea>
+        </form>
+        <div id="myvh-email-template-message"></div>
+        <button data-email-template-preview="1">Preview</button>
+        <div id="myvh-email-template-preview-modal" hidden>
+          <div data-email-preview-content></div>
+        </div>
+      </div>
+    `;
+
+    window.MyvhPortalEmail.initEmailTemplateEditPage();
+
+    const previewBtn = document.querySelector('[data-email-template-preview="1"]');
+    previewBtn.click();
+    previewBtn.click();
+
+    expect(window.MyvhPortalAjax.post).toHaveBeenCalledTimes(1);
+
+    resolvePreview({ success: true, data: { subject: 'Preview', html: '<p>Body</p>' } });
+    await flushPromises();
+    await flushPromises();
+  });
+
+  test('prevents duplicate rapid send-test clicks while request is in progress', async () => {
+    let resolveSendTest;
+    window.MyvhPortalAjax.post.mockReturnValueOnce(new Promise((resolve) => {
+      resolveSendTest = resolve;
+    }));
+
+    document.body.innerHTML = `
+      <div class="myvh-email-template-edit-page" data-template-slug="welcome">
+        <form id="myvh-email-template-form">
+          <input name="template" value="welcome" />
+          <input name="subject" value="Send Subject" />
+          <textarea id="myvh-email-template-body"><p>Body</p></textarea>
+        </form>
+        <div id="myvh-email-template-message"></div>
+        <button data-email-template-send-test="1">Send test</button>
+      </div>
+    `;
+
+    window.MyvhPortalEmail.initEmailTemplateEditPage();
+
+    const sendTestBtn = document.querySelector('[data-email-template-send-test="1"]');
+    sendTestBtn.click();
+    sendTestBtn.click();
+
+    expect(window.MyvhPortalAjax.post).toHaveBeenCalledTimes(1);
+    expect(sendTestBtn.disabled).toBe(true);
+
+    resolveSendTest({ success: true, data: { message: 'Sent' } });
+    await flushPromises();
+    await flushPromises();
+    expect(sendTestBtn.disabled).toBe(false);
+  });
 });
