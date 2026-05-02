@@ -11,15 +11,17 @@ class RoomFactory
 {
     public static function make(array $overrides = []): array
     {
+        $faker = Factory::create();
+
         return array_merge([
             'Id'                    => 0,
             'VenueId'              => 1,
-            'Name'                 => 'Main Hall',
+            'Name'                 => ucfirst($faker->unique()->word) . ' Room',
             'Colour'               => null,
-            'Description'          => '',
+            'Description'          => $faker->sentence,
             'BufferBefore'         => '0',
             'BufferAfter'          => '0',
-            'Capacity'             => '100',
+            'Capacity'             => (string) $faker->numberBetween(10, 200),
             'OpeningTime'          => '09:00:00',
             'ClosingTime'          => '17:00:00',
             'AllowMultiDayBookings' => '0',

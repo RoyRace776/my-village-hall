@@ -11,20 +11,22 @@ class RoomRateFactory
 {
     public static function make(array $overrides = []): array
     {
+        $faker = Factory::create();
+
         return array_merge([
             'Id'                 => 0,
             'RoomId'             => 1,
             'OrganisationTypeId' => null,
             'ChargeType'         => 'per_hour',
-            'Rate'               => '25.00',
-            'Name'               => 'Test Rate',
-            'Description'        => '',
+            'Rate'               => number_format($faker->randomFloat(2, 5, 200), 2, '.', ''),
+            'Name'               => ucfirst($faker->unique()->word) . ' Rate',
+            'Description'        => $faker->sentence,
             'MinimumHours'       => null,
             'IsActive'           => '1',
             'ValidFrom'          => null,
             'ValidTo'            => null,
             'Priority'           => '0',
-            'Created'            => '2026-01-01 00:00:00',
+            'Created'            => date('Y-m-d H:i:s'),
         ], $overrides);
     }
 

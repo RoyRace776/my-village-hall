@@ -26,8 +26,8 @@ class InvoiceFactory
             'BillingTownCity'         => $faker->city,
             'BillingPostcode'         => $faker->postcode,
             'BillingReference'        => null,
-            'InvoiceDate'             => '2026-01-01',
-            'DueDate'                 => '2026-01-15',
+            'InvoiceDate'             => date('Y-m-d'),
+            'DueDate'                 => date('Y-m-d', strtotime('+14 days')),
             'SubTotal'                => number_format($total_amount, 2, '.', ''),
             'TaxAmount'               => '0.00',
             'TotalAmount'             => number_format($total_amount, 2, '.', ''),
@@ -36,8 +36,8 @@ class InvoiceFactory
             'Status'                  => 'draft',
             'Notes'                   => null,
             'PdfPath'                 => null,
-            'Created'                 => '2026-01-01 00:00:00',
-            'Updated'                 => '2026-01-01 00:00:00',
+            'Created'                 => date('Y-m-d H:i:s'),
+            'Updated'                 => date('Y-m-d H:i:s'),
         ], $overrides);
     }
 

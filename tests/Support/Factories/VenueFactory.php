@@ -11,12 +11,14 @@ class VenueFactory
 {
     public static function make(array $overrides = []): array
     {
+        $faker = Factory::create('en_GB');
+
         return array_merge([
             'Id'           => 0,
-            'Name'         => 'Village Hall',
-            'ShortName'    => 'VH',
-            'PostCode'     => 'AA1 1AA',
-            'AddressLine1' => '1 High Street',
+            'Name'         => $faker->unique()->company . ' Hall',
+            'ShortName'    => strtoupper($faker->lexify('??')),
+            'PostCode'     => $faker->postcode,
+            'AddressLine1' => $faker->streetAddress,
             'OpeningTime'  => '08:00:00',
             'ClosingTime'  => '22:00:00',
         ], $overrides);

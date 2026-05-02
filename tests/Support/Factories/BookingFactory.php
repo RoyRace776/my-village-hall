@@ -10,16 +10,20 @@ class BookingFactory
 {
     public static function make(array $overrides = []): Booking
     {
+        $faker       = \Faker\Factory::create();
+        $start       = (new \DateTimeImmutable())->modify('+' . $faker->numberBetween(1, 30) . ' days')->setTime(10, 0, 0);
+        $end         = $start->modify('+2 hours');
+
         $row = array_merge([
             'Id' => 10,
             'RoomId' => 5,
             'CustomerId' => 3,
             'OrganisationId' => 0,
             'Status' => BookingStatus::CONFIRMED->value,
-            'Start' => '2026-06-01 10:00:00',
-            'End' => '2026-06-01 12:00:00',
+            'Start' => $start->format('Y-m-d H:i:s'),
+            'End' => $end->format('Y-m-d H:i:s'),
             'AdminEmail' => null,
-            'Description' => 'Community lunch',
+            'Description' => $faker->sentence(3),
             'Public' => true,
             'RoomName' => '',
             'VenueName' => '',
@@ -77,11 +81,13 @@ class BookingFactory
             ? null
             : RoomFactory::create();
 
+        $start_dt = new \DateTimeImmutable('next Monday +' . rand(1, 30) . ' days');
+
         $data = array_merge([
             'customer_id' => $overrides['customer_id'] ?? $customer['Id'],
             'room_id' => $overrides['room_id'] ?? $room['Id'],
-            'start_date' => '2026-01-01',
-            'end_date' => '2026-01-01',
+            'start_date' => $start_dt->format('Y-m-d'),
+            'end_date' => $start_dt->format('Y-m-d'),
             'start_time' => '10:00:00',
             'end_time' => '12:00:00',
             'status' => BookingStatus::CONFIRMED->value,

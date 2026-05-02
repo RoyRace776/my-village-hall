@@ -11,13 +11,15 @@ class OrganisationTypeFactory
 {
     public static function make(array $overrides = []): array
     {
+        $faker = Factory::create();
+
         return array_merge([
             'Id'          => 0,
-            'Name'        => 'Test Organisation Type',
-            'Description' => '',
+            'Name'        => ucfirst($faker->unique()->word) . ' Group',
+            'Description' => $faker->sentence,
             'IsSystem'    => '0',
             'IsDefault'   => '0',
-            'Created'     => '2026-01-01 00:00:00',
+            'Created'     => date('Y-m-d H:i:s'),
         ], $overrides);
     }
 

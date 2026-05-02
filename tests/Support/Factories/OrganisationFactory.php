@@ -11,13 +11,15 @@ class OrganisationFactory
 {
     public static function make(array $overrides = []): array
     {
+        $faker = Factory::create();
+
         return array_merge([
             'Id'                              => 0,
-            'Name'                            => 'Test Organisation',
+            'Name'                            => $faker->unique()->company,
             'OrganisationTypeId'              => 1,
-            'ContactEmail'                    => 'org@example.org',
-            'ContactPhone'                    => '0123456789',
-            'WebsiteUrl'                      => null,
+            'ContactEmail'                    => $faker->unique()->companyEmail,
+            'ContactPhone'                    => $faker->phoneNumber,
+            'WebsiteUrl'                      => $faker->url,
             'InvoiceOrganisationBookings'     => '0',
             'SendBookingEmailsToOrganisation' => '0',
             'AllowAutoConfirm'                => '0',
@@ -32,7 +34,7 @@ class OrganisationFactory
             'IsDefault'                       => '0',
             'IsSystem'                        => '0',
             'DefaultPublic'                   => '0',
-            'Created'                         => '2026-01-01 00:00:00',
+            'Created'                         => date('Y-m-d H:i:s'),
         ], $overrides);
     }
 
