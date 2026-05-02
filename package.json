@@ -10,11 +10,24 @@
   "scripts": {
     "test": "jest",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --config=playwright.smoke.config.js",
+    "test:e2e:full": "playwright test --config=playwright.config.js",
+    "test:e2e:ci:push": "playwright test --config=playwright.smoke.config.js --reporter=line",
+    "test:e2e:ci:nightly": "playwright test --config=playwright.config.js",
     "test:e2e:login": "playwright test tests/e2e/login.*.spec.js",
     "test:e2e:login:success": "playwright test tests/e2e/login.success.spec.js",
     "test:e2e:login:failed": "playwright test tests/e2e/login.failed.spec.js",
     "test:e2e:password-reset": "playwright test tests/e2e/password-reset.spec.js",
-    "test:e2e:customer-create": "playwright test tests/e2e/customer-create.spec.js"
+    "test:e2e:customer-create": "playwright test tests/e2e/customer-create.spec.js",
+    "test:e2e:customer-manage": "playwright test tests/e2e/customer-manage.spec.js",
+    "test:e2e:account-update": "playwright test tests/e2e/account-update.spec.js",
+    "test:e2e:booking-lifecycle": "playwright test tests/e2e/booking-lifecycle.spec.js",
+    "test:e2e:booking-negative": "playwright test tests/e2e/booking-negative.spec.js",
+    "test:e2e:payments": "playwright test tests/e2e/payments.spec.js",
+    "test:e2e:invoice-generate": "playwright test tests/e2e/invoice-generate.spec.js",
+    "test:e2e:invoice-status": "playwright test tests/e2e/invoice-status.spec.js",
+    "test:e2e:billing": "playwright test tests/e2e/payments.spec.js tests/e2e/invoice-generate.spec.js tests/e2e/invoice-status.spec.js",
+    "test:e2e:billing:chromium": "playwright test tests/e2e/payments.spec.js tests/e2e/invoice-generate.spec.js tests/e2e/invoice-status.spec.js --project=chromium"
   },
   "repository": {
     "type": "git",

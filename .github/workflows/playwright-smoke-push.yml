@@ -1,0 +1,51 @@
+name: Playwright Smoke (Push)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      PW_BASE_URL: ${{ secrets.PW_BASE_URL }}
+      PW_LOGIN_USERNAME: ${{ secrets.PW_LOGIN_USERNAME }}
+      PW_LOGIN_PASSWORD: ${{ secrets.PW_LOGIN_PASSWORD }}
+      PW_RESET_EMAIL: ${{ secrets.PW_RESET_EMAIL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        run: |
+          if [ -z "$PW_BASE_URL" ]; then
+            echo "PW_BASE_URL secret is required for CI smoke tests."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright smoke suite
+        run: npm run test:e2e:ci:push
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-report
+          path: playwright-report/
+          if-no-files-found: ignore
