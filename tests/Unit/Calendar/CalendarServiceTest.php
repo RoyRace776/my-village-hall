@@ -22,11 +22,16 @@ use Tests\Support\Factories\BookingFactory;
  */
 class CalendarServiceTest extends UnitTestCase {
 
-    private $booking_service;
-    private $room_repository;
-    private $availability_service;
-    private $customer_service;
-    private $client_admin_service;
+    /** @var BookingService&\Mockery\MockInterface */
+    private BookingService $booking_service;
+    /** @var RoomRepository&\Mockery\MockInterface */
+    private RoomRepository $room_repository;
+    /** @var AvailabilityService&\Mockery\MockInterface */
+    private AvailabilityService $availability_service;
+    /** @var CustomerService&\Mockery\MockInterface */
+    private CustomerService $customer_service;
+    /** @var ClientAdminService&\Mockery\MockInterface */
+    private ClientAdminService $client_admin_service;
     private string $room_open = '08:00:00';
     private string $room_close = '22:00:00';
     private CalendarService $service;
@@ -145,7 +150,11 @@ class CalendarServiceTest extends UnitTestCase {
     public function returns_single_event_when_service_returns_booking_entities(): void {
         $this->stub_settings( 0, 0 );
         $this->wire_room_meta();
-        $this->wire_booking_result( BookingFactory::make() );
+        $this->wire_booking_result( BookingFactory::make([
+            'Description' => 'Community lunch',
+            'Start'       => '2026-06-01 10:00:00',
+            'End'         => '2026-06-01 12:00:00',
+        ]) );
 
         $events = $this->service->get_events( '2026-06-01', '2026-06-02', 'admin' );
 
@@ -161,7 +170,10 @@ class CalendarServiceTest extends UnitTestCase {
     /** @test */
     public function merged_mode_extends_event_start_and_end_and_preserves_actual_times_in_tags(): void {
         $this->wire_room_meta( '08:00:00', '22:00:00' );
-        $this->wire_booking_result( BookingFactory::make() );
+        $this->wire_booking_result( BookingFactory::make([
+            'Start' => '2026-06-01 10:00:00',
+            'End'   => '2026-06-01 12:00:00',
+        ]) );
 
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
             'booking.buffers.set_up_minutes'               => 30,
@@ -190,7 +202,10 @@ class CalendarServiceTest extends UnitTestCase {
     /** @test */
     public function separate_mode_appends_setup_and_tidy_buffer_events(): void {
         $this->wire_room_meta( '08:00:00', '22:00:00' );
-        $this->wire_booking_result( BookingFactory::make() );
+        $this->wire_booking_result( BookingFactory::make([
+            'Start' => '2026-06-01 10:00:00',
+            'End'   => '2026-06-01 12:00:00',
+        ]) );
 
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
             'booking.buffers.set_up_minutes'               => 30,
@@ -235,7 +250,10 @@ class CalendarServiceTest extends UnitTestCase {
     /** @test */
     public function separate_mode_only_appends_setup_event_when_tidy_is_zero(): void {
         $this->wire_room_meta();
-        $this->wire_booking_result( BookingFactory::make() );
+        $this->wire_booking_result( BookingFactory::make([
+            'Start' => '2026-06-01 10:00:00',
+            'End'   => '2026-06-01 12:00:00',
+        ]) );
 
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
             'booking.buffers.set_up_minutes'               => 30,
@@ -257,7 +275,10 @@ class CalendarServiceTest extends UnitTestCase {
     public function setup_buffer_not_shown_when_booking_starts_at_room_opening(): void {
         // Room opens at 10:00; booking starts at 10:00 → no setup buffer.
         $this->wire_room_meta( '10:00:00', '22:00:00' );
-        $this->wire_booking_result( BookingFactory::make() );
+        $this->wire_booking_result( BookingFactory::make([
+            'Start' => '2026-06-01 10:00:00',
+            'End'   => '2026-06-01 12:00:00',
+        ]) );
 
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
             'booking.buffers.set_up_minutes'               => 30,
@@ -282,7 +303,10 @@ class CalendarServiceTest extends UnitTestCase {
     public function tidy_buffer_not_shown_when_booking_ends_at_room_closing(): void {
         // Room closes at 12:00; booking ends at 12:00 → no tidy buffer.
         $this->wire_room_meta( '08:00:00', '12:00:00' );
-        $this->wire_booking_result( BookingFactory::make() );
+        $this->wire_booking_result( BookingFactory::make([
+            'Start' => '2026-06-01 10:00:00',
+            'End'   => '2026-06-01 12:00:00',
+        ]) );
 
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
             'booking.buffers.set_up_minutes'               => 30,
@@ -306,7 +330,10 @@ class CalendarServiceTest extends UnitTestCase {
     /** @test */
     public function merged_mode_does_not_extend_start_when_booking_starts_at_room_opening(): void {
         $this->wire_room_meta( '10:00:00', '22:00:00' );
-        $this->wire_booking_result( BookingFactory::make() );
+        $this->wire_booking_result( BookingFactory::make([
+            'Start' => '2026-06-01 10:00:00',
+            'End'   => '2026-06-01 12:00:00',
+        ]) );
 
         Functions\when( 'myvh_setting' )->alias( static fn( $key, $default = null ) => match ( $key ) {
             'booking.buffers.set_up_minutes'               => 30,
