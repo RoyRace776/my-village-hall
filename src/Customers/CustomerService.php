@@ -128,7 +128,7 @@ class CustomerService {
     {
 
         $email = $data['Email'];
-        $user = get_user_by('Email', $email);
+        $user = get_user_by('email', $email);
 
         if (!$user) {
 

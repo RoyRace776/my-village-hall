@@ -42,8 +42,8 @@ use MYVH\Settings\SettingsPage;
 use MYVH\Network\SiteProvisioningRepository;
 use MYVH\Network\SiteProvisioningService;
 
-use Exception;
-use WP_Site;
+//use Exception;
+//use WP_Site;
 
 
 // Prevent direct file access — WordPress must load this file.

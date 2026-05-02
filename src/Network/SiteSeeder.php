@@ -28,10 +28,10 @@ class SiteSeeder {
         if ($admin_user) {
             $customer_service->save(
                 [
-                'WPUserId' => $admin_user->ID,
-                'Email' => $admin_user->user_email,
-                'Name' => $admin_user->first_name . ' ' . $admin_user->last_name,
-                'EmailVerified' => 1,
+                'user_id' => $admin_user->ID,
+                'email' => $admin_user->user_email,
+                'name' => $admin_user->first_name . ' ' . $admin_user->last_name,
+                'email_verified' => 1,
                 ]);
             }
 

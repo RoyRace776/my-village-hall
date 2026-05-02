@@ -22,14 +22,31 @@ class WpSiteCloner {
             $domain = $network->domain;
             $path   = '/' . $subdomain . '/';
         }
-        $blog_id = wpmu_create_blog(
-            $domain,
-            $path,
-            $target['title'],
-            $context['user_id'] ?? get_current_user_id(),
-            [],
-            $network->id
-        );
+
+        // Prevent duplicate core multisite notifications for sites provisioned by this flow.
+        $suppress_newsite_email = static function ($send): bool {
+            return false;
+        };
+        $suppress_welcome_email = static function ($send): bool {
+            return false;
+        };
+
+        add_filter('send_newsite_email', $suppress_newsite_email, 10, 1);
+        add_filter('wpmu_welcome_notification', $suppress_welcome_email, 10, 1);
+
+        try {
+            $blog_id = wpmu_create_blog(
+                $domain,
+                $path,
+                $target['title'],
+                $context['user_id'] ?? get_current_user_id(),
+                [],
+                $network->id
+            );
+        } finally {
+            remove_filter('send_newsite_email', $suppress_newsite_email, 10);
+            remove_filter('wpmu_welcome_notification', $suppress_welcome_email, 10);
+        }
 
         if (is_wp_error($blog_id)) {
             return $blog_id;
