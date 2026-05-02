@@ -60,7 +60,7 @@ class CreateSiteShortcode implements ShortcodeInterface {
                 $state['status'] = 'error';
                 $state['message'] = __('Invalid request nonce.', 'my-village-hall');
             } else {
-                $result = $this->service->submit($_POST, $_FILES);
+                $result = $this->service->submit($_POST);
                 $state['status'] = !empty($result['ok']) ? 'success' : 'error';
                 $state['message'] = (string) ($result['message'] ?? '');
                 $submitted = !empty($result['ok']);

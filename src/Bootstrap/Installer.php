@@ -23,6 +23,7 @@
 namespace MYVH\Bootstrap;
 
 use wpdb;
+use MYVH\Customers\CustomerService;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -514,7 +515,8 @@ class Installer {
      *
      * @global wpdb $wpdb
      */
-    public static function add_system_customer(): void {
+    public static function add_system_customer(int $personal_org_id): void {
+
         global $wpdb;
 
         $customers_table = $wpdb->prefix . 'myvh_customers';
@@ -553,6 +555,26 @@ class Installer {
 
             $wpdb->insert($customers_table, $insert_data);
         }
+
+        // Now add in the customer organisation link if it doesn't already exist (this is needed for the system customer to be able to be linked to bookings and for the personal organisation to be set as the default for the system customer).
+        $customer_id = $wpdb->get_var(
+            $wpdb->prepare("SELECT Id FROM {$customers_table} WHERE IsSystem = 1 LIMIT 1")
+        );
+
+        if ( $customer_id ) {
+            $org_members_table = $wpdb->prefix . 'myvh_organisation_members';
+
+            $existing_link = $wpdb->get_var(
+                $wpdb->prepare("SELECT Id FROM {$org_members_table} WHERE CustomerId = %d AND OrganisationId = %d LIMIT 1", $customer_id, $personal_org_id)
+            );
+
+            if ( ! $existing_link ) {
+                $wpdb->insert($org_members_table, [
+                    'OrganisationId' => $personal_org_id,
+                    'CustomerId' => $customer_id,
+                ]);
+            }
+        }
     }
 
     /**
@@ -589,7 +611,7 @@ class Installer {
         }
     }
 
-    public static function add_personal_organisation_type($wpdb): int {
+    public static function add_personal_organisation_type(wpdb $wpdb): int {
         $types_table = $wpdb->prefix . 'myvh_organisation_types';
 
         $person_type = $wpdb->get_row(
@@ -617,7 +639,7 @@ class Installer {
         return $person_type_id;
     }
 
-    public static function add_personal_organisation($wpdb, $org_type) : void {
+    public static function add_personal_organisation(wpdb $wpdb, int $org_type) : int {
         $orgs_table = $wpdb->prefix . 'myvh_organisations';
 
         $personal_org = $wpdb->get_row(
@@ -625,7 +647,9 @@ class Installer {
             'ARRAY_A'
         );
 
-        if ( empty($personal_org['Id']) ) {
+        $personal_org_id = $personal_org['Id'] ?? null;
+
+        if ( is_null($personal_org_id) ) {
             $wpdb->insert($orgs_table, [
                 'Name' => 'Personal booking',
                 'OrganisationTypeId' => $org_type,
@@ -633,10 +657,13 @@ class Installer {
                 'IsSystem' => 1,
                 'IsActive' => 1,
             ]);
+            $personal_org_id = (int) $wpdb->insert_id;
         }
+
+        return (int)$personal_org_id;
     }
 
-    public static function add_default_organisation_type($wpdb) : void {
+    public static function add_default_organisation_type(wpdb $wpdb) : void {
         $types_table = $wpdb->prefix . 'myvh_organisation_types';
 
         $default_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$types_table} WHERE IsDefault = 1");
@@ -660,14 +687,15 @@ class Installer {
     }
 
     // Set up defaults like organisation types and organisations if they don't already exist
-    public static function set_default_data($wpdb): void {
+    public static function set_default_data(wpdb $wpdb): void {
 
         // Create or update the system customer linked to the WP admin user
-        self::add_system_customer($wpdb);
         $personal_org_type = self::add_personal_organisation_type($wpdb);
         self::add_default_organisation_type($wpdb);
-        self::add_personal_organisation($wpdb, $personal_org_type);
+        $personal_org_id = self::add_personal_organisation($wpdb, $personal_org_type);
 
+        // This should be run afer setting the default organisation type and personal organisation, as the system customer is linked to the personal organisation type and the personal organisation is set as default (which is used when creating a new customer without an org type specified).
+        self::add_system_customer($personal_org_id);
     }
 
     public static function tidy_up(): void {
@@ -678,7 +706,7 @@ class Installer {
         self::delete_all_transients($wpdb);
     }
 
-    public static function drop_tables($wpdb): void {
+    public static function drop_tables(wpdb $wpdb): void {
 
         $tables = [
             'myvh_audit_log',
@@ -710,7 +738,7 @@ class Installer {
         }
     }
 
-    private static function delete_all_options_by_prefix($wpdb): void {
+    private static function delete_all_options_by_prefix(wpdb $wpdb): void {
 
         $prefix = $wpdb->esc_like('myvh_') . '%';
 
@@ -740,7 +768,7 @@ class Installer {
 
     }
 
-    private static function delete_all_transients($wpdb): void {
+    private static function delete_all_transients(wpdb $wpdb): void {
 
         $prefixes = [
             $wpdb->esc_like('_transient_myvh_') . '%',

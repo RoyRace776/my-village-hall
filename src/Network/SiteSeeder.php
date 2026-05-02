@@ -7,6 +7,7 @@ use MYVH\Rooms\RoomService;
 use MYVH\Venues\VenueService;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Settings\GeneralSettings;
+use MYVH\Customers\CustomerService;
 
 class SiteSeeder {
 
@@ -15,23 +16,24 @@ class SiteSeeder {
         global $wpdb;
         switch_to_blog($blog_id);
 
-        Installer::add_system_customer();
         $org_type = Installer::add_personal_organisation_type($wpdb);
-        Installer::add_personal_organisation($wpdb, $org_type);
+        $personal_org_type = Installer::add_personal_organisation($wpdb, $org_type);
         Installer::add_default_organisation_type($wpdb);
+        Installer::add_system_customer($personal_org_type);
+
 
         // Add in the admin user as a customer too, so they can manage their own bookings, etc.
+        $customer_service = $this->make_customer_service();
         $admin_user = get_user_by('email', get_bloginfo('admin_email'));
-        $wpdb->insert(
-            $wpdb->prefix . 'myvh_customers',
-            [
+        if ($admin_user) {
+            $customer_service->save(
+                [
                 'WPUserId' => $admin_user->ID,
                 'Email' => $admin_user->user_email,
                 'Name' => $admin_user->first_name . ' ' . $admin_user->last_name,
                 'EmailVerified' => 1,
-            ]
-
-        );
+                ]);
+            }
 
         //TODO: change to use context to determine what to seed, rather than hardcoding this seeding of a default venue and room for every new site.  E.g. we may want to allow some sites to start with a completely blank slate, and others to have some demo data.
         $venue_service = $this->make_venue_service();
@@ -118,6 +120,16 @@ class SiteSeeder {
         return new RoomRateService(
             new \MYVH\Pricing\RoomRateRepository($wpdb),
             new \MYVH\Customers\CustomerRepository($wpdb)
+        );
+    }
+
+    private function make_customer_service(): CustomerService {
+        global $wpdb;
+        return new CustomerService(
+            new \MYVH\Customers\CustomerRepository($wpdb),
+            new \MYVH\Bookings\BookingRepository($wpdb),
+            new \MYVH\Organisations\OrganisationRepository($wpdb),
+            new \MYVH\Organisations\OrganisationMemberRepository($wpdb)
         );
     }
 }

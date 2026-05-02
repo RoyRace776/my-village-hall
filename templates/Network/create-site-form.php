@@ -2,6 +2,30 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+
+$state_data = (isset($state) && is_array($state)) ? $state : [];
+$state = array_merge([
+    'status' => '',
+    'message' => '',
+    'site_url' => '',
+], $state_data);
+
+$form_values_data = (isset($form_values) && is_array($form_values)) ? $form_values : [];
+$form_values = array_merge([
+    'site_name' => '',
+    'subdomain' => '',
+    'admin_first_name' => '',
+    'admin_last_name' => '',
+    'admin_email' => '',
+], $form_values_data);
+
+$verification_result = !empty($verification_result);
+$verification_action = isset($verification_action) ? (string) $verification_action : 'verify';
+$submitted = !empty($submitted);
+$network_domain = isset($network_domain) ? (string) $network_domain : '';
+$captcha_site_key = isset($captcha_site_key) ? (string) $captcha_site_key : '';
+$request_page_url = isset($request_page_url) ? (string) $request_page_url : home_url('/');
 ?>
 <?php if (!empty($verification_result)): ?>
 <div class="myvh-site-request-wrap myvh-site-request-wrap--confirm">

@@ -100,6 +100,10 @@ class WpSiteCloner {
                 'post_content' => $post->post_content,
                 'post_status'  => 'publish',
                 'post_type'    => $post->post_type,
+                'post_name'    => $post->post_name,
+                'post_excerpt' => $post->post_excerpt,
+                'post_parent'  => $post->post_parent,
+                'menu_order'   => $post->menu_order,
             ]);
 
             if ($new_id && !is_wp_error($new_id)) {

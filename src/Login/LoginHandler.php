@@ -44,7 +44,12 @@ class LoginHandler {
         $user = wp_signon($creds, false);
 
         if (is_wp_error($user)) {
-            set_transient('myvh_login_error', $user->get_error_message(), 30);
+            $error_message = wp_strip_all_tags((string) $user->get_error_message(), true);
+            if ($error_message === '') {
+                $error_message = __('Login failed. Please check your details and try again.', 'my-village-hall');
+            }
+
+            set_transient('myvh_login_error', $error_message, 30);
             return;
         }
 
