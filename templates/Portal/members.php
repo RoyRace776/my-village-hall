@@ -134,10 +134,18 @@ $current_user = wp_get_current_user();
 
   <div class="dashboard-notices">
     <h2 class="section-title">Hall Notices</h2>
+    <?php
+    $myvh_active_notices = function_exists('myvh_get_active_notices') ? myvh_get_active_notices() : [];
+    ?>
+    <?php if (!empty($myvh_active_notices)): ?>
     <ul class="notices-list">
-      <li>Kitchen refurbishment starting next month.</li>
-      <li>AGM scheduled for April 23rd.</li>
+      <?php foreach ($myvh_active_notices as $myvh_notice): ?>
+      <li><?php echo esc_html($myvh_notice['message']); ?></li>
+      <?php endforeach; ?>
     </ul>
+    <?php else: ?>
+    <p class="notices-empty"><?php esc_html_e('No current notices.', 'my-village-hall'); ?></p>
+    <?php endif; ?>
   </div>
 
 </div>

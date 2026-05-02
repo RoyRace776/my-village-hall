@@ -453,10 +453,18 @@ usort($groups, function ($a, $b) {
             <span>Latest site updates</span>
           </div>
         </div>
+        <?php
+        $myvh_active_notices = function_exists('myvh_get_active_notices') ? myvh_get_active_notices() : [];
+        ?>
+        <?php if (!empty($myvh_active_notices)): ?>
         <ul class="myvh-portal-notices-list">
-          <li>Kitchen refurbishment starting next month.</li>
-          <li>AGM scheduled for April 23rd.</li>
+          <?php foreach ($myvh_active_notices as $myvh_notice): ?>
+          <li><?php echo esc_html($myvh_notice['message']); ?></li>
+          <?php endforeach; ?>
         </ul>
+        <?php else: ?>
+        <p class="myvh-portal-notices-empty"><?php esc_html_e('No current notices.', 'my-village-hall'); ?></p>
+        <?php endif; ?>
       </div>
     </div>
 

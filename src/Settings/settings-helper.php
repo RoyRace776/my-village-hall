@@ -77,3 +77,44 @@ function myvh_format_date_with_pattern($date_value, string $daypilot_pattern, st
     return date($php_pattern, $timestamp);
 }
 }
+
+if (!function_exists('myvh_get_active_notices')) {
+/**
+ * Return hall notices that are currently active based on their start/end dates.
+ *
+ * - start_date empty → display from now
+ * - end_date   empty → display forever
+ *
+ * @return array<int, array{message: string, start_date: string, end_date: string}>
+ */
+function myvh_get_active_notices(): array {
+    $settings = MYVH\Settings\SettingsRegistry::get('notices');
+
+    if (!$settings) {
+        return [];
+    }
+
+    $notices = $settings->get('notices');
+
+    if (!is_array($notices) || empty($notices)) {
+        return [];
+    }
+
+    $now = function_exists('current_time') ? current_time('timestamp') : time();
+
+    return array_values(array_filter($notices, static function (array $notice) use ($now): bool {
+        $start = !empty($notice['start_date']) ? strtotime($notice['start_date']) : false;
+        $end   = !empty($notice['end_date'])   ? strtotime($notice['end_date'])   : false;
+
+        if ($start !== false && $now < $start) {
+            return false;
+        }
+
+        if ($end !== false && $now > $end) {
+            return false;
+        }
+
+        return true;
+    }));
+}
+}

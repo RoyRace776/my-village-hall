@@ -258,6 +258,65 @@ class SettingsPage {
 
             initMediaFields();
 
+            // ── Notices repeater ──────────────────────────────────────────────
+
+            function initNoticesRepeater() {
+                document.querySelectorAll('.myvh-notices-repeater').forEach(function (wrapper) {
+                    var tbody    = wrapper.querySelector('.myvh-notices-body');
+                    var addBtn   = wrapper.querySelector('.myvh-notice-add-row');
+                    var fieldName = addBtn ? addBtn.getAttribute('data-field') : '';
+
+                    if (!tbody || !addBtn) return;
+
+                    function rowCount() {
+                        return tbody.querySelectorAll('.myvh-notice-row').length;
+                    }
+
+                    function buildRow(idx) {
+                        var phFrom = addBtn.getAttribute('data-placeholder-from') || '';
+                        var phTo   = addBtn.getAttribute('data-placeholder-to')   || '';
+                        var tr = document.createElement('tr');
+                        tr.className = 'myvh-notice-row';
+                        tr.innerHTML =
+                            '<td><textarea name="' + fieldName + '[' + idx + '][message]" rows="2" style="width:100%;"></textarea></td>' +
+                            '<td><input type="text" name="' + fieldName + '[' + idx + '][start_date]" placeholder="' + phFrom + '" data-myvh-picker="date" autocomplete="off" style="width:100%;"></td>' +
+                            '<td><input type="text" name="' + fieldName + '[' + idx + '][end_date]"   placeholder="' + phTo   + '" data-myvh-picker="date" autocomplete="off" style="width:100%;"></td>' +
+                            '<td><button type="button" class="button myvh-notice-remove">Remove</button></td>';
+                        return tr;
+                    }
+
+                    function reindex() {
+                        tbody.querySelectorAll('.myvh-notice-row').forEach(function (row, i) {
+                            row.querySelectorAll('[name]').forEach(function (el) {
+                                el.name = el.name.replace(/\[\d+\]/, '[' + i + ']');
+                            });
+                        });
+                    }
+
+                    addBtn.addEventListener('click', function () {
+                        var row = buildRow(rowCount());
+                        tbody.appendChild(row);
+                        markDirty();
+                        // init flatpickr on newly added date inputs
+                        if (window.flatpickr) {
+                            row.querySelectorAll('[data-myvh-picker="date"]').forEach(function (el) {
+                                flatpickr(el, { dateFormat: 'Y-m-d', allowInput: true });
+                            });
+                        }
+                    });
+
+                    tbody.addEventListener('click', function (e) {
+                        if (e.target.classList.contains('myvh-notice-remove')) {
+                            e.target.closest('tr').remove();
+                            reindex();
+                            markDirty();
+                        }
+                    });
+                });
+            }
+
+            initNoticesRepeater();
+
             window.addEventListener('beforeunload', function (e) {
                 if (isDirty) {
                     e.preventDefault();
@@ -392,6 +451,67 @@ class SettingsPage {
                     data-myvh-picker="date"
                     autocomplete="off"
                     value="<?php echo esc_attr($value); ?>">
+                <?php
+                break;
+
+
+            case 'notices':
+                $rows = is_array($value) ? $value : [];
+                ?>
+                <div class="myvh-notices-repeater" id="myvh-notices-repeater-<?php echo esc_attr($name); ?>">
+
+                    <table class="myvh-notices-table widefat striped" style="margin-bottom:10px;">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Notice Text', 'my-village-hall'); ?></th>
+                                <th><?php esc_html_e('Start Date', 'my-village-hall'); ?></th>
+                                <th><?php esc_html_e('End Date', 'my-village-hall'); ?></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody class="myvh-notices-body">
+                            <?php foreach ($rows as $i => $row): ?>
+                            <tr class="myvh-notice-row">
+                                <td>
+                                    <textarea name="<?php echo esc_attr($name); ?>[<?php echo $i; ?>][message]"
+                                              rows="2" style="width:100%;"><?php echo esc_textarea($row['message'] ?? ''); ?></textarea>
+                                </td>
+                                <td>
+                                    <input type="text"
+                                           name="<?php echo esc_attr($name); ?>[<?php echo $i; ?>][start_date]"
+                                           value="<?php echo esc_attr($row['start_date'] ?? ''); ?>"
+                                           placeholder="<?php esc_attr_e('From now', 'my-village-hall'); ?>"
+                                           data-myvh-picker="date"
+                                           autocomplete="off"
+                                           style="width:100%;">
+                                </td>
+                                <td>
+                                    <input type="text"
+                                           name="<?php echo esc_attr($name); ?>[<?php echo $i; ?>][end_date]"
+                                           value="<?php echo esc_attr($row['end_date'] ?? ''); ?>"
+                                           placeholder="<?php esc_attr_e('Forever', 'my-village-hall'); ?>"
+                                           data-myvh-picker="date"
+                                           autocomplete="off"
+                                           style="width:100%;">
+                                </td>
+                                <td>
+                                    <button type="button" class="button myvh-notice-remove">
+                                        <?php esc_html_e('Remove', 'my-village-hall'); ?>
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+
+                    <button type="button" class="button myvh-notice-add-row"
+                            data-field="<?php echo esc_attr($name); ?>"
+                            data-placeholder-from="<?php esc_attr_e('From now', 'my-village-hall'); ?>"
+                            data-placeholder-to="<?php esc_attr_e('Forever', 'my-village-hall'); ?>">
+                        <?php esc_html_e('+ Add Notice', 'my-village-hall'); ?>
+                    </button>
+
+                </div>
                 <?php
                 break;
 

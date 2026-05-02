@@ -7,6 +7,7 @@ use MYVH\Rooms\RoomService;
 use MYVH\Venues\VenueService;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Settings\GeneralSettings;
+use MYVH\Settings\NoticeSettings;
 use MYVH\Customers\CustomerService;
 
 class SiteSeeder {
@@ -80,6 +81,21 @@ class SiteSeeder {
         (new GeneralSettings())->save([
             'portal_logo_url' => $context['logo_url'] ?? '',
         ]);
+
+        $notice_settings = new NoticeSettings();
+        $existing_notices = $notice_settings->get('notices');
+
+        if (!is_array($existing_notices) || empty($existing_notices)) {
+            $now = function_exists('current_time') ? (int) current_time('timestamp') : time();
+
+            $notice_settings->save([
+                'notices' => [[
+                    'message' => 'Welcome to the hall booking system',
+                    'start_date' => '',
+                    'end_date' => date('Y-m-d', $now + (14 * 86400)),
+                ]],
+            ]);
+        }
 
         restore_current_blog();
     }

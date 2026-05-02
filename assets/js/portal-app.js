@@ -298,6 +298,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.MyvhFlatpickr?.initWithin(document);
 
+        // Notices repeater (portal settings page)
+        document.querySelectorAll('[data-notices-repeater]').forEach(function (wrapper) {
+            if (wrapper._myvhNoticesInit) return;
+            wrapper._myvhNoticesInit = true;
+
+            var tbody    = wrapper.querySelector('.myvh-notices-body');
+            var addBtn   = wrapper.querySelector('.myvh-notice-add-row');
+            var fieldName = wrapper.getAttribute('data-field') || 'notices';
+            var phFrom   = wrapper.getAttribute('data-placeholder-from') || '';
+            var phTo     = wrapper.getAttribute('data-placeholder-to') || '';
+
+            if (!tbody || !addBtn) return;
+
+            function rowCount() {
+                return tbody.querySelectorAll('.myvh-notice-row').length;
+            }
+
+            function buildRow(idx) {
+                var tr = document.createElement('tr');
+                tr.className = 'myvh-notice-row';
+                tr.innerHTML =
+                    '<td style="padding:4px 8px;"><textarea name="' + fieldName + '[' + idx + '][message]" rows="2" style="width:100%;"></textarea></td>' +
+                    '<td style="padding:4px 8px;"><input type="text" name="' + fieldName + '[' + idx + '][start_date]" placeholder="' + phFrom + '" data-myvh-picker="date" autocomplete="off" style="width:100%;"></td>' +
+                    '<td style="padding:4px 8px;"><input type="text" name="' + fieldName + '[' + idx + '][end_date]"   placeholder="' + phTo   + '" data-myvh-picker="date" autocomplete="off" style="width:100%;"></td>' +
+                    '<td style="padding:4px 8px;"><button type="button" class="myvh-notice-remove" style="cursor:pointer;">&#x2715; Remove</button></td>';
+                return tr;
+            }
+
+            function reindex() {
+                tbody.querySelectorAll('.myvh-notice-row').forEach(function (row, i) {
+                    row.querySelectorAll('[name]').forEach(function (el) {
+                        el.name = el.name.replace(/\[\d+\]/, '[' + i + ']');
+                    });
+                });
+            }
+
+            addBtn.addEventListener('click', function () {
+                var row = buildRow(rowCount());
+                tbody.appendChild(row);
+                window.MyvhFlatpickr?.initWithin(row);
+            });
+
+            tbody.addEventListener('click', function (e) {
+                if (e.target.classList.contains('myvh-notice-remove')) {
+                    e.target.closest('tr').remove();
+                    reindex();
+                }
+            });
+        });
+
         if (typeof Bookings !== 'undefined' && typeof Bookings.init === 'function') {
             Bookings.init();
         }

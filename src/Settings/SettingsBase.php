@@ -151,10 +151,35 @@ abstract class SettingsBase {
 
             foreach ($section['fields'] as $key => $rule) {
 
+                $field_type = $rule['type'] ?? 'text';
+
+                // Notices repeater: sanitise each row individually
+                if ($field_type === 'notices') {
+                    $raw  = isset($input[$key]) && is_array($input[$key]) ? $input[$key] : [];
+                    $rows = [];
+
+                    foreach ($raw as $item) {
+                        if (!is_array($item)) {
+                            continue;
+                        }
+
+                        $message    = sanitize_textarea_field($item['message'] ?? '');
+                        $start_date = sanitize_text_field($item['start_date'] ?? '');
+                        $end_date   = sanitize_text_field($item['end_date'] ?? '');
+
+                        if ($message !== '') {
+                            $rows[] = compact('message', 'start_date', 'end_date');
+                        }
+                    }
+
+                    $clean[$key] = $rows;
+                    continue;
+                }
+
                 if (!isset($input[$key])) {
 
                     // Handle unchecked checkboxes
-                    if (($rule['type'] ?? '') === 'boolean') {
+                    if ($field_type === 'boolean') {
                         $clean[$key] = false;
                     }
 
