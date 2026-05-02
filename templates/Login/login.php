@@ -47,13 +47,55 @@ if ($is_register_only) {
 
 $current_url = get_permalink() ?: home_url('/');
 
-$login_page_url = !empty($atts['login_page_url']) ? esc_url_raw((string)$atts['login_page_url']) : '';
+$normalize_local_shortcode_url = static function (string $url): string {
+    $url = esc_url_raw($url);
+    if ($url === '') {
+        return '';
+    }
+
+    $current_host = wp_parse_url(home_url('/'), PHP_URL_HOST);
+    $target_host = wp_parse_url($url, PHP_URL_HOST);
+
+    if (!is_string($current_host) || !is_string($target_host) || $current_host === '' || $target_host === '') {
+        return $url;
+    }
+
+    $host_suffix = '.local';
+    $target_is_local = substr($target_host, -strlen($host_suffix)) === $host_suffix;
+    if (!$target_is_local || strcasecmp($target_host, $current_host) === 0) {
+        return $url;
+    }
+
+    $path = wp_parse_url($url, PHP_URL_PATH);
+    if (!is_string($path) || $path === '') {
+        return $url;
+    }
+
+    $normalized_url = home_url($path);
+
+    $query = wp_parse_url($url, PHP_URL_QUERY);
+    if (is_string($query) && $query !== '') {
+        parse_str($query, $query_args);
+        if (!empty($query_args)) {
+            $normalized_url = add_query_arg($query_args, $normalized_url);
+        }
+    }
+
+    $fragment = wp_parse_url($url, PHP_URL_FRAGMENT);
+    if (is_string($fragment) && $fragment !== '') {
+        $normalized_url .= '#' . $fragment;
+    }
+
+    return $normalized_url;
+};
+
+$login_page_url = !empty($atts['login_page_url']) ? $normalize_local_shortcode_url((string)$atts['login_page_url']) : '';
 if ($login_page_url === '') {
     $login_page = get_page_by_path('login');
     $login_page_url = $login_page ? get_permalink($login_page->ID) : remove_query_arg('register', $current_url);
 }
 
-$register_page_url = !empty($atts['register_page_url']) ? esc_url_raw((string)$atts['register_page_url']) : '';
+$register_page_url = !empty($atts['register_page_url']) ? $normalize_local_shortcode_url((string)$atts['register_page_url']) : '';
 if ($register_page_url === '') {
     foreach (['register', 'create-account', 'signup', 'sign-up'] as $slug) {
         $register_page = get_page_by_path($slug);

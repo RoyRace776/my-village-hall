@@ -1,151 +1,118 @@
-/**
- * Portal App Tests
- * Tests for portal routing and navigation
- */
+const fs = require('fs');
+const path = require('path');
 
-describe('Portal App - Route Handling', () => {
-  const getHashRoute = (targetHash) => {
-    const normalized = String(targetHash || '').replace(/^#/, '');
-    const [page, queryString] = normalized.split('?');
-    const params = {};
+const scriptPath = path.resolve(__dirname, '../../assets/js/portal-app.js');
+const scriptSource = fs.readFileSync(scriptPath, 'utf8');
 
-    new URLSearchParams(queryString || '').forEach((value, key) => {
-      params[key] = value;
-    });
+function flushPromises() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
 
-    return {
-      page: page || 'dashboard',
-      params: params
+describe('Portal app integration behaviors', () => {
+  beforeAll(async () => {
+    document.body.innerHTML = `
+      <nav data-portal-nav>
+        <div data-portal-nav-group class="myvh-portal-nav-group">
+          <button type="button" class="myvh-portal-nav-toggle" aria-expanded="false">
+            <span>Menu</span>
+          </button>
+          <a href="#dashboard">Dashboard</a>
+        </div>
+      </nav>
+      <div id="portal-content"></div>
+    `;
+
+    window.myvhPortal = {
+      ajax_url: '/portal-ajax-endpoint',
+      nonce: 'portal-nonce'
     };
-  };
-
-  describe('getHashRoute', () => {
-    test('should parse simple page routes', () => {
-      const route = getHashRoute('#bookings');
-      expect(route.page).toBe('bookings');
-      expect(route.params).toEqual({});
+    window.MyvhFlatpickr = { initWithin: jest.fn() };
+    window.fetch = jest.fn().mockResolvedValue({
+      text: () => Promise.resolve('<div id="myvh-initial">Initial</div>')
     });
 
-    test('should handle routes with hash prefix', () => {
-      const route1 = getHashRoute('#dashboard');
-      const route2 = getHashRoute('dashboard');
-      expect(route1.page).toBe('dashboard');
-      expect(route2.page).toBe('dashboard');
-    });
-
-    test('should parse query parameters', () => {
-      const route = getHashRoute('#bookings?booking_id=123&action=edit');
-      expect(route.page).toBe('bookings');
-      expect(route.params.booking_id).toBe('123');
-      expect(route.params.action).toBe('edit');
-    });
-
-    test('should default to dashboard for empty hash', () => {
-      const route1 = getHashRoute('');
-      const route2 = getHashRoute('#');
-      const route3 = getHashRoute(null);
-
-      expect(route1.page).toBe('dashboard');
-      expect(route2.page).toBe('dashboard');
-      expect(route3.page).toBe('dashboard');
-    });
-
-    test('should decode URL encoded parameters', () => {
-      const route = getHashRoute('#bookings?message=Hello%20World');
-      expect(route.params.message).toBe('Hello World');
-    });
-  });
-});
-
-describe('Portal App - Legacy Booking Routes', () => {
-  const getLegacyBookingAction = (page, params) => {
-    const legacyBookingRoutes = new Set(['new-booking', 'bookings-new', 'booking-view', 'booking-edit', 'booking-delete']);
-
-    if (!legacyBookingRoutes.has(page)) {
-      return null;
-    }
-
-    const bookingId = parseInt(params.booking_id || '0', 10) || 0;
-
-    if (page === 'new-booking' || page === 'bookings-new') {
-      return {
-        page: 'bookings',
-        run: function() {
-          // window.MyvhPortalCalendarFlow?.openCreate({});
-        }
-      };
-    }
-
-    if (!bookingId) {
-      return {
-        page: 'bookings',
-        run: function() {}
-      };
-    }
-
-    if (page === 'booking-edit') {
-      return {
-        page: 'bookings',
-        run: function() {
-          // window.MyvhPortalCalendarFlow?.openEdit(bookingId);
-        }
-      };
-    }
-
-    return null;
-  };
-
-  describe('getLegacyBookingAction', () => {
-    test('should recognize legacy booking routes', () => {
-      expect(getLegacyBookingAction('new-booking', {})).not.toBeNull();
-      expect(getLegacyBookingAction('bookings-new', {})).not.toBeNull();
-      expect(getLegacyBookingAction('booking-edit', { booking_id: '1' })).not.toBeNull();
-      expect(getLegacyBookingAction('invalid-route', {})).toBeNull();
-    });
-
-    test('should map new-booking to bookings page', () => {
-      const action = getLegacyBookingAction('new-booking', {});
-      expect(action.page).toBe('bookings');
-      expect(typeof action.run).toBe('function');
-    });
-
-    test('should handle booking edit with ID', () => {
-      const action = getLegacyBookingAction('booking-edit', { booking_id: '123' });
-      expect(action).not.toBeNull();
-      expect(action.page).toBe('bookings');
-    });
-
-    test('should return null for invalid routes', () => {
-      expect(getLegacyBookingAction('dashboard', {})).toBeNull();
-      expect(getLegacyBookingAction('settings', {})).toBeNull();
-    });
-  });
-});
-
-describe('Portal App - Route Aliases', () => {
-  test('should have route aliases configured', () => {
-    const routeAliases = {
-      'my-bookings': 'bookings',
-      'book-room': 'bookings',
-      'home': 'dashboard'
-    };
-
-    expect(routeAliases['my-bookings']).toBe('bookings');
-    expect(routeAliases['book-room']).toBe('bookings');
-    expect(routeAliases['home']).toBe('dashboard');
+    window.eval(scriptSource);
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+    await flushPromises();
   });
 
-  test('should resolve aliased routes', () => {
-    const routeAliases = {
-      'my-bookings': 'bookings',
-      'book-room': 'bookings',
-      'home': 'dashboard'
+  beforeEach(() => {
+    jest.clearAllMocks();
+    delete window.MyvhPortalCalendarFlow;
+  });
+
+  test('handles legacy delete link and calls booking flow delete action', () => {
+    window.MyvhPortalCalendarFlow = {
+      deleteBooking: jest.fn()
     };
 
-    const resolveAlias = (route) => routeAliases[route] || route;
+    document.getElementById('portal-content').innerHTML = '<a id="legacy-delete" href="#booking-delete?booking_id=77">Delete</a>';
+    document.getElementById('legacy-delete').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
-    expect(resolveAlias('my-bookings')).toBe('bookings');
-    expect(resolveAlias('home')).toBe('dashboard');
-    expect(resolveAlias('bookings')).toBe('bookings'); // No alias
+    expect(window.MyvhPortalCalendarFlow.deleteBooking).toHaveBeenCalledWith(77);
+  });
+
+  test('queues legacy create action until booking flow ready event fires', () => {
+    document.getElementById('portal-content').innerHTML = '<a id="legacy-create" href="#new-booking">Create</a>';
+    document.getElementById('legacy-create').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    const openCreate = jest.fn();
+    window.MyvhPortalCalendarFlow = { openCreate: openCreate };
+
+    document.dispatchEvent(new Event('myvh:portal-booking-flow-ready'));
+
+    expect(openCreate).toHaveBeenCalledWith({});
+  });
+
+  test('opens and closes nav group using toggle click and Escape key', () => {
+    const group = document.querySelector('[data-portal-nav-group]');
+    const toggle = group.querySelector('.myvh-portal-nav-toggle');
+
+    toggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(group.classList.contains('is-open')).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(group.classList.contains('is-open')).toBe(false);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  test('sorts customer table on sortable header and ignores actions header', async () => {
+    window.fetch.mockResolvedValue({
+      text: () => Promise.resolve(`
+        <table class="myvh-customer-list-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Zulu</td><td>Edit</td></tr>
+            <tr><td>Alpha</td><td>Edit</td></tr>
+            <tr><td>Mike</td><td>Edit</td></tr>
+          </tbody>
+        </table>
+      `)
+    });
+
+    window.location.hash = '#customers';
+    window.dispatchEvent(new Event('hashchange'));
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    const table = document.querySelector('.myvh-customer-list-table');
+    const nameHeader = table.querySelectorAll('th')[0];
+    const actionsHeader = table.querySelectorAll('th')[1];
+
+    expect(actionsHeader.classList.contains('myvh-th-sortable')).toBe(false);
+
+    nameHeader.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(table.querySelector('tbody tr td').textContent).toBe('Alpha');
+
+    nameHeader.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(table.querySelector('tbody tr td').textContent).toBe('Zulu');
   });
 });

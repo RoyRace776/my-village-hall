@@ -1,169 +1,115 @@
-/**
- * Bookings Tests
- * Tests for bookings filtering and dialog utilities
- */
+const fs = require('fs');
+const path = require('path');
 
-describe('Bookings - Dialog Utilities', () => {
-  // Mock dialog functions
-  const createMockDialog = () => ({
-    alert: jest.fn().mockResolvedValue(true),
-    confirm: jest.fn().mockResolvedValue(true)
+const scriptPath = path.resolve(__dirname, '../../assets/js/bookings.js');
+const scriptSource = fs.readFileSync(scriptPath, 'utf8');
+
+describe('Bookings module', () => {
+  beforeAll(() => {
+    jest.restoreAllMocks();
+    delete window.Bookings;
+    window.eval(scriptSource);
   });
-
-  describe('portalAlert', () => {
-    test('should use portal dialog if available', async () => {
-      const mockDialog = createMockDialog();
-      window.MyvhPortalDialog = mockDialog;
-
-      const portalAlert = (message) => {
-        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
-          return window.MyvhPortalDialog.alert(message);
-        }
-        window.alert(message);
-        return Promise.resolve(true);
-      };
-
-      const result = await portalAlert('Test message');
-
-      expect(mockDialog.alert).toHaveBeenCalledWith('Test message');
-      expect(result).toBe(true);
-
-      delete window.MyvhPortalDialog;
-    });
-
-    test('should fallback to window.alert if dialog unavailable', async () => {
-      window.alert = jest.fn();
-
-      const portalAlert = (message) => {
-        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
-          return window.MyvhPortalDialog.alert(message);
-        }
-        window.alert(message);
-        return Promise.resolve(true);
-      };
-
-      await portalAlert('Test message');
-
-      expect(window.alert).toHaveBeenCalledWith('Test message');
-    });
-  });
-
-  describe('portalConfirm', () => {
-    test('should use portal dialog if available', async () => {
-      const mockDialog = createMockDialog();
-      window.MyvhPortalDialog = mockDialog;
-
-      const portalConfirm = (message) => {
-        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.confirm === 'function') {
-          return window.MyvhPortalDialog.confirm(message);
-        }
-        return Promise.resolve(window.confirm(message));
-      };
-
-      const result = await portalConfirm('Confirm?');
-
-      expect(mockDialog.confirm).toHaveBeenCalledWith('Confirm?');
-      expect(result).toBe(true);
-
-      delete window.MyvhPortalDialog;
-    });
-  });
-});
-
-describe('Bookings - Status Filtering', () => {
-  let container;
 
   beforeEach(() => {
-    // Create a test table structure
-    container = document.createElement('div');
-    container.innerHTML = `
+    jest.restoreAllMocks();
+    delete window.MyvhPortalCalendarFlow;
+
+    document.body.innerHTML = `
       <table id="myvh-bookings-table">
         <tbody>
           <tr class="myvh-booking-group-header" data-group="group1">
-            <td>Group 1</td>
+            <td>Recurring Group</td>
           </tr>
-          <tr data-status="confirmed">
-            <td>Booking 1</td>
+          <tr
+            class="myvh-bookings-table-row myvh-recurring-child"
+            data-group="group1"
+            data-booking-id="123"
+            data-status="pending"
+            data-start-date="2026-05-10"
+            data-end-date="2026-05-10"
+            data-start-time="09:30"
+            data-end-time="10:30"
+            data-room-id="45"
+            data-room-name="Main Hall"
+            data-customer="7"
+            data-customer-name="Alex Smith"
+            data-organisation="9"
+            data-organisation-name="Village Group"
+            data-description="Weekly meeting"
+          >
+            <td>
+              <div class="myvh-booking-actions-inline">
+                <a class="myvh-action-icon" href="#booking-edit">Edit</a>
+                <a class="myvh-action-icon" href="#booking-view">View</a>
+              </div>
+            </td>
           </tr>
-          <tr data-status="pending">
-            <td>Booking 2</td>
-          </tr>
-          <tr class="myvh-booking-group-header" data-group="group2">
-            <td>Group 2</td>
-          </tr>
-          <tr data-status="cancelled">
-            <td>Booking 3</td>
+          <tr class="myvh-bookings-table-row myvh-recurring-child" data-group="group1" data-booking-id="124" data-status="confirmed">
+            <td>Confirmed child</td>
           </tr>
         </tbody>
       </table>
-      <div class="myvh-status-filter">
-        <input type="checkbox" class="myvh-status-filter" value="confirmed">
-        <input type="checkbox" class="myvh-status-filter" value="pending">
-        <input type="checkbox" class="myvh-status-filter" value="cancelled">
+      <div>
+        <input type="checkbox" class="myvh-status-filter" value="confirmed" checked>
+        <input type="checkbox" class="myvh-status-filter" value="pending" checked>
       </div>
     `;
-    document.body.appendChild(container);
+    window.Bookings.init();
   });
 
-  afterEach(() => {
-    document.body.removeChild(container);
+  test('filters rows by status and keeps group header visible when children remain visible', () => {
+    const pendingCheckbox = document.querySelector('.myvh-status-filter[value="pending"]');
+    pendingCheckbox.checked = false;
+    pendingCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+    const pendingRow = document.querySelector('tr[data-booking-id="123"]');
+    const confirmedRow = document.querySelector('tr[data-booking-id="124"]');
+    const groupHeader = document.querySelector('.myvh-booking-group-header');
+
+    expect(pendingRow.classList.contains('myvh-hidden-by-filter')).toBe(true);
+    expect(confirmedRow.classList.contains('myvh-hidden-by-filter')).toBe(false);
+    expect(groupHeader.classList.contains('myvh-hidden-by-filter')).toBe(false);
   });
 
-  test('should filter table rows by selected status', () => {
-    const filterByStatus = () => {
-      const checked = Array.from(document.querySelectorAll('.myvh-status-filter:checked')).map(function(cb) {
-        return cb.value;
-      });
-
-      const rows = document.querySelectorAll('#myvh-bookings-table tbody tr[data-status]');
-      rows.forEach(function(row) {
-        const status = row.getAttribute('data-status');
-        if (!status || checked.indexOf(status) !== -1) {
-          row.classList.remove('myvh-hidden-by-filter');
-        } else {
-          row.classList.add('myvh-hidden-by-filter');
-        }
-      });
+  test('delegates booking edit click to calendar flow with prefill payload', () => {
+    window.MyvhPortalCalendarFlow = {
+      openEdit: jest.fn()
     };
 
-    // Check only confirmed
-    const confirmedCheckbox = document.querySelector('input[value="confirmed"]');
-    confirmedCheckbox.checked = true;
+    const editLink = document.querySelector('a[href="#booking-edit"]');
+    editLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
-    filterByStatus();
-
-    const rows = document.querySelectorAll('#myvh-bookings-table tbody tr[data-status]');
-    expect(rows[0].classList.contains('myvh-hidden-by-filter')).toBe(false); // confirmed
-    expect(rows[1].classList.contains('myvh-hidden-by-filter')).toBe(true);   // pending
-    expect(rows[2].classList.contains('myvh-hidden-by-filter')).toBe(true);   // cancelled
+    expect(window.MyvhPortalCalendarFlow.openEdit).toHaveBeenCalledTimes(1);
+    expect(window.MyvhPortalCalendarFlow.openEdit).toHaveBeenCalledWith(123, {
+      prefill: expect.objectContaining({
+        start: '2026-05-10 09:30:00',
+        end: '2026-05-10 10:30:00',
+        roomId: '45',
+        customerId: '7',
+        organisationId: '9',
+        description: 'Weekly meeting',
+        status: 'pending'
+      })
+    });
   });
 
-  test('should show all rows when multiple statuses selected', () => {
-    const filterByStatus = () => {
-      const checked = Array.from(document.querySelectorAll('.myvh-status-filter:checked')).map(function(cb) {
-        return cb.value;
-      });
+  test('waits for booking flow ready event when flow is not immediately available', () => {
+    const viewLink = document.querySelector('a[href="#booking-view"]');
+    viewLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
-      const rows = document.querySelectorAll('#myvh-bookings-table tbody tr[data-status]');
-      rows.forEach(function(row) {
-        const status = row.getAttribute('data-status');
-        if (!status || checked.indexOf(status) !== -1) {
-          row.classList.remove('myvh-hidden-by-filter');
-        } else {
-          row.classList.add('myvh-hidden-by-filter');
-        }
-      });
-    };
+    const openView = jest.fn();
+    window.MyvhPortalCalendarFlow = { openView: openView };
 
-    // Check multiple statuses
-    document.querySelector('input[value="confirmed"]').checked = true;
-    document.querySelector('input[value="pending"]').checked = true;
+    document.dispatchEvent(new Event('myvh:portal-booking-flow-ready'));
 
-    filterByStatus();
-
-    const rows = document.querySelectorAll('#myvh-bookings-table tbody tr[data-status]');
-    expect(rows[0].classList.contains('myvh-hidden-by-filter')).toBe(false); // confirmed
-    expect(rows[1].classList.contains('myvh-hidden-by-filter')).toBe(false); // pending
-    expect(rows[2].classList.contains('myvh-hidden-by-filter')).toBe(true);  // cancelled
+    expect(openView).toHaveBeenCalledTimes(1);
+    expect(openView).toHaveBeenCalledWith(123, {
+      prefill: expect.objectContaining({
+        roomName: 'Main Hall',
+        customerName: 'Alex Smith',
+        organisationName: 'Village Group'
+      })
+    });
   });
 });

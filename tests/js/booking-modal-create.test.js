@@ -1,377 +1,218 @@
-/**
- * Booking Modal Create Tests
- * Specific tests for booking creation modal functions
- */
+const fs = require('fs');
+const path = require('path');
 
-describe('BookingModalCreate - Configuration', () => {
-  test('should initialize with default configuration', () => {
-    const defaultConfig = {
-      ajax_url: null,
-      nonce: 'myvh_calendar',
-      context: null,
-      lockCustomer: false,
-      lockOrganisation: false,
-      hideCustomer: false,
-      hideOrganisation: false,
-      requireOrganisation: false,
-      canManageNoInvoiceRequired: false,
-      onSuccess: () => {},
-      onOpen: () => {},
-      onClose: () => {},
-      onDelete: () => {},
-      beforeSubmit: () => true,
-      lockAddonPrices: false,
-      editMode: false,
-      editBookingId: 0
+const scriptPath = path.resolve(__dirname, '../../assets/js/booking-modal-create.js');
+const scriptSource = fs.readFileSync(scriptPath, 'utf8');
+
+function flushPromises() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function buildModalFixture() {
+  document.body.innerHTML = `
+    <div id="myvh-booking-modal-create" class="hidden">
+      <h2>Create Booking</h2>
+      <div class="myvh-account-hint"></div>
+      <form id="myvh-booking-form-create">
+        <button type="submit">Create Booking</button>
+        <button type="button" class="myvh-cancel">Cancel</button>
+        <button type="button" class="myvh-delete-booking" style="display:none">Delete</button>
+
+        <input name="booking_id" value="">
+        <input name="start" value="">
+        <input name="end" value="">
+        <input name="text" value="">
+
+        <table>
+          <tr id="myvh-modal-status-row"><td><input name="status" value="pending"></td></tr>
+          <tr id="myvh-modal-no-invoice-row"><td><input type="checkbox" name="no_invoice_required"></td></tr>
+          <tr id="myvh-modal-end-date-row"><td><input id="myvh-modal-end-date" value=""></td></tr>
+          <tr id="myvh-modal-edit-scope-row" style="display:none"><td>
+            <input type="radio" name="edit_scope" value="single" checked>
+            <input type="radio" name="edit_scope" value="series">
+          </td></tr>
+        </table>
+
+        <input id="myvh-modal-start-date" value="2026-05-10">
+        <input id="myvh-modal-start-time" value="09:00">
+        <input id="myvh-modal-end-time" value="10:00">
+
+        <select name="room_id"><option value="">Select...</option></select>
+        <select name="customer_id"><option value="">Select...</option></select>
+        <select name="organisation_id"><option value="">Select...</option></select>
+
+        <input type="checkbox" name="public">
+
+        <div id="myvh-modal-recurring-options" style="display:none"></div>
+        <input id="myvh-modal-is-recurring" type="checkbox">
+        <select id="myvh-modal-rec-type" name="recurrence_type">
+          <option value="daily">Daily</option>
+          <option value="monthly_day">Monthly Day</option>
+        </select>
+        <div id="myvh-modal-interval-row"></div>
+        <div id="myvh-modal-monthly-day-row" style="display:none"></div>
+        <span id="myvh-modal-interval-label"></span>
+        <input name="recurrence_interval" value="1">
+        <input name="recurrence_interval_md" value="1">
+
+        <input type="radio" name="recurrence_end_type" value="date" checked>
+        <input type="radio" name="recurrence_end_type" value="count">
+        <input name="max_occurrences" value="">
+        <input name="recurrence_end_date" value="2026-12-31">
+      </form>
+    </div>
+  `;
+}
+
+describe('BookingModalCreate', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    delete window.BookingModalCreate;
+
+    buildModalFixture();
+
+    window.MyvhFlatpickr = {
+      initWithin: jest.fn(),
+      setValue: jest.fn((input, value) => {
+        input.value = value;
+      }),
+      syncState: jest.fn()
     };
 
-    expect(defaultConfig.lockCustomer).toBe(false);
-    expect(defaultConfig.editMode).toBe(false);
-    expect(typeof defaultConfig.beforeSubmit).toBe('function');
-  });
-
-  test('should merge user config with defaults', () => {
-    const defaultConfig = {
-      ajax_url: null,
-      lockCustomer: false,
-      editMode: false
-    };
-
-    const userConfig = {
-      ajax_url: 'https://example.com/ajax',
-      lockCustomer: true
-    };
-
-    const merged = { ...defaultConfig, ...userConfig };
-
-    expect(merged.ajax_url).toBe('https://example.com/ajax');
-    expect(merged.lockCustomer).toBe(true);
-    expect(merged.editMode).toBe(false);
-  });
-
-  test('should validate required ajax_url', () => {
-    const validateConfig = (config) => {
-      if (!config.ajax_url) {
-        return { valid: false, errors: ['ajax_url is required'] };
-      }
-      return { valid: true, errors: [] };
-    };
-
-    const result1 = validateConfig({ ajax_url: null });
-    expect(result1.valid).toBe(false);
-    expect(result1.errors).toContain('ajax_url is required');
-
-    const result2 = validateConfig({ ajax_url: 'https://example.com' });
-    expect(result2.valid).toBe(true);
-  });
-});
-
-describe('BookingModalCreate - Customer Management', () => {
-  test('should cache customers to avoid repeated loads', () => {
-    let cache = null;
-    const customers = [
-      { id: 1, name: 'John Doe' },
-      { id: 2, name: 'Jane Smith' }
-    ];
-
-    const loadCustomers = async () => {
-      if (cache !== null) {
-        return cache;
-      }
-      cache = customers;
-      return cache;
-    };
-
-    return loadCustomers().then(result => {
-      expect(result).toEqual(customers);
-      expect(cache).toBe(customers);
-    });
-  });
-
-  test('should handle customer selection', () => {
-    const customerLocked = false;
-    const selectedCustomer = { id: 1, name: 'John Doe' };
-
-    const selectCustomer = (customer) => {
-      if (customerLocked) {
-        return { success: false, message: 'Customer is locked' };
-      }
-      return { success: true, customer };
-    };
-
-    const result = selectCustomer(selectedCustomer);
-    expect(result.success).toBe(true);
-    expect(result.customer.id).toBe(1);
-  });
-
-  test('should prevent customer change when locked', () => {
-    const selectCustomer = (customer, locked) => {
-      if (locked) {
-        return { success: false, message: 'Customer is locked' };
-      }
-      return { success: true, customer };
-    };
-
-    const lockedResult = selectCustomer({ id: 1, name: 'John' }, true);
-    expect(lockedResult.success).toBe(false);
-    expect(lockedResult.message).toBe('Customer is locked');
-  });
-});
-
-describe('BookingModalCreate - Organisation Management', () => {
-  test('should cache organisations by customer', () => {
-    const organisationsCache = {};
-    const customerId = 1;
-    const organisations = [
-      { id: 101, name: 'Org A' },
-      { id: 102, name: 'Org B' }
-    ];
-
-    const cacheOrganisations = (custId, orgs) => {
-      organisationsCache[custId] = orgs;
-    };
-
-    const getOrganisations = (custId) => {
-      return organisationsCache[custId] || [];
-    };
-
-    cacheOrganisations(customerId, organisations);
-    expect(getOrganisations(customerId)).toEqual(organisations);
-    expect(getOrganisations(999)).toEqual([]);
-  });
-
-  test('should handle organisation requirement', () => {
-    const requireOrganisation = true;
-
-    const validateOrganisation = (selected) => {
-      if (requireOrganisation && !selected) {
-        return { valid: false, message: 'Organisation is required' };
-      }
-      return { valid: true };
-    };
-
-    expect(validateOrganisation(null).valid).toBe(false);
-    expect(validateOrganisation({ id: 1 }).valid).toBe(true);
-  });
-
-  test('should prevent organisation change when locked', () => {
-    const selectOrganisation = (org, locked) => {
-      if (locked) {
-        return { success: false, message: 'Organisation is locked' };
-      }
-      return { success: true, organisation: org };
-    };
-
-    const result = selectOrganisation({ id: 1 }, true);
-    expect(result.success).toBe(false);
-  });
-});
-
-describe('BookingModalCreate - Room Selection', () => {
-  test('should load and cache rooms', () => {
-    let roomsCache = null;
-    const rooms = [
-      { id: 1, name: 'Room A', capacity: 10 },
-      { id: 2, name: 'Room B', capacity: 20 }
-    ];
-
-    const loadRooms = async () => {
-      if (roomsCache !== null) {
-        return roomsCache;
-      }
-      roomsCache = rooms;
-      return roomsCache;
-    };
-
-    return loadRooms().then(result => {
-      expect(result).toHaveLength(2);
-      expect(result[0].name).toBe('Room A');
-    });
-  });
-
-  test('should validate room availability', () => {
-    const rooms = [
-      { id: 1, name: 'Room A', available: true },
-      { id: 2, name: 'Room B', available: false }
-    ];
-
-    const isRoomAvailable = (roomId) => {
-      const room = rooms.find(r => r.id === roomId);
-      return room && room.available;
-    };
-
-    expect(isRoomAvailable(1)).toBe(true);
-    expect(isRoomAvailable(2)).toBe(false);
-  });
-
-  test('should filter rooms by capacity', () => {
-    const rooms = [
-      { id: 1, name: 'Room A', capacity: 5 },
-      { id: 2, name: 'Room B', capacity: 20 },
-      { id: 3, name: 'Room C', capacity: 15 }
-    ];
-
-    const filterByCapacity = (minCapacity) => {
-      return rooms.filter(r => r.capacity >= minCapacity);
-    };
-
-    const result = filterByCapacity(10);
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe('Room B');
-  });
-});
-
-describe('BookingModalCreate - Date/Time Handling', () => {
-  test('should validate booking dates', () => {
-    const validateDates = (startDate, endDate) => {
-      if (!startDate || !endDate) {
-        return { valid: false, message: 'Dates required' };
-      }
-      if (new Date(endDate) <= new Date(startDate)) {
-        return { valid: false, message: 'End date must be after start date' };
-      }
-      return { valid: true };
-    };
-
-    expect(validateDates(null, '2026-04-25').valid).toBe(false);
-    expect(validateDates('2026-04-25', '2026-04-24').valid).toBe(false);
-    expect(validateDates('2026-04-24', '2026-04-25').valid).toBe(true);
-  });
-
-  test('should calculate booking duration', () => {
-    const calculateDuration = (startDate, endDate) => {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      return {
-        milliseconds: end - start,
-        hours: (end - start) / (1000 * 60 * 60),
-        days: Math.ceil((end - start) / (1000 * 60 * 60 * 24))
-      };
-    };
-
-    const duration = calculateDuration('2026-04-22', '2026-04-25');
-    expect(duration.days).toBe(3);
-    expect(duration.hours).toBeCloseTo(72);
-  });
-
-  test('should handle time slot validation', () => {
-    const validateTimeSlot = (startTime, endTime) => {
-      const start = parseInt(startTime.replace(':', ''));
-      const end = parseInt(endTime.replace(':', ''));
-
-      if (end <= start) {
-        return { valid: false, message: 'End time must be after start time' };
-      }
-      if (end - start < 30) {
-        return { valid: false, message: 'Minimum 30 minutes required' };
-      }
-      return { valid: true };
-    };
-
-    expect(validateTimeSlot('10:00', '09:00').valid).toBe(false);
-    expect(validateTimeSlot('10:00', '10:15').valid).toBe(false);
-    expect(validateTimeSlot('10:00', '10:30').valid).toBe(true);
-  });
-});
-
-describe('BookingModalCreate - Price Calculations', () => {
-  test('should calculate base room price', () => {
-    const calculateRoomPrice = (roomRate, hours) => {
-      return roomRate * hours;
-    };
-
-    expect(calculateRoomPrice(50, 2)).toBe(100);
-    expect(calculateRoomPrice(25, 4)).toBe(100);
-  });
-
-  test('should apply addons to price', () => {
-    const applyAddons = (basePrice, addons) => {
-      const addonTotal = addons.reduce((sum, addon) => sum + addon.price, 0);
-      return basePrice + addonTotal;
-    };
-
-    const addons = [
-      { id: 1, name: 'Chairs', price: 20 },
-      { id: 2, name: 'Tables', price: 30 }
-    ];
-
-    const total = applyAddons(100, addons);
-    expect(total).toBe(150);
-  });
-
-  test('should prevent addon price changes when locked', () => {
-    const selectAddon = (addon, locked) => {
-      if (locked) {
-        return { success: false, message: 'Addon prices are locked' };
-      }
-      return { success: true, addon };
-    };
-
-    const result = selectAddon({ id: 1, price: 20 }, true);
-    expect(result.success).toBe(false);
-  });
-
-  test('should calculate final price with tax', () => {
-    const calculateFinalPrice = (subtotal, taxRate) => {
-      const tax = subtotal * (taxRate / 100);
-      return {
-        subtotal,
-        tax,
-        total: subtotal + tax
-      };
-    };
-
-    const pricing = calculateFinalPrice(100, 20);
-    expect(pricing.tax).toBe(20);
-    expect(pricing.total).toBe(120);
-  });
-});
-
-describe('BookingModalCreate - Form Validation', () => {
-  test('should validate complete booking form', () => {
-    const validateForm = (formData) => {
-      const errors = [];
-
-      if (!formData.customerId) errors.push('Customer required');
-      if (!formData.roomId) errors.push('Room required');
-      if (!formData.startDate) errors.push('Start date required');
-      if (!formData.endDate) errors.push('End date required');
-
-      return {
-        valid: errors.length === 0,
-        errors
-      };
-    };
-
-    const invalidForm = {
-      customerId: null,
-      roomId: 1,
-      startDate: '2026-04-24'
-    };
-
-    const result = validateForm(invalidForm);
-    expect(result.valid).toBe(false);
-    expect(result.errors).toHaveLength(2);
-  });
-
-  test('should support beforeSubmit hook', () => {
-    const beforeSubmit = jest.fn((formData) => {
-      // Custom validation in hook
-      return formData.customerId > 0;
+    window.fetch = jest.fn().mockResolvedValue({
+      json: () => Promise.resolve({ success: true, data: { booking_id: 321 } })
     });
 
-    const formData = { customerId: 1, roomId: 1 };
-    beforeSubmit(formData);
-
-    expect(beforeSubmit).toHaveBeenCalledWith(formData);
+    window.eval(scriptSource);
   });
 
-  test('should call onSuccess hook after submission', () => {
+  test('applies no-invoice visibility on init based on permissions', () => {
+    const checkbox = document.querySelector('[name="no_invoice_required"]');
+    const row = document.getElementById('myvh-modal-no-invoice-row');
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'nonce-1',
+      canManageNoInvoiceRequired: false
+    });
+
+    expect(row.style.display).toBe('none');
+    expect(checkbox.disabled).toBe(true);
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'nonce-1',
+      canManageNoInvoiceRequired: true
+    });
+
+    expect(row.style.display).toBe('');
+    expect(checkbox.disabled).toBe(false);
+  });
+
+  test('does not submit when beforeSubmit returns false', () => {
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'nonce-1',
+      beforeSubmit: () => false
+    });
+
+    const form = document.getElementById('myvh-booking-form-create');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(window.fetch).not.toHaveBeenCalled();
+  });
+
+  test('submits portal create payload and calls onSuccess', async () => {
     const onSuccess = jest.fn();
-    const response = { bookingId: 123, status: 'created' };
+    window.myvhCal = {
+      currentCustomerId: 55,
+      defaultOrganisationId: 88
+    };
 
-    onSuccess(response);
+    document.querySelector('[name="public"]').checked = true;
+    document.querySelector('[name="no_invoice_required"]').checked = true;
+    document.querySelector('[name="room_id"]').innerHTML = '<option value="14">Main Hall</option>';
+    document.querySelector('[name="room_id"]').value = '14';
 
-    expect(onSuccess).toHaveBeenCalledWith(response);
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal',
+      canManageNoInvoiceRequired: true,
+      onSuccess: onSuccess
+    });
+
+    const form = document.getElementById('myvh-booking-form-create');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await flushPromises();
+    await flushPromises();
+
+    expect(window.fetch).toHaveBeenCalledTimes(1);
+    const request = window.fetch.mock.calls[0][1];
+    expect(request.method).toBe('POST');
+
+    const payload = Object.fromEntries(request.body.entries());
+    expect(payload.action).toBe('myvh_portal_create_booking');
+    expect(payload.nonce).toBe('portal-nonce');
+    expect(payload.room_id).toBe('14');
+    expect(payload.customer_id).toBe('55');
+    expect(payload.organisation_id).toBe('88');
+    expect(payload.public).toBe('1');
+    expect(payload.no_invoice_required).toBe('1');
+
+    expect(onSuccess).toHaveBeenCalledWith({ booking_id: 321 });
+  });
+
+  test('opens in edit mode, loads booking, and reveals recurring edit scope', async () => {
+    window.fetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({
+        success: true,
+        data: {
+          booking: {
+            RoomId: '14',
+            CustomerId: '7',
+            OrganisationId: '9',
+            Description: 'Edit booking text',
+            Status: 'confirmed',
+            StartDate: '2026-05-15',
+            StartTime: '08:30:00',
+            EndDate: '2026-05-16',
+            EndTime: '09:30:00',
+            Public: 1,
+            NoInvoiceRequired: 1,
+            RecurringPatternId: 99
+          },
+          addons: [],
+          can_delete: true,
+          delete_reason: ''
+        }
+      })
+    });
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal',
+      loadRooms: () => Promise.resolve([{ Id: '14', Name: 'Main Hall', AllowMultiDayBookings: 1 }]),
+      loadCustomers: () => Promise.resolve([{ Id: '7', Name: 'Alex Smith' }]),
+      loadOrganisations: () => Promise.resolve([{ Id: '9', Name: 'Village Group' }])
+    });
+
+    window.BookingModalCreate.open({ editMode: true, bookingId: 12 });
+
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    const modal = document.getElementById('myvh-booking-modal-create');
+    const scopeRow = document.getElementById('myvh-modal-edit-scope-row');
+    const bookingId = document.querySelector('[name="booking_id"]').value;
+
+    expect(modal.classList.contains('hidden')).toBe(false);
+    expect(bookingId).toBe('12');
+    expect(scopeRow.style.display).toBe('');
+    expect(document.querySelector('h2').textContent).toBe('Edit Booking');
+    expect(document.querySelector('.myvh-delete-booking').style.display).toBe('');
   });
 });

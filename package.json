@@ -8,7 +8,13 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "playwright test",
+    "test:e2e:login": "playwright test tests/e2e/login.*.spec.js",
+    "test:e2e:login:success": "playwright test tests/e2e/login.success.spec.js",
+    "test:e2e:login:failed": "playwright test tests/e2e/login.failed.spec.js",
+    "test:e2e:password-reset": "playwright test tests/e2e/password-reset.spec.js",
+    "test:e2e:customer-create": "playwright test tests/e2e/customer-create.spec.js"
   },
   "repository": {
     "type": "git",

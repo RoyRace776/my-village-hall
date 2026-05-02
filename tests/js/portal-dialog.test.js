@@ -1,137 +1,75 @@
-/**
- * Portal Dialog Tests
- * Tests for portal dialog functions
- * Imports from portal-dialog-utils.js
- */
+const fs = require('fs');
+const path = require('path');
 
-const {
-  getSiteName,
-  getDialogStyles,
-  createAlertDialog,
-  createConfirmDialog,
-  validateDialogResponse
-} = require('../../assets/js/utils/portal-dialog-utils.js');
+const scriptPath = path.resolve(__dirname, '../../assets/js/portal-dialog.js');
+const scriptSource = fs.readFileSync(scriptPath, 'utf8');
 
-describe('MyvhPortalDialog - Site Name Resolution', () => {
-  afterEach(() => {
+describe('MyvhPortalDialog', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    document.body.innerHTML = '';
+    document.head.innerHTML = '';
+
+    delete window.MyvhPortalDialog;
     delete window.myvhPortal;
     delete window.myvhCal;
+
+    window.eval(scriptSource);
   });
 
-  test('should get site name from myvhPortal', () => {
-    window.myvhPortal = { site_name: 'Test Village Hall' };
-    expect(getSiteName()).toBe('Test Village Hall');
+  test('queues dialogs and renders one at a time', async () => {
+    const firstPromise = window.MyvhPortalDialog.confirm('First question?');
+    const secondPromise = window.MyvhPortalDialog.alert('Second message');
+
+    expect(document.querySelectorAll('.myvh-portal-dialog-backdrop')).toHaveLength(1);
+    expect(document.querySelector('.myvh-portal-dialog__body').textContent).toBe('First question?');
+
+    document.querySelector('.myvh-portal-dialog__btn').click();
+
+    await expect(firstPromise).resolves.toBe(false);
+    expect(document.querySelector('.myvh-portal-dialog__body').textContent).toBe('Second message');
+
+    document.querySelector('.myvh-portal-dialog__btn--primary').click();
+    await expect(secondPromise).resolves.toBe(true);
   });
 
-  test('should get site name from myvhPortal.siteName', () => {
-    window.myvhPortal = { siteName: 'Village Hall Portal' };
-    expect(getSiteName()).toBe('Village Hall Portal');
+  test('resolves confirm as false on Escape key', async () => {
+    const promise = window.MyvhPortalDialog.confirm('Continue?');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+    await expect(promise).resolves.toBe(false);
+    expect(document.querySelector('.myvh-portal-dialog-backdrop')).toBeNull();
   });
 
-  test('should fallback to myvhCal.site_name', () => {
-    window.myvhCal = { site_name: 'Calendar Site' };
-    expect(getSiteName()).toBe('Calendar Site');
+  test('resolves alert as true on backdrop click', async () => {
+    const promise = window.MyvhPortalDialog.alert('Heads up');
+
+    const backdrop = document.querySelector('.myvh-portal-dialog-backdrop');
+    backdrop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await expect(promise).resolves.toBe(true);
   });
 
-  test('should fallback to document.title', () => {
-    const originalTitle = document.title;
-    document.title = 'Page Title';
-    expect(getSiteName()).toBe('Page Title');
-    document.title = originalTitle;
+  test('injects style block once across multiple dialogs', async () => {
+    const first = window.MyvhPortalDialog.alert('One');
+    document.querySelector('.myvh-portal-dialog__btn--primary').click();
+    await first;
+
+    const second = window.MyvhPortalDialog.alert('Two');
+    document.querySelector('.myvh-portal-dialog__btn--primary').click();
+    await second;
+
+    expect(document.querySelectorAll('#myvh-portal-dialog-styles')).toHaveLength(1);
   });
 
-  test('should use default when no name available', () => {
-    const result = getSiteName();
-    expect(typeof result).toBe('string');
-    expect(result.length > 0).toBe(true);
-  });
-});
+  test('uses site name as default title in header', async () => {
+    window.myvhPortal = { site_name: 'Village Hall Portal' };
+    const promise = window.MyvhPortalDialog.alert('Welcome');
 
-describe('MyvhPortalDialog - Style Management', () => {
-  test('should get dialog styles', () => {
-    const styles = getDialogStyles();
-    expect(typeof styles).toBe('string');
-    expect(styles).toContain('myvh-portal-dialog');
-    expect(styles).toContain('myvh-portal-dialog-backdrop');
-  });
+    expect(document.querySelector('.myvh-portal-dialog__head').textContent).toBe('Village Hall Portal');
 
-  test('should include critical CSS classes in styles', () => {
-    const styles = getDialogStyles();
-    const cssClasses = [
-      'myvh-portal-dialog-backdrop',
-      'myvh-portal-dialog__head',
-      'myvh-portal-dialog__body',
-      'myvh-portal-dialog__actions',
-      'myvh-portal-dialog__btn'
-    ];
-
-    cssClasses.forEach(className => {
-      expect(styles).toContain(className);
-    });
-  });
-});
-
-describe('MyvhPortalDialog - Alert Dialog', () => {
-  test('should create alert dialog with message', () => {
-    const dialog = createAlertDialog('This is an alert', { title: 'Warning' });
-
-    expect(dialog.type).toBe('alert');
-    expect(dialog.message).toBe('This is an alert');
-    expect(dialog.title).toBe('Warning');
-    expect(dialog.buttons).toHaveLength(1);
-    expect(dialog.buttons[0].label).toBe('OK');
-  });
-
-  test('should use default title when not provided', () => {
-    const dialog = createAlertDialog('Message');
-    expect(dialog.title).toBeTruthy();
-  });
-});
-
-describe('MyvhPortalDialog - Confirm Dialog', () => {
-  test('should create confirm dialog with two buttons', () => {
-    const dialog = createConfirmDialog('Are you sure?', { okLabel: 'Yes', cancelLabel: 'No' });
-
-    expect(dialog.type).toBe('confirm');
-    expect(dialog.message).toBe('Are you sure?');
-    expect(dialog.buttons).toHaveLength(2);
-    expect(dialog.buttons[0].label).toBe('No');
-    expect(dialog.buttons[1].label).toBe('Yes');
-  });
-
-  test('should use default button labels', () => {
-    const dialog = createConfirmDialog('Proceed?');
-    expect(dialog.buttons[0].label).toBe('Cancel');
-    expect(dialog.buttons[1].label).toBe('OK');
-  });
-
-  test('should mark OK button as primary', () => {
-    const dialog = createConfirmDialog('Confirm?');
-    expect(dialog.buttons[1].primary).toBe(true);
-    expect(dialog.buttons[0].primary).toBe(false);
-  });
-});
-
-describe('MyvhPortalDialog - Response Validation', () => {
-  test('should validate correct response format', () => {
-    const result = validateDialogResponse({ type: 'alert' });
-    expect(result.valid).toBe(true);
-  });
-
-  test('should reject null response', () => {
-    const result = validateDialogResponse(null);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Invalid');
-  });
-
-  test('should reject non-object response', () => {
-    const result = validateDialogResponse('string');
-    expect(result.valid).toBe(false);
-  });
-
-  test('should reject response without type', () => {
-    const result = validateDialogResponse({ message: 'test' });
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('type');
+    document.querySelector('.myvh-portal-dialog__btn--primary').click();
+    await promise;
   });
 });

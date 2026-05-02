@@ -3,6 +3,11 @@ if (!defined('ABSPATH')) exit;
 
 // $accessible_sites, $is_client_admin, and $has_customer are resolved by
 // PortalBootstrapDataService and unpacked by PortalShortcode::render().
+$accessible_sites = (isset($accessible_sites) && is_array($accessible_sites)) ? $accessible_sites : [];
+$is_client_admin = !empty($is_client_admin);
+$has_customer = !empty($has_customer);
+$portal_logout_url = isset($portal_logout_url) ? (string) $portal_logout_url : wp_logout_url();
+$portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $portal_branding : [];
 ?>
 
 <div id="myvh-portal">

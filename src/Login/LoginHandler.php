@@ -22,6 +22,105 @@ class LoginHandler {
         add_action('init', [$this, 'handle_registration']);
     }
 
+    private function resolve_login_page_url(): string {
+        $fallback = home_url('/login/');
+
+        $filtered = apply_filters('myvh_login_page_url', '');
+        if (is_string($filtered) && $filtered !== '') {
+            return esc_url_raw($filtered);
+        }
+
+        $template_pages = get_pages([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'meta_key' => '_wp_page_template',
+            'meta_value' => 'templates/page-login.php',
+            'number' => 1,
+        ]);
+
+        if (!empty($template_pages) && !empty($template_pages[0]->ID)) {
+            return (string) get_permalink((int) $template_pages[0]->ID);
+        }
+
+        $candidate_pages = get_posts([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'posts_per_page' => 200,
+            'orderby' => 'menu_order title',
+            'order' => 'ASC',
+            'suppress_filters' => false,
+        ]);
+
+        foreach ((array) $candidate_pages as $page) {
+            if (empty($page->ID)) {
+                continue;
+            }
+
+            if (has_shortcode((string) $page->post_content, 'myvh_login')) {
+                return (string) get_permalink((int) $page->ID);
+            }
+        }
+
+        foreach (['login', 'sign-in', 'signin', 'account-login'] as $slug) {
+            $candidate = get_page_by_path($slug);
+            if ($candidate && !empty($candidate->ID)) {
+                return (string) get_permalink((int) $candidate->ID);
+            }
+        }
+
+        return $fallback;
+    }
+
+    private function redirect_registration_error(string $message): void {
+        set_transient('myvh_register_error', $message, 30);
+
+        $target = add_query_arg('register', '1', $this->resolve_login_page_url()) . '#myvh-register-form';
+        wp_safe_redirect($target);
+        exit;
+    }
+
+    private function resolve_portal_page_url(): string {
+        $fallback = home_url('/portal/');
+
+        $filtered = apply_filters('myvh_portal_page_url', '');
+        if (is_string($filtered) && $filtered !== '') {
+            return esc_url_raw($filtered);
+        }
+
+        $portal_page = get_page_by_path('portal');
+        if ($portal_page && !empty($portal_page->ID)) {
+            return (string) get_permalink((int) $portal_page->ID);
+        }
+
+        $candidate_pages = get_posts([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'posts_per_page' => 200,
+            'orderby' => 'menu_order title',
+            'order' => 'ASC',
+            'suppress_filters' => false,
+        ]);
+
+        foreach ((array) $candidate_pages as $page) {
+            if (empty($page->ID)) {
+                continue;
+            }
+
+            if (has_shortcode((string) $page->post_content, 'myvh_portal')) {
+                return (string) get_permalink((int) $page->ID);
+            }
+        }
+
+        foreach (['portal', 'client-portal', 'account-portal', 'dashboard'] as $slug) {
+            $candidate = get_page_by_path($slug);
+            if ($candidate && !empty($candidate->ID)) {
+                return (string) get_permalink((int) $candidate->ID);
+            }
+        }
+
+        return $fallback;
+    }
+
     public function handle_login(): void {
 
         if (!isset($_POST['myvh_login_nonce'])) {
@@ -53,7 +152,7 @@ class LoginHandler {
             return;
         }
 
-        wp_redirect(home_url('/portal'));
+        wp_safe_redirect($this->resolve_portal_page_url());
         exit;
     }
 
@@ -81,31 +180,26 @@ class LoginHandler {
         delete_transient('myvh_login_prefill_username');
 
         if ($name === '') {
-            set_transient('myvh_register_error', 'Name is required.', 30);
-            return;
+            $this->redirect_registration_error('Name is required.');
         }
 
         if ($email === '' || !is_email($email)) {
-            set_transient('myvh_register_error', 'A valid email address is required.', 30);
-            return;
+            $this->redirect_registration_error('A valid email address is required.');
         }
 
         $password_error = $this->password_validator->validate($password);
         if ($password_error !== null) {
-            set_transient('myvh_register_error', $password_error, 30);
-            return;
+            $this->redirect_registration_error($password_error);
         }
 
         if ($password !== $confirm_password) {
-            set_transient('myvh_register_error', 'Password confirmation does not match.', 30);
-            return;
+            $this->redirect_registration_error('Password confirmation does not match.');
         }
 
         if (email_exists($email)) {
-            set_transient('myvh_register_error', 'An account with this email already exists.', 30);
             set_transient('myvh_register_existing_email', $email, 120);
             set_transient('myvh_login_prefill_username', $email, 120);
-            return;
+            $this->redirect_registration_error('An account with this email already exists.');
         }
 
         $role = get_role('myvh_customer') ? 'myvh_customer' : get_option('default_role', 'subscriber');
@@ -119,8 +213,7 @@ class LoginHandler {
         ]);
 
         if (is_wp_error($user_id)) {
-            set_transient('myvh_register_error', $user_id->get_error_message(), 30);
-            return;
+            $this->redirect_registration_error($user_id->get_error_message());
         }
 
         try {
@@ -150,13 +243,11 @@ class LoginHandler {
 
             if (is_wp_error($saved)) {
                 $this->delete_user_safe((int) $user_id);
-                set_transient('myvh_register_error', $saved->get_error_message(), 30);
-                return;
+                $this->redirect_registration_error($saved->get_error_message());
             }
         } catch (Exception $e) {
             $this->delete_user_safe((int) $user_id);
-            set_transient('myvh_register_error', $e->getMessage(), 30);
-            return;
+            $this->redirect_registration_error($e->getMessage());
         }
 
         wp_set_current_user((int) $user_id);
@@ -167,10 +258,7 @@ class LoginHandler {
         delete_transient('myvh_register_prefill_phone');
         delete_transient('myvh_login_prefill_username');
 
-        $portal_page = get_page_by_path('portal');
-        $redirect_url = $portal_page ? get_permalink($portal_page->ID) : home_url('/portal');
-
-        wp_redirect($redirect_url);
+        wp_safe_redirect($this->resolve_portal_page_url());
         exit;
     }
 }

@@ -5,7 +5,7 @@ if (!isset($is_client_admin)) $is_client_admin = false;
 
 use MYVH\Customers\CustomerService;
 
-$customers = is_array($customers ?? null) ? $customers : [];
+$customers = (isset($customers) && is_array($customers)) ? $customers : [];
 $action = $_GET['action'] ?? '';
 $edit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
