@@ -66,7 +66,7 @@ REM STEP 3: Update source version for release builds
 REM ----------------------------
 if "!RELEASE_MODE!"=="1" (
   echo Updating version metadata in %MAIN_FILE%...
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$ver='!VERSION!'; $path='%MAIN_FILE%'; $c=Get-Content -Path $path -Raw; $c=$c -replace '(?m)^(\s*\*\s*Version:\s*).*$',('${1}'+$ver); $c=$c -replace '(?m)^(define\(\s*''MYVH_VERSION''\s*,\s*'').*?(''\s*\)\s*;)',('${1}'+$ver+'${2}'); $utf8=New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($path,$c,$utf8)"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT_DIR%\set-version.ps1" -Version "!VERSION!" -Path "%ROOT_DIR%\%MAIN_FILE%"
   if errorlevel 1 (
     echo ERROR: Failed to update version metadata in %MAIN_FILE%
     exit /b 1
@@ -107,7 +107,7 @@ REM ----------------------------
 REM STEP 8: Inject version into distributable
 REM ----------------------------
 echo Injecting version metadata into distributable...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ver='!VERSION!'; $path='%MAIN_FILE%'; $c=Get-Content -Path $path -Raw; $c=$c -replace '(?m)^(\s*\*\s*Version:\s*).*$',('${1}'+$ver); $c=$c -replace '(?m)^(define\(\s*''MYVH_VERSION''\s*,\s*'').*?(''\s*\)\s*;)',('${1}'+$ver+'${2}'); $utf8=New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($path,$c,$utf8)"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT_DIR%\set-version.ps1" -Version "!VERSION!" -Path "%MAIN_FILE%"
 if errorlevel 1 (
   echo ERROR: Failed to inject version metadata into distributable
   exit /b 1
@@ -139,6 +139,8 @@ for %%f in (
   package-lock.json
   webpack.config.js
   vite.config.js
+  set-version.ps1
+  build.bat
   .env
 ) do (
   if exist %%f del /q %%f
