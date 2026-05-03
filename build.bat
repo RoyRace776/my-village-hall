@@ -25,7 +25,10 @@ if errorlevel 1 (
 REM ----------------------------
 REM STEP 2: Get version
 REM ----------------------------
-for /f "delims=" %%i in ('git describe --tags --abbrev=0 2^>nul') do set VERSION=%%i
+for /f "delims=" %%i in ('git describe --tags --abbrev=0 2^>^&1') do set VERSION=%%i
+
+REM Discard git error messages
+echo !VERSION! | findstr /i /c:"fatal" >nul && set VERSION=
 
 if defined VERSION (
   set VERSION=!VERSION:v=!
