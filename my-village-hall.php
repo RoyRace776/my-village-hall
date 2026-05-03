@@ -2,8 +2,7 @@
 /**
  * Plugin Name: My Village Hall
  * Plugin URI: https://example.com/my-village-hall
- * Description: A comprehensive venue and room booking management system with multi-client support, recurring bookings, and customer portal
- * Version: 0.3.2
+ * Description: A comprehensive venue and room booking management system with multi-client support, recurring bookings, and customer portal$10.3.3
  * Author: Richard Barrett
  * Author URI: https://example.com
  * License: GPL v2 or later
@@ -45,19 +44,19 @@ use MYVH\Network\SiteProvisioningService;
 //use WP_Site;
 
 
-// Prevent direct file access — WordPress must load this file.
+// Prevent direct file access â€” WordPress must load this file.
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// ── Plugin constants ──────────────────────────────────────────────────────────
+// â”€â”€ Plugin constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 define( 'MYVH_VERSION',          '0.3.0' );
 define( 'MYVH_PLUGIN_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'MYVH_PLUGIN_URL',       plugin_dir_url( __FILE__ ) );
 define( 'MYVH_PLUGIN_BASENAME',  plugin_basename( __FILE__ ) );
 
-// ── Load required files ───────────────────────────────────────────────────────
+// â”€â”€ Load required files â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Wrapped in output buffering so that any accidental whitespace in included
 // files doesn't trigger WordPress's "unexpected output" activation error.
 
@@ -76,7 +75,7 @@ require_once MYVH_PLUGIN_DIR . 'src/Bootstrap/myvh-bootstrap.php';
 
 ob_end_clean();
 
-// ── Main plugin class ─────────────────────────────────────────────────────────
+// â”€â”€ Main plugin class â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * My_Village_Hall
@@ -93,7 +92,7 @@ class MyVillageHall {
     private static $instance = null;
     private static $separator_count = 0;
 
-    // ── Singleton ─────────────────────────────────────────────────────────────
+    // â”€â”€ Singleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /** Returns the single shared instance, creating it if necessary. */
     public static function get_instance(): self {
@@ -108,7 +107,7 @@ class MyVillageHall {
         $this->register_hooks();
     }
 
-    // ── Hook registration ─────────────────────────────────────────────────────
+    // â”€â”€ Hook registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Register every WordPress action/filter the plugin needs.
@@ -239,7 +238,7 @@ class MyVillageHall {
         } );
     }
 
-    // ── Activation / deactivation ─────────────────────────────────────────────
+    // â”€â”€ Activation / deactivation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Runs on plugin activation.
@@ -264,7 +263,7 @@ class MyVillageHall {
         flush_rewrite_rules();
     }
 
-    // ── Translations ──────────────────────────────────────────────────────────
+    // â”€â”€ Translations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /** Loads the plugin's translation files. */
     public function plugins_loaded(): void {
@@ -281,27 +280,27 @@ class MyVillageHall {
         }
     }
 
-    // ── Admin menu ────────────────────────────────────────────────────────────
+    // â”€â”€ Admin menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Registers the plugin's admin menu.
      *
      * Structure:
      *   My Village Hall (top-level)
-     *   ├── All Bookings
-     *   ├── Calendar
-     *   ├── ── (separator) ──
-     *   ├── Customers
-     *   ├── ── (separator) ──
-     *   ├── Venues
-     *   ├── Rooms
-     *   ├── ── (separator) ──
-     *   ├── Room Rates
-     *   ├── Add-ons
-    *   ├── View Invoices
-    *   ├── Generate Invoices
-     *   ├── ── (separator) ──
-     *   └── Recurring Patterns
+     *   â”œâ”€â”€ All Bookings
+     *   â”œâ”€â”€ Calendar
+     *   â”œâ”€â”€ â”€â”€ (separator) â”€â”€
+     *   â”œâ”€â”€ Customers
+     *   â”œâ”€â”€ â”€â”€ (separator) â”€â”€
+     *   â”œâ”€â”€ Venues
+     *   â”œâ”€â”€ Rooms
+     *   â”œâ”€â”€ â”€â”€ (separator) â”€â”€
+     *   â”œâ”€â”€ Room Rates
+     *   â”œâ”€â”€ Add-ons
+    *   â”œâ”€â”€ View Invoices
+    *   â”œâ”€â”€ Generate Invoices
+     *   â”œâ”€â”€ â”€â”€ (separator) â”€â”€
+     *   â””â”€â”€ Recurring Patterns
      */
     public function register_admin_menu(): void {
 
@@ -316,7 +315,7 @@ class MyVillageHall {
             30
         );
 
-        // ── Bookings ──────────────────────────────────────────────────────────
+        // â”€â”€ Bookings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // WordPress automatically adds a duplicate of the top-level item as the
         // first submenu entry; we give it a friendlier label here.
         add_submenu_page( 'my-village-hall',
@@ -333,7 +332,7 @@ class MyVillageHall {
 
         $this->add_menu_separator();
 
-        // ── Customers ─────────────────────────────────────────────────────────
+        // â”€â”€ Customers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         add_submenu_page( 'my-village-hall',
             __( 'Customers',       'my-village-hall' ),
             __( 'Customers',       'my-village-hall' ),
@@ -342,7 +341,7 @@ class MyVillageHall {
 
         $this->add_menu_separator();
 
-        // ── Organisations ──────────────────────────────────────────────────────
+        // â”€â”€ Organisations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         add_submenu_page( 'my-village-hall',
             __( 'Organisations',      'my-village-hall' ),
             __( 'Organisations',      'my-village-hall' ),
@@ -381,7 +380,7 @@ class MyVillageHall {
 
         $this->add_menu_separator();
 
-        // ── Venues & Rooms ────────────────────────────────────────────────────
+        // â”€â”€ Venues & Rooms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         add_submenu_page( 'my-village-hall',
             __( 'Venues', 'my-village-hall' ),
             __( 'Venues', 'my-village-hall' ),
@@ -396,7 +395,7 @@ class MyVillageHall {
 
         $this->add_menu_separator();
 
-        // ── Pricing & Billing ─────────────────────────────────────────────────
+        // â”€â”€ Pricing & Billing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         add_submenu_page( 'my-village-hall',
             __( 'Room Rates', 'my-village-hall' ),
             __( 'Room Rates', 'my-village-hall' ),
@@ -429,7 +428,7 @@ class MyVillageHall {
 
         $this->add_menu_separator();
 
-        // ── Recurring bookings ────────────────────────────────────────────────
+        // â”€â”€ Recurring bookings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         add_submenu_page( 'my-village-hall',
             __( 'Recurring Bookings',  'my-village-hall' ),
             __( 'Recurring Patterns',  'my-village-hall' ),
@@ -486,7 +485,7 @@ class MyVillageHall {
     }
 
 
-    // ── Page renderers ────────────────────────────────────────────────────────
+    // â”€â”€ Page renderers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Each method checks capability then includes the relevant view file.
     // A private helper keeps things DRY.
 
@@ -498,7 +497,7 @@ class MyVillageHall {
 
         // Resolve visible hours here so AssetLoader stays free of database calls.
         // Scripts are registered as footer scripts, so wp_localize_script is valid
-        // anywhere before wp_footer fires — including inside a page render callback.
+        // anywhere before wp_footer fires â€” including inside a page render callback.
         $visible_hours = [ 'start' => 8, 'end' => 22 ];
 
         global $myvh_container;
@@ -569,7 +568,7 @@ class MyVillageHall {
             echo '<div class="wrap">';
             echo '<h1>' . esc_html__( 'Client Administrators', 'my-village-hall' ) . '</h1>';
             echo '<div class="notice notice-warning"><p>'
-                . esc_html__( 'Only network administrators can manage cross-site client admin assignments. Ask a network admin to use Network Admin → Village Halls → Client Admins.', 'my-village-hall' )
+                . esc_html__( 'Only network administrators can manage cross-site client admin assignments. Ask a network admin to use Network Admin â†’ Village Halls â†’ Client Admins.', 'my-village-hall' )
                 . '</p></div>';
             echo '</div>';
             return;
@@ -741,7 +740,7 @@ class MyVillageHall {
     }
 }
 
-// ── Activation / deactivation hooks ──────────────────────────────────────────
+// â”€â”€ Activation / deactivation hooks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Handles both single-site and multisite (network) activation.
@@ -829,7 +828,7 @@ function myvh_show_admin_bar( bool $show ): bool {
 }
 add_filter( 'show_admin_bar', 'myvh_show_admin_bar' );
 
-// ── Plugin initialisation ─────────────────────────────────────────────────────
+// â”€â”€ Plugin initialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Starts the plugin after all plugins have loaded.
@@ -855,7 +854,7 @@ function myvh_init(): MyVillageHall {
         ( new NetworkDashboard() )->init();
     }
 
-    // // ✅ Register cloner implementation
+    // // âœ… Register cloner implementation
     // add_filter('myvh_network_ns_cloner_execute', function ($result, $args) {
 
     //     $cloner = new \MYVH\Network\WpSiteCloner();
