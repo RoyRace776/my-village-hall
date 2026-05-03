@@ -23,18 +23,17 @@ if errorlevel 1 (
 )
 
 REM ----------------------------
-REM STEP 2: Get version (optional)
+REM STEP 2: Get version
 REM ----------------------------
-git status
 for /f "delims=" %%i in ('git describe --tags --abbrev=0 2^>nul') do set VERSION=%%i
 
 if defined VERSION (
-  set VERSION=%VERSION:v=%
+  set VERSION=!VERSION:v=!
 ) else (
   set VERSION=dev-build
 )
 
-echo Detected version: %VERSION%
+echo Detected version: !VERSION!
 
 REM ----------------------------
 REM STEP 3: Move to parent dir
@@ -67,18 +66,16 @@ if not exist %MAIN_FILE% (
 )
 
 REM ----------------------------
-REM STEP 7: Inject version (optional)
+REM STEP 7: Inject version
 REM ----------------------------
 echo Injecting version into plugin header...
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%MAIN_FILE%') -replace 'Version:\s*.*', 'Version: %VERSION%' | Set-Content '%MAIN_FILE%'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%MAIN_FILE%') -replace 'Version:\s*.*', 'Version: !VERSION!' | Set-Content '%MAIN_FILE%'"
 
 REM ----------------------------
 REM STEP 8: Cleanup
 REM ----------------------------
 echo Cleaning unnecessary files...
 
-REM Directories
 for %%d in (
   .git
   .github
@@ -92,7 +89,6 @@ for %%d in (
   if exist %%d rmdir /s /q %%d
 )
 
-REM Files
 for %%f in (
   .gitignore
   phpunit.xml
@@ -129,7 +125,7 @@ REM ----------------------------
 echo ============================
 echo Build complete!
 echo Output: dist\%PLUGIN_SLUG%.zip
-echo Version: %VERSION%
+echo Version: !VERSION!
 echo ============================
 
 pause
