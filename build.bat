@@ -140,6 +140,7 @@ for %%f in (
   webpack.config.js
   vite.config.js
   set-version.ps1
+  create-zip.ps1
   build.bat
   .env
 ) do (
@@ -156,7 +157,7 @@ cd ..
 if exist %PLUGIN_SLUG%.zip del %PLUGIN_SLUG%.zip
 
 echo Creating ZIP...
-powershell Compress-Archive -Path %PLUGIN_SLUG% -DestinationPath %PLUGIN_SLUG%.zip
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT_DIR%\create-zip.ps1" -SourceDir "%PLUGIN_SLUG%" -DestinationZip "%PLUGIN_SLUG%.zip"
 
 if errorlevel 1 (
   echo ERROR: ZIP creation failed
