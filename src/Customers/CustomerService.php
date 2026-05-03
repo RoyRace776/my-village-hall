@@ -126,6 +126,9 @@ class CustomerService {
 
     public function create_customer(array $data): int
     {
+        if (!array_key_exists('EmailVerified', $data)) {
+            $data['EmailVerified'] = 0;
+        }
 
         $email = $data['Email'];
         $user = get_user_by('email', $email);

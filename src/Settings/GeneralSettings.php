@@ -37,11 +37,11 @@ class GeneralSettings extends SettingsBase {
                     'description' => 'Shown in the portal header next to the site title.'
                 ],
 
-                'items_per_page' => [
-                    'type' => 'integer',
-                    'label' => 'Items Per Page',
-                    'default' => 10,
-                    'sanitize' => 'intval'
+                'require_email_verification' => [
+                    'type' => 'boolean',
+                    'label' => 'Require email verification for user login',
+                    'default' => true,
+                    'sanitize' => 'boolval'
                 ],
 
                 'admin_email' => [

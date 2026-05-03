@@ -212,6 +212,27 @@ class CustomerServiceTest extends UnitTestCase
         $this->assertSame(8, $id);
     }
 
+    /** @test */
+    public function create_customer_defaults_email_verified_to_zero_when_missing(): void
+    {
+        Functions\when('get_user_by')->justReturn(null);
+        Functions\when('wp_insert_user')->justReturn(10);
+        Functions\when('is_wp_error')->justReturn(false);
+
+        $this->repo->shouldReceive('create')
+            ->once()
+            ->with(Mockery::on(fn($record) => (int) ($record['EmailVerified'] ?? -1) === 0))
+            ->andReturn(11);
+        $this->org_repo->shouldReceive('get_default')->once()->andReturn([]);
+
+        $id = $this->service->create_customer([
+            'Name' => 'Dana',
+            'Email' => 'dana@example.com',
+        ]);
+
+        $this->assertSame(11, $id);
+    }
+
     // ── delete ───────────────────────────────────────────────────────────
 
     /** @test */

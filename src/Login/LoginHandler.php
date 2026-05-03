@@ -2,6 +2,7 @@
 namespace MYVH\Login;
 
 use Exception;
+use Throwable;
 use MYVH\Customers\CustomerService;
 use MYVH\Events\CustomerEvents;
 use MYVH\Events\EventDispatcher;
@@ -135,6 +136,45 @@ class LoginHandler {
         return $fallback;
     }
 
+    private function is_email_verification_required_for_login(): bool {
+        return (bool) myvh_setting('general.require_email_verification', true);
+    }
+
+    private function get_customer_for_user(int $user_id): ?array {
+        if ($user_id <= 0) {
+            return null;
+        }
+
+        global $myvh_container;
+
+        if (!isset($myvh_container) || !is_object($myvh_container) || !method_exists($myvh_container, 'get')) {
+            return null;
+        }
+
+        try {
+            $customer_service = $myvh_container->get(CustomerService::class);
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        if (!is_object($customer_service)) {
+            return null;
+        }
+
+        try {
+            $customer = $customer_service->get_by_user_id($user_id);
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        return is_array($customer) ? $customer : null;
+    }
+
+    protected function redirect_after_login_success(): void {
+        wp_safe_redirect($this->resolve_portal_page_url());
+        exit;
+    }
+
     public function handle_login(): void {
 
         if (!isset($_POST['myvh_login_nonce'])) {
@@ -166,8 +206,34 @@ class LoginHandler {
             return;
         }
 
-        wp_safe_redirect($this->resolve_portal_page_url());
-        exit;
+        if ($this->is_email_verification_required_for_login()) {
+            $customer = $this->get_customer_for_user((int) $user->ID);
+
+            if (!empty($customer['Id']) && empty($customer['EmailVerified'])) {
+                $customer_email = (string) ($customer['Email'] ?? $user->user_email ?? '');
+                $customer_name = (string) ($customer['Name'] ?? $user->display_name ?? '');
+
+                $this->get_verification_service()->send_verification_email(
+                    (int) $customer['Id'],
+                    (int) $user->ID,
+                    $customer_email,
+                    $customer_name
+                );
+
+                wp_logout();
+
+                set_transient('myvh_login_prefill_username', $username !== '' ? $username : $customer_email, 120);
+                set_transient(
+                    'myvh_login_error',
+                    __('Your email is not verified yet. We have sent a new verification email. Please verify your email before signing in.', 'my-village-hall'),
+                    30
+                );
+
+                return;
+            }
+        }
+
+        $this->redirect_after_login_success();
     }
 
     public function handle_registration(): void {
