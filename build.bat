@@ -56,7 +56,7 @@ if not "%~1"=="" (
     for /f "tokens=* delims= " %%i in ("!VERSION!") do set VERSION=%%i
   )
 
-  if not defined VERSION set VERSION=dev-build
+  if not defined VERSION set VERSION=0.0.0
 )
 
 echo Detected version: !VERSION!
@@ -165,19 +165,20 @@ if errorlevel 1 (
 )
 
 REM ----------------------------
-REM STEP 11: Create git tag for release builds
+REM STEP 11: Create git tag + GitHub release
 REM ----------------------------
 if "!RELEASE_MODE!"=="1" (
-  echo Creating git commit and tag...
+  echo Creating git commit, tag, and GitHub release...
   pushd "%ROOT_DIR%"
 
   git rev-parse --is-inside-work-tree >nul 2>nul
   if errorlevel 1 (
-    echo ERROR: Not a git repository. Cannot create release tag.
+    echo ERROR: Not a git repository. Cannot create release.
     popd
     exit /b 1
   )
 
+  REM Check if tag exists
   git rev-parse "v!VERSION!" >nul 2>nul
   if not errorlevel 1 (
     echo ERROR: Tag v!VERSION! already exists.
@@ -185,6 +186,7 @@ if "!RELEASE_MODE!"=="1" (
     exit /b 1
   )
 
+  REM Commit version bump if needed
   git add "%MAIN_FILE%"
   git diff --cached --quiet -- "%MAIN_FILE%"
   if errorlevel 1 (
@@ -198,16 +200,56 @@ if "!RELEASE_MODE!"=="1" (
     echo %MAIN_FILE% is unchanged; skipping release commit.
   )
 
+  REM Create tag
   git tag -a "v!VERSION!" -m "Release v!VERSION!"
   if errorlevel 1 (
-    echo ERROR: Failed to create git tag v!VERSION!.
+    echo ERROR: Failed to create git tag.
+    popd
+    exit /b 1
+  )
+
+  REM Push commit + tag
+  echo Pushing to GitHub...
+  git push origin main
+  if errorlevel 1 (
+    echo ERROR: Failed to push commits.
+    popd
+    exit /b 1
+  )
+
+  git push origin "v!VERSION!"
+  if errorlevel 1 (
+    echo ERROR: Failed to push tag.
+    popd
+    exit /b 1
+  )
+
+  REM Create GitHub release with ZIP
+  echo Creating GitHub release...
+
+  set ZIP_PATH=%ROOT_DIR%\..\dist\%PLUGIN_SLUG%.zip
+
+  if not exist "!ZIP_PATH!" (
+    echo ERROR: ZIP file not found: !ZIP_PATH!
+    popd
+    exit /b 1
+  )
+
+  gh release create "v!VERSION!" "!ZIP_PATH!" ^
+    --title "v!VERSION!" ^
+    --notes "Release v!VERSION!"
+
+  if errorlevel 1 (
+    echo ERROR: Failed to create GitHub release.
     popd
     exit /b 1
   )
 
   popd
-  echo Created git tag: v!VERSION!
-  echo To push: git push origin main --tags
+
+  echo ============================
+  echo Release v!VERSION! created successfully!
+  echo ============================
 )
 
 REM ----------------------------
