@@ -473,7 +473,9 @@ class SiteProvisioningService {
             return $subdomain . '.' . $domain;
         }
 
-        return trailingslashit($domain) . $subdomain;
+        $path = trailingslashit((string) $network->path);
+
+        return $domain . $path . $subdomain;
     }
 
     private function buildRequestPageUrl(string $candidate): string {
