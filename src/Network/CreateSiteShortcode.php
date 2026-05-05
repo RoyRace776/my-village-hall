@@ -88,6 +88,8 @@ class CreateSiteShortcode implements ShortcodeInterface {
 
         $network = get_network();
         $network_domain = $network ? preg_replace('/^www\./', '', (string) $network->domain) : '';
+        $is_subdomain = is_subdomain_install();
+        $network_path = $network ? (string) $network->path : '/';
 
         ob_start();
         include MYVH_PLUGIN_DIR . 'templates/Network/create-site-form.php';

@@ -152,7 +152,7 @@ $request_page_url = isset($request_page_url) ? (string) $request_page_url : home
             <div class="myvh-site-request-hero__content">
                 <span class="myvh-site-request-kicker"><?php echo esc_html__('Site setup request', 'my-village-hall'); ?></span>
                 <h2><?php echo esc_html__('Create your new site', 'my-village-hall'); ?></h2>
-                <p><?php echo esc_html__('Complete the details below to request your new subdomain site. We will use this information to provision the site and create the first administrator account.', 'my-village-hall'); ?></p>
+                <p><?php echo esc_html__('Complete the details below to request your new site. We will use this information to provision the site and create the first administrator account.', 'my-village-hall'); ?></p>
             </div>
 
             <div class="myvh-site-request-summary" aria-label="<?php echo esc_attr__('What happens next', 'my-village-hall'); ?>">
@@ -189,19 +189,25 @@ $request_page_url = isset($request_page_url) ? (string) $request_page_url : home
                     </label>
 
                     <label class="myvh-site-request-field">
-                        <span class="myvh-site-request-field__label"><?php echo esc_html__('Subdomain', 'my-village-hall'); ?> <span class="myvh-site-request-badge"><?php echo esc_html__('Required', 'my-village-hall'); ?></span></span>
-                        <span class="myvh-site-request-field__hint" id="myvh-subdomain-hint"><?php echo esc_html__('Choose the web address prefix. Use 3-30 lowercase letters, numbers, or hyphens, without a hyphen at the start or end.', 'my-village-hall'); ?></span>
+                        <span class="myvh-site-request-field__label"><?php echo isset($is_subdomain) && $is_subdomain ? esc_html__('Subdomain', 'my-village-hall') : esc_html__('Site path', 'my-village-hall'); ?> <span class="myvh-site-request-badge"><?php echo esc_html__('Required', 'my-village-hall'); ?></span></span>
+                        <span class="myvh-site-request-field__hint" id="myvh-subdomain-hint"><?php echo isset($is_subdomain) && $is_subdomain ? esc_html__('Choose a subdomain name. Use 3-30 lowercase letters, numbers, or hyphens, without a hyphen at the start or end.', 'my-village-hall') : esc_html__('Choose a path segment. Use 3-30 lowercase letters, numbers, or hyphens, without a hyphen at the start or end.', 'my-village-hall'); ?></span>
                         <input type="text" name="subdomain" id="myvh-subdomain-input" required value="<?php echo esc_attr($form_values['subdomain']); ?>" pattern="[a-z0-9-]{3,30}" aria-describedby="myvh-subdomain-hint myvh-subdomain-preview-desc myvh-subdomain-warning">
                         <?php if (!empty($network_domain)): ?>
                         <span class="myvh-site-request-url-preview" id="myvh-subdomain-preview" aria-live="polite">
                             <span class="myvh-site-request-url-preview__label"><?php echo esc_html__('Your site will be at:', 'my-village-hall'); ?></span>
-                            <samp id="myvh-subdomain-preview-value"><em><?php echo esc_html__('yoursubdomain', 'my-village-hall'); ?></em>.<?php echo esc_html($network_domain); ?></samp>
+                            <samp id="myvh-subdomain-preview-value">
+                                <?php if (isset($is_subdomain) && $is_subdomain): ?>
+                                    <em><?php echo esc_html__('yoursite', 'my-village-hall'); ?></em>.<?php echo esc_html($network_domain); ?>
+                                <?php else: ?>
+                                    <?php echo esc_html($network_domain); ?><?php echo esc_html(isset($network_path) ? $network_path : '/'); ?><em><?php echo esc_html__('yoursite', 'my-village-hall'); ?></em>
+                                <?php endif; ?>
+                            </samp>
                         </span>
                         <span id="myvh-subdomain-preview-desc" class="sr-only"><?php echo esc_html__('URL preview updates as you type.', 'my-village-hall'); ?></span>
                         <?php endif; ?>
                         <span class="myvh-site-request-field__warning" id="myvh-subdomain-warning" role="note">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
-                            <?php echo esc_html__('The subdomain cannot be changed after the site has been created. Choose carefully.', 'my-village-hall'); ?>
+                            <?php echo esc_html__('This cannot be changed after the site has been created. Choose carefully.', 'my-village-hall'); ?>
                         </span>
                     </label>
                     <?php if (!empty($network_domain)): ?>
@@ -209,11 +215,17 @@ $request_page_url = isset($request_page_url) ? (string) $request_page_url : home
                     (function () {
                         var input   = document.getElementById('myvh-subdomain-input');
                         var preview = document.getElementById('myvh-subdomain-preview-value');
-                        var domain  = <?php echo wp_json_encode('.' . $network_domain); ?>;
-                        var placeholder = <?php echo wp_json_encode(__('yoursubdomain', 'my-village-hall')); ?>;
+                        var isSubdomain = <?php echo wp_json_encode(isset($is_subdomain) && $is_subdomain); ?>;
+                        var domain  = <?php echo wp_json_encode($network_domain); ?>;
+                        var path    = <?php echo wp_json_encode(isset($network_path) ? $network_path : '/'); ?>;
+                        var placeholder = <?php echo wp_json_encode(__('yoursite', 'my-village-hall')); ?>;
                         function update() {
-                            var val = input.value.trim();
-                            preview.textContent = (val || placeholder) + domain;
+                            var val = input.value.trim() || placeholder;
+                            if (isSubdomain) {
+                                preview.textContent = val + '.' + domain;
+                            } else {
+                                preview.textContent = domain + path + val;
+                            }
                         }
                         input.addEventListener('input', update);
                         update();
