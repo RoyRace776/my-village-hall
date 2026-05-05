@@ -21,7 +21,7 @@ class CreateSiteRequestValidator extends RequestValidatorBase {
             return $required;
         }
 
-        $required = $this->require_field($data, 'subdomain', __('Subdomain is required', 'my-village-hall'));
+        $required = $this->require_field($data, 'subdomain', __('Site path is required', 'my-village-hall'));
         if (is_wp_error($required)) {
             return $required;
         }
@@ -58,15 +58,15 @@ class CreateSiteRequestValidator extends RequestValidatorBase {
 
         $subdomain = (string) $data['subdomain'];
         if (preg_match(self::SUBDOMAIN_PATTERN, $subdomain) !== 1) {
-            return $this->validation_error(__('Subdomain must be 3-30 characters and contain only lowercase letters, numbers, or hyphens.', 'my-village-hall'));
+            return $this->validation_error(__('Site path must be 3-30 characters and contain only lowercase letters, numbers, or hyphens.', 'my-village-hall'));
         }
 
         if (str_starts_with($subdomain, '-') || str_ends_with($subdomain, '-')) {
-            return $this->validation_error(__('Subdomain cannot begin or end with a hyphen.', 'my-village-hall'));
+            return $this->validation_error(__('Site path cannot begin or end with a hyphen.', 'my-village-hall'));
         }
 
-        if (!is_multisite() || !is_subdomain_install()) {
-            return $this->validation_error(__('This feature requires WordPress multisite with subdomain installs enabled.', 'my-village-hall'));
+        if (!is_multisite()) {
+            return $this->validation_error(__('This feature requires WordPress multisite.', 'my-village-hall'));
         }
 
         $network = get_network();
@@ -74,10 +74,16 @@ class CreateSiteRequestValidator extends RequestValidatorBase {
             return $this->validation_error(__('Unable to resolve network settings.', 'my-village-hall'));
         }
 
-        $domain = $subdomain . '.' . preg_replace('/^www\./', '', (string) $network->domain);
-
-        if (domain_exists($domain, '/', (int) $network->id)) {
-            return $this->validation_error(__('That subdomain is already in use.', 'my-village-hall'));
+        if (is_subdomain_install()) {
+            $domain = $subdomain . '.' . preg_replace('/^www\./', '', (string) $network->domain);
+            if (domain_exists($domain, '/', (int) $network->id)) {
+                return $this->validation_error(__('That subdomain is already in use.', 'my-village-hall'));
+            }
+        } else {
+            $path = '/' . $subdomain . '/';
+            if (domain_exists((string) $network->domain, $path, (int) $network->id)) {
+                return $this->validation_error(__('That path is already in use.', 'my-village-hall'));
+            }
         }
 
         return true;
