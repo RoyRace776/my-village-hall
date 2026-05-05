@@ -444,33 +444,30 @@ class Installer {
         ) {$collate};" );
 
         // Site Provisioning Service.  Uses base_prefix since it operates at the network level and needs to be accessible from the main site.
-        if ( is_multisite() ) {
-            $table = $wpdb->base_prefix . 'myvh_site_provisioning';
-            $sql = "CREATE TABLE $table (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                token VARCHAR(64) NOT NULL,
-                subdomain VARCHAR(100) NOT NULL,
-                site_name VARCHAR(255) NOT NULL,
-                admin_email VARCHAR(255) NOT NULL,
-                admin_first_name VARCHAR(255) NOT NULL,
-                admin_last_name VARCHAR(255) NOT NULL,
-                admin_password VARCHAR(255) NOT NULL,
-                logo_url VARCHAR(255) NULL,
-                user_id BIGINT UNSIGNED NULL,
-                blog_id BIGINT UNSIGNED NULL,
-                status VARCHAR(20) NOT NULL,
-                error TEXT NULL,
-                logo_url VARCHAR(255) NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY token (token),
-                KEY status (status),
-                KEY blog_id (blog_id)
-            ) $collate;";
+        $table = $wpdb->base_prefix . 'myvh_site_provisioning';
+        $sql = "CREATE TABLE $table (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            token VARCHAR(64) NOT NULL,
+            subdomain VARCHAR(100) NOT NULL,
+            site_name VARCHAR(255) NOT NULL,
+            admin_email VARCHAR(255) NOT NULL,
+            admin_first_name VARCHAR(255) NOT NULL,
+            admin_last_name VARCHAR(255) NOT NULL,
+            admin_password VARCHAR(255) NOT NULL,
+            logo_url VARCHAR(255) NULL,
+            user_id BIGINT UNSIGNED NULL,
+            blog_id BIGINT UNSIGNED NULL,
+            status VARCHAR(20) NOT NULL,
+            error TEXT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            PRIMARY KEY  (id),
+            INDEX token (token),
+            INDEX status (status),
+            INDEX blog_id (blog_id)
+        ) $collate;";
 
-            dbDelta($sql);
-        }
+        dbDelta($sql);
     }
 
     public static function backfill_opening_hours_by_day( wpdb $wpdb ): void {

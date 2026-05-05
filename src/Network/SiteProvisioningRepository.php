@@ -61,7 +61,7 @@ class SiteProvisioningRepository {
         global $wpdb;
 
         $row = $wpdb->get_row(
-            $wpdb->prepare("SELECT * FROM {$this->table} WHERE site_id = %d", $site_id),
+            $wpdb->prepare("SELECT * FROM {$this->table} WHERE blog_id = %d", $site_id),
             ARRAY_A
         );
 

@@ -7,10 +7,10 @@ use MYVH\Settings\EmailTemplateSettings;
  * Email_Service: Modular, multisite-aware email sending for My Village Hall
  */
 class EmailService {
-    protected $site_id;
-    protected $log_enabled;
+    protected int $site_id;
+    protected bool $log_enabled;
 
-    public function __construct($site_id = null, $log_enabled = true) {
+    public function __construct(?int $site_id = null, bool $log_enabled = true) {
         $this->site_id = $site_id ?: get_current_blog_id();
         $this->log_enabled = $log_enabled;
     }
@@ -19,7 +19,7 @@ class EmailService {
      * Send an email using wp_mail, with HTML and text template support.
      * $args: [to, subject, template, template_vars, headers, attachments]
      */
-    public function send($args) {
+    public function send(array $args): bool {
         $to = $args['to'] ?? '';
         $subject = $args['subject'] ?? '';
         $template = $args['template'] ?? '';
@@ -65,7 +65,7 @@ class EmailService {
         return $result;
     }
 
-    public function render($template, $vars = [], $type = 'html'): string {
+    public function render(string $template, array $vars = [], string $type = 'html'): string {
         $custom_html = $this->render_custom_template($template, $vars);
 
         if ($custom_html !== '') {
@@ -82,11 +82,11 @@ class EmailService {
     /**
      * Render an email template (HTML or text)
      */
-    protected function render_template($template, $vars, $type = 'html') {
+    protected function render_template(string $template, array $vars, string $type = 'html'): string {
         return $this->render($template, $vars, $type);
     }
 
-    protected function render_file_template($template, $vars, $type = 'html') {
+    protected function render_file_template(string $template, array $vars, string $type = 'html'): string {
         $dir = plugin_dir_path(__FILE__) . 'templates/';
         $file = $dir . $template . '.' . $type . '.php';
         if (!file_exists($file)) return '';
@@ -96,7 +96,7 @@ class EmailService {
         return ob_get_clean();
     }
 
-    protected function render_custom_template($template, $vars): string {
+    protected function render_custom_template(string $template, array $vars): string {
         if (!$template || !EmailTemplateRegistry::has((string) $template)) {
             return '';
         }
@@ -138,7 +138,7 @@ class EmailService {
     /**
      * Log email send attempts (basic file log for now)
      */
-    protected function log_email($to, $subject, $result, $template, $vars) {
+    protected function log_email(string $to, string $subject, bool $result, string $template, array $vars): void {
         $log_dir = WP_CONTENT_DIR . '/uploads/myvh-email-logs/';
         if (!is_dir($log_dir)) @mkdir($log_dir, 0755, true);
         $log_file = $log_dir . 'email-log-' . date('Y-m-d') . '.log';
@@ -149,7 +149,7 @@ class EmailService {
     /**
      * Get per-site branding (logo, colors, sender, etc.)
      */
-    public function get_branding() {
+    public function get_branding(): array {
         // Placeholder: fetch from options or use defaults
         return [
             'logo_url' => get_site_icon_url(128),

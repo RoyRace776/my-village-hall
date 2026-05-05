@@ -7,7 +7,7 @@ use MYVH\Email\PasswordSetupEmailService;
 if (!defined('ABSPATH')) exit;
 
 class AdminPasswordResetHandler {
-    private $customer_service;
+    private CustomerService $customer_service;
 
     public function __construct(CustomerService $customer_service) {
         $this->customer_service = $customer_service;
