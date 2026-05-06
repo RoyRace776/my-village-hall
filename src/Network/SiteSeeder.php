@@ -18,10 +18,10 @@ class SiteSeeder {
         global $wpdb;
         switch_to_blog($blog_id);
 
-        $org_type = Installer::add_personal_organisation_type($wpdb);
-        $personal_org_type = Installer::add_personal_organisation($wpdb, $org_type);
-        Installer::add_default_organisation_type($wpdb);
-        Installer::add_system_customer($personal_org_type);
+        $org_type = $this->add_personal_organisation_type($wpdb);
+        $personal_org_type = $this->add_personal_organisation($wpdb, $org_type);
+        $this->add_default_organisation_type($wpdb);
+        $this->add_system_customer($personal_org_type);
 
 
         // Add in the admin user as a customer too, so they can manage their own bookings, etc.
@@ -36,7 +36,7 @@ class SiteSeeder {
                 'email_verified' => 1,
                 ]);
 
-            (new ClientAdminService())->add_assignment($blog_id, (int) $admin_user->ID);
+            $this->make_client_admin_service()->add_assignment($blog_id, (int) $admin_user->ID);
             }
 
         //TODO: change to use context to determine what to seed, rather than hardcoding this seeding of a default venue and room for every new site.  E.g. we may want to allow some sites to start with a completely blank slate, and others to have some demo data.
@@ -81,12 +81,12 @@ class SiteSeeder {
         }
 
         // Settings
-        (new GeneralSettings())->save([
+        $this->make_general_settings()->save([
             'portal_logo_url' => $context['logo_url'] ?? '',
             'site_label' => $context['site_label'] ?? 'My Booking System',
         ]);
 
-        $notice_settings = new NoticeSettings();
+        $notice_settings = $this->make_notice_settings();
         $existing_notices = $notice_settings->get('notices');
 
         if (!is_array($existing_notices) || empty($existing_notices)) {
@@ -104,7 +104,23 @@ class SiteSeeder {
         restore_current_blog();
     }
 
-    private function make_venue_service(): VenueService {
+    protected function add_personal_organisation_type($wpdb): int {
+        return Installer::add_personal_organisation_type($wpdb);
+    }
+
+    protected function add_personal_organisation($wpdb, int $org_type): int {
+        return Installer::add_personal_organisation($wpdb, $org_type);
+    }
+
+    protected function add_default_organisation_type($wpdb): void {
+        Installer::add_default_organisation_type($wpdb);
+    }
+
+    protected function add_system_customer(int $personal_org_type): void {
+        Installer::add_system_customer($personal_org_type);
+    }
+
+    protected function make_venue_service(): VenueService {
         global $wpdb;
         return new VenueService(
             new \MYVH\Venues\VenueRepository($wpdb),
@@ -113,7 +129,7 @@ class SiteSeeder {
         );
     }
 
-    private function make_room_service(): RoomService {
+    protected function make_room_service(): RoomService {
         global $wpdb;
         return new RoomService(
             new \MYVH\Rooms\RoomRepository($wpdb),
@@ -123,7 +139,7 @@ class SiteSeeder {
     }
 
     // This is needed just so we can create a RoomService instance.  No functionality is used in this seeder.
-    private function make_availability_service(): \MYVH\Availability\AvailabilityService {
+    protected function make_availability_service(): \MYVH\Availability\AvailabilityService {
         global $wpdb;
         return new \MYVH\Availability\AvailabilityService(
             new \MYVH\Bookings\BookingRepository($wpdb),
@@ -135,7 +151,7 @@ class SiteSeeder {
 
     }
 
-    private function make_room_rate_service(): RoomRateService {
+    protected function make_room_rate_service(): RoomRateService {
         global $wpdb;
         return new RoomRateService(
             new \MYVH\Pricing\RoomRateRepository($wpdb),
@@ -143,7 +159,7 @@ class SiteSeeder {
         );
     }
 
-    private function make_customer_service(): CustomerService {
+    protected function make_customer_service(): CustomerService {
         global $wpdb;
         return new CustomerService(
             new \MYVH\Customers\CustomerRepository($wpdb),
@@ -151,5 +167,17 @@ class SiteSeeder {
             new \MYVH\Organisations\OrganisationRepository($wpdb),
             new \MYVH\Organisations\OrganisationMemberRepository($wpdb)
         );
+    }
+
+    protected function make_client_admin_service(): ClientAdminService {
+        return new ClientAdminService();
+    }
+
+    protected function make_general_settings(): GeneralSettings {
+        return new GeneralSettings();
+    }
+
+    protected function make_notice_settings(): NoticeSettings {
+        return new NoticeSettings();
     }
 }
