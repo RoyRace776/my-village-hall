@@ -10,6 +10,7 @@ class WpSiteCloner {
 
         $network = get_network();
 
+        // NOTE: $subdomain could be a subdirectory slug or a subdomain prefix depending on the mode, but we sanitize it the same way since both are used in URLs and should be URL-friendly
         $subdomain = sanitize_title($target['name']);
         $subdomain = trim($subdomain, '-');
         $user_id   = $context['user_id'] ?? get_current_user_id();
@@ -51,7 +52,21 @@ class WpSiteCloner {
         // 3. Check if site exists (important to do this before creating the site to avoid orphaned sites in case of errors)
         // -------------------------------------------------
         do_action( 'qm/debug', 'Checking if site exists: ' . $domain . $path );
-        $existing = get_site_by_path($domain, $path);
+        if ( $is_subdomain_mode ) {
+            $query_args = [
+                'domain' => $subdomain . '.' . $domain,
+                'path'   => '/',
+            ];
+        } else {
+            $query_args = [
+                'domain' => $domain,
+                'path'   => '/' . trim($subdomain, '/') . '/',
+            ];
+        }
+
+        $query_args['number'] = 1;
+        $existing = get_sites($query_args);
+        $existing = ! empty($existing) ? $existing[0] : null;
 
         if ($existing) {
             return new WP_Error('site_exists', 'Site ' . $existing->id . ' already exists: ' . $existing->domain . $existing->path . ' Mode is '. ($is_subdomain_mode ? 'subdomain' : 'subdirectory'));
