@@ -10,7 +10,7 @@ module.exports = defineConfig({
   reporter: process.env.CI ? 'line' : 'html',
   testMatch: ['**/login.*.spec.js', '**/password-reset.spec.js'],
   use: {
-    baseURL: process.env.PW_BASE_URL || 'http://test.myvh-multi-dev.local/',
+    baseURL: process.env.PW_BASE_URL || 'http://yourvh.co.uk/test/',
     trace: 'on-first-retry',
   },
   projects: [

@@ -1,8 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$client_admins = is_array($client_admins ?? null) ? $client_admins : [];
-$accessible_sites = is_array($accessible_sites ?? null) ? $accessible_sites : [];
+$client_admins = isset($client_admins) && is_array($client_admins) ? $client_admins : [];
+$accessible_sites = isset($accessible_sites) && is_array($accessible_sites) ? $accessible_sites : [];
 ?>
 
 <div class="myvh-dashboard-section myvh-client-admin-page">

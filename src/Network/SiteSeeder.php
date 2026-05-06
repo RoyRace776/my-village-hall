@@ -9,6 +9,7 @@ use MYVH\Pricing\RoomRateService;
 use MYVH\Settings\GeneralSettings;
 use MYVH\Settings\NoticeSettings;
 use MYVH\Customers\CustomerService;
+use MYVH\Portal\ClientAdminService;
 
 class SiteSeeder {
 
@@ -34,6 +35,8 @@ class SiteSeeder {
                 'name' => $admin_user->first_name . ' ' . $admin_user->last_name,
                 'email_verified' => 1,
                 ]);
+
+            (new ClientAdminService())->add_assignment($blog_id, (int) $admin_user->ID);
             }
 
         //TODO: change to use context to determine what to seed, rather than hardcoding this seeding of a default venue and room for every new site.  E.g. we may want to allow some sites to start with a completely blank slate, and others to have some demo data.

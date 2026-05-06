@@ -19,7 +19,7 @@ module.exports = defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: process.env.PW_BASE_URL || 'http://test.myvh-multi-dev.local/',
+    baseURL: process.env.PW_BASE_URL || 'http://youvh.co.uk/test',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
