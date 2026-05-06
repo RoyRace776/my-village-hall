@@ -3,7 +3,7 @@
  * Plugin Name: My Village Hall
  * Plugin URI: https://example.com/my-village-hall
  * Description: A comprehensive venue and room booking management system with multi-client support, recurring bookings, and customer portal
- * Version: 0.4.9
+ * Version: 4.9.10
  * Author: Richard Barrett
  * Author URI: https://example.com
  * License: GPL v2 or later
@@ -46,7 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'MYVH_VERSION',         '0.4.9' );
+define( 'MYVH_VERSION',         '4.9.10' );
 define( 'MYVH_PLUGIN_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'MYVH_PLUGIN_URL',      plugin_dir_url( __FILE__ ) );
 define( 'MYVH_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -124,7 +124,7 @@ class MyVillageHall {
         return self::$instance;
     }
 
-    /** Private constructor — use get_instance(). */
+    /** Private constructor â€” use get_instance(). */
     private function __construct() {
         $this->register_hooks();
     }
@@ -330,18 +330,18 @@ class MyVillageHall {
      * Registers the plugin's admin submenu.
      *
      * Structure:
-     *   My Village Hall  (top-level → Bookings list)
+     *   My Village Hall  (top-level â†’ Bookings list)
      *     All Bookings
      *     Calendar
-     *     ── separator ──
+     *     â”€â”€ separator â”€â”€
      *     Customers
-     *     ── separator ──
+     *     â”€â”€ separator â”€â”€
      *     Organisations / Org Types / Org Members / Client Admins
-     *     ── separator ──
+     *     â”€â”€ separator â”€â”€
      *     Venues / Rooms
-     *     ── separator ──
+     *     â”€â”€ separator â”€â”€
      *     Room Rates / Add-ons / Invoices / Payments / Generate Invoices
-     *     ── separator ──
+     *     â”€â”€ separator â”€â”€
      *     Recurring Patterns
      *     Audit Log  (conditional)
      */
@@ -597,7 +597,7 @@ li a[href=\"admin.php?page={$safe}\"] span { display: none; }
             echo '<div class="wrap">';
             echo '<h1>' . esc_html__( 'Client Administrators', 'my-village-hall' ) . '</h1>';
             echo '<div class="notice notice-warning"><p>'
-                . esc_html__( 'Only network administrators can manage cross-site client admin assignments. Ask a network admin to use Network Admin → Client Admins.', 'my-village-hall' )
+                . esc_html__( 'Only network administrators can manage cross-site client admin assignments. Ask a network admin to use Network Admin â†’ Client Admins.', 'my-village-hall' )
                 . '</p></div>';
             echo '</div>';
             return;
