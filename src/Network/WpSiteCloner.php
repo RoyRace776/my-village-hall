@@ -49,7 +49,7 @@ class WpSiteCloner {
         $existing = get_site_by_path($domain, $path);
 
         if ($existing) {
-            return new WP_Error('site_exists', 'Site already exists');
+            return new WP_Error('site_exists', 'Site ' . $existing->id . ' already exists: ' . $existing->domain . $existing->path);
         }
 
         try {
