@@ -139,7 +139,7 @@ abstract class SettingsBase {
     /**
      * Save settings
      */
-    public function save($input): void {
+    public function save(array $input): void {
 
         $clean = [];
 

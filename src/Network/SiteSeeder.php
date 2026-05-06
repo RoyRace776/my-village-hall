@@ -80,6 +80,7 @@ class SiteSeeder {
         // Settings
         (new GeneralSettings())->save([
             'portal_logo_url' => $context['logo_url'] ?? '',
+            'site_label' => $context['site_label'] ?? 'My Booking System',
         ]);
 
         $notice_settings = new NoticeSettings();

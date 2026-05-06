@@ -71,8 +71,21 @@ $updateChecker = PucFactory::buildUpdateChecker(
     'my-village-hall'
 );
 
+// Add auth parameter to every request
+$updateChecker->addQueryArgFilter(function ($queryArgs) {
+    $queryArgs['key'] = defined('MYVH_UPDATE_KEY') ? MYVH_UPDATE_KEY : '';
+    return $queryArgs;
+});
+
 // Force it to use GitHub releases properly
 $updateChecker->setBranch('main');
+
+// Use GitHub release assets (e.g. my-village-hall.zip) instead of
+// auto-generated source archives that exclude .gitignore'd files like vendor/.
+$updateApi = $updateChecker->getVcsApi();
+if ( is_object( $updateApi ) && method_exists( $updateApi, 'enableReleaseAssets' ) ) {
+    call_user_func( [ $updateApi, 'enableReleaseAssets' ], '/my-village-hall\\.zip$/i' );
+}
 
 // Dependency-injection container (returns a configured Container instance)
 global $myvh_container;

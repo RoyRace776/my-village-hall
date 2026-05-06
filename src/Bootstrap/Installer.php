@@ -534,7 +534,7 @@ class Installer {
 
         // Check if a system customer already exists
         $system_customer = $wpdb->get_row(
-            $wpdb->prepare("SELECT * FROM {$customers_table} WHERE IsSystem = 1 LIMIT 1"),
+            "SELECT * FROM {$customers_table} WHERE IsSystem = 1 LIMIT 1",
             'ARRAY_A'
         );
 
