@@ -118,34 +118,31 @@ REM STEP 9: Cleanup
 REM ----------------------------
 echo Cleaning unnecessary files...
 
-for %%d in (
-  .git
-  .github
-  node_modules
-  tests
-  test
-  coverage
-  playwright-report
-  test-results
-) do (
-  if exist %%d rmdir /s /q %%d
-)
+REM ----------------------------
+REM STEP 9: Cleanup
+REM ----------------------------
+echo Cleaning unnecessary files...
 
-for %%f in (
-  .gitignore
-  phpunit.xml
-  jest.config.js
-  package.json
-  package-lock.json
-  webpack.config.js
-  vite.config.js
-  set-version.ps1
-  create-zip.ps1
-  build.bat
-  .env
-) do (
-  if exist %%f del /q %%f
-)
+if exist ".git"             rmdir /s /q ".git"
+if exist ".github"          rmdir /s /q ".github"
+if exist "node_modules"     rmdir /s /q "node_modules"
+if exist "tests"            rmdir /s /q "tests"
+if exist "test"             rmdir /s /q "test"
+if exist "coverage"         rmdir /s /q "coverage"
+if exist "playwright-report" rmdir /s /q "playwright-report"
+if exist "test-results"     rmdir /s /q "test-results"
+
+if exist ".gitignore"       del /q ".gitignore"
+if exist "phpunit.xml"      del /q "phpunit.xml"
+if exist "jest.config.js"   del /q "jest.config.js"
+if exist "package.json"     del /q "package.json"
+if exist "package-lock.json" del /q "package-lock.json"
+if exist "webpack.config.js" del /q "webpack.config.js"
+if exist "vite.config.js"   del /q "vite.config.js"
+if exist "set-version.ps1"  del /q "set-version.ps1"
+if exist "create-zip.ps1"   del /q "create-zip.ps1"
+if exist "build.bat"        del /q "build.bat"
+if exist ".env"             del /q ".env"
 
 del /q *.log 2>nul
 del /q .env.* 2>nul
