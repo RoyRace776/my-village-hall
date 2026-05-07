@@ -30,6 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
+    const DB_VERSION = '1.1.0';
 
     /**
      * Entry point: create all tables.
@@ -48,6 +49,33 @@ class Installer {
         self::set_default_data( $wpdb );
     }
 
+        public static function maybe_upgrade(): void {
+        $current = get_option('myvh_db_version', '0.0.0');
+
+        if (version_compare($current, self::DB_VERSION, '>=')) {
+            return;
+        }
+
+        self::run_migrations($current);
+
+        update_option('myvh_db_version', self::DB_VERSION);
+    }
+
+    private static function run_migrations(string $from): void {
+
+        global $wpdb;
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        if (version_compare($from, '1.1.0', '<')) {
+            self::upgrade_to_1_1_0($wpdb);
+        }
+    }
+
+    private static function upgrade_to_1_1_0(wpdb $wpdb): void {
+        $collate = $wpdb->get_charset_collate();
+        self::create_invoice_items_table( $wpdb, $collate );
+    }
+
     // ── Table definitions ─────────────────────────────────────────────────────
 
     /**
@@ -57,10 +85,32 @@ class Installer {
      * @param string $collate  e.g. "DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
      */
     private static function create_tables( wpdb $wpdb, string $collate ): void {
+        self::create_venues_table( $wpdb, $collate );
+        self::create_rooms_table( $wpdb, $collate );
+        self::create_venue_hours_table( $wpdb, $collate );
+        self::create_room_hours_table( $wpdb, $collate );
+        self::create_organisations_table( $wpdb, $collate );
+        self::create_organisation_types_table( $wpdb, $collate );
+        self::create_organisation_members_table( $wpdb, $collate );
+        self::create_organisation_member_requests_table( $wpdb, $collate );
+        self::create_customers_table( $wpdb, $collate );
+        self::create_bookings_table( $wpdb, $collate );
+        self::create_recurring_patterns_table( $wpdb, $collate );
+        self::create_room_rates_table( $wpdb, $collate );
+        self::create_addons_table( $wpdb, $collate );
+        self::create_booking_charges_table( $wpdb, $collate );
+        self::create_booking_addons_table( $wpdb, $collate );
+        self::create_discounts_table( $wpdb, $collate );
+        self::create_booking_discounts_table( $wpdb, $collate );
+        self::create_invoices_table( $wpdb, $collate );
+        self::create_invoice_items_table( $wpdb, $collate );
+        self::create_payments_table( $wpdb, $collate );
+        self::create_audit_log_table( $wpdb, $collate );
+        self::create_site_provisioning_table( $wpdb, $collate );
+    }
 
-        $p = $wpdb->prefix; // shorthand
-
-        // ── Venues ────────────────────────────────────────────────────────────
+    private static function create_venues_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_venues (
             Id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             Name          VARCHAR(100) NOT NULL,
@@ -71,8 +121,10 @@ class Installer {
             ClosingTime   TIME DEFAULT '17:00:00',
             INDEX idx_name (Name)
         ) {$collate};" );
+    }
 
-        // ── Rooms ─────────────────────────────────────────────────────────────
+    private static function create_rooms_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_rooms (
             Id                      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             VenueId                 INT UNSIGNED NOT NULL,
@@ -91,8 +143,10 @@ class Installer {
             INDEX idx_name  (Name),
             INDEX idx_public (IsPublic)
         ) {$collate};" );
+    }
 
-        // ── Venue Opening Hours By Day ─────────────────────────────────────
+    private static function create_venue_hours_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_venue_hours (
             Id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             VenueId       INT UNSIGNED NOT NULL,
@@ -103,8 +157,10 @@ class Installer {
             UNIQUE KEY uq_venue_day (VenueId, DayOfWeek),
             INDEX idx_venue (VenueId)
         ) {$collate};" );
+    }
 
-        // ── Room Opening Hours By Day ──────────────────────────────────────
+    private static function create_room_hours_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_room_hours (
             Id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             RoomId         INT UNSIGNED NOT NULL,
@@ -116,9 +172,10 @@ class Installer {
             UNIQUE KEY uq_room_day (RoomId, DayOfWeek),
             INDEX idx_room (RoomId)
         ) {$collate};" );
+    }
 
-        // ── Organisations  ───────────────────────────────────────────────────
-        //
+    private static function create_organisations_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_organisations (
             Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             Name               VARCHAR(100) NOT NULL,
@@ -150,9 +207,10 @@ class Installer {
             INDEX      idx_invoice_org (InvoiceOrganisationBookings),
             INDEX      idx_send_booking_emails_org (SendBookingEmailsToOrganisation)
         ) {$collate};" );
+    }
 
-        // ── Organisation Types ───────────────────────────────────────────────────
-        //
+    private static function create_organisation_types_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_organisation_types (
             Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             Name               VARCHAR(100) NOT NULL,
@@ -164,9 +222,10 @@ class Installer {
             INDEX              idx_is_system (IsSystem),
             INDEX              idx_is_default (IsDefault)
         ) {$collate};" );
+    }
 
-        // ── Organisation Members ───────────────────────────────────────────────────
-        //
+    private static function create_organisation_members_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_organisation_members (
             Id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             OrganisationId      INT UNSIGNED NOT NULL,
@@ -176,7 +235,10 @@ class Installer {
             INDEX          idx_customer (CustomerId),
             UNIQUE KEY     uq_member (OrganisationId, CustomerId)
         ) {$collate};" );
+    }
 
+    private static function create_organisation_member_requests_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_organisation_member_requests (
             Id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             OrganisationId       INT UNSIGNED NOT NULL,
@@ -189,8 +251,10 @@ class Installer {
             INDEX idx_org_status (OrganisationId, Status),
             INDEX idx_customer_status (CustomerId, Status)
         ) {$collate};" );
+    }
 
-    // ── Customers ─────────────────────────────────────────────────────────
+    private static function create_customers_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_customers (
             Id              INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
             Name            VARCHAR(100) NOT NULL,
@@ -208,8 +272,10 @@ class Installer {
             INDEX      idx_email          (Email),
             UNIQUE KEY uq_wpuser (WPUserId)
         ) {$collate};" );
+    }
 
-        // ── Bookings ──────────────────────────────────────────────────────────
+    private static function create_bookings_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_bookings (
             Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             CustomerId         INT UNSIGNED NOT NULL,
@@ -232,8 +298,10 @@ class Installer {
             INDEX idx_dates         (StartDate, EndDate),
             INDEX idx_recurring     (RecurringPatternId)
         ) {$collate};" );
+    }
 
-        // ── Recurring Patterns ────────────────────────────────────────────────
+    private static function create_recurring_patterns_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_recurring_patterns (
             Id                 INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
             ParentBookingId    INT UNSIGNED  NOT NULL,
@@ -250,8 +318,10 @@ class Installer {
             INDEX idx_parent (ParentBookingId),
             INDEX idx_active (IsActive)
         ) {$collate};" );
+    }
 
-        // ── Room Rates ────────────────────────────────────────────────────────
+    private static function create_room_rates_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_room_rates (
             Id                  INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             RoomId              INT UNSIGNED   NOT NULL,
@@ -272,8 +342,10 @@ class Installer {
             INDEX idx_valid_dates    (ValidFrom, ValidTo),
             INDEX idx_priority       (Priority)
         ) {$collate};" );
+    }
 
-        // ── Add-ons ───────────────────────────────────────────────────────────
+    private static function create_addons_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_addons (
             Id              INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
             Name            VARCHAR(100)  NOT NULL,
@@ -292,8 +364,10 @@ class Installer {
             INDEX idx_order          (DisplayOrder),
             INDEX idx_archived       (ArchivedAt)
         ) {$collate};" );
+    }
 
-        // ── Booking Charges ───────────────────────────────────────────────────
+    private static function create_booking_charges_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_booking_charges (
             Id           INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             BookingId    INT UNSIGNED   NOT NULL,
@@ -309,8 +383,10 @@ class Installer {
             INDEX idx_booking   (BookingId),
             INDEX idx_room_rate (RoomRateId)
         ) {$collate};" );
+    }
 
-        // ── Booking Add-ons ───────────────────────────────────────────────────
+    private static function create_booking_addons_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_booking_addons (
             Id          INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             BookingId   INT UNSIGNED   NOT NULL,
@@ -323,8 +399,10 @@ class Installer {
             INDEX idx_booking (BookingId),
             INDEX idx_addon   (AddonId)
         ) {$collate};" );
+    }
 
-        // ── Discounts ─────────────────────────────────────────────────────────
+    private static function create_discounts_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_discounts (
             Id              INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             Code            VARCHAR(50)    NOT NULL,
@@ -348,8 +426,10 @@ class Installer {
             INDEX      idx_room        (RoomId),
             INDEX      idx_venue       (VenueId)
         ) {$collate};" );
+    }
 
-        // ── Booking Discounts ─────────────────────────────────────────────────
+    private static function create_booking_discounts_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_booking_discounts (
             Id             INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             BookingId      INT UNSIGNED   NOT NULL,
@@ -363,8 +443,10 @@ class Installer {
             INDEX idx_booking  (BookingId),
             INDEX idx_discount (DiscountId)
         ) {$collate};" );
+    }
 
-        // ── Invoices ──────────────────────────────────────────────────────────
+    private static function create_invoices_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_invoices (
             Id            INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             InvoiceNumber VARCHAR(50)    NOT NULL,
@@ -394,8 +476,10 @@ class Installer {
             INDEX      idx_status        (Status),
             INDEX      idx_dates         (InvoiceDate, DueDate)
         ) {$collate};" );
+    }
 
-        // ── Invoice Items ─────────────────────────────────────────────────────
+    private static function create_invoice_items_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_invoice_items (
             Id           INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             InvoiceId    INT UNSIGNED   NOT NULL,
@@ -412,8 +496,10 @@ class Installer {
             INDEX idx_booking (BookingId),
             INDEX idx_order   (DisplayOrder)
         ) {$collate};" );
+    }
 
-        // ── Payments ──────────────────────────────────────────────────────────
+    private static function create_payments_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_payments (
             Id                   INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             InvoiceId            INT UNSIGNED   NOT NULL,
@@ -426,8 +512,10 @@ class Installer {
             INDEX idx_invoice (InvoiceId),
             INDEX idx_date    (PaymentDate)
         ) {$collate};" );
+    }
 
-        // ── Audit Log ─────────────────────────────────────────────────────────
+    private static function create_audit_log_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_audit_log (
             Id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             Action      VARCHAR(20)     NOT NULL,
@@ -443,8 +531,9 @@ class Installer {
             INDEX idx_origin (Origin),
             INDEX idx_created (CreatedAt)
         ) {$collate};" );
+    }
 
-        // Site Provisioning Service.  Uses base_prefix since it operates at the network level and needs to be accessible from the main site.
+    private static function create_site_provisioning_table( wpdb $wpdb, string $collate ): void {
         $table = $wpdb->base_prefix . 'myvh_site_provisioning';
         $sql = "CREATE TABLE $table (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -468,7 +557,7 @@ class Installer {
             INDEX blog_id (blog_id)
         ) $collate;";
 
-        dbDelta($sql);
+        dbDelta( $sql );
     }
 
     public static function backfill_opening_hours_by_day( wpdb $wpdb ): void {

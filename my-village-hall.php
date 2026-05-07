@@ -88,6 +88,45 @@ global $myvh_container;
 /** @var Container $myvh_container */
 $myvh_container = require MYVH_PLUGIN_DIR . 'src/Core/Support/myvh-container.php';
 
+//Put in hooks for database upgrades on version change, and for multisite activation.
+add_action('plugins_loaded', function () {
+
+    if (is_admin()) {
+        add_action('admin_init', [Installer::class, 'maybe_upgrade']);
+    }
+
+});
+
+register_activation_hook(__FILE__, function ($network_wide) {
+
+    if (is_multisite() && $network_wide) {
+
+        $sites = get_sites();
+
+        foreach ($sites as $site) {
+            switch_to_blog($site->blog_id);
+
+            Installer::maybe_upgrade();
+
+            restore_current_blog();
+        }
+
+    } else {
+        Installer::maybe_upgrade();
+    }
+
+});
+
+add_action('wp_initialize_site', function ($site) {
+
+    switch_to_blog($site->blog_id);
+
+    Installer::maybe_upgrade();
+
+    restore_current_blog();
+
+});
+
 // Bootstrap event listeners and remaining wiring
 require_once MYVH_PLUGIN_DIR . 'src/Bootstrap/myvh-bootstrap.php';
 

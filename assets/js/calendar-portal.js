@@ -544,7 +544,14 @@ var Calendar = (function() {
                         throw new Error(result && result.data && result.data.message ? result.data.message : (result && result.data) || 'Failed to delete booking');
                     }
 
-                    viewModal.close();
+                    // Close the appropriate modal based on which one is currently visible
+                    const createModalEl = document.getElementById('myvh-booking-modal-create');
+                    if (createModalEl && !createModalEl.classList.contains('hidden')) {
+                        createModal.close();
+                    } else {
+                        viewModal.close();
+                    }
+
                     if (api && typeof api.reload === 'function') {
                         api.reload();
                     }
