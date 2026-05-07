@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$organisation_type = is_array($organisation_type ?? null) ? $organisation_type : null;
+$organisation_type = isset($organisation_type) && is_array($organisation_type) ? $organisation_type : null;
 if (!$organisation_type) {
     echo '<div class="myvh-card myvh-error"><p>Organisation type not found.</p></div>';
     return;

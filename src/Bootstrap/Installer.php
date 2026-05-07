@@ -400,6 +400,7 @@ class Installer {
             Id           INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             InvoiceId    INT UNSIGNED   NOT NULL,
             BookingId    INT UNSIGNED   DEFAULT NULL,
+            ItemType     VARCHAR(50)    NOT NULL DEFAULT 'charge',
             Description  VARCHAR(255)   NOT NULL,
             Quantity     DECIMAL(10,2)  NOT NULL DEFAULT 1,
             UnitPrice    DECIMAL(10,2)  NOT NULL,

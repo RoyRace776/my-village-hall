@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 use MYVH\Availability\AvailabilityService;
 use MYVH\Rooms\RoomColour;
 
-$venues = is_array($venues ?? null) ? $venues : [];
+$venues = isset($venues) && is_array($venues) ? $venues : [];
 $availability_service = $GLOBALS['myvh_container']->get(AvailabilityService::class);
 $default_colour = RoomColour::fallback(count($venues) + 1);
 $room_colour_palette = RoomColour::palette();
@@ -163,6 +163,50 @@ $day_labels = [
                         Make this room public
                     </span>
                 </label>
+
+                <div class="myvh-account-field">
+                    <span>Deposits</span>
+
+                    <label style="margin-top:8px; display:block;">
+                        <input type="hidden" name="deposit_enabled" value="0">
+                        <input type="checkbox" name="deposit_enabled" value="1">
+                        Enable deposits for this room
+                    </label>
+
+                    <label style="margin-top:10px; display:block;">
+                        <span>Days of week</span>
+                        <select name="deposit_days[]" multiple size="7">
+                            <option value="mon">Monday</option>
+                            <option value="tue">Tuesday</option>
+                            <option value="wed">Wednesday</option>
+                            <option value="thu">Thursday</option>
+                            <option value="fri">Friday</option>
+                            <option value="sat">Saturday</option>
+                            <option value="sun">Sunday</option>
+                        </select>
+                        <small class="myvh-muted">Leave empty to apply every day.</small>
+                    </label>
+
+                    <div class="myvh-account-grid" style="margin-top:10px;">
+                        <label class="myvh-account-field">
+                            <span>Booking ends after</span>
+                            <input type="time" name="deposit_end_after">
+                        </label>
+
+                        <label class="myvh-account-field">
+                            <span>Deposit amount</span>
+                            <input type="number" name="deposit_amount" min="0" step="0.01" value="0">
+                        </label>
+                    </div>
+
+                    <label style="margin-top:10px; display:block;">
+                        <span>Deposit action</span>
+                        <select name="deposit_action">
+                            <option value="auto_add">Auto add to invoice</option>
+                            <option value="require_review">Require admin review</option>
+                        </select>
+                    </label>
+                </div>
 
                 <div class="myvh-account-actions">
                     <button type="submit" class="button button-primary">Create Room</button>

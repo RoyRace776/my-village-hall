@@ -12,15 +12,18 @@ class RoomService {
     private $repo;
     private $room_hours_repository;
     private $availability;
+    private $room_deposit_repository;
 
     public function __construct(
         RoomRepository $repo,
         RoomHoursRepository $room_hours_repository,
-        AvailabilityService $availability
+        AvailabilityService $availability,
+        RoomDepositRepository $room_deposit_repository
     ) {
         $this->repo = $repo;
         $this->room_hours_repository = $room_hours_repository;
         $this->availability = $availability;
+        $this->room_deposit_repository = $room_deposit_repository;
     }
 
     public function get_all($args = []): array {
@@ -115,6 +118,14 @@ class RoomService {
                 }
             }
 
+            $this->room_deposit_repository->save((int) $data['room_id'], [
+                'enabled' => !empty($data['deposit_enabled']),
+                'days' => $data['deposit_days'] ?? [],
+                'end_after' => $data['deposit_end_after'] ?? null,
+                'amount' => $data['deposit_amount'] ?? 0,
+                'action' => $data['deposit_action'] ?? 'auto_add',
+            ]);
+
             return intval($data['room_id']);
         }
 
@@ -134,6 +145,14 @@ class RoomService {
                 return new WP_Error('save', __('Room opening hours could not be saved', 'my-village-hall'));
             }
         }
+
+        $this->room_deposit_repository->save((int) $created, [
+            'enabled' => !empty($data['deposit_enabled']),
+            'days' => $data['deposit_days'] ?? [],
+            'end_after' => $data['deposit_end_after'] ?? null,
+            'amount' => $data['deposit_amount'] ?? 0,
+            'action' => $data['deposit_action'] ?? 'auto_add',
+        ]);
 
         return (int) $created;
     }

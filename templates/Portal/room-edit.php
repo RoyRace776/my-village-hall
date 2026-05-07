@@ -3,12 +3,14 @@ if (!defined('ABSPATH')) exit;
 
 use MYVH\Availability\AvailabilityService;
 use MYVH\Rooms\RoomColour;
+use MYVH\Rooms\RoomDepositRepository;
 use MYVH\Rooms\RoomHoursRepository;
 
-$room = is_array($room ?? null) ? $room : null;
-$venues = is_array($venues ?? null) ? $venues : [];
+$room = isset($room) && is_array($room) ? $room : null;
+$venues = isset($venues) && is_array($venues) ? $venues : [];
 $availability_service = $GLOBALS['myvh_container']->get(AvailabilityService::class);
 $room_hours_repository = $GLOBALS['myvh_container']->get(RoomHoursRepository::class);
+$room_deposit_repository = $GLOBALS['myvh_container']->get(RoomDepositRepository::class);
 $room_colour_palette = RoomColour::palette();
 
 if (!$room) {
@@ -36,6 +38,14 @@ foreach ((array) $room_hours_rows as $row) {
 
 $default_open = substr((string) ($room['OpeningTime'] ?? '09:00'), 0, 5);
 $default_close = substr((string) ($room['ClosingTime'] ?? '17:00'), 0, 5);
+$deposit_config = $room_deposit_repository->get((int) ($room['Id'] ?? 0));
+$deposit_days = (array) ($deposit_config['days'] ?? []);
+$deposit_end_after = (string) ($deposit_config['end_after'] ?? '');
+$deposit_amount = (float) ($deposit_config['amount'] ?? 0);
+$deposit_action = (string) ($deposit_config['action'] ?? 'auto_add');
+if (!in_array($deposit_action, ['auto_add', 'require_review'], true)) {
+    $deposit_action = 'auto_add';
+}
 ?>
 <div class="myvh-dashboard-section myvh-rooms-page">
     <div class="myvh-account-header">
@@ -191,6 +201,50 @@ $default_close = substr((string) ($room['ClosingTime'] ?? '17:00'), 0, 5);
                     Make this room public
                 </span>
             </label>
+
+            <div class="myvh-account-field">
+                <span>Deposits</span>
+
+                <label style="margin-top:8px; display:block;">
+                    <input type="hidden" name="deposit_enabled" value="0">
+                    <input type="checkbox" name="deposit_enabled" value="1" <?php checked(!empty($deposit_config['enabled'])); ?>>
+                    Enable deposits for this room
+                </label>
+
+                <label style="margin-top:10px; display:block;">
+                    <span>Days of week</span>
+                    <select name="deposit_days[]" multiple size="7">
+                        <option value="mon" <?php selected(in_array('mon', $deposit_days, true), true); ?>>Monday</option>
+                        <option value="tue" <?php selected(in_array('tue', $deposit_days, true), true); ?>>Tuesday</option>
+                        <option value="wed" <?php selected(in_array('wed', $deposit_days, true), true); ?>>Wednesday</option>
+                        <option value="thu" <?php selected(in_array('thu', $deposit_days, true), true); ?>>Thursday</option>
+                        <option value="fri" <?php selected(in_array('fri', $deposit_days, true), true); ?>>Friday</option>
+                        <option value="sat" <?php selected(in_array('sat', $deposit_days, true), true); ?>>Saturday</option>
+                        <option value="sun" <?php selected(in_array('sun', $deposit_days, true), true); ?>>Sunday</option>
+                    </select>
+                    <small class="myvh-muted">Leave empty to apply every day.</small>
+                </label>
+
+                <div class="myvh-account-grid" style="margin-top:10px;">
+                    <label class="myvh-account-field">
+                        <span>Booking ends after</span>
+                        <input type="time" name="deposit_end_after" value="<?php echo esc_attr($deposit_end_after); ?>">
+                    </label>
+
+                    <label class="myvh-account-field">
+                        <span>Deposit amount</span>
+                        <input type="number" name="deposit_amount" min="0" step="0.01" value="<?php echo esc_attr((string) $deposit_amount); ?>">
+                    </label>
+                </div>
+
+                <label style="margin-top:10px; display:block;">
+                    <span>Deposit action</span>
+                    <select name="deposit_action">
+                        <option value="auto_add" <?php selected($deposit_action, 'auto_add'); ?>>Auto add to invoice</option>
+                        <option value="require_review" <?php selected($deposit_action, 'require_review'); ?>>Require admin review</option>
+                    </select>
+                </label>
+            </div>
 
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Update Room</button>

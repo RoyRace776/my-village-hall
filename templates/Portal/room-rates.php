@@ -1,9 +1,9 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$rates = is_array($rates ?? null) ? $rates : [];
-$rooms = is_array($rooms ?? null) ? $rooms : [];
-$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$rates = isset($rates) && is_array($rates) ? $rates : [];
+$rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
+$organisation_types = isset($organisation_types) && is_array($organisation_types) ? $organisation_types : [];
 
 $room_names = [];
 foreach ($rooms as $room) {

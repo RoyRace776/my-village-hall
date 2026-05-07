@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$rooms = is_array($rooms ?? null) ? $rooms : [];
+$rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
 ?>
 <div class="myvh-dashboard-section myvh-addons-page">
     <div class="myvh-account-header">

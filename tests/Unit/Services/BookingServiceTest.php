@@ -83,6 +83,9 @@ class BookingServiceTest extends UnitTestCase {
     private $booking_update_event_dispatcher;
     private $recurring_booking_creator;
     private $recurring_booking_updater;
+    private $invoice_service;
+    private $invoice_item_repo;
+    private $deposit_service;
 
     /** @var \MYVH\Bookings\BookingService */
     private $service;
@@ -145,6 +148,10 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_repo,
             $this->recurring_pattern_service
         );
+        $this->invoice_service = $this->mock(\MYVH\Invoices\InvoiceService::class);
+        $this->invoice_item_repo = $this->mock(\MYVH\Invoices\InvoiceItemRepository::class);
+        $this->deposit_service = $this->mock(\MYVH\Deposits\DepositService::class);
+        $this->deposit_service->shouldReceive('evaluate')->zeroOrMoreTimes()->andReturn(null);
 
         $this->service = new \MYVH\Bookings\BookingService(
             $this->room_service,
@@ -165,7 +172,10 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_update_event_dispatcher,
             $this->recurring_pattern_service,
             $this->recurring_booking_creator,
-            $this->recurring_booking_updater
+            $this->recurring_booking_updater,
+            $this->invoice_service,
+            $this->invoice_item_repo,
+            $this->deposit_service
         );
     }
 
@@ -198,7 +208,10 @@ class BookingServiceTest extends UnitTestCase {
             $this->booking_status_transition_dispatcher,
             $this->booking_update_event_dispatcher,
             $this->recurring_booking_creator,
-            $this->recurring_booking_updater
+            $this->recurring_booking_updater,
+            $this->invoice_service,
+            $this->invoice_item_repo,
+            $this->deposit_service
         );
         parent::tearDown();
     }

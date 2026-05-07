@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) exit;
 
 $slug = (string) ($slug ?? '');
-$definition = is_array($definition ?? null) ? $definition : [];
+$definition = isset($definition) && is_array($definition) ? $definition : [];
 $subject = (string) ($subject ?? '');
 $html_body = (string) ($html_body ?? '');
 $is_customized = !empty($is_customized);

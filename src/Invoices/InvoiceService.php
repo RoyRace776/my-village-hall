@@ -14,6 +14,7 @@ class InvoiceService {
     public const VALID_STATUSES = ['draft', 'sent', 'part-paid', 'paid', 'overdue', 'cancelled'];
 
     private InvoiceRepository $repo;
+    private InvoiceItemRepository $invoice_item_repo;
     private PaymentRepository $payment_repo;
     private InvoicePdfRenderer $pdf_renderer;
     private PdfGenerator $pdf_generator;
@@ -21,16 +22,105 @@ class InvoiceService {
 
     public function __construct(
         InvoiceRepository $repo,
+        InvoiceItemRepository $invoice_item_repo,
         PaymentRepository $payment_repo,
         InvoicePdfRenderer $pdf_renderer,
         PdfGenerator $pdf_generator,
         InvoiceFileStorage $file_storage
     ) {
         $this->repo          = $repo;
+        $this->invoice_item_repo = $invoice_item_repo;
         $this->payment_repo  = $payment_repo;
         $this->pdf_renderer  = $pdf_renderer;
         $this->pdf_generator = $pdf_generator;
         $this->file_storage  = $file_storage;
+    }
+
+    /**
+     * Check whether a booking already has a deposit line item on an invoice.
+     *
+     * @param int $invoice_id
+     * @param int $booking_id
+     * @return bool
+     */
+    public function has_booking_deposit_line_item(int $invoice_id, int $booking_id): bool {
+        return $this->invoice_item_repo->has_deposit_item($invoice_id, $booking_id);
+    }
+
+    /**
+     * Add a booking-linked invoice line item and refresh invoice totals.
+     *
+     * @param int $invoice_id
+     * @param int $booking_id
+     * @param string $type
+     * @param float $amount
+     * @param string $description
+     * @return bool|WP_Error
+     */
+    public function add_booking_line_item(
+        int $invoice_id,
+        int $booking_id,
+        string $type,
+        float $amount,
+        string $description
+    ): bool|WP_Error {
+        $invoice = $this->repo->get_by_id($invoice_id);
+        if (!$invoice) {
+            return new WP_Error('not_found', __('Invoice not found', 'my-village-hall'));
+        }
+
+        if (($invoice['Status'] ?? '') === 'cancelled') {
+            return new WP_Error('validation', __('Cannot add line items to cancelled invoices', 'my-village-hall'));
+        }
+
+        if ($amount <= 0) {
+            return new WP_Error('validation', __('Line item amount must be greater than zero', 'my-village-hall'));
+        }
+
+        $amount = round($amount, 2);
+        $normalized_type = sanitize_key($type);
+        if ($normalized_type === 'deposit' && $this->invoice_item_repo->has_deposit_item($invoice_id, $booking_id)) {
+            return true;
+        }
+
+        $item_data = [
+            'InvoiceId' => $invoice_id,
+            'BookingId' => $booking_id,
+            'Description' => sanitize_text_field($description),
+            'Quantity' => 1,
+            'UnitPrice' => $amount,
+            'TaxRate' => 0,
+            'TaxAmount' => 0,
+            'TotalAmount' => $amount,
+            'DisplayOrder' => $this->invoice_item_repo->get_next_display_order($invoice_id),
+        ];
+
+        if ($this->invoice_item_repo->supports_item_type_column()) {
+            $item_data['ItemType'] = $normalized_type !== '' ? $normalized_type : 'charge';
+        }
+
+        $item_created = $this->invoice_item_repo->create($item_data);
+
+        if ($item_created === false) {
+            return new WP_Error('database', __('Failed to create invoice line item', 'my-village-hall'));
+        }
+
+        $sub_total = round((float) ($invoice['SubTotal'] ?? 0) + $amount, 2);
+        $total_amount = round((float) ($invoice['TotalAmount'] ?? 0) + $amount, 2);
+        $amount_paid = round((float) ($invoice['AmountPaid'] ?? 0), 2);
+        $amount_due = max(0.0, round($total_amount - $amount_paid, 2));
+
+        $updated = $this->repo->update([
+            'SubTotal' => $sub_total,
+            'TotalAmount' => $total_amount,
+            'AmountDue' => $amount_due,
+        ], ['Id' => $invoice_id]);
+
+        if ($updated === false) {
+            return new WP_Error('database', __('Failed to update invoice totals after adding line item', 'my-village-hall'));
+        }
+
+        return $this->refresh_payment_state($invoice_id);
     }
 
     public function get_all($args = []): array {

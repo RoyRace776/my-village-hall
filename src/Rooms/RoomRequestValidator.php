@@ -25,6 +25,27 @@ class RoomRequestValidator extends RequestValidatorBase {
             return $this->validation_error(__('Opening and closing times are required', 'my-village-hall'));
         }
 
+        $valid_days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        foreach ((array) ($data['deposit_days'] ?? []) as $day) {
+            if (!in_array((string) $day, $valid_days, true)) {
+                return $this->validation_error(__('Deposit days contain an invalid value', 'my-village-hall'));
+            }
+        }
+
+        $deposit_end_after = $data['deposit_end_after'] ?? null;
+        if ($deposit_end_after !== null && !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) $deposit_end_after)) {
+            return $this->validation_error(__('Deposit end time must be in HH:MM format', 'my-village-hall'));
+        }
+
+        if (isset($data['deposit_amount']) && (float) $data['deposit_amount'] < 0) {
+            return $this->validation_error(__('Deposit amount cannot be negative', 'my-village-hall'));
+        }
+
+        $deposit_action = (string) ($data['deposit_action'] ?? 'auto_add');
+        if (!in_array($deposit_action, ['auto_add', 'require_review'], true)) {
+            return $this->validation_error(__('Deposit action is invalid', 'my-village-hall'));
+        }
+
         return true;
     }
 }

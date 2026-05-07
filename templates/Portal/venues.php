@@ -1,8 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$venues = is_array($venues ?? null) ? $venues : [];
-$venue_room_counts = is_array($venue_room_counts ?? null) ? $venue_room_counts : [];
+$venues = isset($venues) && is_array($venues) ? $venues : [];
+$venue_room_counts = isset($venue_room_counts) && is_array($venue_room_counts) ? $venue_room_counts : [];
 ?>
 <div class="myvh-dashboard-section myvh-venues-page">
     <div class="myvh-account-header" style="display:flex; align-items:end; justify-content:space-between; gap:24px;">

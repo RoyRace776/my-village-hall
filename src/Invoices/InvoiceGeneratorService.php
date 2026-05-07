@@ -5,6 +5,7 @@ use MYVH\Bookings\BookingRepository;
 use MYVH\Bookings\BookingService;
 use MYVH\Bookings\BookingChargeRepository;
 use MYVH\Bookings\BookingAddonRepository;
+use MYVH\Deposits\DepositService;
 use MYVH\Pricing\PricingService;
 use MYVH\Addons\AddonRepository;
 use MYVH\Customers\CustomerRepository;
@@ -36,6 +37,7 @@ class InvoiceGeneratorService {
     private $customer_repo;
     private $organisation_repo;
     private $pricing_service;
+    private $deposit_service;
 
     public function __construct(
         InvoiceService $invoiceService,
@@ -48,7 +50,8 @@ class InvoiceGeneratorService {
         AddonRepository $addon_repo,
         CustomerRepository $customer_repo,
         OrganisationRepository $organisation_repo,
-        PricingService $pricing_service
+        PricingService $pricing_service,
+        DepositService $deposit_service
     ) {
         $this->invoiceService = $invoiceService;
         $this->invoice_repo = $invoice_repo;
@@ -61,6 +64,7 @@ class InvoiceGeneratorService {
         $this->customer_repo = $customer_repo;
         $this->organisation_repo = $organisation_repo;
         $this->pricing_service = $pricing_service;
+        $this->deposit_service = $deposit_service;
     }
 
     /**
@@ -265,6 +269,14 @@ class InvoiceGeneratorService {
                     ];
                 }
             }
+
+            // Append deposit as a separate line item when room deposit config matches this booking.
+            $deposit_item = $this->build_deposit_invoice_item($booking, $booking_id, $display_order);
+            if ($deposit_item !== null) {
+                $subtotal += (float) ($deposit_item['TotalAmount'] ?? 0);
+                $invoice_items[] = $deposit_item;
+                $display_order++;
+            }
         }
 
         $total_amount = $subtotal + $tax_amount;
@@ -306,6 +318,11 @@ class InvoiceGeneratorService {
         // Create invoice items
         foreach ($invoice_items as $item) {
             $item['InvoiceId'] = $invoice_id;
+
+            if (!$this->invoice_item_repo->supports_item_type_column()) {
+                unset($item['ItemType']);
+            }
+
             $result = $this->invoice_item_repo->create($item);
 
             if ($result === false) {
@@ -320,6 +337,56 @@ class InvoiceGeneratorService {
         do_action('myvh_invoice_generated', $invoice_id, $bookings, $options);
 
         return $invoice_id;
+    }
+
+    /**
+     * Build a deposit invoice item for a booking when applicable.
+     *
+     * @param array $booking
+     * @param int $booking_id
+     * @param int $display_order
+     * @return array<string,mixed>|null
+     */
+    private function build_deposit_invoice_item(array $booking, int $booking_id, int $display_order): ?array {
+        $room_id = intval($booking['RoomId'] ?? 0);
+        $end_date = (string) ($booking['EndDate'] ?? '');
+        $end_time = (string) ($booking['EndTime'] ?? '');
+
+        if ($room_id <= 0 || $end_date === '' || $end_time === '') {
+            return null;
+        }
+
+        try {
+            $end = new \DateTime(trim($end_date . ' ' . $end_time));
+        } catch (\Exception $exception) {
+            return null;
+        }
+
+        $deposit = $this->deposit_service->evaluate($room_id, $end);
+        if ($deposit === null) {
+            return null;
+        }
+
+        if (($deposit['action'] ?? 'auto_add') !== 'auto_add') {
+            return null;
+        }
+
+        $amount = round((float) ($deposit['amount'] ?? 0), 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        return [
+            'BookingId' => $booking_id,
+            'ItemType' => 'deposit',
+            'Description' => 'Deposit',
+            'Quantity' => 1,
+            'UnitPrice' => $amount,
+            'TaxRate' => 0,
+            'TaxAmount' => 0,
+            'TotalAmount' => $amount,
+            'DisplayOrder' => $display_order,
+        ];
     }
 
     private function build_billing_snapshot($booking, $options): array {

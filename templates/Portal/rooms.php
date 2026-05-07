@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) exit;
 
 use MYVH\Rooms\RoomColour;
 
-$rooms = is_array($rooms ?? null) ? $rooms : [];
+$rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
 ?>
 <div class="myvh-dashboard-section myvh-rooms-page">
     <div class="myvh-account-header" style="display:flex; align-items:end; justify-content:space-between; gap:24px;">

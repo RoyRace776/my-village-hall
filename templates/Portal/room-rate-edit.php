@@ -1,9 +1,9 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$rate = is_array($rate ?? null) ? $rate : null;
-$rooms = is_array($rooms ?? null) ? $rooms : [];
-$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$rate = isset($rate) && is_array($rate) ? $rate : null;
+$rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
+$organisation_types = isset($organisation_types) && is_array($organisation_types) ? $organisation_types : [];
 
 if (!$rate) {
     echo '<div class="myvh-card myvh-error"><p>Room rate not found.</p></div>';

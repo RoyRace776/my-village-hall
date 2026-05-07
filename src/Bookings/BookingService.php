@@ -17,8 +17,11 @@ use MYVH\Bookings\Services\BookingStatusTransitionDispatcher;
 use MYVH\Bookings\Services\BookingUpdateEventDispatcher;
 use MYVH\Bookings\Services\RecurringBookingCreator;
 use MYVH\Bookings\Services\RecurringBookingUpdater;
+use MYVH\Deposits\DepositService;
 use MYVH\Events\EventDispatcher;
 use MYVH\Events\BookingEvents;
+use MYVH\Invoices\InvoiceItemRepository;
+use MYVH\Invoices\InvoiceService;
 
 use WP_Error;
 use Exception;
@@ -49,6 +52,9 @@ class BookingService {
     private $recurring_pattern_service;
     private $recurring_booking_creator;
     private $recurring_booking_updater;
+    private $invoice_service;
+    private $invoice_item_repo;
+    private $deposit_service;
     private $last_warnings = [];
 
     public function __construct(
@@ -70,7 +76,10 @@ class BookingService {
         BookingUpdateEventDispatcher $booking_update_event_dispatcher,
         RecurringPatternService $recurring_pattern_service,
         RecurringBookingCreator $recurring_booking_creator,
-        RecurringBookingUpdater $recurring_booking_updater
+        RecurringBookingUpdater $recurring_booking_updater,
+        InvoiceService $invoice_service,
+        InvoiceItemRepository $invoice_item_repo,
+        DepositService $deposit_service
     ) {
         $this->room_service = $room_service;
         $this->booking_repo = $booking_repo;
@@ -91,6 +100,9 @@ class BookingService {
         $this->recurring_pattern_service = $recurring_pattern_service;
         $this->recurring_booking_creator = $recurring_booking_creator;
         $this->recurring_booking_updater = $recurring_booking_updater;
+        $this->invoice_service = $invoice_service;
+        $this->invoice_item_repo = $invoice_item_repo;
+        $this->deposit_service = $deposit_service;
     }
 
     public function save($data): int|WP_Error {
@@ -144,6 +156,13 @@ class BookingService {
                 'NoInvoiceRequired' => $no_invoice_required,
                 'ChargeableHours'   => $chargeable_hours
             ];
+
+            if (empty($data['booking_id'])) {
+                $deposit = $this->evaluate_deposit_for_record($record);
+                if ($deposit !== null && ($deposit['action'] ?? '') === 'require_review') {
+                    $record['Status'] = BookingStatus::PENDING->value;
+                }
+            }
 
             if (!empty($data['booking_id'])) {
                 $result = $this->update_booking($data, $record);
@@ -347,6 +366,11 @@ class BookingService {
             return $charge_result;
         }
 
+        $deposit_result = $this->apply_deposit_after_create($booking_id, $record);
+        if (is_wp_error($deposit_result)) {
+            return $deposit_result;
+        }
+
         $this->booking_creation_event_dispatcher->dispatch_created($booking_id, $data);
 
         $recurring_result = $this->recurring_booking_creator->create_for_booking($booking_id, $data);
@@ -361,6 +385,80 @@ class BookingService {
         $this->booking_creation_event_dispatcher->dispatch_after_create($booking_id, $data);
 
         return $booking_id;
+    }
+
+    /**
+     * Evaluate room deposit settings for a booking record.
+     *
+     * @param array $record
+     * @return array<string,mixed>|null
+     */
+    private function evaluate_deposit_for_record(array $record): ?array {
+        $room_id = intval($record['RoomId'] ?? 0);
+        $end_date = (string) ($record['EndDate'] ?? '');
+        $end_time = (string) ($record['EndTime'] ?? '');
+
+        if ($room_id <= 0 || $end_date === '' || $end_time === '') {
+            return null;
+        }
+
+        try {
+            $end = new \DateTime(trim($end_date . ' ' . $end_time));
+        } catch (\Exception $exception) {
+            return null;
+        }
+
+        return $this->deposit_service->evaluate($room_id, $end);
+    }
+
+    /**
+     * Apply auto-add deposit behavior to any existing booking invoice.
+     *
+     * @param int $booking_id
+     * @param array $record
+     * @return true|WP_Error
+     */
+    private function apply_deposit_after_create(int $booking_id, array $record): bool|WP_Error {
+        $deposit = $this->evaluate_deposit_for_record($record);
+        if ($deposit === null) {
+            return true;
+        }
+
+        if (($deposit['action'] ?? 'auto_add') !== 'auto_add') {
+            return true;
+        }
+
+        $amount = (float) ($deposit['amount'] ?? 0.0);
+        if ($amount <= 0.0) {
+            return true;
+        }
+
+        $invoice_ids = $this->booking_repo->get_active_invoice_ids_for_booking($booking_id);
+        if (empty($invoice_ids)) {
+            return true;
+        }
+
+        foreach ($invoice_ids as $invoice_id) {
+            $invoice_id = (int) $invoice_id;
+
+            if ($this->invoice_item_repo->has_deposit_item($invoice_id, $booking_id)) {
+                continue;
+            }
+
+            $added = $this->invoice_service->add_booking_line_item(
+                $invoice_id,
+                $booking_id,
+                'deposit',
+                $amount,
+                'Deposit'
+            );
+
+            if (is_wp_error($added)) {
+                return $added;
+            }
+        }
+
+        return true;
     }
 
     /**

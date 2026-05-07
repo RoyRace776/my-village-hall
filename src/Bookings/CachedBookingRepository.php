@@ -255,6 +255,11 @@ class CachedBookingRepository extends BookingRepository
         return $this->repository->has_invoiced_items($booking_id);
     }
 
+    public function get_active_invoice_ids_for_booking(int $booking_id): array
+    {
+        return $this->repository->get_active_invoice_ids_for_booking($booking_id);
+    }
+
     public function is_no_invoice_required(int $booking_id): bool
     {
         return $this->repository->is_no_invoice_required($booking_id);

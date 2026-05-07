@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 use MYVH\Availability\AvailabilityService;
 use MYVH\Venues\VenueHoursRepository;
 
-$venue = is_array($venue ?? null) ? $venue : null;
+$venue = isset($venue) && is_array($venue) ? $venue : null;
 $availability_service = $GLOBALS['myvh_container']->get(AvailabilityService::class);
 $venue_hours_repository = $GLOBALS['myvh_container']->get(VenueHoursRepository::class);
 

@@ -613,6 +613,31 @@ class BookingRepository extends RepositoryBase
         return intval($result) > 0;
     }
 
+    /**
+     * Return non-cancelled invoice IDs linked to this booking.
+     *
+     * @param int $booking_id
+     * @return array<int,int>
+     */
+    public function get_active_invoice_ids_for_booking(int $booking_id): array {
+        $sql = $this->wpdb->prepare(
+            "SELECT DISTINCT ii.InvoiceId
+            FROM {$this->wpdb->prefix}myvh_invoice_items ii
+            INNER JOIN {$this->wpdb->prefix}myvh_invoices i ON i.Id = ii.InvoiceId
+            WHERE ii.BookingId = %d
+              AND i.Status NOT IN ('cancelled')
+            ORDER BY i.InvoiceDate DESC, i.Id DESC",
+            $booking_id
+        );
+
+        $rows = $this->wpdb->get_col($sql);
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        return array_values(array_map('intval', $rows));
+    }
+
     public function is_no_invoice_required(int $booking_id): bool {
         $sql = $this->wpdb->prepare(
             "SELECT NoInvoiceRequired FROM {$this->table_name} WHERE Id = %d",

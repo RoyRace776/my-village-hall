@@ -22,6 +22,7 @@ use MYVH\Bookings\Services\BookingStatusTransitionDispatcher;
 use MYVH\Bookings\Services\BookingUpdateEventDispatcher;
 use MYVH\Bookings\Services\RecurringBookingCreator;
 use MYVH\Bookings\Services\RecurringBookingUpdater;
+use MYVH\Deposits\DepositService;
 use MYVH\Rooms\RoomService;
 use MYVH\Addons\AddonRepository;
 use MYVH\Addons\AddonService;
@@ -64,5 +65,6 @@ class BookingServiceProvider
         $container->singleton(BookingUpdateEventDispatcher::class);
         $container->singleton(RecurringBookingCreator::class);
         $container->singleton(RecurringBookingUpdater::class);
+        $container->singleton(DepositService::class);
     }
 }

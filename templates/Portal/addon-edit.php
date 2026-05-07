@@ -1,8 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$addon = is_array($addon ?? null) ? $addon : null;
-$rooms = is_array($rooms ?? null) ? $rooms : [];
+$addon = isset($addon) && is_array($addon) ? $addon : null;
+$rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
 
 if (!$addon) {
     echo '<div class="myvh-card myvh-error"><p>Add-on not found.</p></div>';

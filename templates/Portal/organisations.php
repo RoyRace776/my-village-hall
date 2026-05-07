@@ -2,7 +2,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$organisation_types = isset($organisation_types) && is_array($organisation_types) ? $organisation_types : [];
 $organisation_type_lookup = [];
 foreach ($organisation_types as $organisation_type) {
     $organisation_type_lookup[(int) ($organisation_type['Id'] ?? 0)] = $organisation_type['Name'] ?? '';

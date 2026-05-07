@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$organisation_types = isset($organisation_types) && is_array($organisation_types) ? $organisation_types : [];
 ?>
 
 <div class="myvh-dashboard-section myvh-organisation-types-page">

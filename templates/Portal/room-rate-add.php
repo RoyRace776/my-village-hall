@@ -1,8 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$rooms = is_array($rooms ?? null) ? $rooms : [];
-$organisation_types = is_array($organisation_types ?? null) ? $organisation_types : [];
+$rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
+$organisation_types = isset($organisation_types) && is_array($organisation_types) ? $organisation_types : [];
 $selected_room_id = (int) ($selected_room_id ?? 0);
 
 $selected_room = null;

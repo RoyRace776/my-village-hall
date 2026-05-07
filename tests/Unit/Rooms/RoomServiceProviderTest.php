@@ -17,6 +17,7 @@ namespace MYVH\Tests\Unit\Rooms {
 use MYVH\Container\Container;
 use MYVH\Rooms\CachedRoomHoursRepository;
 use MYVH\Rooms\CachedRoomRepository;
+use MYVH\Rooms\RoomDepositRepository;
 use MYVH\Rooms\RoomHoursRepository;
 use MYVH\Rooms\RoomRepository;
 use MYVH\Rooms\RoomServiceProvider;
@@ -61,6 +62,25 @@ class RoomServiceProviderTest extends UnitTestCase
 
         $this->assertInstanceOf(CachedRoomHoursRepository::class, $first);
         $this->assertInstanceOf(RoomHoursRepository::class, $first);
+        $this->assertSame($first, $second);
+    }
+
+    public function test_room_deposit_repository_binding_resolves_singleton(): void
+    {
+        $container = new Container();
+        $wpdb = new \wpdb('', '', '', '');
+        $wpdb->prefix = 'wp_';
+
+        $container->singleton(\wpdb::class, function () use ($wpdb) {
+            return $wpdb;
+        });
+
+        (new RoomServiceProvider())->register($container);
+
+        $first = $container->get(RoomDepositRepository::class);
+        $second = $container->get(RoomDepositRepository::class);
+
+        $this->assertInstanceOf(RoomDepositRepository::class, $first);
         $this->assertSame($first, $second);
     }
 }

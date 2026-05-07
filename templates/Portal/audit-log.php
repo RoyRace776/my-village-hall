@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$rows = is_array($rows ?? null) ? $rows : [];
+$rows = isset($rows) && is_array($rows) ? $rows : [];
 ?>
 
 <div class="myvh-dashboard-section myvh-client-settings-page">

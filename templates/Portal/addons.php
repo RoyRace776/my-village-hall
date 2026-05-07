@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$addons = is_array($addons ?? null) ? $addons : [];
+$addons = isset($addons) && is_array($addons) ? $addons : [];
 
 $charge_type_labels = [
     'per_hour' => 'Per Hour',

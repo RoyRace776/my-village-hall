@@ -4,6 +4,7 @@ namespace MYVH\Tests\Unit\Services;
 
 use Brain\Monkey\Functions;
 use MYVH\Invoices\InvoiceFileStorage;
+use MYVH\Invoices\InvoiceItemRepository;
 use MYVH\Invoices\InvoicePdfRenderer;
 use MYVH\Invoices\InvoiceRepository;
 use MYVH\Invoices\InvoiceService;
@@ -14,6 +15,7 @@ use WP_Error;
 
 class InvoiceServiceTest extends UnitTestCase {
     private $invoice_repo;
+    private $invoice_item_repo;
     private $payment_repo;
     private $pdf_renderer;
     private $pdf_generator;
@@ -32,6 +34,7 @@ class InvoiceServiceTest extends UnitTestCase {
         ]);
 
         $this->invoice_repo  = $this->mock(InvoiceRepository::class);
+        $this->invoice_item_repo = $this->mock(InvoiceItemRepository::class);
         $this->payment_repo  = $this->mock(PaymentRepository::class);
         $this->pdf_renderer  = $this->mock(InvoicePdfRenderer::class);
         $this->pdf_generator = $this->mock(PdfGenerator::class);
@@ -39,6 +42,7 @@ class InvoiceServiceTest extends UnitTestCase {
 
         $this->service = new InvoiceService(
             $this->invoice_repo,
+            $this->invoice_item_repo,
             $this->payment_repo,
             $this->pdf_renderer,
             $this->pdf_generator,
@@ -50,6 +54,7 @@ class InvoiceServiceTest extends UnitTestCase {
         unset(
             $this->service,
             $this->invoice_repo,
+            $this->invoice_item_repo,
             $this->payment_repo,
             $this->pdf_renderer,
             $this->pdf_generator,

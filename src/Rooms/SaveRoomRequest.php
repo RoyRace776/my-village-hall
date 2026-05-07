@@ -26,7 +26,54 @@ class SaveRoomRequest extends RequestMapperBase {
             'calc-closed-hours'        => self::as_bool_int($post, 'calc-closed-hours'),
             'is-public'                => self::as_bool_int($post, 'is-public'),
             'opening_hours_by_day'     => self::parse_opening_hours_by_day($post),
+            'deposit_enabled'          => self::as_bool_int($post, 'deposit_enabled'),
+            'deposit_days'             => self::parse_deposit_days($post),
+            'deposit_end_after'        => self::parse_deposit_end_after($post),
+            'deposit_amount'           => self::parse_deposit_amount($post),
+            'deposit_action'           => self::parse_deposit_action($post),
         ];
+    }
+
+    private static function parse_deposit_days(array $post): array {
+        $source = $post['deposit_days'] ?? [];
+
+        if (is_string($source)) {
+            $source = explode(',', $source);
+        }
+
+        if (!is_array($source)) {
+            return [];
+        }
+
+        $valid = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        $days = [];
+        foreach ($source as $day) {
+            $normalized = strtolower(sanitize_key((string) $day));
+            if (in_array($normalized, $valid, true)) {
+                $days[] = $normalized;
+            }
+        }
+
+        return array_values(array_unique($days));
+    }
+
+    private static function parse_deposit_end_after(array $post): ?string {
+        $value = trim(self::as_text($post, 'deposit_end_after'));
+        if ($value === '') {
+            return null;
+        }
+
+        return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $value) ? $value : null;
+    }
+
+    private static function parse_deposit_amount(array $post): float {
+        $value = isset($post['deposit_amount']) ? (float) $post['deposit_amount'] : 0.0;
+        return max(0.0, round($value, 2));
+    }
+
+    private static function parse_deposit_action(array $post): string {
+        $value = sanitize_key((string) ($post['deposit_action'] ?? 'auto_add'));
+        return in_array($value, ['auto_add', 'require_review'], true) ? $value : 'auto_add';
     }
 
     private static function parse_opening_hours_by_day(array $post): array {

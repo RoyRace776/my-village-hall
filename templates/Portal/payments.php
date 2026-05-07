@@ -4,9 +4,9 @@ if (!defined('ABSPATH')) {
 }
 
 $selected_invoice_id = isset($selected_invoice_id) ? intval($selected_invoice_id) : 0;
-$payments = is_array($payments ?? null) ? $payments : [];
-$payment_methods = is_array($payment_methods ?? null) ? $payment_methods : [];
-$invoices = is_array($invoices ?? null) ? $invoices : [];
+$payments = isset($payments) && is_array($payments) ? $payments : [];
+$payment_methods = isset($payment_methods) && is_array($payment_methods) ? $payment_methods : [];
+$invoices = isset($invoices) && is_array($invoices) ? $invoices : [];
 $redirect_route = $selected_invoice_id > 0 ? 'payments?invoice_id=' . $selected_invoice_id : 'payments';
 ?>
 

@@ -4,7 +4,9 @@ if (!defined('ABSPATH')) {
 }
 
 $is_client_admin_view = !empty($is_client_admin);
-$invoice_count = is_array($invoices ?? null) ? count($invoices) : 0;
+$invoice_count = isset($invoices) && is_array($invoices) ? count($invoices) : 0;
+$available_statuses = isset($available_statuses) && is_array($available_statuses) ? $available_statuses : [];
+$selected_statuses = isset($selected_statuses) && is_array($selected_statuses) ? $selected_statuses : [];
 ?>
 
 <div class="myvh-dashboard-section myvh-client-settings-page myvh-invoices-page">

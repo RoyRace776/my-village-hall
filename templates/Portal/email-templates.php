@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$templates = is_array($templates ?? null) ? $templates : [];
+$templates = isset($templates) && is_array($templates) ? $templates : [];
 ?>
 
 <div class="myvh-dashboard-section myvh-email-templates-page">

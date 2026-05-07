@@ -17,6 +17,7 @@ class RoomServiceProvider
             return new CachedRoomHoursRepository($repository);
         });
         $container->singleton(RoomRulesService::class);
+        $container->singleton(RoomDepositRepository::class);
         $container->singleton(RoomService::class);
         $container->singleton(RoomVisibilityService::class);
         $container->singleton(RoomRequestValidator::class);

@@ -11,12 +11,14 @@ global $myvh_container;
 
 use MYVH\Rooms\RoomService;
 use MYVH\Rooms\RoomColour;
+use MYVH\Rooms\RoomDepositRepository;
 use MYVH\Rooms\RoomHoursRepository;
 use MYVH\Venues\VenueService;
 use MYVH\Availability\AvailabilityService;
 
 $edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $room_service  = $myvh_container->get(RoomService::class);
+$room_deposit_repository = $myvh_container->get(RoomDepositRepository::class);
 $room_hours_repository = $myvh_container->get(RoomHoursRepository::class);
 $venue_service = $myvh_container->get(VenueService::class);
 $availability_service = $myvh_container->get(AvailabilityService::class);
@@ -41,6 +43,40 @@ $form_opening_time = $form_data['opening_time'] ?? ($edit_room['OpeningTime'] ??
 $form_closing_time = $form_data['closing_time'] ?? ($edit_room['ClosingTime'] ?? '17:00');
 $form_allow_multi_day = isset($form_data['allow-multi-day-bookings']) ? 1 : intval($edit_room['AllowMultiDayBookings'] ?? 0);
 $form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($edit_room['CalcClosedHours'] ?? 0);
+
+$deposit_config = $edit_id > 0
+    ? $room_deposit_repository->get($edit_id)
+    : [
+        'enabled' => false,
+        'days' => [],
+        'end_after' => null,
+        'amount' => 0.0,
+        'action' => 'auto_add',
+    ];
+
+$form_deposit_enabled = isset($form_data['deposit_enabled'])
+    ? !empty($form_data['deposit_enabled'])
+    : !empty($deposit_config['enabled']);
+
+$form_deposit_days = isset($form_data['deposit_days']) && is_array($form_data['deposit_days'])
+    ? array_map('sanitize_key', $form_data['deposit_days'])
+    : (array) ($deposit_config['days'] ?? []);
+
+$form_deposit_end_after = isset($form_data['deposit_end_after'])
+    ? sanitize_text_field((string) $form_data['deposit_end_after'])
+    : (string) ($deposit_config['end_after'] ?? '');
+
+$form_deposit_amount = isset($form_data['deposit_amount'])
+    ? max(0, floatval($form_data['deposit_amount']))
+    : floatval($deposit_config['amount'] ?? 0);
+
+$form_deposit_action = isset($form_data['deposit_action'])
+    ? sanitize_key((string) $form_data['deposit_action'])
+    : (string) ($deposit_config['action'] ?? 'auto_add');
+
+if (!in_array($form_deposit_action, ['auto_add', 'require_review'], true)) {
+    $form_deposit_action = 'auto_add';
+}
 
 $day_labels = [
     0 => __('Sunday', 'my-village-hall'),
@@ -348,6 +384,61 @@ for ($day = 0; $day <= 6; $day++) {
                                     </tbody>
                                 </table>
                                 <p class="description"><?php _e('Enable "Use venue" to inherit venue day hours. If disabled, you can mark the day closed or set custom room hours.', 'my-village-hall'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Deposits', 'my-village-hall'); ?></th>
+                            <td>
+                                <p>
+                                    <label>
+                                        <input type="hidden" name="deposit_enabled" value="0">
+                                        <input type="checkbox" name="deposit_enabled" value="1" <?php checked($form_deposit_enabled, true); ?>>
+                                        <?php _e('Enable deposits for this room', 'my-village-hall'); ?>
+                                    </label>
+                                </p>
+
+                                <p>
+                                    <label for="myvh_deposit_days"><?php _e('Days of week', 'my-village-hall'); ?></label><br>
+                                    <select id="myvh_deposit_days" name="deposit_days[]" multiple size="7" style="min-width:180px;">
+                                        <?php
+                                        $deposit_day_options = [
+                                            'mon' => __('Monday', 'my-village-hall'),
+                                            'tue' => __('Tuesday', 'my-village-hall'),
+                                            'wed' => __('Wednesday', 'my-village-hall'),
+                                            'thu' => __('Thursday', 'my-village-hall'),
+                                            'fri' => __('Friday', 'my-village-hall'),
+                                            'sat' => __('Saturday', 'my-village-hall'),
+                                            'sun' => __('Sunday', 'my-village-hall'),
+                                        ];
+                                        foreach ($deposit_day_options as $value => $label):
+                                        ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected(in_array($value, $form_deposit_days, true), true); ?>>
+                                                <?php echo esc_html($label); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <br><span class="description"><?php _e('Leave empty to apply every day.', 'my-village-hall'); ?></span>
+                                </p>
+
+                                <p>
+                                    <label for="myvh_deposit_end_after"><?php _e('Booking ends after', 'my-village-hall'); ?></label><br>
+                                    <input id="myvh_deposit_end_after" type="time" name="deposit_end_after" value="<?php echo esc_attr($form_deposit_end_after); ?>">
+                                    <br><span class="description"><?php _e('Leave blank for no time restriction.', 'my-village-hall'); ?></span>
+                                </p>
+
+                                <p>
+                                    <label for="myvh_deposit_amount"><?php _e('Deposit amount', 'my-village-hall'); ?></label><br>
+                                    <input id="myvh_deposit_amount" type="number" name="deposit_amount" min="0" step="0.01" value="<?php echo esc_attr((string) $form_deposit_amount); ?>">
+                                </p>
+
+                                <p>
+                                    <label for="myvh_deposit_action"><?php _e('Deposit action', 'my-village-hall'); ?></label><br>
+                                    <select id="myvh_deposit_action" name="deposit_action">
+                                        <option value="auto_add" <?php selected($form_deposit_action, 'auto_add'); ?>><?php _e('Auto add to invoice', 'my-village-hall'); ?></option>
+                                        <option value="require_review" <?php selected($form_deposit_action, 'require_review'); ?>><?php _e('Require admin review', 'my-village-hall'); ?></option>
+                                    </select>
+                                </p>
                             </td>
                         </tr>
                     </table>
