@@ -59,7 +59,7 @@ class NetworkSitesTable extends WP_List_Table {
         $this->items = $data;
     }
 
-    private function action_links($blog_id): string {
+    private function action_links(int $blog_id): string {
 
         $url = get_admin_url($blog_id);
 

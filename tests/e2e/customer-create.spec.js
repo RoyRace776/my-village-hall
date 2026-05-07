@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
-const loginUrl = process.env.PW_LOGIN_URL || '/login/';
-const portalUrl = process.env.PW_PORTAL_URL || '/portal/';
+const loginUrl = process.env.PW_LOGIN_URL || 'login/';
+const portalUrl = process.env.PW_PORTAL_URL || './';
 const username = process.env.PW_ADMIN_USERNAME;
 const password = process.env.PW_ADMIN_PASSWORD;
 

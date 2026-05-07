@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-const loginUrl = process.env.PW_LOGIN_URL || '/login/';
+const loginUrl = process.env.PW_LOGIN_URL || 'login/';
 const invalidUsername = process.env.PW_INVALID_LOGIN_USERNAME || 'invalid-user@example.com';
 const invalidPassword = process.env.PW_INVALID_LOGIN_PASSWORD || 'definitely-wrong-password';
 
