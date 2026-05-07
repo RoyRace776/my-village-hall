@@ -180,13 +180,28 @@ class PortalPageAjaxController {
                     $delete_rules = $this->booking_service->can_delete($booking);
                     return !empty($delete_rules['can_delete']);
                 };
+                $member_organisations = [];
+                $dashboard_unpaid_invoices = [];
+                $admin_room_activity = [];
+                $admin_invoice_action_bookings = [];
+                $admin_overdue_invoices = [];
+                $admin_dashboard_counts = [];
+                if (!$is_client_admin) {
+                    $member_organisations = $this->customer_service->get_organisations_for_user_id(get_current_user_id());
+                    $dashboard_unpaid_invoices = $this->billing_page_renderer->get_unpaid_invoice_summary($customer);
+                } else {
+                    $admin_room_activity = $this->build_admin_room_activity($groups);
+                    $admin_invoice_action_bookings = $this->get_admin_bookings_pending_invoice_or_draft();
+                    $admin_overdue_invoices = $this->get_admin_overdue_invoices();
+                    $admin_dashboard_counts = $this->get_admin_dashboard_counts();
+                }
                 include MYVH_PLUGIN_DIR . 'templates/Portal/dashboard.php';
         }
 
         wp_die();
     }
 
-    private function get_portal_booking_groups($customer, bool $is_client_admin): array {
+    private function get_portal_booking_groups(array $customer, bool $is_client_admin): array {
         if ($is_client_admin) {
             $result = $this->booking_service->get_booking_list();
             return $result['groups'];
@@ -205,5 +220,183 @@ class PortalPageAjaxController {
 
     private function current_user_is_client_admin(): bool {
         return $this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
+    }
+
+    private function build_admin_room_activity(array $groups): array {
+        $today = date('Y-m-d');
+        $last_month_start = date('Y-m-d', strtotime('-1 month'));
+        $next_month_end = date('Y-m-d', strtotime('+1 month'));
+
+        $room_stats = [];
+        $seen_booking_ids = [];
+
+        foreach ($groups as $group) {
+            foreach (($group['bookings'] ?? []) as $booking) {
+                $booking_id = intval($booking['Id'] ?? 0);
+                if ($booking_id <= 0 || isset($seen_booking_ids[$booking_id])) {
+                    continue;
+                }
+                $seen_booking_ids[$booking_id] = true;
+
+                $status = strtolower((string) ($booking['Status'] ?? ''));
+                if ($status === 'cancelled') {
+                    continue;
+                }
+
+                $room_name = trim((string) ($booking['RoomName'] ?? ''));
+                if ($room_name === '') {
+                    $room_name = 'Room booking';
+                }
+
+                if (!isset($room_stats[$room_name])) {
+                    $room_stats[$room_name] = [
+                        'room_name' => $room_name,
+                        'pending_bookings' => 0,
+                        'last_month_bookings' => 0,
+                        'last_month_hours' => 0.0,
+                        'next_month_bookings' => 0,
+                        'next_month_hours' => 0.0,
+                    ];
+                }
+
+                $booking_date = (string) ($booking['StartDate'] ?? '');
+                $chargeable_hours = $this->resolve_booking_hours($booking);
+
+                if ($status === 'pending') {
+                    $room_stats[$room_name]['pending_bookings']++;
+                }
+
+                if ($booking_date >= $last_month_start && $booking_date < $today) {
+                    $room_stats[$room_name]['last_month_bookings']++;
+                    $room_stats[$room_name]['last_month_hours'] += $chargeable_hours;
+                }
+
+                if ($booking_date >= $today && $booking_date <= $next_month_end) {
+                    $room_stats[$room_name]['next_month_bookings']++;
+                    $room_stats[$room_name]['next_month_hours'] += $chargeable_hours;
+                }
+            }
+        }
+
+        $rows = array_values($room_stats);
+        usort($rows, static function (array $left, array $right): int {
+            return strcmp((string) ($left['room_name'] ?? ''), (string) ($right['room_name'] ?? ''));
+        });
+
+        return $rows;
+    }
+
+    private function resolve_booking_hours(array $booking): float {
+        if (isset($booking['ChargeableHours']) && is_numeric($booking['ChargeableHours'])) {
+            return max(0.0, (float) $booking['ChargeableHours']);
+        }
+
+        $start_stamp = strtotime((string) ($booking['StartDate'] ?? '') . ' ' . (string) ($booking['StartTime'] ?? '00:00:00'));
+        $end_stamp = strtotime((string) ($booking['EndDate'] ?? $booking['StartDate'] ?? '') . ' ' . (string) ($booking['EndTime'] ?? '00:00:00'));
+        if ($start_stamp === false || $end_stamp === false || $end_stamp <= $start_stamp) {
+            return 0.0;
+        }
+
+        return round(($end_stamp - $start_stamp) / 3600, 2);
+    }
+
+    private function get_admin_bookings_pending_invoice_or_draft(): array {
+        global $wpdb;
+
+        $bookings_table = $wpdb->prefix . 'myvh_bookings';
+        $invoice_items_table = $wpdb->prefix . 'myvh_invoice_items';
+        $invoices_table = $wpdb->prefix . 'myvh_invoices';
+        $customers_table = $wpdb->prefix . 'myvh_customers';
+        $organisations_table = $wpdb->prefix . 'myvh_organisations';
+        $rooms_table = $wpdb->prefix . 'myvh_rooms';
+
+        $sql = "SELECT
+                    b.Id,
+                    b.StartDate,
+                    b.StartTime,
+                    b.EndTime,
+                    b.Description,
+                    b.ChargeableHours,
+                    c.Name AS CustomerName,
+                    o.Name AS OrganisationName,
+                    r.Name AS RoomName,
+                    MAX(CASE WHEN i.Status = 'draft' THEN i.InvoiceNumber ELSE NULL END) AS DraftInvoiceNumber,
+                    SUM(CASE WHEN i.Id IS NOT NULL THEN 1 ELSE 0 END) AS ActiveInvoiceCount,
+                    SUM(CASE WHEN i.Status = 'draft' THEN 1 ELSE 0 END) AS DraftInvoiceCount,
+                    SUM(CASE WHEN i.Status != 'draft' THEN 1 ELSE 0 END) AS NonDraftInvoiceCount
+                FROM {$bookings_table} b
+                LEFT JOIN {$customers_table} c ON b.CustomerId = c.Id
+                LEFT JOIN {$organisations_table} o ON b.OrganisationId = o.Id
+                LEFT JOIN {$rooms_table} r ON b.RoomId = r.Id
+                LEFT JOIN {$invoice_items_table} ii ON b.Id = ii.BookingId
+                LEFT JOIN {$invoices_table} i ON ii.InvoiceId = i.Id AND i.Status != 'cancelled'
+                WHERE b.Status IN ('confirmed', 'completed')
+                  AND b.NoInvoiceRequired = 0
+                GROUP BY b.Id
+                HAVING ActiveInvoiceCount = 0
+                   OR (DraftInvoiceCount > 0 AND NonDraftInvoiceCount = 0)
+                ORDER BY b.StartDate ASC, b.StartTime ASC
+                LIMIT 12";
+
+        return $wpdb->get_results($sql, ARRAY_A) ?: [];
+    }
+
+    private function get_admin_overdue_invoices(): array {
+        global $wpdb;
+
+        $invoices_table = $wpdb->prefix . 'myvh_invoices';
+        $customers_table = $wpdb->prefix . 'myvh_customers';
+        $invoice_items_table = $wpdb->prefix . 'myvh_invoice_items';
+        $bookings_table = $wpdb->prefix . 'myvh_bookings';
+        $organisations_table = $wpdb->prefix . 'myvh_organisations';
+
+        $sql = "SELECT
+                    i.Id,
+                    i.InvoiceNumber,
+                    i.DueDate,
+                    i.AmountDue,
+                    i.Status,
+                    COALESCE(c.Name, i.BillingName, i.BillingOrganisationName, '') AS CustomerName,
+                    COALESCE(MAX(o.Name), MAX(i.BillingOrganisationName), '') AS OrganisationName
+                FROM {$invoices_table} i
+                LEFT JOIN {$customers_table} c ON i.CustomerId = c.Id
+                LEFT JOIN {$invoice_items_table} ii ON i.Id = ii.InvoiceId
+                LEFT JOIN {$bookings_table} b ON ii.BookingId = b.Id
+                LEFT JOIN {$organisations_table} o ON b.OrganisationId = o.Id
+                WHERE i.Status IN ('sent', 'part-paid', 'overdue')
+                  AND i.AmountDue > 0
+                  AND i.DueDate < CURDATE()
+                GROUP BY i.Id
+                ORDER BY i.DueDate ASC
+                LIMIT 12";
+
+        return $wpdb->get_results($sql, ARRAY_A) ?: [];
+    }
+
+    private function get_admin_dashboard_counts(): array {
+        global $wpdb;
+
+        $organisations_table = $wpdb->prefix . 'myvh_organisations';
+        $member_requests_table = $wpdb->prefix . 'myvh_organisation_member_requests';
+        $customers_table = $wpdb->prefix . 'myvh_customers';
+
+        $organisations_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$organisations_table} WHERE IsSystem = 0");
+        $pending_member_requests_count = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$member_requests_table} WHERE Status = %s",
+            'pending'
+        ));
+        $customers_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$customers_table} WHERE IsSystem = 0");
+        $customers_last_month_count = (int) $wpdb->get_var(
+            "SELECT COUNT(*)
+             FROM {$customers_table}
+             WHERE IsSystem = 0
+               AND Created >= DATE_SUB(NOW(), INTERVAL 1 MONTH)"
+        );
+        return [
+            'organisations_count' => $organisations_count,
+            'pending_member_requests_count' => $pending_member_requests_count,
+            'customers_count' => $customers_count,
+            'customers_last_month_count' => $customers_last_month_count,
+        ];
     }
 }

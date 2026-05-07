@@ -2222,6 +2222,106 @@ body .site-main:has(#myvh-portal) {
   align-items: start;
 }
 
+.myvh-portal-dashboard-grid-member {
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr);
+}
+
+.myvh-portal-dashboard-grid-admin {
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+}
+
+.myvh-portal-dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.myvh-portal-dashboard-kpi-card {
+  padding: 14px 16px;
+}
+
+.myvh-portal-dashboard-kpi-label {
+  display: block;
+  font-size: .79rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.myvh-portal-dashboard-kpi-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.myvh-portal-dashboard-kpi-meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.myvh-portal-dashboard-side-admin {
+  align-content: start;
+}
+
+.myvh-portal-dashboard-notices-card {
+  margin-bottom: 20px;
+}
+
+.myvh-dashboard-subsection + .myvh-dashboard-subsection {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #ece2d6;
+}
+
+.myvh-dashboard-subtitle {
+  margin: 0 0 10px;
+  font-size: .94rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.myvh-dashboard-inline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid #e8dbcb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.myvh-dashboard-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.myvh-portal-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.myvh-portal-summary-list li {
+  padding: 10px 12px;
+  border: 1px solid #ebe1d6;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.myvh-portal-dashboard-bookings-list-compact .myvh-customer-list-table th,
+.myvh-portal-dashboard-bookings-list-compact .myvh-customer-list-table td {
+  padding: 0.55rem 0.65rem;
+}
+
 .myvh-portal-dashboard-side {
   display: grid;
   gap: 20px;
@@ -2332,6 +2432,23 @@ body .site-main:has(#myvh-portal) {
   border-radius: 999px;
   background: var(--accent);
   box-shadow: 0 0 0 4px rgba(181, 69, 27, 0.12);
+}
+
+@media (max-width: 980px) {
+  .myvh-portal-dashboard-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .myvh-portal-dashboard-grid,
+  .myvh-portal-dashboard-grid-member,
+  .myvh-portal-dashboard-grid-admin {
+    grid-template-columns: 1fr;
+  }
+
+  .myvh-dashboard-inline-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .myvh-bookings-filter-panel {
@@ -3281,4 +3398,10 @@ body .site-main:has(#myvh-portal) {
 .myvh-email-preview-modal__content {
   border-top: 1px solid #e7dece;
   padding-top: 14px;
+}
+
+@media (max-width: 640px) {
+  .myvh-portal-dashboard-kpi-grid {
+    grid-template-columns: 1fr;
+  }
 }

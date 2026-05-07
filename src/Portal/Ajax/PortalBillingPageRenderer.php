@@ -49,6 +49,18 @@ class PortalBillingPageRenderer {
         include MYVH_PLUGIN_DIR . 'templates/Portal/invoices.php';
     }
 
+    public function get_unpaid_invoice_summary(array $customer, int $limit = 6): array {
+        $customer_id = intval($customer['Id'] ?? 0);
+        if ($customer_id <= 0) {
+            return [];
+        }
+
+        $unpaid_statuses = ['sent', 'part-paid', 'overdue'];
+        $invoices = $this->invoice_service->get_for_portal($customer_id, $unpaid_statuses) ?: [];
+
+        return array_slice($invoices, 0, max(1, $limit));
+    }
+
     public function render_invoice_view(array $customer, bool $is_client_admin): void {
         $invoice_id = intval($_GET['invoice_id'] ?? 0);
         $invoice = null;
