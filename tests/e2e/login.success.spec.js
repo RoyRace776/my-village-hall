@@ -2,8 +2,8 @@ const { test, expect } = require('@playwright/test');
 
 const loginUrl = process.env.PW_LOGIN_URL || 'login/';
 const portalUrl = process.env.PW_PORTAL_URL || './';
-const username = process.env.PW_LOGIN_USERNAME;
-const password = process.env.PW_LOGIN_PASSWORD;
+const username = process.env.PW_LOGIN_USERNAME || process.env.PW_ADMIN_USERNAME;
+const password = process.env.PW_LOGIN_PASSWORD || process.env.PW_ADMIN_PASSWORD;
 
 function normalizePath(value) {
   return value.replace(/\/+$/, '') || '/';
@@ -13,7 +13,7 @@ test.describe('Portal login success', () => {
   test('logs in and reaches the portal', async ({ page }) => {
     test.skip(
       !username || !password,
-      'Set PW_LOGIN_USERNAME and PW_LOGIN_PASSWORD to run this test.'
+      'Set PW_LOGIN_USERNAME/PW_LOGIN_PASSWORD or PW_ADMIN_USERNAME/PW_ADMIN_PASSWORD to run this test.'
     );
 
     await page.goto(loginUrl, { waitUntil: 'domcontentloaded' });

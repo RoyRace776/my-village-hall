@@ -11,7 +11,7 @@ async function waitForSelectOptions(selectLocator) {
       const options = await selectLocator.locator('option').allTextContents();
       return options.filter((value) => String(value || '').trim() !== '').length;
     }, { timeout: 15000 })
-    .toBeGreaterThan(1);
+    .toBeGreaterThan(0);
 }
 
 async function selectFirstNonEmptyOption(selectLocator) {

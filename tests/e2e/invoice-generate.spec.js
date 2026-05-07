@@ -21,7 +21,10 @@ test.describe('Portal invoice generation', () => {
     const form = page.locator('form[data-portal-action="myvh_portal_create_invoice"]');
     await expect(form).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole('button', { name: /create invoice/i }).click();
+    const createButton = form.getByRole('button', { name: /create invoice/i });
+    await expect(createButton).toBeVisible({ timeout: 15000 });
+    await expect(createButton).toBeEnabled({ timeout: 15000 });
+    await createButton.click();
 
     const message = page.locator('#myvh-invoice-create-message');
     await expect(message).toBeVisible({ timeout: 15000 });
@@ -47,7 +50,10 @@ test.describe('Portal invoice generation', () => {
     test.skip(!hasSelectableBooking, 'No uninvoiced bookings available for invoice generation test.');
 
     await checkbox.check();
-    await page.getByRole('button', { name: /create invoice/i }).click();
+    const createButton = form.getByRole('button', { name: /create invoice/i });
+    await expect(createButton).toBeVisible({ timeout: 15000 });
+    await expect(createButton).toBeEnabled({ timeout: 15000 });
+    await createButton.click();
 
     await expect
       .poll(() => new URL(page.url()).hash, { timeout: 15000 })

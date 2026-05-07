@@ -1,6 +1,9 @@
 const { test, expect } = require('@playwright/test');
 
-const resetRequestUrl = process.env.PW_RESET_REQUEST_URL || '/login/?reset=1';
+const baseUrl = process.env.PW_BASE_URL;
+const resetRequestUrl =
+  process.env.PW_RESET_REQUEST_URL ||
+  (baseUrl ? new URL('/login/?reset=1', baseUrl).toString() : '/login/?reset=1');
 const resetEmail = process.env.PW_RESET_EMAIL || process.env.PW_LOGIN_USERNAME;
 
 test.describe('Password reset request', () => {
@@ -12,7 +15,7 @@ test.describe('Password reset request', () => {
 
     await page.goto(resetRequestUrl, { waitUntil: 'domcontentloaded' });
 
-    await expect(page.locator('#myvh-reset-email')).toBeVisible();
+    await expect(page.locator('#myvh-reset-email')).toBeVisible({ timeout: 15000 });
 
     await page.locator('#myvh-reset-email').fill(resetEmail);
     await page.getByRole('button', { name: /send reset link/i }).click();

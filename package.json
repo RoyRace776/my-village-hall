@@ -8,8 +8,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "jest",
-    "pw:run": "cross-env PW_BASE_URL=https://yourvh.co.uk/test/ PW_LOGIN_URL=/test/login/ PW_PORTAL_URL=/test/ playwright test",
+      "test": "jest",
+      "pw:run": "playwright test",
     "test:e2e": "npm run pw:run --",
     "test:e2e:smoke": "npm run pw:run -- --config=playwright.smoke.config.js",
     "test:e2e:full": "npm run pw:run -- --config=playwright.config.js",

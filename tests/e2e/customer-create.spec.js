@@ -51,6 +51,14 @@ test.describe('Portal customer creation', () => {
     await page.getByRole('button', { name: /create customer/i }).click();
 
     const successMessage = page.locator('#myvh-customer-create-message');
+    const errorMessage = page.locator('.myvh-error-message, #myvh-customer-create-error');
+
+    await expect(successMessage.or(errorMessage)).toBeVisible({ timeout: 15000 });
+
+    if (await errorMessage.isVisible()) {
+      throw new Error(`Customer creation failed: ${await errorMessage.innerText()}`);
+    }
+
     await expect(successMessage).toBeVisible({ timeout: 15000 });
     await expect(successMessage).toContainText(/customer created/i);
 
