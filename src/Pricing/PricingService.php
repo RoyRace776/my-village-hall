@@ -88,6 +88,73 @@ class PricingService {
     }
 
     /**
+     * Build a charge snapshot for unsaved booking data.
+     *
+     * @param array $booking_data
+     * @return array|WP_Error
+     */
+    public function get_charge_snapshot_for_data(array $booking_data): array|WP_Error {
+        $room_id = intval($booking_data['room_id'] ?? $booking_data['RoomId'] ?? 0);
+        $customer_id = intval($booking_data['customer_id'] ?? $booking_data['CustomerId'] ?? 0);
+        $organisation_id = intval($booking_data['organisation_id'] ?? $booking_data['OrganisationId'] ?? 0);
+        $start_date = sanitize_text_field((string) ($booking_data['start_date'] ?? $booking_data['StartDate'] ?? ''));
+        $start_time = sanitize_text_field((string) ($booking_data['start_time'] ?? $booking_data['StartTime'] ?? ''));
+        $end_date = sanitize_text_field((string) ($booking_data['end_date'] ?? $booking_data['EndDate'] ?? ''));
+        $end_time = sanitize_text_field((string) ($booking_data['end_time'] ?? $booking_data['EndTime'] ?? ''));
+
+        if ($room_id <= 0) {
+            return new WP_Error('invalid_room', __('Room is required', 'my-village-hall'));
+        }
+
+        if ($customer_id <= 0) {
+            return new WP_Error('invalid_customer', __('Customer is required', 'my-village-hall'));
+        }
+
+        if ($organisation_id <= 0) {
+            return new WP_Error('invalid_organisation', __('Organisation is required', 'my-village-hall'));
+        }
+
+        if ($start_date === '' || $start_time === '' || $end_date === '' || $end_time === '') {
+            return new WP_Error('invalid_datetime', __('Start and end date/time are required', 'my-village-hall'));
+        }
+
+        $customer = $this->customer_repo->get_by_id($customer_id);
+        if (!$customer) {
+            return new WP_Error('no customer', __('No customer found for booking', 'my-village-hall'));
+        }
+
+        $organisation = $this->organisation_repo->get_by_id($organisation_id);
+        if (!$organisation) {
+            return new WP_Error('no organisation', __('No organisation found for booking', 'my-village-hall'));
+        }
+
+        $room_rate = $this->room_rate_service->get_booking_rate($room_id, $customer, $organisation);
+        if (!$room_rate) {
+            return new WP_Error('no room rate', __('No room rate configured', 'my-village-hall'));
+        }
+
+        ['quantity' => $quantity, 'unit_price' => $unit_price, 'total' => $total] =
+            $this->calculate_room_price([
+                'StartDate' => $start_date,
+                'StartTime' => $start_time,
+                'EndDate' => $end_date,
+                'EndTime' => $end_time,
+            ], $room_rate);
+
+        return [
+            'BookingId'   => 0,
+            'RoomRateId'  => intval($room_rate['Id']),
+            'ChargeType'  => sanitize_text_field((string) ($room_rate['ChargeType'] ?? $room_rate['RateType'] ?? 'fixed')),
+            'Description' => __('Room charge', 'my-village-hall'),
+            'Quantity'    => $quantity,
+            'UnitPrice'   => $unit_price,
+            'TotalAmount' => $total,
+            'TaxRate'     => 0.00,
+            'TaxAmount'   => 0.00,
+        ];
+    }
+
+    /**
      * Returns quantity, unit_price, and total for the room charge.
      *
      * For hourly/per-day rates: Quantity = hours booked, UnitPrice = rate per hour.

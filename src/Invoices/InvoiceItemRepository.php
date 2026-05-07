@@ -15,8 +15,6 @@ if (!defined('ABSPATH')) {
 
 class InvoiceItemRepository extends RepositoryBase{
 
-    private ?bool $has_item_type_column = null;
-
     /**
      * Constructor
      */
@@ -58,29 +56,16 @@ class InvoiceItemRepository extends RepositoryBase{
      * @return bool
      */
     public function has_deposit_item(int $invoice_id, int $booking_id): bool {
-        if ($this->supports_item_type_column()) {
-            $sql = $this->wpdb->prepare(
-                "SELECT COUNT(*)
-                FROM {$this->table_name}
-                WHERE InvoiceId = %d
-                  AND BookingId = %d
-                  AND ItemType = %s",
-                $invoice_id,
-                $booking_id,
-                'deposit'
-            );
-        } else {
-            $sql = $this->wpdb->prepare(
-                "SELECT COUNT(*)
-                FROM {$this->table_name}
-                WHERE InvoiceId = %d
-                  AND BookingId = %d
-                  AND LOWER(TRIM(Description)) = %s",
-                $invoice_id,
-                $booking_id,
-                'deposit'
-            );
-        }
+                $sql = $this->wpdb->prepare(
+                        "SELECT COUNT(*)
+                        FROM {$this->table_name}
+                        WHERE InvoiceId = %d
+                            AND BookingId = %d
+                            AND ItemType = %s",
+                        $invoice_id,
+                        $booking_id,
+                        'deposit'
+                );
 
         return ((int) $this->wpdb->get_var($sql)) > 0;
     }
@@ -101,20 +86,26 @@ class InvoiceItemRepository extends RepositoryBase{
     }
 
     /**
-     * Determine whether the invoice items table contains the ItemType column.
+     * Get deposit invoice items linked to a booking on non-cancelled invoices.
      *
-     * @return bool
+     * @param int $booking_id
+     * @return array<int,array<string,mixed>>
      */
-    public function supports_item_type_column(): bool {
-        if ($this->has_item_type_column !== null) {
-            return $this->has_item_type_column;
-        }
+    public function get_deposit_items_for_booking(int $booking_id): array {
+        $sql = $this->wpdb->prepare(
+            "SELECT ii.*, i.InvoiceNumber
+            FROM {$this->table_name} ii
+            INNER JOIN {$this->wpdb->prefix}myvh_invoices i ON i.Id = ii.InvoiceId
+            WHERE ii.BookingId = %d
+              AND ii.ItemType = %s
+              AND i.Status NOT IN ('cancelled')
+            ORDER BY ii.Id ASC",
+            $booking_id,
+            'deposit'
+        );
 
-        $table = esc_sql($this->table_name);
-        $column = $this->wpdb->get_var("SHOW COLUMNS FROM {$table} LIKE 'ItemType'");
-        $this->has_item_type_column = !empty($column);
-
-        return $this->has_item_type_column;
+        $rows = $this->wpdb->get_results($sql, ARRAY_A);
+        return is_array($rows) ? $rows : [];
     }
 
 }

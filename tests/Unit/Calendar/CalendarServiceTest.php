@@ -9,7 +9,9 @@ use MYVH\Bookings\BookingStatus;
 use MYVH\Bookings\BookingService;
 use MYVH\Calendar\CalendarService;
 use MYVH\Customers\CustomerService;
+use MYVH\Deposits\DepositService;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Pricing\PricingService;
 use MYVH\Rooms\RoomRepository;
 use MYVH\Tests\Unit\UnitTestCase;
 use Tests\Support\Factories\BookingFactory;
@@ -32,6 +34,10 @@ class CalendarServiceTest extends UnitTestCase {
     private CustomerService $customer_service;
     /** @var ClientAdminService&\Mockery\MockInterface */
     private ClientAdminService $client_admin_service;
+    /** @var PricingService&\Mockery\MockInterface */
+    private PricingService $pricing_service;
+    /** @var DepositService&\Mockery\MockInterface */
+    private DepositService $deposit_service;
     private string $room_open = '08:00:00';
     private string $room_close = '22:00:00';
     private CalendarService $service;
@@ -44,6 +50,8 @@ class CalendarServiceTest extends UnitTestCase {
         $this->availability_service = $this->mock( AvailabilityService::class );
         $this->customer_service     = $this->mock( CustomerService::class );
         $this->client_admin_service = $this->mock( ClientAdminService::class );
+        $this->pricing_service      = $this->mock( PricingService::class );
+        $this->deposit_service      = $this->mock( DepositService::class );
 
         $this->availability_service->shouldReceive('get_effective_room_hours_for_date')
             ->andReturnUsing(function () {
@@ -59,7 +67,9 @@ class CalendarServiceTest extends UnitTestCase {
             $this->room_repository,
             $this->availability_service,
             $this->customer_service,
-            $this->client_admin_service
+            $this->client_admin_service,
+            $this->pricing_service,
+            $this->deposit_service
         );
 
         Functions\stubs( [

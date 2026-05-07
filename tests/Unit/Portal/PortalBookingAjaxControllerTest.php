@@ -7,6 +7,7 @@ use MYVH\Bookings\BookingService;
 use MYVH\Calendar\CalendarService;
 use MYVH\Portal\Actions\DeleteBookingAction;
 use MYVH\Portal\Actions\GetBookingAction;
+use MYVH\Portal\Actions\QuoteBookingAction;
 use MYVH\Portal\Actions\UpdateBookingAction;
 use MYVH\Portal\Ajax\PortalBookingAjaxController;
 use MYVH\Portal\ClientAdminService;
@@ -16,6 +17,7 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
     private $get_action;
     private $update_action;
     private $delete_action;
+    private $quote_action;
     private $calendar_service;
     private $booking_service;
     private $client_admin_service;
@@ -27,12 +29,14 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
         $this->get_action = $this->mock(GetBookingAction::class);
         $this->update_action = $this->mock(UpdateBookingAction::class);
         $this->delete_action = $this->mock(DeleteBookingAction::class);
+        $this->quote_action = $this->mock(QuoteBookingAction::class);
         $this->calendar_service = $this->mock(CalendarService::class);
         $this->booking_service = $this->mock(BookingService::class);
         $this->client_admin_service = $this->mock(ClientAdminService::class);
 
         $this->controller = new PortalBookingAjaxController(
             $this->get_action,
+            $this->quote_action,
             $this->update_action,
             $this->delete_action,
             $this->calendar_service,
@@ -116,8 +120,43 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
             $this->controller->update_for_modal();
         });
 
-        $this->assertTrue($response->success);
+        $this->assertTrue($response->success, is_scalar($response->data) ? (string) $response->data : json_encode($response->data));
         $this->assertSame(['id' => 89], $response->data);
+    }
+
+    /** @test */
+    public function quote_for_modal_returns_booking_cost_summary(): void {
+        $_POST = [
+            'room_id' => 14,
+            'customer_id' => 7,
+            'organisation_id' => 9,
+            'start' => '2026-05-10 09:00:00',
+            'end' => '2026-05-10 10:00:00',
+            'nonce' => 'example',
+        ];
+
+        Functions\stubs([
+            'get_current_user_id' => 21,
+        ]);
+
+        $summary = [
+            'room_charge' => 20.0,
+            'addons_total' => 0.0,
+            'deposit_amount' => 10.0,
+            'booking_total' => 30.0,
+            'deposit' => ['amount' => 10.0, 'action' => 'auto_add'],
+        ];
+
+        $this->quote_action->shouldReceive('execute')
+            ->once()
+            ->andReturn($summary);
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->quote_for_modal();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame($summary, $response->data);
     }
 
     private function capture_json_response(callable $callback): PortalBookingJsonResponseException {

@@ -86,6 +86,7 @@ class InvoiceService {
         $item_data = [
             'InvoiceId' => $invoice_id,
             'BookingId' => $booking_id,
+            'ItemType' => $normalized_type !== '' ? $normalized_type : 'charge',
             'Description' => sanitize_text_field($description),
             'Quantity' => 1,
             'UnitPrice' => $amount,
@@ -94,10 +95,6 @@ class InvoiceService {
             'TotalAmount' => $amount,
             'DisplayOrder' => $this->invoice_item_repo->get_next_display_order($invoice_id),
         ];
-
-        if ($this->invoice_item_repo->supports_item_type_column()) {
-            $item_data['ItemType'] = $normalized_type !== '' ? $normalized_type : 'charge';
-        }
 
         $item_created = $this->invoice_item_repo->create($item_data);
 

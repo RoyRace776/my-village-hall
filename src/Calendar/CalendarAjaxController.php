@@ -96,7 +96,10 @@ class CalendarAjaxController {
         $delete_rules = $this->booking_service->can_delete($booking);
         wp_send_json_success([
             'booking' => $booking,
+            'charges' => $this->booking_service->get_charges_for_booking($booking_id),
             'addons' => $this->booking_service->get_addons_for_booking($booking_id),
+            'deposits' => $this->booking_service->get_deposit_items_for_booking($booking_id),
+            'expected_deposit' => $this->booking_service->get_expected_deposit_for_booking($booking_id),
             'can_edit' => !empty($edit_rules['can_edit']),
             'edit_reason' => $edit_rules['reason'] ?? '',
             'can_delete' => !empty($delete_rules['can_delete']),

@@ -112,7 +112,10 @@ window.BookingModalView = (function() {
 
         return {
             booking: res.data.booking,
+            charges: Array.isArray(res.data.charges) ? res.data.charges : [],
             addons: Array.isArray(res.data.addons) ? res.data.addons : [],
+            deposits: Array.isArray(res.data.deposits) ? res.data.deposits : [],
+            expectedDeposit: res.data.expected_deposit || null,
             canEdit: !!res.data.can_edit,
             editReason: res.data.edit_reason || '',
             canManageNoInvoiceRequired: !!res.data.can_manage_no_invoice_required
@@ -156,6 +159,17 @@ window.BookingModalView = (function() {
         );
     }
 
+    function hasFinancialPayload(payload) {
+        return !!(
+            payload &&
+            Object.prototype.hasOwnProperty.call(payload, 'charges') &&
+            Array.isArray(payload.charges) &&
+            Object.prototype.hasOwnProperty.call(payload, 'deposits') &&
+            Array.isArray(payload.deposits) &&
+            Object.prototype.hasOwnProperty.call(payload, 'expectedDeposit')
+        );
+    }
+
     function applyPayloadToForm(payload, data) {
         const booking = payload.booking;
         config.canManageNoInvoiceRequired = !!payload.canManageNoInvoiceRequired;
@@ -170,6 +184,7 @@ window.BookingModalView = (function() {
         setValue('public', !!booking['Public']);
         setValue('no_invoice_required', !!booking['NoInvoiceRequired']);
         applyExistingAddons(payload.addons || []);
+        applyFinancialSummary(payload);
         currentCanEdit = !!payload.canEdit;
         updateEditButtons(currentCanEdit, payload.editReason);
         applyNoInvoiceRequiredVisibility();
@@ -229,7 +244,7 @@ window.BookingModalView = (function() {
             }
 
         const incomingPayload = data.payload && typeof data.payload === 'object' ? data.payload : null;
-        if (isCompletePayload(incomingPayload)) {
+        if (isCompletePayload(incomingPayload) && hasFinancialPayload(incomingPayload)) {
             applyPayloadToForm(incomingPayload, data);
             setLoading(false);
             return;
@@ -280,6 +295,7 @@ window.BookingModalView = (function() {
             el.disabled = false;
         });
         applyExistingAddons([]);
+        resetFinancialSummary();
         applyNoInvoiceRequiredVisibility();
     }
 
@@ -491,6 +507,105 @@ window.BookingModalView = (function() {
         if (empty) {
             empty.style.display = selectedCount > 0 ? 'none' : '';
         }
+    }
+
+    function applyFinancialSummary(payload) {
+        const charges = Array.isArray(payload.charges) ? payload.charges : [];
+        const addons = Array.isArray(payload.addons) ? payload.addons : [];
+        const deposits = Array.isArray(payload.deposits) ? payload.deposits : [];
+        const expectedDeposit = payload.expectedDeposit && typeof payload.expectedDeposit === 'object'
+            ? payload.expectedDeposit
+            : null;
+
+        const roomCharge = charges.reduce((sum, row) => {
+            const amount = Number(row.TotalAmount ?? row.total_amount ?? 0);
+            return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
+
+        const addonTotal = addons.reduce((sum, addon) => {
+            const directTotal = Number(addon.TotalAmount ?? addon.total_amount);
+            if (Number.isFinite(directTotal)) {
+                return sum + directTotal;
+            }
+
+            const unitPrice = Number(addon.UnitPrice ?? addon.unit_price ?? 0);
+            const quantity = Number(addon.Quantity ?? addon.quantity ?? 0);
+            const computedTotal = unitPrice * quantity;
+            return sum + (Number.isFinite(computedTotal) ? computedTotal : 0);
+        }, 0);
+
+        const appliedDepositTotal = deposits.reduce((sum, row) => {
+            const amount = Number(row.TotalAmount ?? row.total_amount ?? 0);
+            return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
+
+        const expectedAmount = Number(expectedDeposit?.amount ?? 0);
+        const showExpected = appliedDepositTotal <= 0 && Number.isFinite(expectedAmount) && expectedAmount > 0;
+        const depositTotal = appliedDepositTotal > 0 ? appliedDepositTotal : (showExpected ? expectedAmount : 0);
+        const bookingTotal = roomCharge + addonTotal + depositTotal;
+
+        const roomNode = form.querySelector('#myvh-modal-room-charge');
+        const addonsNode = form.querySelector('#myvh-modal-addon-total');
+        const depositRow = form.querySelector('#myvh-modal-deposit-row');
+        const depositNode = form.querySelector('#myvh-modal-deposit-total');
+        const totalNode = form.querySelector('#myvh-modal-booking-total');
+        const noteNode = form.querySelector('#myvh-modal-deposit-note');
+
+        if (roomNode) roomNode.textContent = formatMoney(roomCharge);
+        if (addonsNode) addonsNode.textContent = formatMoney(addonTotal);
+        if (depositNode) depositNode.textContent = formatMoney(depositTotal);
+        if (totalNode) totalNode.textContent = formatMoney(bookingTotal);
+
+        if (depositRow) {
+            depositRow.style.display = depositTotal > 0 ? '' : 'none';
+        }
+
+        if (noteNode) {
+            const invoiceNumbers = deposits
+                .map((row) => String(row.InvoiceNumber ?? '').trim())
+                .filter((invoiceNo) => invoiceNo !== '');
+
+            if (invoiceNumbers.length > 0) {
+                noteNode.textContent = `Deposit billed on invoice ${invoiceNumbers.join(', ')}.`;
+                noteNode.style.display = '';
+            } else if (showExpected) {
+                const action = String(expectedDeposit?.action || 'auto_add');
+                if (action === 'require_review') {
+                    noteNode.textContent = 'A deposit is configured for this room and requires review before charging.';
+                } else {
+                    noteNode.textContent = 'A deposit is configured for this room and will be added when invoiced.';
+                }
+                noteNode.style.display = '';
+            } else {
+                noteNode.textContent = '';
+                noteNode.style.display = 'none';
+            }
+        }
+    }
+
+    function resetFinancialSummary() {
+        const roomNode = form.querySelector('#myvh-modal-room-charge');
+        const addonsNode = form.querySelector('#myvh-modal-addon-total');
+        const depositRow = form.querySelector('#myvh-modal-deposit-row');
+        const depositNode = form.querySelector('#myvh-modal-deposit-total');
+        const totalNode = form.querySelector('#myvh-modal-booking-total');
+        const noteNode = form.querySelector('#myvh-modal-deposit-note');
+
+        if (roomNode) roomNode.textContent = '-';
+        if (addonsNode) addonsNode.textContent = '-';
+        if (depositNode) depositNode.textContent = '-';
+        if (totalNode) totalNode.textContent = '-';
+        if (depositRow) depositRow.style.display = 'none';
+        if (noteNode) {
+            noteNode.textContent = '';
+            noteNode.style.display = 'none';
+        }
+    }
+
+    function formatMoney(value) {
+        const amount = Number(value);
+        const safe = Number.isFinite(amount) ? amount : 0;
+        return `£${safe.toFixed(2)}`;
     }
 
     // ─────────────────────────────

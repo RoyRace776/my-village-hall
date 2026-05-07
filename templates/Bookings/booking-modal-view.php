@@ -91,6 +91,31 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
                 </table>
             </div>
 
+            <div class="myvh-modal-group" style="margin: 15px 0;">
+                <h3 style="margin:0 0 8px;">Charges</h3>
+                <table class="widefat striped" id="myvh-modal-financial-summary">
+                    <tbody>
+                        <tr>
+                            <th style="width:55%;">Room Charge</th>
+                            <td id="myvh-modal-room-charge">-</td>
+                        </tr>
+                        <tr>
+                            <th>Add-ons Total</th>
+                            <td id="myvh-modal-addon-total">-</td>
+                        </tr>
+                        <tr id="myvh-modal-deposit-row" style="display:none;">
+                            <th>Deposit</th>
+                            <td id="myvh-modal-deposit-total">-</td>
+                        </tr>
+                        <tr>
+                            <th><strong>Booking Total</strong></th>
+                            <td id="myvh-modal-booking-total"><strong>-</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p id="myvh-modal-deposit-note" class="description" style="display:none; margin-top:8px;"></p>
+            </div>
+
             <?php if (!empty($available_addons)): ?>
             <div class="myvh-modal-group" style="margin: 15px 0;">
                 <h3 style="margin:0 0 8px;">Add-ons</h3>

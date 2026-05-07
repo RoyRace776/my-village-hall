@@ -175,6 +175,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->recurring_booking_updater,
             $this->invoice_service,
             $this->invoice_item_repo,
+            $this->booking_charge_repo,
             $this->deposit_service
         );
     }

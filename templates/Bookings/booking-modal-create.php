@@ -187,6 +187,32 @@ $available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empt
                 </table>
             </div>
 
+            <div class="myvh-modal-group" id="myvh-modal-cost-summary" style="margin: 15px 0;">
+                <h3 style="margin:0 0 8px;">Cost Estimate</h3>
+                <table class="widefat striped" id="myvh-modal-cost-summary-table" style="display:none;">
+                    <tbody>
+                        <tr>
+                            <th style="width:55%;">Room Charge</th>
+                            <td id="myvh-modal-quote-room-charge">-</td>
+                        </tr>
+                        <tr>
+                            <th>Add-ons Total</th>
+                            <td id="myvh-modal-quote-addon-total">-</td>
+                        </tr>
+                        <tr id="myvh-modal-quote-deposit-row" style="display:none;">
+                            <th>Deposit</th>
+                            <td id="myvh-modal-quote-deposit-total">-</td>
+                        </tr>
+                        <tr>
+                            <th><strong>Booking Total</strong></th>
+                            <td id="myvh-modal-quote-booking-total"><strong>-</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p id="myvh-modal-quote-empty" class="description" style="margin-top:8px;">Select date/time, room, customer, and organisation to see the booking cost.</p>
+                <p id="myvh-modal-quote-note" class="description" style="display:none; margin-top:8px;"></p>
+            </div>
+
             <?php if (!empty($available_addons)): ?>
             <div class="myvh-modal-group" style="margin: 15px 0;">
                 <h3 style="margin:0 0 8px;">Add-ons</h3>

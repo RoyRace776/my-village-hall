@@ -136,7 +136,10 @@ describe('BookingModalView', () => {
         Public: 1,
         NoInvoiceRequired: 1
       },
+      charges: [],
       addons: [],
+      deposits: [],
+      expectedDeposit: null,
       canEdit: true,
       editReason: '',
       canManageNoInvoiceRequired: true
@@ -200,7 +203,10 @@ describe('BookingModalView', () => {
         Public: 1,
         NoInvoiceRequired: 1
       },
+      charges: [],
       addons: [],
+      deposits: [],
+      expectedDeposit: null,
       canEdit: true,
       editReason: '',
       canManageNoInvoiceRequired: true

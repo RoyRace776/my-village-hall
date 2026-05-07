@@ -54,6 +54,7 @@ class BookingService {
     private $recurring_booking_updater;
     private $invoice_service;
     private $invoice_item_repo;
+    private $booking_charge_repo;
     private $deposit_service;
     private $last_warnings = [];
 
@@ -79,6 +80,7 @@ class BookingService {
         RecurringBookingUpdater $recurring_booking_updater,
         InvoiceService $invoice_service,
         InvoiceItemRepository $invoice_item_repo,
+        BookingChargeRepository $booking_charge_repo,
         DepositService $deposit_service
     ) {
         $this->room_service = $room_service;
@@ -102,6 +104,7 @@ class BookingService {
         $this->recurring_booking_updater = $recurring_booking_updater;
         $this->invoice_service = $invoice_service;
         $this->invoice_item_repo = $invoice_item_repo;
+        $this->booking_charge_repo = $booking_charge_repo;
         $this->deposit_service = $deposit_service;
     }
 
@@ -505,6 +508,29 @@ class BookingService {
     public function get_addons_for_booking($booking_id): array {
         if (!$this->addon_service) return [];
         return $this->addon_service->get_addons_for_booking($booking_id);
+    }
+
+    public function get_charges_for_booking($booking_id): array {
+        return $this->booking_charge_repo->get_by_booking_id((int) $booking_id);
+    }
+
+    public function get_deposit_items_for_booking($booking_id): array {
+        return $this->invoice_item_repo->get_deposit_items_for_booking((int) $booking_id);
+    }
+
+    public function get_expected_deposit_for_booking($booking_id): ?array {
+        $booking = $this->booking_repo->get_by_id((int) $booking_id);
+        if (!$booking) {
+            return null;
+        }
+
+        $record = [
+            'RoomId' => $booking['RoomId'] ?? 0,
+            'EndDate' => $booking['EndDate'] ?? $booking['StartDate'] ?? '',
+            'EndTime' => $booking['EndTime'] ?? '00:00:00',
+        ];
+
+        return $this->evaluate_deposit_for_record($record);
     }
 
     public function get_by_id($booking_id): ?Booking {

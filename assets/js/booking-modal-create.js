@@ -5,6 +5,8 @@ window.BookingModalCreate = (function() {
     let roomsCache = null;
     let customersCache = null;
     const organisationsCache = {};
+    let quoteTimer = null;
+    let quoteRequestId = 0;
 
     function portalAlert(message) {
         if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
@@ -431,6 +433,7 @@ window.BookingModalCreate = (function() {
         form.querySelectorAll("select, input, textarea").forEach(el => {
             el.disabled = false;
         });
+        resetQuoteSummary();
         applyNoInvoiceRequiredVisibility();
         syncEndDateVisibility();
         syncPickerValues();
@@ -444,12 +447,17 @@ window.BookingModalCreate = (function() {
 
         if (customer) {
             customer.addEventListener("change", () => {
-                refreshOrganisations("");
+                refreshOrganisations("").then(() => {
+                    scheduleQuoteRefresh();
+                });
             });
         }
 
         if (organisation) {
-            organisation.addEventListener("change", applyPublicDefaultFromOrganisation);
+            organisation.addEventListener("change", () => {
+                applyPublicDefaultFromOrganisation();
+                scheduleQuoteRefresh();
+            });
         }
 
         if (room) {
@@ -552,7 +560,13 @@ window.BookingModalCreate = (function() {
                 const row = checkbox.closest(".myvh-modal-addon-row");
                 if (!row) return;
                 toggleAddonRow(row, checkbox.checked);
+                scheduleQuoteRefresh();
             });
+        });
+
+        form.querySelectorAll('.myvh-modal-addon-price, .myvh-modal-addon-qty').forEach((input) => {
+            input.addEventListener('change', scheduleQuoteRefresh);
+            input.addEventListener('input', scheduleQuoteRefresh);
         });
     }
 
@@ -616,6 +630,8 @@ window.BookingModalCreate = (function() {
 
             toggleAddonRow(row, !!addon);
         });
+
+        scheduleQuoteRefresh();
     }
 
     function resetRecurringEditScope() {
@@ -802,6 +818,214 @@ window.BookingModalCreate = (function() {
 
         setValue("start", composeDateTime(startDate, startTime));
         setValue("end", composeDateTime(endDate, endTime));
+        scheduleQuoteRefresh();
+    }
+
+    function hasQuoteRequirements() {
+        const roomId = String(form.querySelector('[name="room_id"]')?.value || '').trim();
+        const customerId = resolveQuoteCustomerId();
+        const organisationId = resolveQuoteOrganisationId();
+        const start = String(form.querySelector('[name="start"]')?.value || '').trim();
+        const end = String(form.querySelector('[name="end"]')?.value || '').trim();
+
+        return roomId !== '' && customerId !== '' && organisationId !== '' && start !== '' && end !== '';
+    }
+
+    function resolveQuoteCustomerId() {
+        const selected = String(form.querySelector('[name="customer_id"]')?.value || '').trim();
+        if (selected !== '') {
+            return selected;
+        }
+
+        return String((window.myvhCal && window.myvhCal.currentCustomerId) || '').trim();
+    }
+
+    function resolveQuoteOrganisationId() {
+        const selected = String(form.querySelector('[name="organisation_id"]')?.value || '').trim();
+        if (selected !== '') {
+            return selected;
+        }
+
+        return String((window.myvhCal && window.myvhCal.defaultOrganisationId) || '').trim();
+    }
+
+    function buildQuoteFormData() {
+        if (!hasQuoteRequirements()) {
+            return null;
+        }
+
+        const formData = new FormData(form);
+
+        const customerId = resolveQuoteCustomerId();
+        const organisationId = resolveQuoteOrganisationId();
+
+        if (customerId !== '') {
+            formData.set('customer_id', customerId);
+        }
+
+        if (organisationId !== '') {
+            formData.set('organisation_id', organisationId);
+        }
+
+        formData.set('action', 'myvh_portal_quote_booking');
+        formData.set('nonce', config.nonce);
+        return formData;
+    }
+
+    function scheduleQuoteRefresh() {
+        if (config.context !== 'portal' || !form || !modal || modal.classList.contains('hidden')) {
+            return;
+        }
+
+        if (quoteTimer) {
+            clearTimeout(quoteTimer);
+        }
+
+        if (!hasQuoteRequirements()) {
+            resetQuoteSummary();
+            return;
+        }
+
+        setQuotePending();
+        quoteTimer = setTimeout(() => {
+            refreshQuote();
+        }, 200);
+    }
+
+    function refreshQuote() {
+        const formData = buildQuoteFormData();
+        if (!formData) {
+            resetQuoteSummary();
+            return;
+        }
+
+        const requestId = ++quoteRequestId;
+
+        fetch(config.ajax_url, {
+            method: 'POST',
+            body: formData
+        })
+        .then((response) => response.json())
+        .then((result) => {
+            if (requestId !== quoteRequestId) {
+                return;
+            }
+
+            if (!result || !result.success || !result.data) {
+                throw new Error(resolveErrorMessage(result && result.data, 'Could not calculate booking cost'));
+            }
+
+            applyQuoteSummary(result.data);
+        })
+        .catch(() => {
+            if (requestId !== quoteRequestId) {
+                return;
+            }
+
+            resetQuoteSummary('Cost estimate unavailable for the selected booking details.');
+        });
+    }
+
+    function setQuotePending() {
+        const empty = form.querySelector('#myvh-modal-quote-empty');
+        const table = form.querySelector('#myvh-modal-cost-summary-table');
+        const note = form.querySelector('#myvh-modal-quote-note');
+
+        if (table) {
+            table.style.display = 'none';
+        }
+
+        if (empty) {
+            empty.textContent = 'Calculating booking cost...';
+            empty.style.display = '';
+        }
+
+        if (note) {
+            note.textContent = '';
+            note.style.display = 'none';
+        }
+    }
+
+    function resetQuoteSummary(message) {
+        const table = form.querySelector('#myvh-modal-cost-summary-table');
+        const empty = form.querySelector('#myvh-modal-quote-empty');
+        const room = form.querySelector('#myvh-modal-quote-room-charge');
+        const addons = form.querySelector('#myvh-modal-quote-addon-total');
+        const depositRow = form.querySelector('#myvh-modal-quote-deposit-row');
+        const deposit = form.querySelector('#myvh-modal-quote-deposit-total');
+        const total = form.querySelector('#myvh-modal-quote-booking-total');
+        const note = form.querySelector('#myvh-modal-quote-note');
+
+        if (table) {
+            table.style.display = 'none';
+        }
+
+        if (room) room.textContent = '-';
+        if (addons) addons.textContent = '-';
+        if (deposit) deposit.textContent = '-';
+        if (total) total.textContent = '-';
+        if (depositRow) depositRow.style.display = 'none';
+
+        if (empty) {
+            empty.textContent = message || 'Select date/time, room, customer, and organisation to see the booking cost.';
+            empty.style.display = '';
+        }
+
+        if (note) {
+            note.textContent = '';
+            note.style.display = 'none';
+        }
+    }
+
+    function applyQuoteSummary(summary) {
+        const table = form.querySelector('#myvh-modal-cost-summary-table');
+        const empty = form.querySelector('#myvh-modal-quote-empty');
+        const room = form.querySelector('#myvh-modal-quote-room-charge');
+        const addons = form.querySelector('#myvh-modal-quote-addon-total');
+        const depositRow = form.querySelector('#myvh-modal-quote-deposit-row');
+        const deposit = form.querySelector('#myvh-modal-quote-deposit-total');
+        const total = form.querySelector('#myvh-modal-quote-booking-total');
+        const note = form.querySelector('#myvh-modal-quote-note');
+
+        const roomCharge = Number(summary.room_charge ?? 0);
+        const addonTotal = Number(summary.addons_total ?? 0);
+        const depositAmount = Number(summary.deposit_amount ?? 0);
+        const bookingTotal = Number(summary.booking_total ?? 0);
+        const depositConfig = summary.deposit && typeof summary.deposit === 'object' ? summary.deposit : null;
+
+        if (table) {
+            table.style.display = '';
+        }
+
+        if (empty) {
+            empty.style.display = 'none';
+        }
+
+        if (room) room.textContent = formatMoney(roomCharge);
+        if (addons) addons.textContent = formatMoney(addonTotal);
+        if (deposit) deposit.textContent = formatMoney(depositAmount);
+        if (total) total.textContent = formatMoney(bookingTotal);
+        if (depositRow) depositRow.style.display = depositAmount > 0 ? '' : 'none';
+
+        if (note) {
+            if (depositConfig && depositAmount > 0) {
+                if (String(depositConfig.action || 'auto_add') === 'require_review') {
+                    note.textContent = 'A deposit is configured for this booking and requires review before charging.';
+                } else {
+                    note.textContent = 'A deposit is configured for this booking and will be added when invoiced.';
+                }
+                note.style.display = '';
+            } else {
+                note.textContent = '';
+                note.style.display = 'none';
+            }
+        }
+    }
+
+    function formatMoney(value) {
+        const amount = Number(value);
+        const safe = Number.isFinite(amount) ? amount : 0;
+        return `£${safe.toFixed(2)}`;
     }
 
     function composeDateTime(date, time) {
@@ -1183,6 +1407,7 @@ window.BookingModalCreate = (function() {
         });
 
         applyNoInvoiceRequiredVisibility();
+        scheduleQuoteRefresh();
     }
 
     // ─────────────────────────────

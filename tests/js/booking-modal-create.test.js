@@ -43,6 +43,15 @@ function buildModalFixture() {
 
         <input type="checkbox" name="public">
 
+        <table id="myvh-modal-cost-summary-table" style="display:none">
+          <tr><td id="myvh-modal-quote-room-charge">-</td></tr>
+          <tr><td id="myvh-modal-quote-addon-total">-</td></tr>
+          <tr id="myvh-modal-quote-deposit-row" style="display:none"><td id="myvh-modal-quote-deposit-total">-</td></tr>
+          <tr><td id="myvh-modal-quote-booking-total">-</td></tr>
+        </table>
+        <div id="myvh-modal-quote-empty"></div>
+        <div id="myvh-modal-quote-note" style="display:none"></div>
+
         <div id="myvh-modal-recurring-options" style="display:none"></div>
         <input id="myvh-modal-is-recurring" type="checkbox">
         <select id="myvh-modal-rec-type" name="recurrence_type">
@@ -248,5 +257,49 @@ describe('BookingModalCreate', () => {
 
     await flushPromises();
     await flushPromises();
+  });
+
+  test('requests a portal quote and renders the cost summary when required fields are set', async () => {
+    window.fetch.mockResolvedValue({
+      json: () => Promise.resolve({
+        success: true,
+        data: {
+          room_charge: 18,
+          addons_total: 4,
+          deposit_amount: 10,
+          booking_total: 32,
+          deposit: { amount: 10, action: 'auto_add' }
+        }
+      })
+    });
+
+    window.myvhCal = {
+      currentCustomerId: 55,
+      defaultOrganisationId: 88
+    };
+
+    document.querySelector('[name="room_id"]').innerHTML = '<option value="14">Main Hall</option>';
+    document.querySelector('[name="room_id"]').value = '14';
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal'
+    });
+
+    window.BookingModalCreate.open({});
+    document.querySelector('[name="room_id"]').dispatchEvent(new Event('change', { bubbles: true }));
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await flushPromises();
+    await flushPromises();
+
+    expect(window.fetch.mock.calls.length).toBeGreaterThan(0);
+    const latestCall = window.fetch.mock.calls[window.fetch.mock.calls.length - 1];
+    const payload = Object.fromEntries(latestCall[1].body.entries());
+    expect(payload.action).toBe('myvh_portal_quote_booking');
+    expect(document.getElementById('myvh-modal-cost-summary-table').style.display).toBe('');
+    expect(document.getElementById('myvh-modal-quote-room-charge').textContent).toBe('£18.00');
+    expect(document.getElementById('myvh-modal-quote-booking-total').textContent).toBe('£32.00');
   });
 });

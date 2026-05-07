@@ -72,6 +72,15 @@ if (!empty($form_data['addons']) && is_array($form_data['addons'])) {
     $booking_addons = $booking_service->get_addons_for_booking($booking_id);
 }
 
+$booking_charge_rows = [];
+$booking_deposit_items = [];
+$expected_booking_deposit = null;
+if ($booking_id) {
+    $booking_charge_rows = $booking_service->get_charges_for_booking($booking_id);
+    $booking_deposit_items = $booking_service->get_deposit_items_for_booking($booking_id);
+    $expected_booking_deposit = $booking_service->get_expected_deposit_for_booking($booking_id);
+}
+
 // Index existing addons by AddonId for easy lookup in the form
 $selected_addon_map = [];
 foreach ($booking_addons as $ba) {
@@ -320,9 +329,82 @@ $status_colors = [
                 </div>
             </div>
 
-            <?php if (!empty($booking_addons)): ?>
             <div class="myvh-col-40">
                 <div class="myvh-card">
+                    <h2><?php _e('Charges', 'my-village-hall'); ?></h2>
+                    <?php
+                    $room_charge_total = 0.0;
+                    foreach (($booking_charge_rows ?? []) as $charge_row) {
+                        $room_charge_total += floatval($charge_row['TotalAmount'] ?? 0);
+                    }
+
+                    $addons_total = 0.0;
+                    foreach (($booking_addons ?? []) as $ba) {
+                        $addons_total += floatval($ba['TotalAmount'] ?? 0);
+                    }
+
+                    $deposit_total = 0.0;
+                    foreach (($booking_deposit_items ?? []) as $deposit_item) {
+                        $deposit_total += floatval($deposit_item['TotalAmount'] ?? 0);
+                    }
+
+                    $show_expected_deposit = false;
+                    if ($deposit_total <= 0.0 && is_array($expected_booking_deposit)) {
+                        $expected_amount = floatval($expected_booking_deposit['amount'] ?? 0);
+                        if ($expected_amount > 0.0) {
+                            $deposit_total = $expected_amount;
+                            $show_expected_deposit = true;
+                        }
+                    }
+
+                    $booking_total = $room_charge_total + $addons_total + $deposit_total;
+                    ?>
+                    <table class="widefat striped" style="margin-bottom: 15px;">
+                        <tbody>
+                            <tr>
+                                <th><?php _e('Room Charge', 'my-village-hall'); ?></th>
+                                <td><strong>£<?php echo number_format($room_charge_total, 2); ?></strong></td>
+                            </tr>
+                            <tr>
+                                <th><?php _e('Add-ons Total', 'my-village-hall'); ?></th>
+                                <td><strong>£<?php echo number_format($addons_total, 2); ?></strong></td>
+                            </tr>
+                            <?php if ($deposit_total > 0): ?>
+                                <tr>
+                                    <th><?php _e('Deposit', 'my-village-hall'); ?></th>
+                                    <td><strong>£<?php echo number_format($deposit_total, 2); ?></strong></td>
+                                </tr>
+                            <?php endif; ?>
+                            <tr>
+                                <th><?php _e('Booking Total', 'my-village-hall'); ?></th>
+                                <td><strong>£<?php echo number_format($booking_total, 2); ?></strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <?php if (!empty($booking_deposit_items)): ?>
+                        <p style="margin: 0 0 12px; color: #555;">
+                            <?php
+                            $invoice_numbers = array_values(array_unique(array_filter(array_map(static fn($row) => trim((string) ($row['InvoiceNumber'] ?? '')), $booking_deposit_items))));
+                            if (!empty($invoice_numbers)) {
+                                printf(
+                                    esc_html__('Deposit billed on invoice %s.', 'my-village-hall'),
+                                    esc_html(implode(', ', $invoice_numbers))
+                                );
+                            }
+                            ?>
+                        </p>
+                    <?php elseif ($show_expected_deposit): ?>
+                        <p style="margin: 0 0 12px; color: #555;">
+                            <?php if (($expected_booking_deposit['action'] ?? 'auto_add') === 'require_review'): ?>
+                                <?php _e('A deposit is configured for this booking and requires review before charging.', 'my-village-hall'); ?>
+                            <?php else: ?>
+                                <?php _e('A deposit is configured for this booking and will be added when invoiced.', 'my-village-hall'); ?>
+                            <?php endif; ?>
+                        </p>
+                    <?php endif; ?>
+
+                    <?php if (!empty($booking_addons)): ?>
                     <h2><?php _e('Add-ons', 'my-village-hall'); ?></h2>
                     <table class="widefat striped">
                         <thead>
@@ -333,9 +415,7 @@ $status_colors = [
                             </tr>
                         </thead>
                         <tbody>
-                            <?php $addons_total = 0; ?>
                             <?php foreach ($booking_addons as $ba): ?>
-                                <?php $addons_total += floatval($ba['TotalAmount']); ?>
                                 <tr>
                                     <td>
                                         <strong><?php echo esc_html($ba['AddonName']); ?></strong>
@@ -355,9 +435,11 @@ $status_colors = [
                             </tr>
                         </tfoot>
                     </table>
+                    <?php else: ?>
+                        <p><?php _e('No add-ons selected for this booking.', 'my-village-hall'); ?></p>
+                    <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
         </div>
 
     <?php else: ?>

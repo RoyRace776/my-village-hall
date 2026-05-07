@@ -319,10 +319,6 @@ class InvoiceGeneratorService {
         foreach ($invoice_items as $item) {
             $item['InvoiceId'] = $invoice_id;
 
-            if (!$this->invoice_item_repo->supports_item_type_column()) {
-                unset($item['ItemType']);
-            }
-
             $result = $this->invoice_item_repo->create($item);
 
             if ($result === false) {

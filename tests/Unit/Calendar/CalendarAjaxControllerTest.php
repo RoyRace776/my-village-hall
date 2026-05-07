@@ -217,7 +217,10 @@ class CalendarAjaxControllerTest extends UnitTestCase {
 
         $this->booking_service->shouldReceive('can_edit')->once()->andReturnUsing(static fn(): array => ['can_edit' => false, 'reason' => '']);
         $this->booking_service->shouldReceive('can_delete')->once()->andReturnUsing(static fn(): array => ['can_delete' => false, 'reason' => '']);
+        $this->booking_service->shouldReceive('get_charges_for_booking')->with(55)->once()->andReturn([]);
         $this->booking_service->shouldReceive('get_addons_for_booking')->with(55)->once()->andReturn([]);
+        $this->booking_service->shouldReceive('get_deposit_items_for_booking')->with(55)->once()->andReturn([]);
+        $this->booking_service->shouldReceive('get_expected_deposit_for_booking')->with(55)->once()->andReturn(null);
 
         $response = $this->capture_json_response(function (): void {
             $this->controller->get_booking();
@@ -263,7 +266,10 @@ class CalendarAjaxControllerTest extends UnitTestCase {
 
         $this->booking_service->shouldReceive('can_edit')->once()->andReturnUsing(static fn(): array => ['can_edit' => true, 'reason' => '']);
         $this->booking_service->shouldReceive('can_delete')->once()->andReturnUsing(static fn(): array => ['can_delete' => true, 'reason' => '']);
+        $this->booking_service->shouldReceive('get_charges_for_booking')->with(55)->once()->andReturn([]);
         $this->booking_service->shouldReceive('get_addons_for_booking')->with(55)->once()->andReturn([]);
+        $this->booking_service->shouldReceive('get_deposit_items_for_booking')->with(55)->once()->andReturn([]);
+        $this->booking_service->shouldReceive('get_expected_deposit_for_booking')->with(55)->once()->andReturn(null);
 
         $response = $this->capture_json_response(function (): void {
             $this->controller->get_booking();

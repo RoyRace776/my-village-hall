@@ -36,6 +36,10 @@ class BookingServiceEntityAccessTest extends UnitTestCase
         $recurring_pattern_service = $this->mock(\MYVH\Bookings\RecurringPatternService::class);
         $recurring_booking_creator = $this->mock(\MYVH\Bookings\Services\RecurringBookingCreator::class);
         $recurring_booking_updater = $this->mock(\MYVH\Bookings\Services\RecurringBookingUpdater::class);
+        $invoice_service = $this->mock(\MYVH\Invoices\InvoiceService::class);
+        $invoice_item_repo = $this->mock(\MYVH\Invoices\InvoiceItemRepository::class);
+        $booking_charge_repo = $this->mock(\MYVH\Bookings\BookingChargeRepository::class);
+        $deposit_service = $this->mock(\MYVH\Deposits\DepositService::class);
 
         $this->service = new BookingService(
             $room_service,
@@ -56,7 +60,11 @@ class BookingServiceEntityAccessTest extends UnitTestCase
             $booking_update_event_dispatcher,
             $recurring_pattern_service,
             $recurring_booking_creator,
-            $recurring_booking_updater
+            $recurring_booking_updater,
+            $invoice_service,
+            $invoice_item_repo,
+            $booking_charge_repo,
+            $deposit_service
         );
     }
 
