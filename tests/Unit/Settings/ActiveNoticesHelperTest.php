@@ -15,6 +15,9 @@ use MYVH\Tests\Unit\UnitTestCase;
  * each notice's start_date / end_date.  Rules:
  *   - start_date empty → show from now
  *   - end_date   empty → show forever
+ *
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
  */
 class ActiveNoticesHelperTest extends UnitTestCase
 {
@@ -26,7 +29,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
         parent::setUp();
 
         // Ensure the helper file is loaded.
-        require_once MYVH_PLUGIN_DIR . 'src/Settings/settings-helper.php';
+        require MYVH_PLUGIN_DIR . 'src/Settings/settings-helper.php';
 
         // Reset the registry so each test is isolated.
         SettingsRegistry::reset();
@@ -61,7 +64,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
     public function returns_empty_array_when_no_notices_group_registered(): void
     {
         // No 'notices' group in registry.
-        $this->assertSame([], myvh_get_active_notices());
+        $this->assertSame([], call_user_func('myvh_get_active_notices'));
     }
 
     /** @test */
@@ -69,7 +72,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
     {
         $this->registerNoticesWith([]);
 
-        $this->assertSame([], myvh_get_active_notices());
+        $this->assertSame([], call_user_func('myvh_get_active_notices'));
     }
 
     /** @test */
@@ -79,7 +82,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
             ['message' => 'Always visible', 'start_date' => '', 'end_date' => ''],
         ]);
 
-        $result = myvh_get_active_notices();
+        $result = call_user_func('myvh_get_active_notices');
 
         $this->assertCount(1, $result);
         $this->assertSame('Always visible', $result[0]['message']);
@@ -95,7 +98,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
             ['message' => 'Future notice', 'start_date' => $future, 'end_date' => ''],
         ]);
 
-        $this->assertSame([], myvh_get_active_notices());
+        $this->assertSame([], call_user_func('myvh_get_active_notices'));
     }
 
     /** @test */
@@ -108,7 +111,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
             ['message' => 'Starts today', 'start_date' => $today, 'end_date' => ''],
         ]);
 
-        $result = myvh_get_active_notices();
+        $result = call_user_func('myvh_get_active_notices');
 
         $this->assertCount(1, $result);
     }
@@ -123,7 +126,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
             ['message' => 'Expired notice', 'start_date' => '', 'end_date' => $yesterday],
         ]);
 
-        $this->assertSame([], myvh_get_active_notices());
+        $this->assertSame([], call_user_func('myvh_get_active_notices'));
     }
 
     /** @test */
@@ -136,7 +139,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
             ['message' => 'In range', 'start_date' => $yesterday, 'end_date' => $tomorrow],
         ]);
 
-        $result = myvh_get_active_notices();
+        $result = call_user_func('myvh_get_active_notices');
 
         $this->assertCount(1, $result);
         $this->assertSame('In range', $result[0]['message']);
@@ -156,7 +159,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
             ['message' => 'Future',             'start_date' => $future,   'end_date' => ''],
         ]);
 
-        $result = myvh_get_active_notices();
+        $result = call_user_func('myvh_get_active_notices');
 
         $this->assertCount(2, $result);
         $this->assertSame('Active – no dates',  $result[0]['message']);
@@ -175,7 +178,7 @@ class ActiveNoticesHelperTest extends UnitTestCase
             ['message' => 'Current', 'start_date' => $yesterday, 'end_date' => $tomorrow],
         ]);
 
-        $result = myvh_get_active_notices();
+        $result = call_user_func('myvh_get_active_notices');
 
         $this->assertCount(1, $result);
         $this->assertArrayHasKey(0, $result);

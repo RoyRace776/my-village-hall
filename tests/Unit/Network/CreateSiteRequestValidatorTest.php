@@ -73,6 +73,6 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
         ]);
 
         $this->assertInstanceOf(WP_Error::class, $result);
-        $this->assertSame('Subdomain cannot begin or end with a hyphen.', $result->get_error_message());
+        $this->assertSame('Site path cannot begin or end with a hyphen.', $result->get_error_message());
     }
 }

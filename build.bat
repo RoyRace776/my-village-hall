@@ -257,5 +257,3 @@ echo Build complete!
 echo Output: dist\%PLUGIN_SLUG%.zip
 echo Version: !VERSION!
 echo ============================
-
-pause
