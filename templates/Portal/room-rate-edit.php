@@ -108,9 +108,9 @@ $current_org_type_id = (int) ($rate['OrganisationTypeId'] ?? 0);
                 </label>
             </div>
 
-            <label class="myvh-account-field" style="display:flex; align-items:center; gap:8px;">
+            <label class="myvh-account-field myvh-room-toggle">
                 <input type="checkbox" name="is_active" value="1" <?php checked(!empty($rate['IsActive'])); ?>>
-                <span>Rate is active</span>
+                <span class="myvh-room-toggle-copy">Rate is active</span>
             </label>
 
             <div class="myvh-account-actions">

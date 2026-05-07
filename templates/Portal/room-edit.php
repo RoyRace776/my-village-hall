@@ -181,34 +181,28 @@ if (!in_array($deposit_action, ['auto_add', 'require_review'], true)) {
                 </table>
             </div>
 
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="allow-multi-day-bookings" value="1" <?php checked(!empty($room['AllowMultiDayBookings'])); ?>>
-                    Allow multi-day bookings
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="allow-multi-day-bookings" value="1" <?php checked(!empty($room['AllowMultiDayBookings'])); ?>>
+                <span class="myvh-room-toggle-copy">Allow multi-day bookings</span>
             </label>
 
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="calc-closed-hours" value="1" <?php checked(!empty($room['CalcClosedHours'])); ?>>
-                    Include closed hours when calculating booking duration
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="calc-closed-hours" value="1" <?php checked(!empty($room['CalcClosedHours'])); ?>>
+                <span class="myvh-room-toggle-copy">Include closed hours when calculating booking duration</span>
             </label>
 
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="is-public" value="1" <?php checked(!empty($room['IsPublic'])); ?>>
-                    Make this room public
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="is-public" value="1" <?php checked(!empty($room['IsPublic'])); ?>>
+                <span class="myvh-room-toggle-copy">Make this room public</span>
             </label>
 
             <div class="myvh-account-field">
                 <span>Deposits</span>
 
-                <label style="margin-top:8px; display:block;">
+                <label class="myvh-room-toggle myvh-room-toggle--nested">
                     <input type="hidden" name="deposit_enabled" value="0">
                     <input type="checkbox" name="deposit_enabled" value="1" <?php checked(!empty($deposit_config['enabled'])); ?>>
-                    Enable deposits for this room
+                    <span class="myvh-room-toggle-copy">Enable deposits for this room</span>
                 </label>
 
                 <label style="margin-top:10px; display:block;">

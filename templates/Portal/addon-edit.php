@@ -64,11 +64,9 @@ if (!$addon) {
                 </label>
             </div>
 
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="is_active" value="1" <?php checked(!empty($addon['IsActive'])); ?>>
-                    Active
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="is_active" value="1" <?php checked(!empty($addon['IsActive'])); ?>>
+                <span class="myvh-room-toggle-copy">Active</span>
             </label>
 
             <div class="myvh-account-actions">

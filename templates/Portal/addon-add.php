@@ -56,11 +56,9 @@ $rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
                 </label>
             </div>
 
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="is_active" value="1" checked>
-                    Active
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="is_active" value="1" checked>
+                <span class="myvh-room-toggle-copy">Active</span>
             </label>
 
             <div class="myvh-account-actions">

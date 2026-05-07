@@ -44,18 +44,14 @@ if (!$customer) {
                 <span>Address</span>
                 <input type="text" name="address_line1" value="<?php echo esc_attr($customer['AddressLine1']); ?>">
             </label>
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="email_verified" value="1" <?php checked(!empty($customer['EmailVerified'])); ?>>
-                    Email verified
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="email_verified" value="1" <?php checked(!empty($customer['EmailVerified'])); ?>>
+                <span class="myvh-room-toggle-copy">Email verified</span>
             </label>
             <?php if (!empty($is_client_admin)): ?>
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked(!empty($customer['AllowAutoConfirm'])); ?>>
-                    Allow Auto Confirm
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked(!empty($customer['AllowAutoConfirm'])); ?>>
+                <span class="myvh-room-toggle-copy">Allow Auto Confirm</span>
             </label>
             <?php endif; ?>
             <div class="myvh-account-actions">
