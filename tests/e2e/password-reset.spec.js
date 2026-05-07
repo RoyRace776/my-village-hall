@@ -14,10 +14,16 @@ test.describe('Password reset request', () => {
     );
 
     await page.goto(resetRequestUrl, { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/reset|login/i, { timeout: 15000 });
 
-    await expect(page.locator('#myvh-reset-email')).toBeVisible({ timeout: 15000 });
+    const emailField = page
+      .getByTestId('reset-email')
+      .or(page.getByLabel(/email/i))
+      .or(page.getByRole('textbox', { name: /email/i }));
 
-    await page.locator('#myvh-reset-email').fill(resetEmail);
+    await expect(emailField).toBeVisible({ timeout: 15000 });
+
+    await emailField.fill(resetEmail);
     await page.getByRole('button', { name: /send reset link/i }).click();
 
     const successMessage = page.locator('.myvh-login-success');

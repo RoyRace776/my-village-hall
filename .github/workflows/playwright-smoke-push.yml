@@ -15,6 +15,7 @@ jobs:
       PW_LOGIN_USERNAME: ${{ secrets.PW_ADMIN_USERNAME }}
       PW_LOGIN_PASSWORD: ${{ secrets.PW_ADMIN_PASSWORD }}
       PW_RESET_EMAIL: ${{ secrets.PW_RESET_EMAIL }}
+      PW_RESET_REQUEST_URL: ${{ vars['PW_RESET_REQUEST_URL'] }}
 
     steps:
       - name: Checkout
@@ -22,10 +23,8 @@ jobs:
 
       - name: Validate required secrets
         run: |
-          if [ -z "$PW_BASE_URL" ]; then
-            echo "PW_BASE_URL secret is required for CI smoke tests."
-            exit 1
-          fi
+          [ -n "$PW_BASE_URL" ] || (echo "PW_BASE_URL secret is required for CI smoke tests." && exit 1)
+          [ -n "$PW_RESET_REQUEST_URL" ] || (echo "PW_RESET_REQUEST_URL secret is required for CI smoke tests." && exit 1)
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -44,11 +43,13 @@ jobs:
           echo "PW_BASE_URL=${PW_BASE_URL}"
           echo "PW_LOGIN_URL=${PW_LOGIN_URL:-<unset>}"
           echo "PW_PORTAL_URL=${PW_PORTAL_URL:-<unset>}"
+          echo "PW_RESET_REQUEST_URL=${PW_RESET_REQUEST_URL:-<unset>}"
           node -e "const { chromium } = require('playwright'); (async () => { const browser = await chromium.launch({ headless: true }); const page = await browser.newPage({ baseURL: process.env.PW_BASE_URL }); const loginUrl = process.env.PW_LOGIN_URL || 'login/'; try { const response = await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }); console.log('goto-final-url=' + page.url()); console.log('goto-status=' + (response ? response.status() : 'null')); } finally { await browser.close(); } })().catch((error) => { console.error(error); process.exit(1); });"
         env:
           PW_BASE_URL: ${{ secrets.PW_BASE_URL }}
           PW_LOGIN_URL: ${{ secrets.PW_LOGIN_URL }}
           PW_PORTAL_URL: ${{ secrets.PW_PORTAL_URL }}
+          PW_RESET_REQUEST_URL: ${{ vars['PW_RESET_REQUEST_URL'] }}
 
       - name: Run Playwright smoke suite
         run: npm run test:e2e:ci:push
