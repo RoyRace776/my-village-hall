@@ -11,12 +11,29 @@ if (!$customer) {
     echo '<div class="myvh-card myvh-error"><p>Customer not found.</p></div>';
     return;
 }
+
+$created_display = '—';
+if (!empty($customer['Created'])) {
+    $created_ts = strtotime((string) $customer['Created']);
+    if ($created_ts !== false) {
+        $created_display = wp_date(get_option('date_format'), $created_ts);
+    }
+}
+
+$updated_display = '—';
+if (!empty($customer['Updated'])) {
+    $updated_ts = strtotime((string) $customer['Updated']);
+    if ($updated_ts !== false) {
+        $updated_display = wp_date(get_option('date_format'), $updated_ts);
+    }
+}
 ?>
 <div class="myvh-dashboard-section myvh-customers-page">
     <div class="myvh-account-header">
         <div>
             <h2>Edit Customer</h2>
             <p>Update customer details and save changes.</p>
+            <p class="myvh-account-hint">Created: <?php echo esc_html($created_display); ?> | Last updated: <?php echo esc_html($updated_display); ?></p>
         </div>
     </div>
     <div class="myvh-card myvh-account-card">
