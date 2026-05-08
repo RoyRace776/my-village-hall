@@ -15,7 +15,7 @@ jobs:
       PW_LOGIN_USERNAME: ${{ secrets.PW_ADMIN_USERNAME }}
       PW_LOGIN_PASSWORD: ${{ secrets.PW_ADMIN_PASSWORD }}
       PW_RESET_EMAIL: ${{ secrets.PW_RESET_EMAIL }}
-      PW_RESET_REQUEST_URL: ${{ vars['PW_RESET_REQUEST_URL'] }}
+      PW_RESET_REQUEST_URL: ${{ secrets.PW_RESET_REQUEST_URL }}
 
     steps:
       - name: Checkout
@@ -49,7 +49,7 @@ jobs:
           PW_BASE_URL: ${{ secrets.PW_BASE_URL }}
           PW_LOGIN_URL: ${{ secrets.PW_LOGIN_URL }}
           PW_PORTAL_URL: ${{ secrets.PW_PORTAL_URL }}
-          PW_RESET_REQUEST_URL: ${{ vars['PW_RESET_REQUEST_URL'] }}
+          PW_RESET_REQUEST_URL: ${{ secrets.PW_RESET_REQUEST_URL }}
 
       - name: Run Playwright smoke suite
         run: npm run test:e2e:ci:push
