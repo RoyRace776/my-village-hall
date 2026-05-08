@@ -32,6 +32,24 @@
         date : DayPilot.Date.today(),
     };
 
+    function getSchedulerWeekCellWidth() {
+        var container = document.getElementById(cfg.containerId);
+        var containerWidth = Math.round(
+            (container && container.getBoundingClientRect ? container.getBoundingClientRect().width : 0)
+            || (container && container.clientWidth)
+            || (container && container.parentElement && container.parentElement.clientWidth)
+            || 0
+        );
+        var rowHeaderWidth = 220;
+        var availableWidth = containerWidth - rowHeaderWidth - 1;
+
+        if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+            return null;
+        }
+
+        return Math.max(40, Math.floor(availableWidth / 7));
+    }
+
     // ── Colour map ────────────────────────────────────────────────────────────
     var DEFAULT_STATUS_COLOURS = {
         confirmed : '#2271b1',
@@ -638,7 +656,9 @@
     function buildVerticalTimetableDp(container, detail) {
         var startHour  = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 8;
         var endHour    = Number.isFinite(Number(cfg.visibleEndHour))   ? Number(cfg.visibleEndHour)   : 22;
-        var totalSlots = Math.max(1, endHour - startHour);
+        var cellDuration = 15;  // 15-minute intervals
+        var slotsPerHour = 60 / cellDuration;  // 4 slots per hour
+        var totalSlots = Math.max(1, (endHour - startHour) * slotsPerHour);
         var rooms      = getVisibleRooms();
 
         function getVisibleDays(startDate) {
@@ -710,8 +730,8 @@
 
                         var sh = clippedStart.getHours() + clippedStart.getMinutes() / 60;
                         var eh = clippedEnd.getHours() + clippedEnd.getMinutes() / 60;
-                        var startSlot = Math.max(0, Math.floor(sh) - startHour);
-                        var endSlot = Math.min(totalSlots, Math.ceil(eh) - startHour);
+                        var startSlot = Math.max(0, Math.floor((sh - startHour) * slotsPerHour));
+                        var endSlot = Math.min(totalSlots, Math.ceil((eh - startHour) * slotsPerHour));
                         if (endSlot <= startSlot) {
                             endSlot = Math.min(totalSlots, startSlot + 1);
                         }
@@ -746,8 +766,10 @@
 
                 for (var slot = 0; slot < totalSlots; slot++) {
                     var row = dayOffset * totalSlots + slot;
-                    var hour = startHour + slot;
-                    var hourStr = (hour < 10 ? '0' : '') + hour + ':00';
+                    var totalMinutes = Math.floor((slot / slotsPerHour) * 60);
+                    var hour = startHour + Math.floor(totalMinutes / 60);
+                    var minutes = totalMinutes % 60;
+                    var hourStr = (hour < 10 ? '0' : '') + hour + ':' + (minutes < 10 ? '0' : '') + minutes;
                     html += '<tr>';
 
                     if (slot === 0) {
@@ -862,11 +884,16 @@
         } else {
             base.startDate = DayPilot.Date.today().getDatePart();
             base.scale = 'Day';
-            base.days = Math.max(1, maxBookingDaysAhead);
+            base.days = 7;
             base.timeHeaders = [
                 { groupBy: 'Month' },
                 { groupBy: 'Day', format: schedulerDayHeaderFormat }
             ];
+
+            var weekCellWidth = getSchedulerWeekCellWidth();
+            if (weekCellWidth !== null) {
+                base.cellWidth = weekCellWidth;
+            }
         }
 
         return base;

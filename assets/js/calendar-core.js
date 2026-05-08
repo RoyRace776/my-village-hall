@@ -293,6 +293,23 @@ window.CalendarCore = (function () {
         return date.getDatePart();
     }
 
+    function getSchedulerWeekCellWidth(containerId, rowHeaderWidth, dayCount) {
+        const container = document.getElementById(containerId);
+        const containerWidth = Math.round(
+            container?.getBoundingClientRect?.().width
+            || container?.clientWidth
+            || container?.parentElement?.clientWidth
+            || 0
+        );
+        const availableWidth = containerWidth - Number(rowHeaderWidth || 0) - 1;
+
+        if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+            return null;
+        }
+
+        return Math.max(40, Math.floor(availableWidth / Math.max(1, Number(dayCount) || 1)));
+    }
+
     function destroy() {
         if (calendar) {
             calendar.dispose();
@@ -530,7 +547,9 @@ window.CalendarCore = (function () {
 
         const startHour = parseVisibleHour(opts.visibleStartHour, 8);
         const endHour = parseVisibleHour(opts.visibleEndHour, 22);
-        const totalSlots = Math.max(1, endHour - startHour);
+        const cellDuration = detail === "Day" ? 15 : 60;
+        const slotsPerHour = 60 / cellDuration;
+        const totalSlots = Math.max(1, (endHour - startHour) * slotsPerHour);
         let flatRooms = [];
 
         function getVisibleDays(startDate) {
@@ -586,8 +605,8 @@ window.CalendarCore = (function () {
 
                         const sh = clippedStart.getHours() + clippedStart.getMinutes() / 60;
                         const eh = clippedEnd.getHours() + clippedEnd.getMinutes() / 60;
-                        const startSlot = Math.max(0, Math.floor(sh) - startHour);
-                        let endSlot = Math.min(totalSlots, Math.ceil(eh) - startHour);
+                        const startSlot = Math.max(0, Math.floor((sh - startHour) * slotsPerHour));
+                        let endSlot = Math.min(totalSlots, Math.ceil((eh - startHour) * slotsPerHour));
                         if (endSlot <= startSlot) {
                             endSlot = Math.min(totalSlots, startSlot + 1);
                         }
@@ -621,8 +640,10 @@ window.CalendarCore = (function () {
 
                 for (let slot = 0; slot < totalSlots; slot++) {
                     const row = dayOffset * totalSlots + slot;
-                    const hour = startHour + slot;
-                    const hourStr = String(hour).padStart(2, "0") + ":00";
+                    const totalMinutes = Math.floor((slot / slotsPerHour) * 60);
+                    const hour = startHour + Math.floor(totalMinutes / 60);
+                    const minutes = totalMinutes % 60;
+                    const hourStr = String(hour).padStart(2, "0") + ":" + String(minutes).padStart(2, "0");
                     html += "<tr>";
 
                     if (slot === 0) {
@@ -787,6 +808,10 @@ window.CalendarCore = (function () {
             config.startDate = startDate;
             config.scale = "Day";
             config.days = 7;
+            const weekCellWidth = getSchedulerWeekCellWidth(containerId, config.rowHeaderWidth, config.days);
+            if (weekCellWidth !== null) {
+                config.cellWidth = weekCellWidth;
+            }
             config.timeHeaders = [
                 { groupBy: "Month" },
                 { groupBy: "Day", format: schedulerDayHeaderFormat }
