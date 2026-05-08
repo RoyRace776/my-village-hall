@@ -4,12 +4,23 @@ namespace MYVH\Network;
 
 use MYVH\Bootstrap\Installer;
 use MYVH\Rooms\RoomService;
+use MYVH\Rooms\RoomRepository;
+use MYVH\Rooms\RoomHoursRepository;
+use MYVH\Rooms\RoomDepositRepository;
 use MYVH\Venues\VenueService;
+use MYVH\Venues\VenueRepository;
+use MYVH\Venues\VenueHoursRepository;
 use MYVH\Pricing\RoomRateService;
+use MYVH\Pricing\RoomRateRepository;
 use MYVH\Settings\GeneralSettings;
 use MYVH\Settings\NoticeSettings;
 use MYVH\Customers\CustomerService;
+use MYVH\Customers\CustomerRepository;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Availability\AvailabilityService;
+use MYVH\Bookings\BookingRepository;
+use MYVH\Organisations\OrganisationRepository;
+use MYVH\Organisations\OrganisationMemberRepository;
 
 class SiteSeeder {
 
@@ -123,30 +134,31 @@ class SiteSeeder {
     protected function make_venue_service(): VenueService {
         global $wpdb;
         return new VenueService(
-            new \MYVH\Venues\VenueRepository($wpdb),
-            new \MYVH\Venues\VenueHoursRepository($wpdb),
-            new \MYVH\Rooms\RoomRepository($wpdb)
+            new VenueRepository($wpdb),
+            new VenueHoursRepository($wpdb),
+            new RoomRepository($wpdb)
         );
     }
 
     protected function make_room_service(): RoomService {
         global $wpdb;
         return new RoomService(
-            new \MYVH\Rooms\RoomRepository($wpdb),
-            new \MYVH\Rooms\RoomHoursRepository($wpdb),
-            $this->make_availability_service()
+            new RoomRepository($wpdb),
+            new RoomHoursRepository($wpdb),
+            $this->make_availability_service(),
+            new RoomDepositRepository($wpdb)
         );
     }
 
     // This is needed just so we can create a RoomService instance.  No functionality is used in this seeder.
-    protected function make_availability_service(): \MYVH\Availability\AvailabilityService {
+    protected function make_availability_service(): AvailabilityService {
         global $wpdb;
-        return new \MYVH\Availability\AvailabilityService(
-            new \MYVH\Bookings\BookingRepository($wpdb),
-            new \MYVH\Rooms\RoomRepository($wpdb),
-            new \MYVH\Rooms\RoomHoursRepository($wpdb),
-            new \MYVH\Venues\VenueRepository($wpdb),
-            new \MYVH\Venues\VenueHoursRepository($wpdb)
+        return new AvailabilityService(
+            new BookingRepository($wpdb),
+            new RoomRepository($wpdb),
+            new RoomHoursRepository($wpdb),
+            new VenueRepository($wpdb),
+            new VenueHoursRepository($wpdb)
         );
 
     }
@@ -154,18 +166,18 @@ class SiteSeeder {
     protected function make_room_rate_service(): RoomRateService {
         global $wpdb;
         return new RoomRateService(
-            new \MYVH\Pricing\RoomRateRepository($wpdb),
-            new \MYVH\Customers\CustomerRepository($wpdb)
+            new RoomRateRepository($wpdb),
+            new CustomerRepository($wpdb)
         );
     }
 
     protected function make_customer_service(): CustomerService {
         global $wpdb;
         return new CustomerService(
-            new \MYVH\Customers\CustomerRepository($wpdb),
-            new \MYVH\Bookings\BookingRepository($wpdb),
-            new \MYVH\Organisations\OrganisationRepository($wpdb),
-            new \MYVH\Organisations\OrganisationMemberRepository($wpdb)
+            new CustomerRepository($wpdb),
+            new BookingRepository($wpdb),
+            new OrganisationRepository($wpdb),
+            new OrganisationMemberRepository($wpdb)
         );
     }
 
