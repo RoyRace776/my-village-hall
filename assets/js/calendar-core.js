@@ -625,8 +625,9 @@ window.CalendarCore = (function () {
                 });
             });
 
+            const timetableClass = detail === "Day" ? "myvh-timetable myvh-timetable--day" : "myvh-timetable";
             let html = '<div class="myvh-timetable-scroll">';
-            html += '<table class="myvh-timetable" role="grid">';
+            html += `<table class="${timetableClass}" role="grid">`;
             html += '<thead><tr>';
             html += '<th class="myvh-tt-corner">Date</th>';
             html += '<th class="myvh-tt-corner-sub">Time</th>';

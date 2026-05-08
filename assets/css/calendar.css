@@ -686,6 +686,27 @@ body .scheduler_default_event_inner {
     background: #fff;
 }
 
+.myvh-timetable--day .myvh-tt-empty-cell {
+    height: 20px;
+}
+
+.myvh-timetable--day .myvh-tt-time-cell {
+    font-size: 10px;
+    padding: 2px 6px 0;
+}
+
+.myvh-timetable--day .myvh-tt-event-cell {
+    padding: 2px 4px;
+}
+
+.myvh-timetable--day .myvh-tt-event-title {
+    font-size: 11px;
+}
+
+.myvh-timetable--day .myvh-tt-event-time {
+    font-size: 10px;
+}
+
 .myvh-tt-empty-cell:hover {
     background: #f0f6fc;
 }
