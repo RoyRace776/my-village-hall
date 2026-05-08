@@ -2,6 +2,7 @@
 namespace MYVH\Portal\Ajax;
 
 use MYVH\Customers\CustomerService;
+use MYVH\Email\PasswordSetupEmailService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\PortalAuth;
 
@@ -104,7 +105,7 @@ class PortalPeopleAjaxController {
             $saved_customer_id = (int) $saved;
             $customer = $this->customer_service->get($saved_customer_id);
             if (!empty($customer['WPUserId'])) {
-                $email_service = new \MYVH\Email\PasswordSetupEmailService();
+                $email_service = new PasswordSetupEmailService();
                 $email_service->send_password_setup_email($saved_customer_id, (int) $customer['WPUserId']);
             }
         }

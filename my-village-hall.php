@@ -33,6 +33,7 @@ use MYVH\Calendar\CalendarStatusColours;
 use MYVH\Availability\AvailabilityService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Network\NetworkDashboard;
+use MYVH\Network\SiteSeeder;
 use MYVH\Bootstrap\Installer;
 use MYVH\Login\PasswordResetLoader;
 use MYVH\Audit\AuditTrail;
@@ -271,7 +272,7 @@ class MyVillageHall {
 
     /** Seeds a newly-cloned site. */
     public function handle_site_cloned( $blog_id, $context ): void {
-        ( new \MYVH\Network\SiteSeeder() )->seed( $blog_id, $context );
+        ( new SiteSeeder() )->seed( $blog_id, $context );
     }
 
     /** Drops plugin tables and removes provisioning records for a deleted site. */

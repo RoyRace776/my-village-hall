@@ -3,6 +3,7 @@ namespace MYVH\Portal\Ajax;
 
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
+use MYVH\Email\EmailService;
 use MYVH\Invoices\InvoiceGeneratorService;
 use MYVH\Invoices\InvoiceService;
 use MYVH\Payments\PaymentService;
@@ -222,7 +223,7 @@ class PortalBillingAjaxController {
             wp_send_json_error(['message' => $pdf_path->get_error_message()], 400);
         }
 
-        $email_service = new \MYVH\Email\EmailService();
+        $email_service = new EmailService();
         $send_result = $email_service->send([
             'to' => $recipient,
             'template' => 'invoice',
@@ -264,7 +265,7 @@ class PortalBillingAjaxController {
     }
 
     private function build_template_vars(int $invoice_id, array $invoice): array {
-        $email_service = new \MYVH\Email\EmailService();
+        $email_service = new EmailService();
         $branding = $email_service->get_branding();
         $invoice_url = '';
 

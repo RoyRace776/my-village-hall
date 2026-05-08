@@ -2,6 +2,7 @@
 namespace MYVH\Portal\Ajax;
 
 use MYVH\Customers\CustomerService;
+use MYVH\Email\PasswordSetupEmailService;
 use MYVH\Login\PasswordValidator;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\PortalAuth;
@@ -132,7 +133,7 @@ class PortalAccountAjaxController {
             wp_send_json_error('Customer does not have a WordPress account', 400);
         }
 
-        $email_service = new \MYVH\Email\PasswordSetupEmailService();
+        $email_service = new PasswordSetupEmailService();
         $result = $email_service->send_password_setup_email($customer_id, (int) $customer['WPUserId']);
 
         if (!$result) {
