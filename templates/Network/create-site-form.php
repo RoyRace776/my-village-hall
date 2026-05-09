@@ -24,8 +24,20 @@ $verification_result = !empty($verification_result);
 $verification_action = isset($verification_action) ? (string) $verification_action : 'verify';
 $submitted = !empty($submitted);
 $network_domain = isset($network_domain) ? (string) $network_domain : '';
+$network_path = isset($network_path) ? (string) $network_path : '/';
+$is_subdomain = !empty($is_subdomain);
 $captcha_site_key = isset($captcha_site_key) ? (string) $captcha_site_key : '';
 $request_page_url = isset($request_page_url) ? (string) $request_page_url : home_url('/');
+
+$site_slug = sanitize_title((string) ($form_values['subdomain'] ?? ''));
+$site_address_display = $site_slug;
+if ($site_slug !== '' && $network_domain !== '') {
+    if ($is_subdomain) {
+        $site_address_display = $site_slug . '.' . $network_domain;
+    } else {
+        $site_address_display = $network_domain . trailingslashit('/' . ltrim($network_path, '/')) . $site_slug;
+    }
+}
 ?>
 <?php if (!empty($verification_result)): ?>
 <div class="myvh-site-request-wrap myvh-site-request-wrap--confirm">
@@ -80,7 +92,7 @@ $request_page_url = isset($request_page_url) ? (string) $request_page_url : home
                 </div>
                 <div class="myvh-site-request-confirm__row">
                     <dt><?php echo esc_html__('Site address', 'my-village-hall'); ?></dt>
-                    <dd><samp><?php echo esc_html($form_values['subdomain']); ?><?php if (!empty($network_domain)): ?>.<?php echo esc_html($network_domain); ?><?php endif; ?></samp></dd>
+                    <dd><samp><?php echo esc_html($site_address_display); ?></samp></dd>
                 </div>
                 <div class="myvh-site-request-confirm__row">
                     <dt><?php echo esc_html__('Administrator', 'my-village-hall'); ?></dt>
@@ -129,7 +141,7 @@ $request_page_url = isset($request_page_url) ? (string) $request_page_url : home
                 </div>
                 <div class="myvh-site-request-confirm__row">
                     <dt><?php echo esc_html__('Site address', 'my-village-hall'); ?></dt>
-                    <dd><samp><?php echo esc_html($form_values['subdomain']); ?><?php if (!empty($network_domain)): ?>.<?php echo esc_html($network_domain); ?><?php endif; ?></samp></dd>
+                    <dd><samp><?php echo esc_html($site_address_display); ?></samp></dd>
                 </div>
                 <div class="myvh-site-request-confirm__row">
                     <dt><?php echo esc_html__('Administrator name', 'my-village-hall'); ?></dt>

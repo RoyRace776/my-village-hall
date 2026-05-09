@@ -6,6 +6,7 @@ use Brain\Monkey\Functions;
 use MYVH\Login\PasswordValidator;
 use MYVH\Network\CreateSiteRequestValidator;
 use MYVH\Tests\Unit\UnitTestCase;
+use PHPUnit\Framework\Assert;
 use WP_Error;
 
 class CreateSiteRequestValidatorTest extends UnitTestCase {
@@ -14,10 +15,8 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
     protected function setUp(): void {
         parent::setUp();
 
-        Functions\stubs([
-            'is_email' => static fn($value) => is_string($value) && str_contains($value, '@'),
-            'is_wp_error' => static fn($value) => $value instanceof WP_Error,
-        ]);
+        Functions\when('is_email')->alias(static fn($value) => is_string($value) && str_contains($value, '@'));
+        Functions\when('is_wp_error')->alias(static fn($value) => $value instanceof WP_Error);
 
         $this->validator = new CreateSiteRequestValidator(new PasswordValidator());
     }
@@ -33,21 +32,19 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
             'admin_password' => 'password1!',
         ]);
 
-        $this->assertInstanceOf(WP_Error::class, $result);
-        $this->assertSame('Password must include at least one uppercase letter.', $result->get_error_message());
+        Assert::assertInstanceOf(WP_Error::class, $result);
+        Assert::assertSame('Password must include at least one uppercase letter.', $result->get_error_message());
     }
 
     /** @test */
     public function validate_accepts_hyphenated_subdomain(): void {
-        Functions\stubs([
-            'is_multisite' => true,
-            'is_subdomain_install' => true,
-            'get_network' => (object) [
+        Functions\when('is_multisite')->justReturn(true);
+        Functions\when('is_subdomain_install')->justReturn(true);
+        Functions\when('get_network')->justReturn((object) [
                 'domain' => 'example.com',
                 'id' => 1,
-            ],
-            'domain_exists' => false,
-        ]);
+            ]);
+        Functions\when('domain_exists')->justReturn(false);
 
         $result = $this->validator->validate([
             'site_name' => 'Test Site',
@@ -58,7 +55,7 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
             'admin_password' => 'Password1!',
         ]);
 
-        $this->assertTrue($result);
+        Assert::assertTrue($result);
     }
 
     /** @test */
@@ -72,7 +69,7 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
             'admin_password' => 'Password1!',
         ]);
 
-        $this->assertInstanceOf(WP_Error::class, $result);
-        $this->assertSame('Site path cannot begin or end with a hyphen.', $result->get_error_message());
+        Assert::assertInstanceOf(WP_Error::class, $result);
+        Assert::assertSame('Site path cannot begin or end with a hyphen.', $result->get_error_message());
     }
 }

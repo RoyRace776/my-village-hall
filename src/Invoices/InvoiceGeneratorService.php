@@ -26,18 +26,18 @@ if (!defined('ABSPATH')) {
 
 class InvoiceGeneratorService {
 
-    private $invoiceService;
-    private $invoice_repo;
-    private $invoice_item_repo;
-    private $booking_repo;
-    private $booking_service;
-    private $booking_charge_repo;
-    private $booking_addon_repo;
-    private $addon_repo;
-    private $customer_repo;
-    private $organisation_repo;
-    private $pricing_service;
-    private $deposit_service;
+    private InvoiceService $invoiceService;
+    private InvoiceRepository $invoice_repo;
+    private InvoiceItemRepository $invoice_item_repo;
+    private BookingRepository $booking_repo;
+    private BookingService $booking_service;
+    private BookingChargeRepository $booking_charge_repo;
+    private BookingAddonRepository $booking_addon_repo;
+    private AddonRepository $addon_repo;
+    private CustomerRepository $customer_repo;
+    private OrganisationRepository $organisation_repo;
+    private PricingService $pricing_service;
+    private DepositService $deposit_service;
 
     public function __construct(
         InvoiceService $invoiceService,
