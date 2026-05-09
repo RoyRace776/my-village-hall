@@ -4,6 +4,7 @@ namespace MYVH\Portal\Ajax;
 use MYVH\Addons\AddonRequestValidator;
 use MYVH\Addons\AddonService;
 use MYVH\Addons\SaveAddonRequest;
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Organisations\SaveOrganisationTypeRequest;
 use MYVH\Portal\ClientAdminService;
@@ -26,6 +27,7 @@ class PortalAdminConfigAjaxController {
     public function __construct(
         private OrganisationTypeService $organisation_type_service,
         private ClientAdminService $client_admin_service,
+        private SingleBookingAutoInvoiceRuleRepository $single_booking_rule_repository,
         private RoomService $room_service,
         private RoomRequestValidator $room_request_validator,
         private RoomRateService $room_rate_service,
@@ -48,6 +50,7 @@ class PortalAdminConfigAjaxController {
         add_action('wp_ajax_myvh_portal_save_addon', [$this, 'save_addon']);
         add_action('wp_ajax_myvh_portal_delete_addon', [$this, 'delete_addon']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
+        add_action('wp_ajax_myvh_portal_save_single_booking_invoice_rules', [$this, 'save_single_booking_invoice_rules']);
     }
 
     public function save_organisation_type(): void {
@@ -343,5 +346,78 @@ class PortalAdminConfigAjaxController {
         $settings->save($input);
 
         wp_send_json_success(['message' => 'Client settings updated']);
+    }
+
+    public function save_single_booking_invoice_rules(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $rows = wp_unslash($_POST['rules'] ?? []);
+        if (!is_array($rows)) {
+            $rows = [];
+        }
+
+        $active_rule_ids = [];
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $name = sanitize_text_field($row['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+
+            $trigger_timing = sanitize_key($row['trigger_timing'] ?? 'confirmation');
+            if (!in_array($trigger_timing, ['confirmation', 'booking_date', 'days_before_booking_date', 'days_after_booking_date'], true)) {
+                $trigger_timing = 'confirmation';
+            }
+
+            $group_by = sanitize_key($row['group_by'] ?? 'per_booking');
+            if (!in_array($group_by, ['per_booking', 'by_customer', 'by_organisation'], true)) {
+                $group_by = 'per_booking';
+            }
+
+            $record = [
+                'Id' => intval($row['id'] ?? 0),
+                'Name' => $name,
+                'TriggerTiming' => $trigger_timing,
+                'TriggerOffsetDays' => max(0, intval($row['trigger_offset_days'] ?? 0)),
+                'GroupBy' => $group_by,
+                'DueDateOffsetDays' => max(0, intval($row['due_date_offset_days'] ?? 30)),
+                'SortOrder' => max(0, intval($row['sort_order'] ?? 0)),
+                'IsActive' => !empty($row['is_active']) ? 1 : 0,
+            ];
+
+            $saved_rule_id = $this->single_booking_rule_repository->upsert_rule($record);
+            if (!$saved_rule_id) {
+                continue;
+            }
+
+            if ($record['IsActive'] === 1) {
+                $active_rule_ids[] = intval($saved_rule_id);
+            }
+        }
+
+        $this->single_booking_rule_repository->deactivate_rules_not_in($active_rule_ids);
+
+        $settings = get_option('myvh_invoicing_settings', []);
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        $requested_default_rule_id = intval($_POST['default_rule_id'] ?? 0);
+        if ($requested_default_rule_id > 0 && $this->single_booking_rule_repository->is_active_rule($requested_default_rule_id)) {
+            $settings['single_default_rule_id'] = $requested_default_rule_id;
+        } else {
+            $settings['single_default_rule_id'] = intval($this->single_booking_rule_repository->get_first_active_rule_id() ?? 0);
+        }
+
+        update_option('myvh_invoicing_settings', $settings);
+
+        wp_send_json_success([
+            'message' => 'Single booking invoice rules updated',
+            'redirect' => 'single-booking-invoice-rules',
+        ]);
     }
 }

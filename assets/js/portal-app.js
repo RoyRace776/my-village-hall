@@ -298,6 +298,73 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.MyvhFlatpickr?.initWithin(document);
 
+        // Single booking invoice rules table (portal admin page)
+        (function initSingleBookingInvoiceRulesPage() {
+            const table = document.getElementById('myvh-single-booking-rules-table');
+            const addButton = document.getElementById('myvh-add-single-booking-rule');
+
+            if (!table || !addButton) {
+                return;
+            }
+
+            if (table.dataset.rulesInit === '1') {
+                return;
+            }
+
+            table.dataset.rulesInit = '1';
+
+            const body = table.querySelector('tbody');
+            if (!body) {
+                return;
+            }
+
+            const nextIndex = function () {
+                return body.querySelectorAll('tr.myvh-rule-row').length;
+            };
+
+            const buildRow = function (index) {
+                const row = document.createElement('tr');
+                row.className = 'myvh-rule-row';
+                row.innerHTML = '' +
+                    '<td><input type="hidden" name="rules[' + index + '][id]" value="0"><input type="text" name="rules[' + index + '][name]" required></td>' +
+                    '<td><select name="rules[' + index + '][trigger_timing]">' +
+                        '<option value="confirmation">On booking confirmation</option>' +
+                        '<option value="booking_date">On booking date</option>' +
+                        '<option value="days_before_booking_date">N days before booking date</option>' +
+                        '<option value="days_after_booking_date">N days after booking date</option>' +
+                    '</select></td>' +
+                    '<td><input type="number" name="rules[' + index + '][trigger_offset_days]" min="0" value="0"></td>' +
+                    '<td><select name="rules[' + index + '][group_by]">' +
+                        '<option value="per_booking">Per booking</option>' +
+                        '<option value="by_customer">By customer</option>' +
+                        '<option value="by_organisation">By organisation</option>' +
+                    '</select></td>' +
+                    '<td><input type="number" name="rules[' + index + '][due_date_offset_days]" min="0" value="30"></td>' +
+                    '<td><input type="number" name="rules[' + index + '][sort_order]" min="0" value="0"></td>' +
+                    '<td><input type="checkbox" name="rules[' + index + '][is_active]" value="1" checked></td>' +
+                    '<td><button type="button" class="button myvh-remove-rule-row">Remove</button></td>';
+
+                return row;
+            };
+
+            addButton.addEventListener('click', function () {
+                body.appendChild(buildRow(nextIndex()));
+            });
+
+            body.addEventListener('click', function (event) {
+                const target = event.target;
+
+                if (!target || !target.classList.contains('myvh-remove-rule-row')) {
+                    return;
+                }
+
+                const row = target.closest('tr.myvh-rule-row');
+                if (row) {
+                    row.remove();
+                }
+            });
+        })();
+
         // Notices repeater (portal settings page)
         document.querySelectorAll('[data-notices-repeater]').forEach(function (wrapper) {
             if (wrapper._myvhNoticesInit) return;
@@ -1092,6 +1159,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /**
+     * Escape text for safe inline HTML rendering.
+     * @param {string} value
+     * @returns {string}
+     */
+    function escapeHtmlText(value) {
+        return String(value).replace(/[&<>"']/g, function (character) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
+        });
+    }
+
+    /**
      * Load a portal page via AJAX and re-initialize widgets.
      * @param {string} page - The page slug
      * @param {object} params - Extra query params
@@ -1121,14 +1199,59 @@ document.addEventListener("DOMContentLoaded", () => {
             myvhPortal.ajax_url
             + "?" + query.toString()
         )
-            .then(r => r.text())
-            .then(html => {
-                document.getElementById("portal-content").innerHTML = html;
+            .then(async (response) => {
+                const text = await response.text();
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    text,
+                    contentType: response.headers.get('content-type') || '',
+                };
+            })
+            .then(({ ok, status, text, contentType }) => {
+                const portalContent = document.getElementById('portal-content');
+                if (!portalContent) {
+                    return;
+                }
+
+                const trimmed = (text || '').trim();
+                let html = text;
+
+                const looksLikeJson = contentType.includes('application/json') || (trimmed.startsWith('{') && trimmed.endsWith('}'));
+                if (looksLikeJson) {
+                    try {
+                        const payload = JSON.parse(trimmed);
+                        if (payload && payload.success === false) {
+                            const message = resolveMessageText(payload.data, 'Unable to load this portal page.');
+                            html = '<div class="myvh-card"><p class="myvh-error">' + escapeHtmlText(message) + '</p></div>';
+                        }
+                    } catch (_error) {
+                        // Keep non-JSON text untouched.
+                    }
+                }
+
+                if (!trimmed) {
+                    html = '<div class="myvh-card"><p class="myvh-error">Unable to load this portal page. Please refresh and try again.</p></div>';
+                }
+
+                if (!ok && (!html || !html.trim())) {
+                    html = '<div class="myvh-card"><p class="myvh-error">Unable to load this portal page (HTTP ' + status + ').</p></div>';
+                }
+
+                portalContent.innerHTML = html;
                 initPortalPage();
 
                 if (legacyBookingAction) {
                     runWhenPortalBookingFlowReady(legacyBookingAction.run);
                 }
+            })
+            .catch(() => {
+                const portalContent = document.getElementById('portal-content');
+                if (!portalContent) {
+                    return;
+                }
+
+                portalContent.innerHTML = '<div class="myvh-card"><p class="myvh-error">Unable to load this portal page. Please check your connection and try again.</p></div>';
             });
     }
 

@@ -8,6 +8,7 @@ if (!current_user_can('manage_myvh')) {
 }
 //TODO: Update to make password mandatory when creating or editing customer
 use MYVH\Customers\CustomerService;
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\Organisations\OrganisationService;
 
 global $myvh_container;
@@ -15,9 +16,11 @@ global $myvh_container;
 $edit_id          = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $customer_service = $myvh_container->get(CustomerService::class);
 $org_service      = $myvh_container->get(OrganisationService::class);
+$rule_repository  = $myvh_container->get(SingleBookingAutoInvoiceRuleRepository::class);
 $default_org      = $org_service->get_default();
 $edit_customer    = $edit_id ? $customer_service->get($edit_id) : null;
 $customers        = $customer_service->get_with_organisations();
+$rule_options     = $rule_repository->get_rule_options();
 
 // For edit mode: current memberships and organisations still available to join
 $customer_orgs  = [];
@@ -173,6 +176,17 @@ if ($edit_customer) {
                                 <?php if (current_user_can('manage_myvh_client_admin')): ?>
                                 <br>
                                 <label>
+                                <p style="margin-top:10px;">
+                                    <label for="myvh-customer-auto-invoice-rule"><strong><?php _e('Single booking auto-invoice rule', 'my-village-hall'); ?></strong></label><br>
+                                    <select id="myvh-customer-auto-invoice-rule" name="single_booking_auto_invoice_rule_id" class="regular-text">
+                                        <option value="0"><?php _e('Use default rule', 'my-village-hall'); ?></option>
+                                        <?php foreach ($rule_options as $rule_id => $rule_name): ?>
+                                            <option value="<?php echo intval($rule_id); ?>" <?php selected(intval($edit_customer['SingleBookingAutoInvoiceRuleId'] ?? 0), intval($rule_id)); ?>>
+                                                <?php echo esc_html($rule_name); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </p>
                                     <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked($edit_customer && !empty($edit_customer['AllowAutoConfirm'])); ?>>
                                     <?php _e('Allow Auto Confirm', 'my-village-hall'); ?>
                                 </label>

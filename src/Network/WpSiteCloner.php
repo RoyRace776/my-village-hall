@@ -20,10 +20,6 @@ class WpSiteCloner {
         // -------------------------------------------------
         $mode = $context['force_mode'] ?? (is_subdomain_install() ? 'subdomain' : 'subdirectory');
 
-        do_action( 'qm/debug', 'Mode: ' . $mode . ' (force_mode: ' . ($context['force_mode'] ?? 'none') . ')');
-        do_action ( 'qm/debug', 'Network: ' . $network->id . ' (' . $network->domain . $network->path . ')' );
-        do_action( 'qm/debug', 'Subdomain: ' . $subdomain );
-
         $is_subdomain_mode = ($mode === 'subdomain');
 
         if ($is_subdomain_mode) {
@@ -51,7 +47,6 @@ class WpSiteCloner {
         // -------------------------------------------------
         // 3. Check if site exists (important to do this before creating the site to avoid orphaned sites in case of errors)
         // -------------------------------------------------
-        do_action( 'qm/debug', 'Checking if site exists: ' . $domain . $path );
         if ( $is_subdomain_mode ) {
             $query_args = [
                 'domain' => $subdomain . '.' . $domain,

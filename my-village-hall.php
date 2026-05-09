@@ -25,6 +25,7 @@ use MYVH\Organisations\OrganisationController;
 use MYVH\Organisations\OrganisationTypeController;
 use MYVH\Pricing\RoomRateController;
 use MYVH\Addons\AddonController;
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleController;
 use MYVH\Invoices\InvoiceController;
 use MYVH\Payments\PaymentController;
 use MYVH\Settings\GeneralSettings;
@@ -343,6 +344,7 @@ class MyVillageHall {
         $this->on_admin_post( 'myvh_email_invoice',         InvoiceController::class, 'email_invoice' );
         $this->on_admin_post( 'myvh_delete_invoice',        InvoiceController::class, 'delete' );
         $this->on_admin_post( 'myvh_update_invoice_status', InvoiceController::class, 'update_status' );
+        $this->on_admin_post( 'myvh_save_single_booking_auto_invoice_rules', SingleBookingAutoInvoiceRuleController::class, 'save' );
         $this->on_admin_post( 'myvh_record_payment',        PaymentController::class, 'create' );
         $this->on_admin_post( 'myvh_delete_payment',        PaymentController::class, 'delete' );
 
@@ -502,6 +504,14 @@ class MyVillageHall {
             'manage_options', 'myvh-invoice-generate', [ $this, 'render_invoice_generate_page' ]
         );
 
+        add_submenu_page( 'my-village-hall',
+            __( 'Single Booking Invoice Rules', 'my-village-hall' ),
+            __( 'Single Invoice Rules', 'my-village-hall' ),
+            'manage_options',
+            'myvh-single-booking-invoice-rules',
+            [ $this, 'render_single_booking_invoice_rules_page' ]
+        );
+
         $this->add_menu_separator();
 
         add_submenu_page( 'my-village-hall',
@@ -565,6 +575,7 @@ li a[href=\"admin.php?page={$safe}\"] span { display: none; }
     public function render_addons_page(): void            { $this->render_page( 'addons' ); }
     public function render_invoices_page(): void          { $this->render_page( 'invoices', true ); }
     public function render_invoice_generate_page(): void  { $this->render_page( 'invoice-generate' ); }
+    public function render_single_booking_invoice_rules_page(): void { $this->render_page( 'single-booking-invoice-rules' ); }
     public function render_recurring_page(): void         { $this->render_page( 'recurring' ); }
     public function render_audit_log_page(): void         { $this->render_page( 'audit-log' ); }
 

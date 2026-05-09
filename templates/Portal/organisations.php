@@ -2,6 +2,10 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+if (!isset($is_client_admin)) {
+    $is_client_admin = false;
+}
+
 $organisation_types = isset($organisation_types) && is_array($organisation_types) ? $organisation_types : [];
 $organisation_type_lookup = [];
 foreach ($organisation_types as $organisation_type) {
@@ -194,6 +198,18 @@ foreach ($organisation_types as $organisation_type) {
                             <label class="myvh-toggle-row">
                                 <input type="checkbox" name="invoice_organisation_bookings" value="1" class="myvh-org-invoice-toggle" <?php checked(!empty($org['InvoiceOrganisationBookings'])); ?>>
                                 <span>Invoice this organisation for its bookings</span>
+                            </label>
+
+                            <label class="myvh-account-field">
+                                <span>Single booking auto-invoice rule</span>
+                                <select name="single_booking_auto_invoice_rule_id">
+                                    <option value="0">Use default rule</option>
+                                    <?php foreach (($single_booking_rule_options ?? []) as $rule_id => $rule_name): ?>
+                                        <option value="<?php echo esc_attr((int) $rule_id); ?>" <?php selected((int) ($org['SingleBookingAutoInvoiceRuleId'] ?? 0), (int) $rule_id); ?>>
+                                            <?php echo esc_html($rule_name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </label>
 
                             <div class="myvh-org-billing-fields"<?php echo empty($org['InvoiceOrganisationBookings']) ? ' hidden' : ''; ?> >

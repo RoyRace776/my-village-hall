@@ -17,6 +17,7 @@ class SaveCustomerRequest extends RequestMapperBase {
             'address_line1'      => self::as_text($post, 'address_line1'),
             'email_verified'     => self::as_bool_int($post, 'email_verified'),
             'allow_auto_confirm' => self::as_bool_int($post, 'allow_auto_confirm'),
+            'single_booking_auto_invoice_rule_id' => self::as_int($post, 'single_booking_auto_invoice_rule_id'),
         ];
     }
 }

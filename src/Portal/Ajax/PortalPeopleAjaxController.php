@@ -82,6 +82,7 @@ class PortalPeopleAjaxController {
             'post_code' => $post_code,
             'email_verified' => $email_verified,
             'allow_auto_confirm' => !empty($_POST['allow_auto_confirm']),
+            'single_booking_auto_invoice_rule_id' => intval($_POST['single_booking_auto_invoice_rule_id'] ?? 0),
         ];
 
         if ($customer_id > 0) {

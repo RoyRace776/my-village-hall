@@ -164,6 +164,7 @@ class OrganisationServiceTest extends UnitTestCase {
             'contact_email' => 'hello@example.org',
             'contact_phone' => '01234567',
             'invoice_organisation_bookings' => 0,
+            'single_booking_auto_invoice_rule_id' => 25,
             'is_active' => 1,
             'is_default' => 0,
             'default_public' => 0,
@@ -204,8 +205,41 @@ class OrganisationServiceTest extends UnitTestCase {
             'contact_phone' => '07700 900111',
             'send_booking_emails_to_organisation' => 1,
             'invoice_organisation_bookings' => 1,
+            'single_booking_auto_invoice_rule_id' => 31,
             'billing_contact_name' => 'Accounts Team',
             'billing_email' => 'billing@example.org',
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function update_billing_details_by_admin_persists_single_booking_auto_invoice_rule_id(): void {
+        $this->member_repo->shouldReceive('is_customer_admin')
+            ->once()
+            ->with(14, 77)
+            ->andReturn(true);
+
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(14)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 14,
+                'ContactEmail' => 'billing@example.org',
+                'ContactPhone' => '01234 222222',
+                'SendBookingEmailsToOrganisation' => 0,
+            ]);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->withArgs(function (array $record, array $where): bool {
+                return (int) ($record['SingleBookingAutoInvoiceRuleId'] ?? 0) === 31
+                    && $where['Id'] === 14;
+            })
+            ->andReturn(true);
+
+        $result = $this->service->update_billing_details_by_admin(14, 77, [
+            'single_booking_auto_invoice_rule_id' => 31,
         ]);
 
         $this->assertTrue($result);

@@ -3,10 +3,13 @@ if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village-hall'));
 
 use MYVH\Organisations\OrganisationService;
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 
 global $myvh_container;
 $org_service = $myvh_container->get(OrganisationService::class);
+$rule_repository = $myvh_container->get(SingleBookingAutoInvoiceRuleRepository::class);
 $default_org = $org_service->get_default();
+$rule_options = $rule_repository->get_rule_options();
 $edit_customer = null;
 $customer_orgs = [];
 $available_orgs = [];
@@ -59,6 +62,15 @@ $available_orgs = [];
                                     <input type="checkbox" name="allow_auto_confirm" value="1">
                                     <?php _e('Allow Auto Confirm', 'my-village-hall'); ?>
                                 </label>
+                                <p style="margin-top:10px;">
+                                    <label for="myvh-new-customer-auto-invoice-rule"><strong><?php _e('Single booking auto-invoice rule', 'my-village-hall'); ?></strong></label><br>
+                                    <select id="myvh-new-customer-auto-invoice-rule" name="single_booking_auto_invoice_rule_id" class="regular-text">
+                                        <option value="0"><?php _e('Use default rule', 'my-village-hall'); ?></option>
+                                        <?php foreach ($rule_options as $rule_id => $rule_name): ?>
+                                            <option value="<?php echo intval($rule_id); ?>"><?php echo esc_html($rule_name); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </p>
                             </td>
                         </tr>
                         <?php endif; ?>

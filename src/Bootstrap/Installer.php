@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '1.1.0';
+    const DB_VERSION = '1.3.0';
 
     /**
      * Entry point: create all tables.
@@ -69,11 +69,35 @@ class Installer {
         if (version_compare($from, '1.1.0', '<')) {
             self::upgrade_to_1_1_0($wpdb);
         }
+
+        if (version_compare($from, '1.2.0', '<')) {
+            self::upgrade_to_1_2_0($wpdb);
+        }
+
+        if (version_compare($from, '1.3.0', '<')) {
+            self::upgrade_to_1_3_0($wpdb);
+        }
     }
 
     private static function upgrade_to_1_1_0(wpdb $wpdb): void {
         $collate = $wpdb->get_charset_collate();
         self::create_invoice_items_table( $wpdb, $collate );
+    }
+
+    private static function upgrade_to_1_2_0(wpdb $wpdb): void {
+        $collate = $wpdb->get_charset_collate();
+
+        self::create_customers_table($wpdb, $collate);
+        self::create_organisations_table($wpdb, $collate);
+        self::create_single_booking_auto_invoice_rules_table($wpdb, $collate);
+        self::migrate_single_booking_auto_invoice_rule_settings($wpdb);
+    }
+
+    private static function upgrade_to_1_3_0(wpdb $wpdb): void {
+        $collate = $wpdb->get_charset_collate();
+
+        self::create_single_booking_auto_invoice_rules_table($wpdb, $collate);
+        self::migrate_single_booking_auto_invoice_rules_is_active($wpdb);
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -102,6 +126,7 @@ class Installer {
         self::create_booking_addons_table( $wpdb, $collate );
         self::create_discounts_table( $wpdb, $collate );
         self::create_booking_discounts_table( $wpdb, $collate );
+        self::create_single_booking_auto_invoice_rules_table( $wpdb, $collate );
         self::create_invoices_table( $wpdb, $collate );
         self::create_invoice_items_table( $wpdb, $collate );
         self::create_payments_table( $wpdb, $collate );
@@ -193,6 +218,7 @@ class Installer {
             BillingTownCity    VARCHAR(120) NULL,
             BillingPostcode    VARCHAR(30) NULL,
             BillingReference   VARCHAR(100) NULL,
+            SingleBookingAutoInvoiceRuleId INT UNSIGNED NULL,
             IsActive           TINYINT(1)    DEFAULT 1,
             IsDefault          TINYINT(1)    DEFAULT 0,
             IsSystem           TINYINT(1)    NOT NULL DEFAULT 0,
@@ -205,7 +231,8 @@ class Installer {
             INDEX      idx_system (IsSystem),
             INDEX      idx_default_public (DefaultPublic),
             INDEX      idx_invoice_org (InvoiceOrganisationBookings),
-            INDEX      idx_send_booking_emails_org (SendBookingEmailsToOrganisation)
+            INDEX      idx_send_booking_emails_org (SendBookingEmailsToOrganisation),
+            INDEX      idx_single_booking_auto_invoice_rule (SingleBookingAutoInvoiceRuleId)
         ) {$collate};" );
     }
 
@@ -266,10 +293,12 @@ class Installer {
             AddressLine1    VARCHAR(100),
             AddressLine2    VARCHAR(100),
             AllowAutoConfirm   TINYINT(1)   NOT NULL DEFAULT 0,
+            SingleBookingAutoInvoiceRuleId INT UNSIGNED NULL,
             IsSystem        TINYINT(1)   NOT NULL DEFAULT 0,
             Created         DATETIME     DEFAULT CURRENT_TIMESTAMP,
             Updated         DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX      idx_email          (Email),
+            INDEX      idx_single_booking_auto_invoice_rule (SingleBookingAutoInvoiceRuleId),
             UNIQUE KEY uq_wpuser (WPUserId)
         ) {$collate};" );
     }
@@ -443,6 +472,83 @@ class Installer {
             INDEX idx_booking  (BookingId),
             INDEX idx_discount (DiscountId)
         ) {$collate};" );
+    }
+
+    private static function create_single_booking_auto_invoice_rules_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_single_booking_auto_invoice_rules (
+            Id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Name              VARCHAR(120) NOT NULL,
+            TriggerTiming     VARCHAR(50) NOT NULL DEFAULT 'confirmation',
+            TriggerOffsetDays INT NOT NULL DEFAULT 0,
+            GroupBy           VARCHAR(30) NOT NULL DEFAULT 'per_booking',
+            DueDateOffsetDays INT NOT NULL DEFAULT 30,
+            SortOrder         INT NOT NULL DEFAULT 0,
+            IsActive          TINYINT(1) NOT NULL DEFAULT 1,
+            Created           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_active_sort (IsActive, SortOrder)
+        ) {$collate};");
+    }
+
+    private static function migrate_single_booking_auto_invoice_rules_is_active(wpdb $wpdb): void {
+        $rules_table = $wpdb->prefix . 'myvh_single_booking_auto_invoice_rules';
+
+        $has_enabled_column = $wpdb->get_var("SHOW COLUMNS FROM {$rules_table} LIKE 'IsEnabled'");
+
+        if (empty($has_enabled_column)) {
+            return;
+        }
+
+        // Preserve disabled rules before dropping the legacy IsEnabled column.
+        $wpdb->query("UPDATE {$rules_table} SET IsActive = CASE WHEN IsEnabled = 0 THEN 0 ELSE IsActive END");
+        $wpdb->query("ALTER TABLE {$rules_table} DROP COLUMN IsEnabled");
+    }
+
+    private static function migrate_single_booking_auto_invoice_rule_settings(wpdb $wpdb): void {
+        $settings = get_option('myvh_invoicing_settings', []);
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        $rules_table = $wpdb->prefix . 'myvh_single_booking_auto_invoice_rules';
+        $rule_count = intval($wpdb->get_var("SELECT COUNT(*) FROM {$rules_table}"));
+
+        if ($rule_count <= 0) {
+            $trigger_timing = sanitize_key($settings['single_trigger_timing'] ?? 'confirmation');
+            if (!in_array($trigger_timing, ['confirmation', 'booking_date', 'days_before_booking_date', 'days_after_booking_date'], true)) {
+                $trigger_timing = 'confirmation';
+            }
+
+            $group_by = sanitize_key($settings['single_group_by'] ?? 'per_booking');
+            if (!in_array($group_by, ['per_booking', 'by_customer', 'by_organisation'], true)) {
+                $group_by = 'per_booking';
+            }
+
+            $wpdb->insert(
+                $rules_table,
+                [
+                    'Name' => __('Default single booking rule', 'my-village-hall'),
+                    'TriggerTiming' => $trigger_timing,
+                    'TriggerOffsetDays' => max(0, intval($settings['single_trigger_offset_days'] ?? 0)),
+                    'GroupBy' => $group_by,
+                    'DueDateOffsetDays' => max(0, intval($settings['single_due_date_offset_days'] ?? 30)),
+                    'SortOrder' => 0,
+                    'IsActive' => !empty($settings['single_enabled']) ? 1 : 0,
+                ]
+            );
+
+            if (!empty($wpdb->insert_id)) {
+                $settings['single_default_rule_id'] = intval($wpdb->insert_id);
+            }
+        }
+
+        if (empty($settings['single_default_rule_id'])) {
+            $default_rule_id = $wpdb->get_var("SELECT Id FROM {$rules_table} WHERE IsActive = 1 ORDER BY SortOrder ASC, Id ASC LIMIT 1");
+            $settings['single_default_rule_id'] = intval($default_rule_id ?: 0);
+        }
+
+        update_option('myvh_invoicing_settings', $settings);
     }
 
     private static function create_invoices_table( wpdb $wpdb, string $collate ): void {
@@ -780,6 +886,7 @@ class Installer {
         $personal_org_type = self::add_personal_organisation_type($wpdb);
         self::add_default_organisation_type($wpdb);
         $personal_org_id = self::add_personal_organisation($wpdb, $personal_org_type);
+        self::migrate_single_booking_auto_invoice_rule_settings($wpdb);
 
         // This should be run afer setting the default organisation type and personal organisation, as the system customer is linked to the personal organisation type and the personal organisation is set as default (which is used when creating a new customer without an org type specified).
         self::add_system_customer($personal_org_id);
@@ -804,6 +911,7 @@ class Installer {
             'myvh_organisation_member_requests',
             'myvh_addons',
             'myvh_booking_addons',
+            'myvh_single_booking_auto_invoice_rules',
             'myvh_invoices',
             'myvh_invoice_items',
             'myvh_rooms',

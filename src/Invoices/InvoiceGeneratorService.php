@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Invoices;
 
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\Bookings\BookingRepository;
 use MYVH\Bookings\BookingService;
 use MYVH\Bookings\BookingChargeRepository;
@@ -38,6 +39,7 @@ class InvoiceGeneratorService {
     private OrganisationRepository $organisation_repo;
     private PricingService $pricing_service;
     private DepositService $deposit_service;
+    private SingleBookingAutoInvoiceRuleRepository $rule_repository;
 
     public function __construct(
         InvoiceService $invoiceService,
@@ -51,7 +53,8 @@ class InvoiceGeneratorService {
         CustomerRepository $customer_repo,
         OrganisationRepository $organisation_repo,
         PricingService $pricing_service,
-        DepositService $deposit_service
+        DepositService $deposit_service,
+        SingleBookingAutoInvoiceRuleRepository $rule_repository
     ) {
         $this->invoiceService = $invoiceService;
         $this->invoice_repo = $invoice_repo;
@@ -65,6 +68,7 @@ class InvoiceGeneratorService {
         $this->organisation_repo = $organisation_repo;
         $this->pricing_service = $pricing_service;
         $this->deposit_service = $deposit_service;
+        $this->rule_repository = $rule_repository;
     }
 
     /**
@@ -83,9 +87,41 @@ class InvoiceGeneratorService {
         $defaults = [
             'group_by' => 'per_booking',
             'trigger_event' => 'manual',
-            'recipient_type' => 'booker'
+            'recipient_type' => 'booker',
+            'rule_id' => 0,
+            'due_date_offset_days' => null,
         ];
         $options = wp_parse_args($options, $defaults);
+
+        // Resolve group_by and due_date_offset_days from the rules table when a rule_id is provided.
+        $rule_id = max(0, intval($options['rule_id'] ?? 0));
+        if ($rule_id > 0) {
+            $rule_record = $this->rule_repository->get_all_rules();
+            foreach ($rule_record as $candidate) {
+                if (intval($candidate['Id']) === $rule_id) {
+                    $options['group_by'] = (string) ($candidate['GroupBy'] ?? $options['group_by']);
+                    if ($options['due_date_offset_days'] === null) {
+                        $options['due_date_offset_days'] = max(0, intval($candidate['DueDateOffsetDays'] ?? 30));
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Fall back to the default rule in the table when no rule_id was supplied.
+        if ($options['due_date_offset_days'] === null) {
+            $default_rule_id = intval(get_option('myvh_invoicing_settings', [])['single_default_rule_id'] ?? 0);
+            $fallback_due_days = 30;
+            if ($default_rule_id > 0) {
+                foreach ($this->rule_repository->get_active_rules() as $candidate) {
+                    if (intval($candidate['Id']) === $default_rule_id) {
+                        $fallback_due_days = max(0, intval($candidate['DueDateOffsetDays'] ?? 30));
+                        break;
+                    }
+                }
+            }
+            $options['due_date_offset_days'] = $fallback_due_days;
+        }
 
         if (empty($booking_ids) || !is_array($booking_ids)) {
             return new WP_Error('invalid_bookings', __('No valid bookings provided', 'my-village-hall'));
@@ -281,10 +317,9 @@ class InvoiceGeneratorService {
 
         $total_amount = $subtotal + $tax_amount;
 
-        // Get due date from settings (default 30 days)
         $due_date_offset = apply_filters(
             'myvh_invoice_due_date_offset',
-            intval(myvh_setting('invoicing.single_due_date_offset_days', 30))
+            max(0, intval($options['due_date_offset_days'] ?? 30))
         );
 
         $billing_snapshot = $this->build_billing_snapshot($first_booking, $options);

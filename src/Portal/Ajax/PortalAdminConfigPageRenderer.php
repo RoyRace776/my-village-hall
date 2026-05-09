@@ -2,6 +2,7 @@
 namespace MYVH\Portal\Ajax;
 
 use MYVH\Addons\AddonService;
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\Audit\AuditTrail;
 use MYVH\Email\EmailTemplateRegistry;
 use MYVH\Organisations\OrganisationTypeService;
@@ -10,10 +11,12 @@ use MYVH\Rooms\RoomService;
 use MYVH\Settings\EmailTemplateSettings;
 use MYVH\Settings\SettingsRegistry;
 use MYVH\Venues\VenueService;
+use Throwable;
 
 class PortalAdminConfigPageRenderer {
     public function __construct(
         private AddonService $addon_service,
+        private SingleBookingAutoInvoiceRuleRepository $single_booking_rule_repository,
         private RoomService $room_service,
         private RoomRateService $room_rate_service,
         private VenueService $venue_service,
@@ -219,6 +222,29 @@ class PortalAdminConfigPageRenderer {
         }
 
         include MYVH_PLUGIN_DIR . 'templates/Portal/settings.php';
+    }
+
+    public function render_single_booking_invoice_rules(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
+        $rules = [];
+        $default_rule_id = 0;
+        $load_error = '';
+
+        try {
+            $rules = $this->single_booking_rule_repository->get_all_rules();
+            $invoicing_settings = get_option('myvh_invoicing_settings', []);
+            if (!is_array($invoicing_settings)) {
+                $invoicing_settings = [];
+            }
+            $default_rule_id = intval($invoicing_settings['single_default_rule_id'] ?? 0);
+        } catch (Throwable $throwable) {
+            $load_error = $throwable->getMessage();
+        }
+
+        include MYVH_PLUGIN_DIR . 'templates/Portal/single-booking-invoice-rules.php';
     }
 
     public function render_email_templates(bool $is_client_admin): void {

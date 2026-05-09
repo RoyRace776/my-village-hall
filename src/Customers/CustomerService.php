@@ -90,6 +90,7 @@ class CustomerService {
             'PostCode'       => sanitize_text_field($data['post_code'] ?? ''),
             'AddressLine1'   => sanitize_text_field($data['address_line1'] ?? ''),
             'EmailVerified'  => !empty($data['email_verified']) ? 1 : 0,
+            'SingleBookingAutoInvoiceRuleId' => !empty($data['single_booking_auto_invoice_rule_id']) ? intval($data['single_booking_auto_invoice_rule_id']) : null,
         ];
 
         // Only allow client admins to set AllowAutoConfirm

@@ -5,9 +5,12 @@ if (!current_user_can('manage_myvh')) wp_die(__('Permission denied', 'my-village
 global $myvh_container;
 
 use MYVH\Organisations\OrganisationTypeService;
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 
 $type_service = $myvh_container->get(OrganisationTypeService::class);
+$rule_repository = $myvh_container->get(SingleBookingAutoInvoiceRuleRepository::class);
 $org_types = $type_service->get_all();
+$rule_options = $rule_repository->get_rule_options();
 $default_type_id = 0;
 foreach ($org_types as $type) {
     if (!empty($type['IsDefault'])) {
@@ -89,6 +92,15 @@ foreach ($org_types as $type) {
                                     <?php _e('Invoice this organisation for its bookings', 'my-village-hall'); ?>
                                 </label>
                                 <p class="description"><?php _e('Only when enabled will organisation billing details be used and shown.', 'my-village-hall'); ?></p>
+                                <p>
+                                    <label for="myvh-new-org-auto-invoice-rule"><strong><?php _e('Single booking auto-invoice rule', 'my-village-hall'); ?></strong></label><br>
+                                    <select id="myvh-new-org-auto-invoice-rule" name="single_booking_auto_invoice_rule_id" class="regular-text">
+                                        <option value="0"><?php _e('Use default rule', 'my-village-hall'); ?></option>
+                                        <?php foreach ($rule_options as $rule_id => $rule_name): ?>
+                                            <option value="<?php echo intval($rule_id); ?>"><?php echo esc_html($rule_name); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </p>
                             </td>
                         </tr>
 

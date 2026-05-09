@@ -6,15 +6,18 @@ global $myvh_container;
 
 use MYVH\Organisations\OrganisationService;
 use MYVH\Organisations\OrganisationTypeService;
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 
 $edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $org_service  = $myvh_container->get(OrganisationService::class);
 $type_service = $myvh_container->get(OrganisationTypeService::class);
+$rule_repository = $myvh_container->get(SingleBookingAutoInvoiceRuleRepository::class);
 
 $edit_org  = $edit_id ? $org_service->get($edit_id) : null;
 $edit_org_is_system = !empty($edit_org['IsSystem']);
 $orgs      = $org_service->get_all_with_type();
 $org_types = $type_service->get_all();
+$rule_options = $rule_repository->get_rule_options();
 ?>
 
 <div class="wrap">
@@ -190,6 +193,17 @@ $org_types = $type_service->get_all();
                                     <?php _e('Invoice this organisation for its bookings', 'my-village-hall'); ?>
                                 </label>
                                 <p class="description"><?php _e('Only when enabled will organisation billing details be used and shown.', 'my-village-hall'); ?></p>
+                                <p>
+                                    <label for="myvh-org-auto-invoice-rule"><strong><?php _e('Single booking auto-invoice rule', 'my-village-hall'); ?></strong></label><br>
+                                    <select id="myvh-org-auto-invoice-rule" name="single_booking_auto_invoice_rule_id" class="regular-text">
+                                        <option value="0"><?php _e('Use default rule', 'my-village-hall'); ?></option>
+                                        <?php foreach ($rule_options as $rule_id => $rule_name): ?>
+                                            <option value="<?php echo intval($rule_id); ?>" <?php selected(intval($edit_org['SingleBookingAutoInvoiceRuleId'] ?? 0), intval($rule_id)); ?>>
+                                                <?php echo esc_html($rule_name); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </p>
                             </td>
                         </tr>
 

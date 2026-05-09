@@ -158,6 +158,10 @@ class PortalPageAjaxController {
                 $this->admin_config_page_renderer->render_settings($is_client_admin);
                 break;
 
+            case 'single-booking-invoice-rules':
+                $this->admin_config_page_renderer->render_single_booking_invoice_rules($is_client_admin);
+                break;
+
             case 'email-templates':
                 $this->admin_config_page_renderer->render_email_templates($is_client_admin);
                 break;

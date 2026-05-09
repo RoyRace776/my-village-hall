@@ -146,6 +146,25 @@ class CustomerServiceTest extends UnitTestCase
     }
 
     /** @test */
+    public function save_persists_single_booking_auto_invoice_rule_id(): void
+    {
+        $this->repo->shouldReceive('get_by_email')->andReturn(null);
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->with(Mockery::on(fn($record) => (int) ($record['SingleBookingAutoInvoiceRuleId'] ?? 0) === 18), ['Id' => 5])
+            ->andReturn(1);
+
+        $result = $this->service->save([
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
+            'customer_id' => 5,
+            'single_booking_auto_invoice_rule_id' => 18,
+        ]);
+
+        $this->assertSame(5, $result);
+    }
+
+    /** @test */
     public function save_persists_email_verified_as_zero_when_false(): void
     {
         $this->repo->shouldReceive('get_by_email')->andReturn(null);

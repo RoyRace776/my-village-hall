@@ -70,6 +70,17 @@ if (!empty($customer['Updated'])) {
                 <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked(!empty($customer['AllowAutoConfirm'])); ?>>
                 <span class="myvh-room-toggle-copy">Allow Auto Confirm</span>
             </label>
+            <label class="myvh-account-field">
+                <span>Single booking auto-invoice rule</span>
+                <select name="single_booking_auto_invoice_rule_id">
+                    <option value="0">Use default rule</option>
+                    <?php foreach (($single_booking_rule_options ?? []) as $rule_id => $rule_name): ?>
+                        <option value="<?php echo esc_attr((int) $rule_id); ?>" <?php selected((int) ($customer['SingleBookingAutoInvoiceRuleId'] ?? 0), (int) $rule_id); ?>>
+                            <?php echo esc_html($rule_name); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
             <?php endif; ?>
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Update Customer</button>

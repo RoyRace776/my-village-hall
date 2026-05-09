@@ -41,58 +41,6 @@ class AutoInvoicingSettings extends SettingsBase {
                 ],
             ],
         ],
-        'single_bookings' => [
-            'title' => 'Single Bookings Auto-Invoicing Rule',
-            'description' => 'Configure automatic invoice generation for single (non-recurring) bookings.',
-            'fields' => [
-                'single_enabled' => [
-                    'label' => 'Enable auto-invoicing for single bookings',
-                    'type' => 'boolean',
-                    'default' => false,
-                    'sanitize' => 'boolval',
-                    'description' => 'When enabled, invoices are generated automatically based on the trigger timing below.'
-                ],
-                'single_trigger_timing' => [
-                    'label' => 'Trigger event',
-                    'type' => 'select',
-                    'default' => 'confirmation',
-                    'sanitize' => 'sanitize_key',
-                    'options' => [
-                        'confirmation' => 'On booking confirmation',
-                        'booking_date' => 'On booking date',
-                        'days_before_booking_date' => 'N days before booking date',
-                        'days_after_booking_date' => 'N days after booking date'
-                    ],
-                    'description' => 'When should the invoice be automatically generated?'
-                ],
-                'single_trigger_offset_days' => [
-                    'label' => 'Days offset (if applicable)',
-                    'type' => 'number',
-                    'default' => 0,
-                    'sanitize' => 'intval',
-                    'description' => 'Only used if trigger is "N days before/after booking date".'
-                ],
-                'single_group_by' => [
-                    'label' => 'Grouping strategy',
-                    'type' => 'select',
-                    'default' => 'per_booking',
-                    'sanitize' => 'sanitize_key',
-                    'options' => [
-                        'per_booking' => 'One invoice per booking',
-                        'by_customer' => 'Group all bookings by customer into one invoice',
-                        'by_organisation' => 'Group all bookings by organisation into one invoice'
-                    ],
-                    'description' => 'How should multiple bookings be grouped into invoices?'
-                ],
-                'single_due_date_offset_days' => [
-                    'label' => 'Payment due date (days after invoice)',
-                    'type' => 'number',
-                    'default' => 30,
-                    'sanitize' => 'intval',
-                    'description' => 'Number of days from invoice date when payment is due (payment terms).'
-                ]
-            ]
-        ],
         'recurring_bookings' => [
             'title' => 'Recurring Bookings Auto-Invoicing Rule',
             'description' => 'Configure automatic invoice generation for recurring bookings.',

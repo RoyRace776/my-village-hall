@@ -9,10 +9,10 @@ if (!defined('ABSPATH')) exit;
 
 class RoomService {
 
-    private $repo;
-    private $room_hours_repository;
-    private $availability;
-    private $room_deposit_repository;
+    private RoomRepository $repo;
+    private RoomHoursRepository $room_hours_repository;
+    private AvailabilityService $availability;
+    private RoomDepositRepository $room_deposit_repository;
 
     public function __construct(
         RoomRepository $repo,
@@ -26,11 +26,11 @@ class RoomService {
         $this->room_deposit_repository = $room_deposit_repository;
     }
 
-    public function get_all($args = []): array {
+    public function get_all(array $args = []): array {
         return $this->repo->get_all($args);
     }
 
-    public function get($id): ?array {
+    public function get(int $id): ?array {
         return $this->repo->get_by_id($id);
     }
 
@@ -38,7 +38,7 @@ class RoomService {
         return $this->repo->get_all_with_venues();
     }
 
-    public function save($data): int|WP_Error {
+    public function save(array $data): int|WP_Error {
 
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Room name is required', 'my-village-hall'));
@@ -157,7 +157,7 @@ class RoomService {
         return (int) $created;
     }
 
-    public function delete($id) {
+    public function delete(int $id) {
         $return = $this->repo->delete_by_id($id);
 
         if (!$return) {

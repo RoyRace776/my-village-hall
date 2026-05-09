@@ -1,13 +1,15 @@
 <?php
 namespace MYVH\Portal\Ajax;
 
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\Organisations\OrganisationService;
 use MYVH\Organisations\OrganisationTypeService;
 
 class PortalOrganisationPageRenderer {
     public function __construct(
         private OrganisationService $organisation_service,
-        private OrganisationTypeService $organisation_type_service
+        private OrganisationTypeService $organisation_type_service,
+        private SingleBookingAutoInvoiceRuleRepository $rule_repository
     ) {}
 
     public function render_organisation_add(array $customer, bool $is_client_admin): void {
@@ -17,6 +19,7 @@ class PortalOrganisationPageRenderer {
 
         $organisation_types = $is_client_admin ? $this->organisation_type_service->get_all() : [];
         $default_organisation_type_id = $this->get_default_organisation_type_id($organisation_types);
+        $single_booking_rule_options = $is_client_admin ? $this->rule_repository->get_rule_options() : [];
 
         include MYVH_PLUGIN_DIR . 'templates/Portal/organisation-add.php';
     }
@@ -28,6 +31,7 @@ class PortalOrganisationPageRenderer {
         $organisation_members = [];
         $organisation_pending_requests = [];
         $organisation_types = $is_client_admin ? $this->organisation_type_service->get_all() : [];
+        $single_booking_rule_options = $this->rule_repository->get_rule_options();
         $requestable_organisations = $this->organisation_service->get_all(true);
 
         if (!empty($customer['Id'])) {

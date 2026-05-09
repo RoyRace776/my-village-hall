@@ -466,7 +466,9 @@ class BookingRepository extends RepositoryBase
                     b.*,
                     c.Name AS CustomerName,
                     c.Email AS CustomerEmail,
+                    c.SingleBookingAutoInvoiceRuleId AS CustomerSingleBookingAutoInvoiceRuleId,
                     o.Name AS OrganisationName,
+                    o.SingleBookingAutoInvoiceRuleId AS OrganisationSingleBookingAutoInvoiceRuleId,
                     r.Name AS RoomName,
                     v.Name AS VenueName
                 FROM {$this->table_name} b

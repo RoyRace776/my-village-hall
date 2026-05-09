@@ -1,13 +1,15 @@
 <?php
 namespace MYVH\Portal\Ajax;
 
+use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
 
 class PortalPeoplePageRenderer {
     public function __construct(
         private ClientAdminService $client_admin_service,
-        private CustomerService $customer_service
+        private CustomerService $customer_service,
+        private SingleBookingAutoInvoiceRuleRepository $rule_repository
     ) {}
 
     public function render_account(): void {
@@ -49,6 +51,7 @@ class PortalPeoplePageRenderer {
         }
 
         $customer = $this->customer_service->get($customer_id);
+        $single_booking_rule_options = $this->rule_repository->get_rule_options();
         include MYVH_PLUGIN_DIR . 'templates/Portal/customer-edit.php';
     }
 
@@ -57,6 +60,7 @@ class PortalPeoplePageRenderer {
             wp_send_json_error('Permission denied', 403);
         }
 
+        $single_booking_rule_options = $this->rule_repository->get_rule_options();
         include MYVH_PLUGIN_DIR . 'templates/Portal/customer-add.php';
     }
 }
