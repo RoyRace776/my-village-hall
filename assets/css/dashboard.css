@@ -2197,6 +2197,133 @@ body .site-main:has(#myvh-portal) {
   max-height: 340px;
 }
 
+/* Single booking invoice rules: professional table treatment */
+.myvh-single-invoice-rules-page .myvh-account-form {
+  display: grid;
+  gap: 16px;
+}
+
+.myvh-single-invoice-rules-page .myvh-account-field {
+  max-width: 420px;
+  padding: 12px;
+  border: 1px solid #e2d7ca;
+  border-radius: 10px;
+  background: #f9f4ee;
+}
+
+.myvh-single-invoice-rules-page .myvh-account-field > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #5b4f43;
+  font-weight: 600;
+}
+
+.myvh-single-invoice-rules-page .myvh-account-field > select {
+  width: 100%;
+}
+
+.myvh-single-invoice-rules-page .myvh-generate-table-wrap {
+  padding: 0;
+  border: 1px solid #d7cab9;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(28, 26, 23, 0.05);
+  max-height: none;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table {
+  min-width: 980px;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f7f1ea;
+  border-bottom: 1px solid #ddcfbf;
+  padding: 12px 10px;
+  color: #5a4f43;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table td {
+  padding: 10px;
+  background: #fff;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid #efe5da;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table tbody tr:hover td {
+  background: #fcf7f1;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table input[type="text"],
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table input[type="number"],
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table select {
+  width: 100%;
+  min-height: 34px;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table td:nth-child(3),
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table td:nth-child(5),
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table td:nth-child(6) {
+  width: 92px;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table td:nth-child(7) {
+  width: 76px;
+  text-align: center;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table td:nth-child(8) {
+  width: 92px;
+  text-align: right;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table .myvh-remove-rule-row {
+  min-height: 32px;
+  padding: 0 12px;
+  border-color: #d4b3ad;
+  color: #8d3324;
+  background: #fff;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table .myvh-remove-rule-row:hover,
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-table .myvh-remove-rule-row:focus-visible {
+  border-color: #c85e4f;
+  color: #74281d;
+  background: #fdecea;
+}
+
+.myvh-single-invoice-rules-page .myvh-account-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.myvh-single-invoice-rules-page #myvh-single-booking-rules-message {
+  flex: 1 1 100%;
+  min-height: 20px;
+}
+
 .myvh-generate-bookings-table th:first-child,
 .myvh-generate-bookings-table td:first-child {
   width: 72px;
@@ -3385,6 +3512,18 @@ body .site-main:has(#myvh-portal) {
 
   .myvh-invoices-table {
     min-width: 760px;
+  }
+
+  .myvh-single-invoice-rules-page .myvh-account-field {
+    max-width: none;
+  }
+
+  .myvh-single-invoice-rules-page #myvh-single-booking-rules-table {
+    min-width: 900px;
+  }
+
+  .myvh-single-invoice-rules-page .myvh-account-actions {
+    align-items: center;
   }
 }
 
