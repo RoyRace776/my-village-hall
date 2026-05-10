@@ -33,7 +33,7 @@ class SingleBookingAutoInvoiceRuleController {
             }
 
             $trigger_timing = sanitize_key($row['trigger_timing'] ?? 'confirmation');
-            if (!in_array($trigger_timing, ['confirmation', 'booking_date', 'days_before_booking_date', 'days_after_booking_date'], true)) {
+            if (!in_array($trigger_timing, ['confirmation', 'booking_date', 'days_before_booking_date', 'days_after_booking_date', 'manual_invoicing'], true)) {
                 $trigger_timing = 'confirmation';
             }
 

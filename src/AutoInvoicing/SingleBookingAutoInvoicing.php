@@ -52,6 +52,10 @@ class SingleBookingAutoInvoicing {
      * @return bool True if the trigger condition is met, false otherwise
      */
     protected function is_trigger_condition_met($booking, array $rule): bool {
+        // Manual invoicing rules never trigger auto-invoicing.
+        if (($rule['trigger_timing'] ?? 'confirmation') === 'manual_invoicing') {
+            return false;
+        }
         if (($rule['trigger_timing'] ?? 'confirmation') === 'confirmation') {
             return $booking['Status'] === 'confirmed';
         }

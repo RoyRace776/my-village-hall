@@ -63,6 +63,7 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                                         <option value="booking_date">On booking date</option>
                                         <option value="days_before_booking_date">N days before booking date</option>
                                         <option value="days_after_booking_date">N days after booking date</option>
+                                        <option value="manual_invoicing">Manual invoicing</option>
                                     </select>
                                 </td>
                                 <td><input type="number" name="rules[0][trigger_offset_days]" min="0" value="0"></td>
@@ -91,6 +92,7 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                                             <option value="booking_date" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'booking_date'); ?>>On booking date</option>
                                             <option value="days_before_booking_date" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'days_before_booking_date'); ?>>N days before booking date</option>
                                             <option value="days_after_booking_date" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'days_after_booking_date'); ?>>N days after booking date</option>
+                                            <option value="manual_invoicing" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'manual_invoicing'); ?>>Manual invoicing</option>
                                         </select>
                                     </td>
                                     <td><input type="number" name="rules[<?php echo intval($index); ?>][trigger_offset_days]" min="0" value="<?php echo intval($rule['TriggerOffsetDays'] ?? 0); ?>"></td>

@@ -332,6 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         '<option value="booking_date">On booking date</option>' +
                         '<option value="days_before_booking_date">N days before booking date</option>' +
                         '<option value="days_after_booking_date">N days after booking date</option>' +
+                        '<option value="manual_invoicing">Manual invoicing</option>' +
                     '</select></td>' +
                     '<td><input type="number" name="rules[' + index + '][trigger_offset_days]" min="0" value="0"></td>' +
                     '<td><select name="rules[' + index + '][group_by]">' +

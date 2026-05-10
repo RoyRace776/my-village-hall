@@ -55,6 +55,7 @@ $rules = $rule_repository->get_all_rules();
                                 <option value="booking_date">On booking date</option>
                                 <option value="days_before_booking_date">N days before booking date</option>
                                 <option value="days_after_booking_date">N days after booking date</option>
+                                <option value="manual_invoicing">Manual invoicing</option>
                             </select>
                         </td>
                         <td><input type="number" name="rules[0][trigger_offset_days]" value="0" min="0" class="small-text"></td>
@@ -83,6 +84,7 @@ $rules = $rule_repository->get_all_rules();
                                     <option value="booking_date" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'booking_date'); ?>>On booking date</option>
                                     <option value="days_before_booking_date" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'days_before_booking_date'); ?>>N days before booking date</option>
                                     <option value="days_after_booking_date" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'days_after_booking_date'); ?>>N days after booking date</option>
+                                    <option value="manual_invoicing" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'manual_invoicing'); ?>>Manual invoicing</option>
                                 </select>
                             </td>
                             <td><input type="number" name="rules[<?php echo intval($index); ?>][trigger_offset_days]" value="<?php echo intval($rule['TriggerOffsetDays'] ?? 0); ?>" min="0" class="small-text"></td>
@@ -136,6 +138,7 @@ $rules = $rule_repository->get_all_rules();
                 '<option value="booking_date">On booking date</option>' +
                 '<option value="days_before_booking_date">N days before booking date</option>' +
                 '<option value="days_after_booking_date">N days after booking date</option>' +
+                '<option value="manual_invoicing">Manual invoicing</option>' +
             '</select></td>' +
             '<td><input type="number" name="rules[' + index + '][trigger_offset_days]" value="0" min="0" class="small-text"></td>' +
             '<td><select name="rules[' + index + '][group_by]">' +
