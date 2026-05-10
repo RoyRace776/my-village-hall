@@ -1,9 +1,11 @@
 <?php
 namespace MYVH\Rooms;
 
+use MYVH\Container\Container;
+
 class RoomServiceProvider
 {
-    public function register($container): void {
+    public function register(Container $container): void {
         $container->singleton(RoomRepository::class, function ($container) {
             $wpdb = $container->get(\wpdb::class);
             $repository = new RoomRepository($wpdb);

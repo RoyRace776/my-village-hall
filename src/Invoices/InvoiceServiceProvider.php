@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace MYVH\Invoices;
 
+use MYVH\Container\Container;
+
 class InvoiceServiceProvider
 {
-    public function register($container): void {
+    public function register(Container $container): void {
         $container->singleton(InvoiceRepository::class);
         $container->singleton(InvoiceItemRepository::class);
         $container->singleton(PdfGenerator::class);

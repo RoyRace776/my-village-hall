@@ -3,6 +3,7 @@
 namespace MYVH\Bookings;
 
 use MYVH\Availability\AvailabilityService;
+use MYVH\Container\Container;
 use MYVH\Rooms\RoomRulesService;
 use MYVH\Pricing\PricingService;
 use MYVH\Customers\CustomerRepository;
@@ -30,7 +31,7 @@ use MYVH\Addons\AddonService;
 
 class BookingServiceProvider
 {
-    public function register($container): void
+    public function register(Container $container): void
     {
         $container->singleton(BookingRepository::class, function ($container) {
             $wpdb = $container->get(\wpdb::class);

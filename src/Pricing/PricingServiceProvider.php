@@ -1,9 +1,11 @@
 <?php
 namespace MYVH\Pricing;
 
+use MYVH\Container\Container;
+
 class PricingServiceProvider
 {
-    public function register($container): void {
+    public function register(Container $container): void {
         $container->singleton(DiscountRepository::class);
         $container->singleton(RoomRateRepository::class, function ($container) {
             $wpdb = $container->get(\wpdb::class);

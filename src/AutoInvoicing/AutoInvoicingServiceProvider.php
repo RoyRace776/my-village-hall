@@ -1,12 +1,13 @@
 <?php
 namespace MYVH\AutoInvoicing;
+use MYVH\Container\Container;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 class AutoInvoicingServiceProvider {
-    public function register($container): void {
+    public function register(Container $container): void {
         $container->singleton(SingleBookingAutoInvoiceRuleRepository::class, function ($container) {
             return new SingleBookingAutoInvoiceRuleRepository($container->get(\wpdb::class));
         });

@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Portal;
 
+use MYVH\Container\Container;
 use MYVH\Portal\Actions\DeleteBookingAction;
 use MYVH\Portal\Actions\GetBookingAction;
 use MYVH\Portal\Actions\QuoteBookingAction;
@@ -30,7 +31,7 @@ if (!defined('ABSPATH')) {
 
 
 class PortalServiceProvider {
-    public function register($container): void {
+    public function register(Container $container): void {
         $container->singleton(PortalController::class);
         $container->singleton(PortalBootstrapDataService::class);
         $container->singleton(PortalShortcode::class);

@@ -1,10 +1,12 @@
 <?php
 namespace MYVH\Organisations;
 
+use MYVH\Container\Container;
+
 if (!defined('ABSPATH')) exit;
 
 class OrganisationServiceProvider {
-    public function register($container): void {
+    public function register(Container $container): void {
         $container->singleton(OrganisationRepository::class, function ($container) {
             $wpdb = $container->get(\wpdb::class);
             $repository = new OrganisationRepository($wpdb);
