@@ -22,7 +22,7 @@ class SettingsPage {
         add_submenu_page(
             'my-village-hall',
             __('Settings', 'my-village-hall'),
-            __('Settings', 'my-village-hall'),
+            \MyVillageHall::menu_label('dashicons-admin-generic', __('Settings', 'my-village-hall')),
             'manage_options',
             'myvh-settings',
             [$this, 'render_page']

@@ -560,8 +560,18 @@ body .site-main:has(#myvh-portal) {
   gap: 6px;
 }
 
+.myvh-portal-menu-icon {
+  font-size: 16px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  flex: 0 0 18px;
+}
+
 .myvh-portal-nav-submenu a {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 9px 10px;
   border-radius: 8px;
   color: var(--ink);

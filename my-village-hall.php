@@ -389,6 +389,8 @@ class MyVillageHall {
      */
     public function register_admin_menu(): void {
 
+        add_action( 'admin_head', [ self::class, 'render_admin_submenu_icons' ] );
+
         add_menu_page(
             __( 'My Village Hall', 'my-village-hall' ),
             __( 'My Village Hall', 'my-village-hall' ),
@@ -403,13 +405,13 @@ class MyVillageHall {
         // give it a friendlier label.
         add_submenu_page( 'my-village-hall',
             __( 'All Bookings', 'my-village-hall' ),
-            __( 'All Bookings', 'my-village-hall' ),
+            self::menu_label( 'dashicons-list-view', __( 'All Bookings', 'my-village-hall' ) ),
             'manage_options', 'my-village-hall', [ $this, 'render_bookings_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Booking Calendar', 'my-village-hall' ),
-            __( 'Calendar',         'my-village-hall' ),
+            self::menu_label( 'dashicons-calendar-alt', __( 'Calendar', 'my-village-hall' ) ),
             'manage_options', 'myvh-calendar', [ $this, 'render_calendar_page' ]
         );
 
@@ -417,7 +419,7 @@ class MyVillageHall {
 
         add_submenu_page( 'my-village-hall',
             __( 'Customers', 'my-village-hall' ),
-            __( 'Customers', 'my-village-hall' ),
+            self::menu_label( 'dashicons-groups', __( 'Customers', 'my-village-hall' ) ),
             'manage_options', 'myvh-customers', [ $this, 'render_customers_page' ]
         );
 
@@ -425,14 +427,14 @@ class MyVillageHall {
 
         add_submenu_page( 'my-village-hall',
             __( 'Organisations', 'my-village-hall' ),
-            __( 'Organisations', 'my-village-hall' ),
+            self::menu_label( 'dashicons-admin-multisite', __( 'Organisations', 'my-village-hall' ) ),
             'manage_options', 'myvh-organisations', [ $this, 'render_organisations_page' ]
         );
 
         // Hidden from the menu (reached via redirect from Organisations).
         add_submenu_page( '',
             __( 'Add Organisation', 'my-village-hall' ),
-            __( 'Add Organisation', 'my-village-hall' ),
+            self::menu_label( 'dashicons-plus-alt', __( 'Add Organisation', 'my-village-hall' ) ),
             'manage_options',
             'myvh-organisation-add',
             [ $this, 'render_organisation_add_page' ]
@@ -440,19 +442,19 @@ class MyVillageHall {
 
         add_submenu_page( 'my-village-hall',
             __( 'Organisation Types', 'my-village-hall' ),
-            __( 'Org Types',          'my-village-hall' ),
+            self::menu_label( 'dashicons-category', __( 'Org Types', 'my-village-hall' ) ),
             'manage_options', 'myvh-org-types', [ $this, 'render_org_types_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Organisation Members', 'my-village-hall' ),
-            __( 'Org Members',          'my-village-hall' ),
+            self::menu_label( 'dashicons-id-alt', __( 'Org Members', 'my-village-hall' ) ),
             'manage_options', 'myvh-org-members', [ $this, 'render_org_members_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Client Administrators', 'my-village-hall' ),
-            __( 'Client Admins',         'my-village-hall' ),
+            self::menu_label( 'dashicons-admin-users', __( 'Client Admins', 'my-village-hall' ) ),
             'manage_options',
             'myvh-client-admins-network',
             [ $this, 'render_client_admins_network_page' ]
@@ -462,13 +464,13 @@ class MyVillageHall {
 
         add_submenu_page( 'my-village-hall',
             __( 'Venues', 'my-village-hall' ),
-            __( 'Venues', 'my-village-hall' ),
+            self::menu_label( 'dashicons-location-alt', __( 'Venues', 'my-village-hall' ) ),
             'manage_options', 'myvh-venues', [ $this, 'render_venues_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Rooms', 'my-village-hall' ),
-            __( 'Rooms', 'my-village-hall' ),
+            self::menu_label( 'dashicons-admin-home', __( 'Rooms', 'my-village-hall' ) ),
             'manage_options', 'myvh-rooms', [ $this, 'render_rooms_page' ]
         );
 
@@ -476,37 +478,37 @@ class MyVillageHall {
 
         add_submenu_page( 'my-village-hall',
             __( 'Room Rates', 'my-village-hall' ),
-            __( 'Room Rates', 'my-village-hall' ),
+            self::menu_label( 'dashicons-money-alt', __( 'Room Rates', 'my-village-hall' ) ),
             'manage_options', 'myvh-room-rates', [ $this, 'render_room_rates_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Add-ons', 'my-village-hall' ),
-            __( 'Add-ons', 'my-village-hall' ),
+            self::menu_label( 'dashicons-admin-plugins', __( 'Add-ons', 'my-village-hall' ) ),
             'manage_options', 'myvh-addons', [ $this, 'render_addons_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'View Invoices', 'my-village-hall' ),
-            __( 'View Invoices', 'my-village-hall' ),
+            self::menu_label( 'dashicons-media-spreadsheet', __( 'View Invoices', 'my-village-hall' ) ),
             'manage_options', 'myvh-invoices', [ $this, 'render_invoices_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Payments', 'my-village-hall' ),
-            __( 'Payments', 'my-village-hall' ),
+            self::menu_label( 'dashicons-money', __( 'Payments', 'my-village-hall' ) ),
             'manage_options', 'myvh-payments', [ $this, 'render_payments_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Generate Invoices', 'my-village-hall' ),
-            __( 'Generate Invoices', 'my-village-hall' ),
+            self::menu_label( 'dashicons-media-document', __( 'Generate Invoices', 'my-village-hall' ) ),
             'manage_options', 'myvh-invoice-generate', [ $this, 'render_invoice_generate_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Single Booking Invoice Rules', 'my-village-hall' ),
-            __( 'Single Invoice Rules', 'my-village-hall' ),
+            self::menu_label( 'dashicons-filter', __( 'Single Invoice Rules', 'my-village-hall' ) ),
             'manage_options',
             'myvh-single-booking-invoice-rules',
             [ $this, 'render_single_booking_invoice_rules_page' ]
@@ -516,19 +518,56 @@ class MyVillageHall {
 
         add_submenu_page( 'my-village-hall',
             __( 'Recurring Bookings',  'my-village-hall' ),
-            __( 'Recurring Patterns',  'my-village-hall' ),
+            self::menu_label( 'dashicons-update-alt', __( 'Recurring Patterns', 'my-village-hall' ) ),
             'manage_options', 'myvh-recurring', [ $this, 'render_recurring_page' ]
         );
 
         if ( AuditTrail::is_enabled() ) {
             add_submenu_page( 'my-village-hall',
                 __( 'Audit Log', 'my-village-hall' ),
-                __( 'Audit Log', 'my-village-hall' ),
+                self::menu_label( 'dashicons-visibility', __( 'Audit Log', 'my-village-hall' ) ),
                 'manage_options',
                 'myvh-audit-log',
                 [ $this, 'render_audit_log_page' ]
             );
         }
+    }
+
+    /**
+     * Formats submenu labels with a dashicon and escaped text.
+     */
+    public static function menu_label( string $icon, string $label ): string {
+        return $label;
+    }
+
+    /**
+     * Injects submenu icons with JS because WP escapes submenu labels.
+     */
+    public static function render_admin_submenu_icons(): void {
+        $icon_map = [
+            'admin.php?page=my-village-hall'                 => 'dashicons-list-view',
+            'admin.php?page=myvh-calendar'                   => 'dashicons-calendar-alt',
+            'admin.php?page=myvh-customers'                  => 'dashicons-groups',
+            'admin.php?page=myvh-organisations'              => 'dashicons-admin-multisite',
+            'admin.php?page=myvh-org-types'                  => 'dashicons-category',
+            'admin.php?page=myvh-org-members'                => 'dashicons-id-alt',
+            'admin.php?page=myvh-client-admins-network'      => 'dashicons-admin-users',
+            'admin.php?page=myvh-venues'                     => 'dashicons-location-alt',
+            'admin.php?page=myvh-rooms'                      => 'dashicons-admin-home',
+            'admin.php?page=myvh-room-rates'                 => 'dashicons-money-alt',
+            'admin.php?page=myvh-addons'                     => 'dashicons-admin-plugins',
+            'admin.php?page=myvh-invoices'                   => 'dashicons-media-spreadsheet',
+            'admin.php?page=myvh-payments'                   => 'dashicons-money',
+            'admin.php?page=myvh-invoice-generate'           => 'dashicons-media-document',
+            'admin.php?page=myvh-single-booking-invoice-rules' => 'dashicons-filter',
+            'admin.php?page=myvh-recurring'                  => 'dashicons-update-alt',
+            'admin.php?page=myvh-audit-log'                  => 'dashicons-visibility',
+            'admin.php?page=myvh-settings'                   => 'dashicons-admin-generic',
+        ];
+        $json_map = wp_json_encode( $icon_map );
+
+        echo '<style>.myvh-submenu-icon{font-size:16px;width:18px;height:18px;line-height:18px;margin-right:6px;vertical-align:text-bottom;}</style>';
+        echo '<script>(function(){var map=' . $json_map . ';function apply(){if(!map){return;}Object.keys(map).forEach(function(href){var link=document.querySelector("#adminmenu .wp-submenu a[href=\""+href+"\"]");if(!link||link.dataset.myvhIconApplied==="1"){return;}var icon=document.createElement("span");icon.className="dashicons "+map[href]+" myvh-submenu-icon";icon.setAttribute("aria-hidden","true");link.insertBefore(icon,link.firstChild);link.dataset.myvhIconApplied="1";});}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",apply);}else{apply();}})();</script>';
     }
 
     /**

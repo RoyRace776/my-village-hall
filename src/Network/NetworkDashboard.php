@@ -17,6 +17,8 @@ class NetworkDashboard {
     }
 
     public function add_menu(): void {
+        add_action('network_admin_head', [$this, 'render_menu_icons']);
+
         add_menu_page(
             'Village Hall Network',
             'Village Halls',
@@ -44,6 +46,17 @@ class NetworkDashboard {
             self::PROVISIONING_SETTINGS_PAGE,
             [$this, 'render_provisioning_settings_page']
         );
+    }
+
+    public function render_menu_icons(): void {
+        $icon_map = [
+            'admin.php?page=' . self::CLIENT_ADMINS_PAGE => 'dashicons-admin-users',
+            'admin.php?page=' . self::PROVISIONING_SETTINGS_PAGE => 'dashicons-admin-tools',
+        ];
+        $json_map = wp_json_encode($icon_map);
+
+        echo '<style>.myvh-submenu-icon{font-size:16px;width:18px;height:18px;line-height:18px;margin-right:6px;vertical-align:text-bottom;}</style>';
+        echo '<script>(function(){var map=' . $json_map . ';function apply(){if(!map){return;}Object.keys(map).forEach(function(href){var link=document.querySelector("#adminmenu .wp-submenu a[href=\""+href+"\"]");if(!link||link.dataset.myvhIconApplied==="1"){return;}var icon=document.createElement("span");icon.className="dashicons "+map[href]+" myvh-submenu-icon";icon.setAttribute("aria-hidden","true");link.insertBefore(icon,link.firstChild);link.dataset.myvhIconApplied="1";});}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",apply);}else{apply();}})();</script>';
     }
 
     public function render_dashboard(): void {
