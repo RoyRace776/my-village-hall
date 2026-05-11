@@ -8,6 +8,21 @@ function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function mockHtmlResponse(html, options = {}) {
+  const contentType = options.contentType || 'text/html';
+  const ok = Object.prototype.hasOwnProperty.call(options, 'ok') ? options.ok : true;
+  const status = Object.prototype.hasOwnProperty.call(options, 'status') ? options.status : 200;
+
+  return {
+    ok,
+    status,
+    headers: {
+      get: (name) => (String(name || '').toLowerCase() === 'content-type' ? contentType : ''),
+    },
+    text: () => Promise.resolve(html),
+  };
+}
+
 describe('Portal app integration behaviors', () => {
   beforeAll(async () => {
     document.body.innerHTML = `
@@ -27,9 +42,9 @@ describe('Portal app integration behaviors', () => {
       nonce: 'portal-nonce'
     };
     window.MyvhFlatpickr = { initWithin: jest.fn() };
-    window.fetch = jest.fn().mockResolvedValue({
-      text: () => Promise.resolve('<div id="myvh-initial">Initial</div>')
-    });
+    window.fetch = jest.fn().mockResolvedValue(
+      mockHtmlResponse('<div id="myvh-initial">Initial</div>')
+    );
 
     window.eval(scriptSource);
     document.dispatchEvent(new Event('DOMContentLoaded'));
@@ -79,8 +94,8 @@ describe('Portal app integration behaviors', () => {
   });
 
   test('sorts customer table on sortable header and ignores actions header', async () => {
-    window.fetch.mockResolvedValue({
-      text: () => Promise.resolve(`
+    window.fetch.mockResolvedValue(
+      mockHtmlResponse(`
         <table class="myvh-customer-list-table">
           <thead>
             <tr>
@@ -95,7 +110,7 @@ describe('Portal app integration behaviors', () => {
           </tbody>
         </table>
       `)
-    });
+    );
 
     window.location.hash = '#customers';
     window.dispatchEvent(new Event('hashchange'));
@@ -114,5 +129,42 @@ describe('Portal app integration behaviors', () => {
 
     nameHeader.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(table.querySelector('tbody tr td').textContent).toBe('Zulu');
+  });
+
+  test('enables save button when adding a hall notice in settings', async () => {
+    window.fetch.mockResolvedValue(
+      mockHtmlResponse(`
+        <div class="myvh-dashboard-section myvh-client-settings-page">
+          <form class="myvh-account-form myvh-settings-form" data-portal-action="myvh_portal_save_client_settings" data-reload-page="settings">
+            <div class="myvh-notices-repeater" data-notices-repeater data-field="hall_notices" data-placeholder-from="From now" data-placeholder-to="Forever">
+              <table class="myvh-notices-table">
+                <tbody class="myvh-notices-body"></tbody>
+              </table>
+              <button type="button" class="myvh-notice-add-row">+ Add Notice</button>
+            </div>
+            <button type="submit" class="button button-primary">Save Settings</button>
+          </form>
+        </div>
+      `)
+    );
+
+    window.location.hash = '#settings';
+    window.dispatchEvent(new Event('hashchange'));
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    const submitButton = document.querySelector('.myvh-settings-form button[type="submit"]');
+    const addNoticeButton = document.querySelector('.myvh-notice-add-row');
+
+    expect(submitButton).not.toBeNull();
+    expect(addNoticeButton).not.toBeNull();
+    expect(submitButton.disabled).toBe(true);
+
+    addNoticeButton.click();
+
+    expect(submitButton.disabled).toBe(false);
   });
 });

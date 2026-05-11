@@ -1043,16 +1043,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const submitButton = form.querySelector('button[type="submit"]');
             if (!submitButton) return;
 
-            // Only track enabled, non-hidden fields
-            const trackedFields = Array.from(form.querySelectorAll('input, select, textarea'))
+            // Read tracked fields dynamically so add/remove notice rows are included.
+            const getTrackedFields = () => Array.from(form.querySelectorAll('input, select, textarea'))
                 .filter((field) => field.name && !field.disabled)
                 .filter((field) => field.type !== 'hidden' || field.hasAttribute('data-myvh-media-input'));
 
-            if (!trackedFields.length) return;
-
             // Capture current state for dirty check
             const captureState = () => JSON.stringify(
-                trackedFields.map((field) => {
+                getTrackedFields().map((field) => {
                     if (field.type === 'checkbox' || field.type === 'radio') {
                         return { name: field.name, checked: !!field.checked };
                     }
@@ -1070,10 +1068,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 submitButton.disabled = !isDirty;
             };
 
-            // Listen for changes
-            trackedFields.forEach((field) => {
-                field.addEventListener('input', syncDirtyState);
-                field.addEventListener('change', syncDirtyState);
+            // Use delegated listeners so dynamically added settings fields are tracked.
+            form.addEventListener('input', syncDirtyState);
+            form.addEventListener('change', syncDirtyState);
+            form.addEventListener('click', (event) => {
+                const target = event.target;
+                if (!target) {
+                    return;
+                }
+
+                if (target.closest('.myvh-notice-add-row') || target.closest('.myvh-notice-remove')) {
+                    syncDirtyState();
+                }
             });
 
             // Reset baseline on form reset

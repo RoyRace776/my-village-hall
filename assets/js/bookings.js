@@ -216,6 +216,70 @@ var Bookings = (function() {
     }
 
     /**
+     * Initialize filters from URL hash parameters.
+     * Parses status, room, and datePreset from the hash and applies them.
+     */
+    function initializeFiltersFromUrl() {
+        // Parse hash parameters
+        var hashParts = window.location.hash.split('?');
+        if (hashParts.length < 2) {
+            return; // No parameters
+        }
+
+        var params = new URLSearchParams(hashParts[1]);
+        var statusParam = params.get('status');
+        var roomParam = params.get('room');
+        var datePresetParam = params.get('datePreset');
+
+        // Determine which page we're on
+        var bookingsTable = document.getElementById('myvh-bookings-table');
+        var dashboardTable = document.getElementById('myvh-dashboard-bookings-table');
+        var isBookingsPage = !!bookingsTable;
+        var prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
+
+        // Apply status filter
+        if (statusParam) {
+            var statusCheckbox = document.querySelector('.myvh-status-filter[value="' + statusParam + '"]');
+            if (statusCheckbox) {
+                // Uncheck all, then check only the requested status
+                document.querySelectorAll('.myvh-status-filter').forEach(function(cb) {
+                    cb.checked = false;
+                });
+                statusCheckbox.checked = true;
+            }
+        }
+
+        // Apply room filter
+        if (roomParam) {
+            var roomSelect = document.getElementById(prefix + 'room');
+            if (roomSelect) {
+                roomSelect.value = decodeURIComponent(roomParam);
+            }
+        }
+
+        // Apply date preset filter
+        if (datePresetParam) {
+            var datePresets = document.querySelectorAll('.' + prefix + 'date-preset');
+            datePresets.forEach(function(btn) {
+                btn.classList.remove('is-active');
+                if (btn.getAttribute('data-preset') === datePresetParam) {
+                    btn.classList.add('is-active');
+                }
+            });
+
+            // Hide date picker if not custom preset
+            if (datePresetParam !== 'custom') {
+                var datePicker = document.getElementById(prefix + 'date-picker');
+                if (datePicker) {
+                    datePicker.hidden = true;
+                }
+            }
+        }
+
+        // Apply the filters
+        applyAllFilters();
+    }
+    /**
      * Bind group header toggles for expanding/collapsing booking groups.
      */
     function bindGroupToggles() {
@@ -661,6 +725,7 @@ var Bookings = (function() {
         boundFilterRoot = currentFilterRoot;
         bindStatusFilters();
         bindExpandedFilters();
+        initializeFiltersFromUrl();
     }
 
     return {
