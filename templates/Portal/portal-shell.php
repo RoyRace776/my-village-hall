@@ -81,6 +81,7 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                         <a href="#payments"><span class="myvh-portal-menu-icon dashicons dashicons-money" aria-hidden="true"></span><span>Payments</span></a>
                         <a href="#invoice-generate"><span class="myvh-portal-menu-icon dashicons dashicons-media-document" aria-hidden="true"></span><span>Generate Invoices</span></a>
                         <a href="#single-booking-invoice-rules"><span class="myvh-portal-menu-icon dashicons dashicons-filter" aria-hidden="true"></span><span>Single Invoice Rules</span></a>
+                        <a href="#recurring-booking-invoice-rules"><span class="myvh-portal-menu-icon dashicons dashicons-filter" aria-hidden="true"></span><span>Recurring Invoice Rules</span></a>
                         <a href="#email-templates"><span class="myvh-portal-menu-icon dashicons dashicons-email-alt" aria-hidden="true"></span><span>Email Templates</span></a>
                         <a href="#settings"><span class="myvh-portal-menu-icon dashicons dashicons-admin-generic" aria-hidden="true"></span><span>Settings</span></a>
                         <?php if (\MYVH\Audit\AuditTrail::is_enabled()): ?>

@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '1.3.0';
+    const DB_VERSION = '1.4.2';
 
     /**
      * Entry point: create all tables.
@@ -77,6 +77,18 @@ class Installer {
         if (version_compare($from, '1.3.0', '<')) {
             self::upgrade_to_1_3_0($wpdb);
         }
+
+        if (version_compare($from, '1.4.0', '<')) {
+            self::upgrade_to_1_4_0($wpdb);
+        }
+
+        if (version_compare($from, '1.4.1', '<')) {
+            self::upgrade_to_1_4_1($wpdb);
+        }
+
+        if (version_compare($from, '1.4.2', '<')) {
+            self::upgrade_to_1_4_2($wpdb);
+        }
     }
 
     private static function upgrade_to_1_1_0(wpdb $wpdb): void {
@@ -98,6 +110,48 @@ class Installer {
 
         self::create_single_booking_auto_invoice_rules_table($wpdb, $collate);
         self::migrate_single_booking_auto_invoice_rules_is_active($wpdb);
+    }
+
+    private static function upgrade_to_1_4_0(wpdb $wpdb): void {
+        $collate = $wpdb->get_charset_collate();
+
+        self::create_recurring_booking_auto_invoice_rules_table($wpdb, $collate);
+    }
+
+    private static function upgrade_to_1_4_1(wpdb $wpdb): void {
+        $p = $wpdb->prefix;
+
+        // Add RecurringBookingAutoInvoiceRuleId to customers table
+        $customers_table = $p . 'myvh_customers';
+        $has_column = $wpdb->get_var("SHOW COLUMNS FROM {$customers_table} LIKE 'RecurringBookingAutoInvoiceRuleId'");
+        if (empty($has_column)) {
+            $wpdb->query("ALTER TABLE {$customers_table} ADD COLUMN RecurringBookingAutoInvoiceRuleId INT UNSIGNED NULL AFTER SingleBookingAutoInvoiceRuleId");
+            $wpdb->query("ALTER TABLE {$customers_table} ADD INDEX idx_recurring_booking_auto_invoice_rule (RecurringBookingAutoInvoiceRuleId)");
+        }
+
+        // Add RecurringBookingAutoInvoiceRuleId to organisations table
+        $organisations_table = $p . 'myvh_organisations';
+        $has_column = $wpdb->get_var("SHOW COLUMNS FROM {$organisations_table} LIKE 'RecurringBookingAutoInvoiceRuleId'");
+        if (empty($has_column)) {
+            $wpdb->query("ALTER TABLE {$organisations_table} ADD COLUMN RecurringBookingAutoInvoiceRuleId INT UNSIGNED NULL AFTER SingleBookingAutoInvoiceRuleId");
+            $wpdb->query("ALTER TABLE {$organisations_table} ADD INDEX idx_recurring_booking_auto_invoice_rule (RecurringBookingAutoInvoiceRuleId)");
+        }
+    }
+
+    private static function upgrade_to_1_4_2(wpdb $wpdb): void {
+        $collate = $wpdb->get_charset_collate();
+
+        // Ensure recurring rules table has the latest schema additions.
+        self::create_recurring_booking_auto_invoice_rules_table($wpdb, $collate);
+
+        $rules_table = $wpdb->prefix . 'myvh_recurring_booking_auto_invoice_rules';
+        $has_trigger_direction = $wpdb->get_var("SHOW COLUMNS FROM {$rules_table} LIKE 'TriggerDirection'");
+        if (empty($has_trigger_direction)) {
+            $wpdb->query("ALTER TABLE {$rules_table} ADD COLUMN TriggerDirection VARCHAR(20) NOT NULL DEFAULT 'in_advance' AFTER TriggerTiming");
+        }
+
+        // Normalize legacy trigger timings from old rule presets.
+        $wpdb->query("UPDATE {$rules_table} SET TriggerTiming = 'start_of_month' WHERE TriggerTiming NOT IN ('start_of_week', 'start_of_month', 'start_of_quarter', 'manual_invoicing', 'treat_as_single_bookings')");
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -127,6 +181,7 @@ class Installer {
         self::create_discounts_table( $wpdb, $collate );
         self::create_booking_discounts_table( $wpdb, $collate );
         self::create_single_booking_auto_invoice_rules_table( $wpdb, $collate );
+        self::create_recurring_booking_auto_invoice_rules_table( $wpdb, $collate );
         self::create_invoices_table( $wpdb, $collate );
         self::create_invoice_items_table( $wpdb, $collate );
         self::create_payments_table( $wpdb, $collate );
@@ -219,6 +274,7 @@ class Installer {
             BillingPostcode    VARCHAR(30) NULL,
             BillingReference   VARCHAR(100) NULL,
             SingleBookingAutoInvoiceRuleId INT UNSIGNED NULL,
+            RecurringBookingAutoInvoiceRuleId INT UNSIGNED NULL,
             IsActive           TINYINT(1)    DEFAULT 1,
             IsDefault          TINYINT(1)    DEFAULT 0,
             IsSystem           TINYINT(1)    NOT NULL DEFAULT 0,
@@ -232,7 +288,8 @@ class Installer {
             INDEX      idx_default_public (DefaultPublic),
             INDEX      idx_invoice_org (InvoiceOrganisationBookings),
             INDEX      idx_send_booking_emails_org (SendBookingEmailsToOrganisation),
-            INDEX      idx_single_booking_auto_invoice_rule (SingleBookingAutoInvoiceRuleId)
+            INDEX      idx_single_booking_auto_invoice_rule (SingleBookingAutoInvoiceRuleId),
+            INDEX      idx_recurring_booking_auto_invoice_rule (RecurringBookingAutoInvoiceRuleId)
         ) {$collate};" );
     }
 
@@ -294,11 +351,13 @@ class Installer {
             AddressLine2    VARCHAR(100),
             AllowAutoConfirm   TINYINT(1)   NOT NULL DEFAULT 0,
             SingleBookingAutoInvoiceRuleId INT UNSIGNED NULL,
+            RecurringBookingAutoInvoiceRuleId INT UNSIGNED NULL,
             IsSystem        TINYINT(1)   NOT NULL DEFAULT 0,
             Created         DATETIME     DEFAULT CURRENT_TIMESTAMP,
             Updated         DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX      idx_email          (Email),
             INDEX      idx_single_booking_auto_invoice_rule (SingleBookingAutoInvoiceRuleId),
+            INDEX      idx_recurring_booking_auto_invoice_rule (RecurringBookingAutoInvoiceRuleId),
             UNIQUE KEY uq_wpuser (WPUserId)
         ) {$collate};" );
     }
@@ -491,6 +550,24 @@ class Installer {
         ) {$collate};");
     }
 
+    private static function create_recurring_booking_auto_invoice_rules_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_recurring_booking_auto_invoice_rules (
+            Id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Name              VARCHAR(120) NOT NULL,
+            TriggerTiming     VARCHAR(50) NOT NULL DEFAULT 'start_of_month',
+            TriggerDirection  VARCHAR(20) NOT NULL DEFAULT 'in_advance',
+            TriggerOffsetDays INT NOT NULL DEFAULT 0,
+            GroupBy           VARCHAR(30) NOT NULL DEFAULT 'per_booking',
+            DueDateOffsetDays INT NOT NULL DEFAULT 30,
+            SortOrder         INT NOT NULL DEFAULT 0,
+            IsActive          TINYINT(1) NOT NULL DEFAULT 1,
+            Created           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_active_sort (IsActive, SortOrder)
+        ) {$collate};");
+    }
+
     private static function migrate_single_booking_auto_invoice_rules_is_active(wpdb $wpdb): void {
         $rules_table = $wpdb->prefix . 'myvh_single_booking_auto_invoice_rules';
 
@@ -544,11 +621,85 @@ class Installer {
         }
 
         if (empty($settings['single_default_rule_id'])) {
-            $default_rule_id = $wpdb->get_var("SELECT Id FROM {$rules_table} WHERE IsActive = 1 ORDER BY SortOrder ASC, Id ASC LIMIT 1");
+            $default_rule_id = $wpdb->get_var("SELECT Id FROM {$rules_table} WHERE IsActive = 1 ORDER BY Id ASC LIMIT 1");
             $settings['single_default_rule_id'] = intval($default_rule_id ?: 0);
         }
 
         update_option('myvh_invoicing_settings', $settings);
+    }
+
+    private static function create_default_recurring_booking_invoice_rules(wpdb $wpdb): void {
+        $rules_table = $wpdb->prefix . 'myvh_recurring_booking_auto_invoice_rules';
+        $rule_count = intval($wpdb->get_var("SELECT COUNT(*) FROM {$rules_table}"));
+
+        // Only create default rules if table is empty
+        if ($rule_count > 0) {
+            return;
+        }
+
+        $default_rules = [
+            [
+                'Name' => __('Manual Invoicing', 'my-village-hall'),
+                'TriggerTiming' => 'manual_invoicing',
+                'TriggerOffsetDays' => 0,
+                'GroupBy' => 'per_booking',
+                'DueDateOffsetDays' => 30,
+                'SortOrder' => 0,
+                'IsActive' => 1,
+            ],
+            [
+                'Name' => __('Monthly in advance', 'my-village-hall'),
+                'TriggerTiming' => 'confirmation',
+                'TriggerOffsetDays' => 0,
+                'GroupBy' => 'per_booking',
+                'DueDateOffsetDays' => 0,
+                'SortOrder' => 1,
+                'IsActive' => 1,
+            ],
+            [
+                'Name' => __('Monthly in arrears', 'my-village-hall'),
+                'TriggerTiming' => 'confirmation',
+                'TriggerOffsetDays' => 0,
+                'GroupBy' => 'per_booking',
+                'DueDateOffsetDays' => 30,
+                'SortOrder' => 2,
+                'IsActive' => 1,
+            ],
+            [
+                'Name' => __('Quarterly in advance', 'my-village-hall'),
+                'TriggerTiming' => 'confirmation',
+                'TriggerOffsetDays' => 0,
+                'GroupBy' => 'per_booking',
+                'DueDateOffsetDays' => 0,
+                'SortOrder' => 3,
+                'IsActive' => 1,
+            ],
+            [
+                'Name' => __('Quarterly in arrears', 'my-village-hall'),
+                'TriggerTiming' => 'confirmation',
+                'TriggerOffsetDays' => 0,
+                'GroupBy' => 'per_booking',
+                'DueDateOffsetDays' => 30,
+                'SortOrder' => 4,
+                'IsActive' => 1,
+            ],
+        ];
+
+        foreach ($default_rules as $rule) {
+            $wpdb->insert($rules_table, $rule);
+        }
+
+        // Set the first rule as the default
+        $settings = get_option('myvh_invoicing_settings', []);
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        if (empty($settings['recurring_default_rule_id'])) {
+            $default_rule_id = $wpdb->get_var("SELECT Id FROM {$rules_table} WHERE IsActive = 1 ORDER BY Id ASC LIMIT 1");
+            $settings['recurring_default_rule_id'] = intval($default_rule_id ?: 0);
+            update_option('myvh_invoicing_settings', $settings);
+        }
     }
 
     private static function create_invoices_table( wpdb $wpdb, string $collate ): void {

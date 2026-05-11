@@ -505,7 +505,9 @@ class BookingRepository extends RepositoryBase
                     b.*,
                     c.Name AS CustomerName,
                     c.Email AS CustomerEmail,
+                    c.SingleBookingAutoInvoiceRuleId AS CustomerSingleBookingAutoInvoiceRuleId,
                     o.Name AS OrganisationName,
+                    o.SingleBookingAutoInvoiceRuleId AS OrganisationSingleBookingAutoInvoiceRuleId,
                     r.Name AS RoomName,
                     v.Name AS VenueName
                 FROM {$this->table_name} b
@@ -526,6 +528,42 @@ class BookingRepository extends RepositoryBase
 
         if ($results === null && $this->wpdb->last_error) {
             error_log('MYVH Booking Repository Error (get_uninvoiced_single_bookings): ' . $this->wpdb->last_error);
+        }
+
+        return $results ?: [];
+    }
+
+    public function get_uninvoiced_recurring_bookings($args = []): array {
+        // Gets uninvoiced bookings that are part of recurring patterns and eligible for recurring booking auto-invoicing
+        $sql = "SELECT
+                    b.*,
+                    c.Name AS CustomerName,
+                    c.Email AS CustomerEmail,
+                    c.SingleBookingAutoInvoiceRuleId AS CustomerSingleBookingAutoInvoiceRuleId,
+                    c.RecurringBookingAutoInvoiceRuleId AS CustomerRecurringBookingAutoInvoiceRuleId,
+                    o.Name AS OrganisationName,
+                    o.SingleBookingAutoInvoiceRuleId AS OrganisationSingleBookingAutoInvoiceRuleId,
+                    o.RecurringBookingAutoInvoiceRuleId AS OrganisationRecurringBookingAutoInvoiceRuleId,
+                    r.Name AS RoomName,
+                    v.Name AS VenueName
+                FROM {$this->table_name} b
+                LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_venues v ON r.VenueId = v.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON b.Id = ii.BookingId
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
+                    AND i.Status NOT IN ('cancelled')
+                WHERE b.RecurringPatternId IS NOT NULL
+                AND b.Status IN ('confirmed', 'completed')
+                AND b.NoInvoiceRequired = 0
+                GROUP BY b.Id
+                HAVING COUNT(i.Id) = 0";
+
+        $results = $this->wpdb->get_results($sql, ARRAY_A);
+
+        if ($results === null && $this->wpdb->last_error) {
+            error_log('MYVH Booking Repository Error (get_uninvoiced_recurring_bookings): ' . $this->wpdb->last_error);
         }
 
         return $results ?: [];

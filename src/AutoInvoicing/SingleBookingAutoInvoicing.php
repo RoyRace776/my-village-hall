@@ -15,13 +15,16 @@ class SingleBookingAutoInvoicing {
     protected InvoiceGeneratorService $invoice_generator_service;
     protected BookingService $booking_service;
     protected SingleBookingAutoInvoiceRuleRepository $rule_repository;
+    protected RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository;
 
     public function __construct(InvoiceGeneratorService $invoice_generator_service,
                                 BookingService $booking_service,
-                                SingleBookingAutoInvoiceRuleRepository $rule_repository) {
+                                SingleBookingAutoInvoiceRuleRepository $rule_repository,
+                                RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository) {
         $this->invoice_generator_service = $invoice_generator_service;
         $this->booking_service = $booking_service;
         $this->rule_repository = $rule_repository;
+        $this->recurring_rule_repository = $recurring_rule_repository;
     }
 
     /**
@@ -29,20 +32,55 @@ class SingleBookingAutoInvoicing {
      *
      */
     public function process() : int {
-        $invoice_count = 0;
+        $result = $this->process_with_result();
 
-        $bookings = $this->get_bookings_for_invoicing();
+        return count($result['created_invoice_ids'] ?? []);
+    }
+
+    /**
+     * Process single bookings and return a structured result for orchestration.
+     *
+     * @param array<int, array> $delegated_recurring_bookings
+     * @return array{created_invoice_ids: array<int>}
+     */
+    public function process_with_result(array $delegated_recurring_bookings = []): array {
+        $bookings = $this->get_bookings_for_invoicing($delegated_recurring_bookings);
         if (empty($bookings)) {
-            return $invoice_count;
+            return $this->empty_process_result();
         }
 
-        $rule_buckets = $this->filter_bookings_by_trigger_condition($bookings);
+        $active_rules = $this->get_active_rules_by_id();
+        $default_rule_id = intval(myvh_setting('invoicing.single_default_rule_id', 0));
 
-        foreach ($rule_buckets as $bucket) {
-            $invoice_count += $this->generate_invoice($bucket['bookings'], $bucket['rule']);
+        $organisation_override_bookings = [];
+        $remaining_after_organisation = [];
+
+        foreach ($bookings as $booking) {
+            if ($this->booking_has_non_default_organisation_rule($booking, $active_rules, $default_rule_id)) {
+                $organisation_override_bookings[] = $booking;
+                continue;
+            }
+
+            $remaining_after_organisation[] = $booking;
         }
 
-        return $invoice_count;
+        $customer_override_bookings = [];
+        $default_rule_bookings = [];
+
+        foreach ($remaining_after_organisation as $booking) {
+            if ($this->booking_has_non_default_customer_rule($booking, $active_rules, $default_rule_id)) {
+                $customer_override_bookings[] = $booking;
+                continue;
+            }
+
+            $default_rule_bookings[] = $booking;
+        }
+
+        $organisation_result = $this->apply_single_rule_for_organisation_bookings($organisation_override_bookings, $active_rules, $default_rule_id);
+        $customer_result = $this->apply_single_rule_for_customer_bookings($customer_override_bookings, $active_rules, $default_rule_id);
+        $default_result = $this->apply_single_default_rule($default_rule_bookings, $active_rules, $default_rule_id);
+
+        return $this->merge_process_results([$organisation_result, $customer_result, $default_result]);
     }
 
     /**
@@ -69,7 +107,7 @@ class SingleBookingAutoInvoicing {
             $now = new DateTime();
             $interval = $booking_date->diff($now);
 
-            return $interval->invert === 0 || ($interval->invert === 1 && $interval->days >= intval($rule['trigger_offset_days'] ?? 0));
+            return $interval->invert === 0 || ($interval->invert === 1 && $interval->days <= intval($rule['trigger_offset_days'] ?? 0));
         }
         if (($rule['trigger_timing'] ?? 'confirmation') === 'days_after_booking_date') {
             $booking_date = new DateTime($booking['StartDate']);
@@ -82,87 +120,148 @@ class SingleBookingAutoInvoicing {
         return false;
     }
 
-    protected function generate_invoice(array $bookings, array $rule): int {
-        $booking_ids = $this->get_booking_ids_from_bookings($bookings);
+    protected function get_bookings_for_invoicing(array $delegated_recurring_bookings = []) : array {
+        $single_bookings = $this->booking_service->get_uninvoiced_single_bookings();
 
-        if (empty($booking_ids)) {
-            return 0;
+        return $this->deduplicate_bookings_by_id(array_merge($single_bookings, $delegated_recurring_bookings));
+    }
+
+    protected function apply_single_rule_for_organisation_bookings(array $bookings, array $active_rules, int $default_rule_id): array {
+        $result = $this->empty_process_result();
+
+        foreach ($bookings as $booking) {
+            $rule = $this->resolve_organisation_rule_for_booking($booking, $active_rules, $default_rule_id);
+
+            if (empty($rule['enabled']) || !$this->is_trigger_condition_met($booking, $rule)) {
+                continue;
+            }
+
+            $result['created_invoice_ids'] = array_merge(
+                $result['created_invoice_ids'],
+                $this->create_single_invoices_for_rule([$booking], $rule)
+            );
         }
 
-        $rule_id = intval($rule['id'] ?? 0);
+        return $result;
+    }
 
-        $created = $this->invoice_generator_service->generate_invoices_from_bookings($booking_ids,
+    protected function apply_single_rule_for_customer_bookings(array $bookings, array $active_rules, int $default_rule_id): array {
+        $result = $this->empty_process_result();
+
+        foreach ($bookings as $booking) {
+            $rule = $this->resolve_customer_rule_for_booking($booking, $active_rules, $default_rule_id);
+
+            if (empty($rule['enabled']) || !$this->is_trigger_condition_met($booking, $rule)) {
+                continue;
+            }
+
+            $result['created_invoice_ids'] = array_merge(
+                $result['created_invoice_ids'],
+                $this->create_single_invoices_for_rule([$booking], $rule)
+            );
+        }
+
+        return $result;
+    }
+
+    protected function apply_single_default_rule(array $bookings, array $active_rules, int $default_rule_id): array {
+        $result = $this->empty_process_result();
+
+        foreach ($bookings as $booking) {
+            $rule = $this->resolve_default_rule($active_rules, $default_rule_id);
+
+            if (empty($rule['enabled']) || !$this->is_trigger_condition_met($booking, $rule)) {
+                continue;
+            }
+
+            $result['created_invoice_ids'] = array_merge(
+                $result['created_invoice_ids'],
+                $this->create_single_invoices_for_rule([$booking], $rule)
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Stub: single rule-specific invoice creation will be implemented later.
+     *
+     * @param array<int, array> $bookings
+     * @param array<string, mixed> $rule
+     * @return array<int>
+     */
+    protected function create_single_invoices_for_rule(array $bookings, array $rule): array {
+        // The first thing to do, is to check that the booking hasn't already been invoiced.
+        $actual_bookings = [];
+        foreach ($bookings as $booking) {
+            if ($this->booking_service->booking_has_invoices(intval($booking['Id'] ?? 0))) {
+                // If there are any invoices for the booking, we skip it to avoid duplicates.
+                continue;
+            }
+            $actual_bookings[] = $booking;
+        }
+        if (empty($actual_bookings)) {
+            return [];
+        }
+
+        $booking_ids = array_map(fn($b) => intval($b['Id'] ?? 0), $actual_bookings);
+        $invoice_ids = $this->invoice_generator_service->generate_invoices_from_bookings(
+            $booking_ids,
             [
-                'rule_id' => $rule_id,
-                // Keep group_by for immediate use in grouping before the service loop;
-                // the service will re-resolve it from the table via rule_id.
-                'group_by' => $this->normalize_key($rule['group_by'] ?? 'per_booking'),
+                'group_by' => $rule['group_by'] ?? 'per_booking',
+                'rule_scope' => 'single',
+                'rule_id' => intval($rule['id'] ?? 0),
+                'due_date_offset_days' => intval($rule['due_date_offset_days'] ?? 30),
             ]
         );
 
-        if (is_wp_error($created) || !is_array($created)) {
-            return 0;
+        if ($invoice_ids instanceof \WP_Error) {
+            return [];
         }
 
-        return count($created);
+        return $invoice_ids;
+
     }
 
-    protected function get_bookings_for_invoicing() : array {
-        // Gets the list of single bookings that need to be invoiced
-        return $this->booking_service->get_uninvoiced_single_bookings();
+    protected function booking_has_non_default_organisation_rule(array $booking, array $active_rules, int $default_rule_id): bool {
+        $rule_id = intval($booking['OrganisationSingleBookingAutoInvoiceRuleId'] ?? 0);
+
+        if ($rule_id <= 0 || !isset($active_rules[$rule_id])) {
+            return false;
+        }
+
+        return $default_rule_id <= 0 || $rule_id !== $default_rule_id;
     }
 
-    protected function filter_bookings_by_trigger_condition(array $bookings) : array {
-        $filtered_bookings = [];
+    protected function booking_has_non_default_customer_rule(array $booking, array $active_rules, int $default_rule_id): bool {
+        $rule_id = intval($booking['CustomerSingleBookingAutoInvoiceRuleId'] ?? 0);
 
-        foreach ($bookings as $booking) {
-            $rule = $this->resolve_rule_for_booking($booking);
-
-            if (empty($rule['enabled'])) {
-                continue;
-            }
-
-            if (!$this->is_trigger_condition_met($booking, $rule)) {
-                continue;
-            }
-
-            $bucket_key = sprintf(
-                '%d|%s|%d',
-                intval($rule['id'] ?? 0),
-                $this->normalize_key($rule['group_by'] ?? 'per_booking'),
-                intval($rule['due_date_offset_days'] ?? 30)
-            );
-
-            if (!isset($filtered_bookings[$bucket_key])) {
-                $filtered_bookings[$bucket_key] = [
-                    'rule' => $rule,
-                    'bookings' => [],
-                ];
-            }
-
-            $filtered_bookings[$bucket_key]['bookings'][] = $booking;
+        if ($rule_id <= 0 || !isset($active_rules[$rule_id])) {
+            return false;
         }
 
-        return $filtered_bookings;
+        return $default_rule_id <= 0 || $rule_id !== $default_rule_id;
     }
 
-    protected function resolve_rule_for_booking(array $booking): array {
-        $active_rules = [];
-        foreach ($this->rule_repository->get_active_rules() as $rule) {
-            $active_rules[intval($rule['Id'])] = $this->map_rule_record($rule);
+    protected function resolve_organisation_rule_for_booking(array $booking, array $active_rules, int $default_rule_id): array {
+        $rule_id = intval($booking['OrganisationSingleBookingAutoInvoiceRuleId'] ?? 0);
+        if ($rule_id > 0 && isset($active_rules[$rule_id])) {
+            return $active_rules[$rule_id];
         }
 
-        $customer_rule_id = intval($booking['CustomerSingleBookingAutoInvoiceRuleId'] ?? 0);
-        if ($customer_rule_id > 0 && isset($active_rules[$customer_rule_id])) {
-            return $active_rules[$customer_rule_id];
+        return $this->resolve_default_rule($active_rules, $default_rule_id);
+    }
+
+    protected function resolve_customer_rule_for_booking(array $booking, array $active_rules, int $default_rule_id): array {
+        $rule_id = intval($booking['CustomerSingleBookingAutoInvoiceRuleId'] ?? 0);
+        if ($rule_id > 0 && isset($active_rules[$rule_id])) {
+            return $active_rules[$rule_id];
         }
 
-        $organisation_rule_id = intval($booking['OrganisationSingleBookingAutoInvoiceRuleId'] ?? 0);
-        if ($organisation_rule_id > 0 && isset($active_rules[$organisation_rule_id])) {
-            return $active_rules[$organisation_rule_id];
-        }
+        return $this->resolve_default_rule($active_rules, $default_rule_id);
+    }
 
-        $default_rule_id = intval(myvh_setting('invoicing.single_default_rule_id', 0));
+    protected function resolve_default_rule(array $active_rules, int $default_rule_id): array {
         if ($default_rule_id > 0 && isset($active_rules[$default_rule_id])) {
             return $active_rules[$default_rule_id];
         }
@@ -181,6 +280,48 @@ class SingleBookingAutoInvoicing {
         ];
     }
 
+    protected function get_active_rules_by_id(): array {
+        $active_rules = [];
+        foreach ($this->rule_repository->get_active_rules() as $rule) {
+            $active_rules[intval($rule['Id'])] = $this->map_rule_record($rule);
+        }
+
+        return $active_rules;
+    }
+
+    protected function merge_process_results(array $results): array {
+        $merged = $this->empty_process_result();
+
+        foreach ($results as $result) {
+            $merged['created_invoice_ids'] = array_merge($merged['created_invoice_ids'], $result['created_invoice_ids'] ?? []);
+        }
+
+        return [
+            'created_invoice_ids' => array_values(array_unique(array_map('intval', $merged['created_invoice_ids']))),
+        ];
+    }
+
+    protected function empty_process_result(): array {
+        return [
+            'created_invoice_ids' => [],
+        ];
+    }
+
+    protected function deduplicate_bookings_by_id(array $bookings): array {
+        $indexed = [];
+
+        foreach ($bookings as $booking) {
+            $booking_id = intval($booking['Id'] ?? 0);
+            if ($booking_id <= 0) {
+                continue;
+            }
+
+            $indexed[$booking_id] = $booking;
+        }
+
+        return array_values($indexed);
+    }
+
     protected function map_rule_record(array $rule): array {
         return [
             'id' => intval($rule['Id'] ?? 0),
@@ -196,14 +337,6 @@ class SingleBookingAutoInvoicing {
         $value = strtolower((string) $value);
 
         return preg_replace('/[^a-z0-9_\-]/', '', $value) ?? '';
-    }
-
-    protected function get_booking_ids_from_bookings(array $bookings) : array {
-        // Utility method to extract booking IDs from booking objects
-
-        return array_map(function($booking) {
-            return $booking['Id'];
-        }, $bookings);
     }
 
 }

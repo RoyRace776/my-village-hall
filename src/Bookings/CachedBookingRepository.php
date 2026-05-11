@@ -240,6 +240,11 @@ class CachedBookingRepository extends BookingRepository
         return $this->repository->get_uninvoiced_single_bookings($args);
     }
 
+    public function get_uninvoiced_recurring_bookings($args = []): array
+    {
+        return $this->repository->get_uninvoiced_recurring_bookings($args);
+    }
+
     public function count_uninvoiced_by_organisation(): array
     {
         return $this->repository->count_uninvoiced_by_organisation();

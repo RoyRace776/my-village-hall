@@ -16,11 +16,15 @@ protected RecurringBookingAutoInvoicing $recurring_booking_autoinvoicing;
     }
 
     public function generate() {
+        $recurring_result = $this->recurring_booking_autoinvoicing->process_with_result();
+        $single_result = $this->single_booking_autoinvoicing->process_with_result(
+            $recurring_result['treat_as_single_bookings'] ?? []
+        );
 
-        $invoice_count = 0;
-        $invoice_count += $this->single_booking_autoinvoicing->process();
-        $invoice_count += $this->recurring_booking_autoinvoicing->process();
-        return $invoice_count;
+        $recurring_invoice_ids = $recurring_result['created_invoice_ids'] ?? [];
+        $single_invoice_ids = $single_result['created_invoice_ids'] ?? [];
+
+        return count($recurring_invoice_ids) + count($single_invoice_ids);
     }
 
 }

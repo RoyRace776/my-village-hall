@@ -81,6 +81,18 @@ if (!empty($customer['Updated'])) {
                     <?php endforeach; ?>
                 </select>
             </label>
+
+            <label class="myvh-account-field">
+                <span>Recurring booking auto-invoice rule</span>
+                <select name="recurring_booking_auto_invoice_rule_id">
+                    <option value="0">Use default rule</option>
+                    <?php foreach (($recurring_booking_rule_options ?? []) as $rule_id => $rule_name): ?>
+                        <option value="<?php echo esc_attr((int) $rule_id); ?>" <?php selected((int) ($customer['RecurringBookingAutoInvoiceRuleId'] ?? 0), (int) $rule_id); ?>>
+                            <?php echo esc_html($rule_name); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
             <?php endif; ?>
             <div class="myvh-account-actions">
                 <button type="submit" class="button button-primary">Update Customer</button>

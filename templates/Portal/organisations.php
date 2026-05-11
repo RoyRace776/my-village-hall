@@ -212,6 +212,18 @@ foreach ($organisation_types as $organisation_type) {
                                 </select>
                             </label>
 
+                            <label class="myvh-account-field">
+                                <span>Recurring booking auto-invoice rule</span>
+                                <select name="recurring_booking_auto_invoice_rule_id">
+                                    <option value="0">Use default rule</option>
+                                    <?php foreach (($recurring_booking_rule_options ?? []) as $rule_id => $rule_name): ?>
+                                        <option value="<?php echo esc_attr((int) $rule_id); ?>" <?php selected((int) ($org['RecurringBookingAutoInvoiceRuleId'] ?? 0), (int) $rule_id); ?>>
+                                            <?php echo esc_html($rule_name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+
                             <div class="myvh-org-billing-fields"<?php echo empty($org['InvoiceOrganisationBookings']) ? ' hidden' : ''; ?> >
                                 <div class="myvh-field-grid">
                                     <label class="myvh-account-field">

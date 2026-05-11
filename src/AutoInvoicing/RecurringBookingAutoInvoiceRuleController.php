@@ -5,15 +5,15 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class SingleBookingAutoInvoiceRuleController {
-    public function __construct(private SingleBookingAutoInvoiceRuleRepository $rule_repository) {}
+class RecurringBookingAutoInvoiceRuleController {
+    public function __construct(private RecurringBookingAutoInvoiceRuleRepository $rule_repository) {}
 
     public function save(): void {
         if (!current_user_can('manage_myvh')) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
-        check_admin_referer('myvh_save_single_booking_auto_invoice_rules');
+        check_admin_referer('myvh_save_recurring_booking_auto_invoice_rules');
 
         $rows = wp_unslash($_POST['rules'] ?? []);
         if (!is_array($rows)) {
@@ -32,9 +32,14 @@ class SingleBookingAutoInvoiceRuleController {
                 continue;
             }
 
-            $trigger_timing = sanitize_key($row['trigger_timing'] ?? 'confirmation');
-            if (!in_array($trigger_timing, ['confirmation', 'booking_date', 'days_before_booking_date', 'days_after_booking_date', 'manual_invoicing'], true)) {
-                $trigger_timing = 'confirmation';
+            $trigger_timing = sanitize_key($row['trigger_timing'] ?? 'start_of_month');
+            if (!in_array($trigger_timing, ['start_of_week', 'start_of_month', 'start_of_quarter', 'manual_invoicing', 'treat_as_single_bookings'], true)) {
+                $trigger_timing = 'start_of_month';
+            }
+
+            $trigger_direction = sanitize_key($row['trigger_direction'] ?? 'in_advance');
+            if (!in_array($trigger_direction, ['in_advance', 'in_arrears'], true)) {
+                $trigger_direction = 'in_advance';
             }
 
             $group_by = sanitize_key($row['group_by'] ?? 'per_booking');
@@ -46,7 +51,8 @@ class SingleBookingAutoInvoiceRuleController {
                 'Id' => intval($row['id'] ?? 0),
                 'Name' => $name,
                 'TriggerTiming' => $trigger_timing,
-                'TriggerOffsetDays' => max(0, intval($row['trigger_offset_days'] ?? 0)),
+                'TriggerDirection' => $trigger_direction,
+                'TriggerOffsetDays' => max(0, intval($row['trigger_period_count'] ?? 0)),
                 'GroupBy' => $group_by,
                 'DueDateOffsetDays' => max(0, intval($row['due_date_offset_days'] ?? 30)),
                 'IsActive' => !empty($row['is_active']) ? 1 : 0,
@@ -69,13 +75,13 @@ class SingleBookingAutoInvoiceRuleController {
             $settings = [];
         }
 
-        $default_rule_id = intval($settings['single_default_rule_id'] ?? 0);
+        $default_rule_id = intval($settings['recurring_default_rule_id'] ?? 0);
         if ($default_rule_id <= 0 || !$this->rule_repository->is_active_rule($default_rule_id)) {
-            $settings['single_default_rule_id'] = intval($this->rule_repository->get_first_active_rule_id() ?? 0);
+            $settings['recurring_default_rule_id'] = intval($this->rule_repository->get_first_active_rule_id() ?? 0);
             update_option('myvh_invoicing_settings', $settings);
         }
 
-        wp_redirect(admin_url('admin.php?page=myvh-single-booking-invoice-rules&updated=1'));
+        wp_redirect(admin_url('admin.php?page=myvh-recurring-booking-invoice-rules&updated=1'));
         exit;
     }
 }

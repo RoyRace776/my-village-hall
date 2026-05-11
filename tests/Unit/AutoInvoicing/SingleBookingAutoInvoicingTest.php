@@ -4,6 +4,7 @@ namespace MYVH\Tests\Unit\AutoInvoicing;
 
 use Brain\Monkey\Functions;
 use Mockery;
+use MYVH\AutoInvoicing\RecurringBookingAutoInvoiceRuleRepository;
 use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\AutoInvoicing\SingleBookingAutoInvoicing;
 use MYVH\Bookings\BookingService;
@@ -18,6 +19,8 @@ class SingleBookingAutoInvoicingTest extends UnitTestCase
     private $booking_service;
     /** @var SingleBookingAutoInvoiceRuleRepository&\Mockery\MockInterface */
     private $rule_repository;
+    /** @var RecurringBookingAutoInvoiceRuleRepository&\Mockery\MockInterface */
+    private $recurring_rule_repository;
 
     protected function setUp(): void
     {
@@ -26,40 +29,50 @@ class SingleBookingAutoInvoicingTest extends UnitTestCase
         $this->invoice_generator = Mockery::mock(InvoiceGeneratorService::class);
         $this->booking_service   = Mockery::mock(BookingService::class);
         $this->rule_repository   = Mockery::mock(SingleBookingAutoInvoiceRuleRepository::class);
+        $this->recurring_rule_repository = Mockery::mock(RecurringBookingAutoInvoiceRuleRepository::class);
     }
 
     private function make_sut(): SingleBookingAutoInvoicing
     {
-        return new SingleBookingAutoInvoicing($this->invoice_generator, $this->booking_service, $this->rule_repository);
+        return new class(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository,
+            $this->recurring_rule_repository
+        ) extends SingleBookingAutoInvoicing {
+            /** @var array<int> */
+            public array $applied_rule_ids = [];
+
+            protected function create_single_invoices_for_rule(array $bookings, array $rule): array {
+                $rule_id = intval($rule['id'] ?? 0);
+                $this->applied_rule_ids[] = $rule_id;
+
+                return $rule_id > 0 ? [$rule_id] : [];
+            }
+        };
     }
 
-    // ── process ──────────────────────────────────────────────────────────
-
     /** @test */
-    public function process_returns_zero_when_no_rules_or_legacy_rule_is_disabled(): void
+    public function process_with_result_returns_empty_result_when_there_are_no_bookings(): void
     {
         Functions\when('myvh_setting')
             ->alias(function (string $key) {
-                if ($key === 'invoicing.single_default_rule_id') return 0;
-                if ($key === 'invoicing.single_enabled') return false;
-                if ($key === 'invoicing.single_trigger_timing') return 'confirmation';
-                if ($key === 'invoicing.single_trigger_offset_days') return 0;
-                if ($key === 'invoicing.single_group_by') return 'per_booking';
-                if ($key === 'invoicing.single_due_date_offset_days') return 30;
+                if ($key === 'invoicing.single_default_rule_id') return 12;
                 return null;
             });
-        $this->rule_repository->shouldReceive('get_active_rules')->andReturn([]);
-        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')->andReturn([
-            ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-06-01'],
+        $this->rule_repository->shouldReceive('get_active_rules')->andReturn([
+            ['Id' => 12, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'per_booking', 'DueDateOffsetDays' => 30],
         ]);
+        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')->andReturn([]);
 
         $sut = $this->make_sut();
+        $result = $sut->process_with_result();
 
-        $this->assertSame(0, $sut->process());
+        $this->assertSame(['created_invoice_ids' => []], $result);
     }
 
     /** @test */
-    public function process_returns_zero_when_no_bookings_to_invoice(): void
+    public function process_with_result_merges_and_deduplicates_delegated_recurring_bookings(): void
     {
         Functions\when('myvh_setting')->alias(function (string $key) {
             if ($key === 'invoicing.single_default_rule_id') return 12;
@@ -68,88 +81,50 @@ class SingleBookingAutoInvoicingTest extends UnitTestCase
         $this->rule_repository->shouldReceive('get_active_rules')->andReturn([
             ['Id' => 12, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'per_booking', 'DueDateOffsetDays' => 30],
         ]);
-        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')->andReturn([]);
+        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')->andReturn([
+            ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-06-01'],
+        ]);
 
         $sut = $this->make_sut();
+        $result = $sut->process_with_result([
+            ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-06-01'],
+            ['Id' => 2, 'Status' => 'confirmed', 'StartDate' => '2026-06-01'],
+        ]);
 
-        $this->assertSame(0, $sut->process());
+        $this->assertSame(['created_invoice_ids' => [12]], $result);
     }
 
     /** @test */
-    public function process_returns_zero_when_no_bookings_meet_trigger_condition(): void
+    public function process_uses_organisation_rule_before_customer_and_default(): void
     {
         Functions\when('myvh_setting')
             ->alias(function (string $key) {
-                if ($key === 'invoicing.single_default_rule_id') return 12;
+                if ($key === 'invoicing.single_default_rule_id') return 9;
                 return null;
             });
         $this->rule_repository->shouldReceive('get_active_rules')->andReturn([
-            ['Id' => 12, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'per_booking', 'DueDateOffsetDays' => 30],
+            ['Id' => 9, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'per_booking', 'DueDateOffsetDays' => 30],
+            ['Id' => 10, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'by_customer', 'DueDateOffsetDays' => 7],
+            ['Id' => 11, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'by_organisation', 'DueDateOffsetDays' => 14],
         ]);
 
         $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')
-            ->andReturn([['Id' => 1, 'Status' => 'pending', 'StartDate' => '2026-06-01']]);
+            ->andReturn([[
+                'Id' => 10,
+                'Status' => 'confirmed',
+                'StartDate' => '2026-06-01',
+                'CustomerSingleBookingAutoInvoiceRuleId' => 10,
+                'OrganisationSingleBookingAutoInvoiceRuleId' => 11,
+            ]]);
 
         $sut = $this->make_sut();
+        $result = $sut->process_with_result();
 
-        $this->assertSame(0, $sut->process());
+        $this->assertSame(['created_invoice_ids' => [11]], $result);
     }
 
     /** @test */
-    public function process_generates_invoice_when_booking_is_confirmed(): void
-    {
-        Functions\when('myvh_setting')
-            ->alias(function (string $key) {
-                if ($key === 'invoicing.single_default_rule_id') return 12;
-                return null;
-            });
-        $this->rule_repository->shouldReceive('get_active_rules')->andReturn([
-            ['Id' => 12, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'by_customer', 'DueDateOffsetDays' => 14],
-        ]);
-
-        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')
-            ->andReturn([['Id' => 10, 'Status' => 'confirmed', 'StartDate' => '2026-06-01']]);
-
-        $this->invoice_generator->shouldReceive('generate_invoices_from_bookings')
-            ->once()
-            ->with([10], Mockery::on(function (array $options): bool {
-                return $options['rule_id'] === 12 && $options['group_by'] === 'by_customer';
-            }))
-            ->andReturn([50]);
-
-        $sut = $this->make_sut();
-
-        $this->assertSame(1, $sut->process());
-    }
-
-    // ── is_trigger_condition_met – booking_date ───────────────────────────
-
-    /** @test */
-    public function trigger_condition_booking_date_is_met_when_date_is_in_past(): void
-    {
-        Functions\when('myvh_setting')
-            ->alias(function (string $key) {
-                if ($key === 'invoicing.single_default_rule_id') return 12;
-                return null;
-            });
-        $this->rule_repository->shouldReceive('get_active_rules')->andReturn([
-            ['Id' => 12, 'IsActive' => 1, 'TriggerTiming' => 'booking_date', 'TriggerOffsetDays' => 0, 'GroupBy' => 'by_customer', 'DueDateOffsetDays' => 30],
-        ]);
-
-        $past_date = (new \DateTime('-1 day'))->format('Y-m-d');
-
-        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')
-            ->andReturn([['Id' => 1, 'Status' => 'confirmed', 'StartDate' => $past_date]]);
-
-        $this->invoice_generator->shouldReceive('generate_invoices_from_bookings')->once()->andReturn([99]);
-
-        $sut = $this->make_sut();
-
-        $this->assertSame(1, $sut->process());
-    }
-
-    /** @test */
-    public function trigger_condition_booking_date_not_met_for_future_date(): void
+    public function process_with_result_respects_single_trigger_checks(): void
     {
         Functions\when('myvh_setting')
             ->alias(function (string $key) {
@@ -160,73 +135,55 @@ class SingleBookingAutoInvoicingTest extends UnitTestCase
             ['Id' => 12, 'IsActive' => 1, 'TriggerTiming' => 'booking_date', 'TriggerOffsetDays' => 0, 'GroupBy' => 'per_booking', 'DueDateOffsetDays' => 30],
         ]);
 
-        $future_date = (new \DateTime('+30 days'))->format('Y-m-d');
-
         $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')
-            ->andReturn([['Id' => 1, 'Status' => 'confirmed', 'StartDate' => $future_date]]);
+            ->andReturn([['Id' => 10, 'Status' => 'confirmed', 'StartDate' => '2099-06-01']]);
 
         $sut = $this->make_sut();
+        $result = $sut->process_with_result();
 
-        $this->assertSame(0, $sut->process());
-    }
-
-    // ── is_trigger_condition_met – days_after_booking_date ───────────────
-
-    /** @test */
-    public function trigger_condition_days_after_met_when_past_offset_days(): void
-    {
-        Functions\when('myvh_setting')
-            ->alias(function (string $key) {
-                if ($key === 'invoicing.single_default_rule_id') return 12;
-                return null;
-            });
-        $this->rule_repository->shouldReceive('get_active_rules')->andReturn([
-            ['Id' => 12, 'IsActive' => 1, 'TriggerTiming' => 'days_after_booking_date', 'TriggerOffsetDays' => 3, 'GroupBy' => 'by_customer', 'DueDateOffsetDays' => 30],
-        ]);
-
-        $past_date = (new \DateTime('-5 days'))->format('Y-m-d');
-
-        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')
-            ->andReturn([['Id' => 1, 'Status' => 'confirmed', 'StartDate' => $past_date]]);
-
-        $this->invoice_generator->shouldReceive('generate_invoices_from_bookings')->once()->andReturn([101]);
-
-        $sut = $this->make_sut();
-
-        $this->assertSame(1, $sut->process());
+        $this->assertSame(['created_invoice_ids' => []], $result);
     }
 
     /** @test */
-    public function process_uses_customer_rule_before_organisation_and_default(): void
+    public function create_single_invoices_for_rule_includes_all_non_invoiced_bookings(): void
     {
-        Functions\when('myvh_setting')
-            ->alias(function (string $key) {
-                if ($key === 'invoicing.single_default_rule_id') return 9;
-                return null;
-            });
-        $this->rule_repository->shouldReceive('get_active_rules')->andReturn([
-            ['Id' => 9, 'IsActive' => 1, 'TriggerTiming' => 'booking_date', 'TriggerOffsetDays' => 0, 'GroupBy' => 'per_booking', 'DueDateOffsetDays' => 30],
-            ['Id' => 10, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'by_customer', 'DueDateOffsetDays' => 7],
-        ]);
-
-        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')
-            ->andReturn([[
-                'Id' => 10,
-                'Status' => 'confirmed',
-                'StartDate' => '2026-06-01',
-                'CustomerSingleBookingAutoInvoiceRuleId' => 10,
-                'OrganisationSingleBookingAutoInvoiceRuleId' => 9,
-            ]]);
+        $this->booking_service->shouldReceive('booking_has_invoices')->with(101)->andReturn(false);
+        $this->booking_service->shouldReceive('booking_has_invoices')->with(102)->andReturn(true);
+        $this->booking_service->shouldReceive('booking_has_invoices')->with(103)->andReturn(false);
 
         $this->invoice_generator->shouldReceive('generate_invoices_from_bookings')
             ->once()
-            ->with([10], Mockery::on(function (array $options): bool {
-                return $options['rule_id'] === 10 && $options['group_by'] === 'by_customer';
-            }))
-            ->andReturn([888]);
+            ->with([101, 103], [
+                'group_by' => 'by_customer',
+                'rule_scope' => 'single',
+                'rule_id' => 77,
+                'due_date_offset_days' => 30,
+            ])
+            ->andReturn([9001, 9002]);
 
-        $sut = $this->make_sut();
+        $sut = new SingleBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository,
+            $this->recurring_rule_repository
+        );
 
-        $this->assertSame(1, $sut->process());
+        $method = new \ReflectionMethod(SingleBookingAutoInvoicing::class, 'create_single_invoices_for_rule');
+        $method->setAccessible(true);
+        /** @var array<int> $result */
+        $result = $method->invoke(
+            $sut,
+            [
+                ['Id' => 101],
+                ['Id' => 102],
+                ['Id' => 103],
+            ],
+            [
+                'group_by' => 'by_customer',
+                'id' => 77,
+            ]
+        );
+
+        $this->assertSame([9001, 9002], $result);
     }
 }

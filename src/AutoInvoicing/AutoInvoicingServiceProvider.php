@@ -13,6 +13,10 @@ class AutoInvoicingServiceProvider {
         });
         $container->singleton(SingleBookingAutoInvoiceRuleController::class);
         $container->singleton(SingleBookingAutoInvoicing::class);
+        $container->singleton(RecurringBookingAutoInvoiceRuleRepository::class, function ($container) {
+            return new RecurringBookingAutoInvoiceRuleRepository($container->get(\wpdb::class));
+        });
+        $container->singleton(RecurringBookingAutoInvoiceRuleController::class);
         $container->singleton(RecurringBookingAutoInvoicing::class);
         $container->singleton(AutoInvoice::class);
         $container->singleton(AutoInvoicingAjaxController::class);

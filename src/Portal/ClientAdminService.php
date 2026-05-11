@@ -39,10 +39,10 @@ class ClientAdminService {
         }
 
         if (is_multisite()) {
-            return is_super_admin($user_id);
+            return is_super_admin($user_id) || user_can($user_id, 'manage_myvh') || user_can($user_id, 'manage_options');
         }
 
-        return user_can($user_id, 'manage_myvh');
+        return user_can($user_id, 'manage_myvh') || user_can($user_id, 'manage_options');
     }
 
     public function get_assigned_user_ids_for_blog(int $blog_id): array {
@@ -248,7 +248,7 @@ class ClientAdminService {
         }
 
         if (!is_multisite()) {
-            return user_can($user_id, 'manage_myvh');
+            return user_can($user_id, 'manage_myvh') || user_can($user_id, 'manage_options');
         }
 
         $switched = get_current_blog_id() !== $blog_id;
@@ -258,7 +258,7 @@ class ClientAdminService {
         }
 
         try {
-            return user_can($user_id, 'manage_myvh');
+            return user_can($user_id, 'manage_myvh') || user_can($user_id, 'manage_options');
         } finally {
             if ($switched) {
                 restore_current_blog();

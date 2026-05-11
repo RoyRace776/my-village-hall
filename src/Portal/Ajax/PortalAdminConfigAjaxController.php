@@ -4,6 +4,7 @@ namespace MYVH\Portal\Ajax;
 use MYVH\Addons\AddonRequestValidator;
 use MYVH\Addons\AddonService;
 use MYVH\Addons\SaveAddonRequest;
+use MYVH\AutoInvoicing\RecurringBookingAutoInvoiceRuleRepository;
 use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Organisations\SaveOrganisationTypeRequest;
@@ -28,6 +29,7 @@ class PortalAdminConfigAjaxController {
         private OrganisationTypeService $organisation_type_service,
         private ClientAdminService $client_admin_service,
         private SingleBookingAutoInvoiceRuleRepository $single_booking_rule_repository,
+        private RecurringBookingAutoInvoiceRuleRepository $recurring_booking_rule_repository,
         private RoomService $room_service,
         private RoomRequestValidator $room_request_validator,
         private RoomRateService $room_rate_service,
@@ -51,6 +53,7 @@ class PortalAdminConfigAjaxController {
         add_action('wp_ajax_myvh_portal_delete_addon', [$this, 'delete_addon']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
         add_action('wp_ajax_myvh_portal_save_single_booking_invoice_rules', [$this, 'save_single_booking_invoice_rules']);
+        add_action('wp_ajax_myvh_portal_save_recurring_booking_invoice_rules', [$this, 'save_recurring_booking_invoice_rules']);
     }
 
     public function save_organisation_type(): void {
@@ -369,7 +372,7 @@ class PortalAdminConfigAjaxController {
             }
 
             $trigger_timing = sanitize_key($row['trigger_timing'] ?? 'confirmation');
-            if (!in_array($trigger_timing, ['confirmation', 'booking_date', 'days_before_booking_date', 'days_after_booking_date'], true)) {
+            if (!in_array($trigger_timing, ['confirmation', 'booking_date', 'days_before_booking_date', 'days_after_booking_date', 'manual_invoicing'], true)) {
                 $trigger_timing = 'confirmation';
             }
 
@@ -385,7 +388,6 @@ class PortalAdminConfigAjaxController {
                 'TriggerOffsetDays' => max(0, intval($row['trigger_offset_days'] ?? 0)),
                 'GroupBy' => $group_by,
                 'DueDateOffsetDays' => max(0, intval($row['due_date_offset_days'] ?? 30)),
-                'SortOrder' => max(0, intval($row['sort_order'] ?? 0)),
                 'IsActive' => !empty($row['is_active']) ? 1 : 0,
             ];
 
@@ -418,6 +420,84 @@ class PortalAdminConfigAjaxController {
         wp_send_json_success([
             'message' => 'Single booking invoice rules updated',
             'redirect' => 'single-booking-invoice-rules',
+        ]);
+    }
+
+    public function save_recurring_booking_invoice_rules(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $rows = wp_unslash($_POST['rules'] ?? []);
+        if (!is_array($rows)) {
+            $rows = [];
+        }
+
+        $active_rule_ids = [];
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $name = sanitize_text_field($row['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+
+            $trigger_timing = sanitize_key($row['trigger_timing'] ?? 'start_of_month');
+            if (!in_array($trigger_timing, ['start_of_week', 'start_of_month', 'start_of_quarter', 'manual_invoicing', 'treat_as_single_bookings'], true)) {
+                $trigger_timing = 'start_of_month';
+            }
+
+            $trigger_direction = sanitize_key($row['trigger_direction'] ?? 'in_advance');
+            if (!in_array($trigger_direction, ['in_advance', 'in_arrears'], true)) {
+                $trigger_direction = 'in_advance';
+            }
+
+            $group_by = sanitize_key($row['group_by'] ?? 'per_booking');
+            if (!in_array($group_by, ['per_booking', 'by_customer', 'by_organisation'], true)) {
+                $group_by = 'per_booking';
+            }
+
+            $record = [
+                'Id' => intval($row['id'] ?? 0),
+                'Name' => $name,
+                'TriggerTiming' => $trigger_timing,
+                'TriggerDirection' => $trigger_direction,
+                'TriggerOffsetDays' => max(0, intval($row['trigger_period_count'] ?? 0)),
+                'GroupBy' => $group_by,
+                'DueDateOffsetDays' => max(0, intval($row['due_date_offset_days'] ?? 30)),
+                'IsActive' => !empty($row['is_active']) ? 1 : 0,
+            ];
+
+            $saved_rule_id = $this->recurring_booking_rule_repository->upsert_rule($record);
+            if (!$saved_rule_id) {
+                continue;
+            }
+
+            if ($record['IsActive'] === 1) {
+                $active_rule_ids[] = intval($saved_rule_id);
+            }
+        }
+
+        $this->recurring_booking_rule_repository->deactivate_rules_not_in($active_rule_ids);
+
+        $settings = get_option('myvh_invoicing_settings', []);
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        $requested_default_rule_id = intval($_POST['default_rule_id'] ?? 0);
+        if ($requested_default_rule_id > 0 && $this->recurring_booking_rule_repository->is_active_rule($requested_default_rule_id)) {
+            $settings['recurring_default_rule_id'] = $requested_default_rule_id;
+        } else {
+            $settings['recurring_default_rule_id'] = intval($this->recurring_booking_rule_repository->get_first_active_rule_id() ?? 0);
+        }
+
+        update_option('myvh_invoicing_settings', $settings);
+
+        wp_send_json_success([
+            'message' => 'Recurring booking invoice rules updated',
+            'redirect' => 'recurring-booking-invoice-rules',
         ]);
     }
 }

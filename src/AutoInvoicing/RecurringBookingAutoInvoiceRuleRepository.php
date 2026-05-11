@@ -8,10 +8,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class SingleBookingAutoInvoiceRuleRepository extends RepositoryBase {
+class RecurringBookingAutoInvoiceRuleRepository extends RepositoryBase {
     public function __construct(wpdb $wpdb) {
         $this->wpdb = $wpdb;
-        $this->table_name = $wpdb->prefix . 'myvh_single_booking_auto_invoice_rules';
+        $this->table_name = $wpdb->prefix . 'myvh_recurring_booking_auto_invoice_rules';
     }
 
     public function get_all_rules(bool $include_inactive = true): array {

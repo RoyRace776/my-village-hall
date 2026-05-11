@@ -341,7 +341,77 @@ document.addEventListener("DOMContentLoaded", () => {
                         '<option value="by_organisation">By organisation</option>' +
                     '</select></td>' +
                     '<td><input type="number" name="rules[' + index + '][due_date_offset_days]" min="0" value="30"></td>' +
-                    '<td><input type="number" name="rules[' + index + '][sort_order]" min="0" value="0"></td>' +
+                    '<td><input type="checkbox" name="rules[' + index + '][is_active]" value="1" checked></td>' +
+                    '<td><button type="button" class="button myvh-remove-rule-row">Remove</button></td>';
+
+                return row;
+            };
+
+            addButton.addEventListener('click', function () {
+                body.appendChild(buildRow(nextIndex()));
+            });
+
+            body.addEventListener('click', function (event) {
+                const target = event.target;
+
+                if (!target || !target.classList.contains('myvh-remove-rule-row')) {
+                    return;
+                }
+
+                const row = target.closest('tr.myvh-rule-row');
+                if (row) {
+                    row.remove();
+                }
+            });
+        })();
+
+        // Recurring booking invoice rules table (portal admin page)
+        (function initRecurringBookingInvoiceRulesPage() {
+            const table = document.getElementById('myvh-recurring-booking-rules-table');
+            const addButton = document.getElementById('myvh-add-recurring-booking-rule');
+
+            if (!table || !addButton) {
+                return;
+            }
+
+            if (table.dataset.rulesInit === '1') {
+                return;
+            }
+
+            table.dataset.rulesInit = '1';
+
+            const body = table.querySelector('tbody');
+            if (!body) {
+                return;
+            }
+
+            const nextIndex = function () {
+                return body.querySelectorAll('tr.myvh-rule-row').length;
+            };
+
+            const buildRow = function (index) {
+                const row = document.createElement('tr');
+                row.className = 'myvh-rule-row';
+                row.innerHTML = '' +
+                    '<td><input type="hidden" name="rules[' + index + '][id]" value="0"><input type="text" name="rules[' + index + '][name]" required></td>' +
+                    '<td><select name="rules[' + index + '][trigger_timing]" style="min-width: 190px;">' +
+                        '<option value="start_of_month">Start of month</option>' +
+                        '<option value="start_of_quarter">Start of quarter</option>' +
+                        '<option value="start_of_week">Start of week</option>' +
+                        '<option value="manual_invoicing">Manual invoicing</option>' +
+                        '<option value="treat_as_single_bookings">Treat as single bookings</option>' +
+                    '</select></td>' +
+                    '<td><select name="rules[' + index + '][trigger_direction]" style="min-width: 150px;">' +
+                        '<option value="in_advance">In advance</option>' +
+                        '<option value="in_arrears">In arrears</option>' +
+                    '</select></td>' +
+                    '<td><input type="number" name="rules[' + index + '][trigger_period_count]" min="0" max="99" value="0" style="width: 46px;"></td>' +
+                    '<td><select name="rules[' + index + '][group_by]" style="min-width: 160px;">' +
+                        '<option value="per_booking">Per booking</option>' +
+                        '<option value="by_customer">By customer</option>' +
+                        '<option value="by_organisation">By organisation</option>' +
+                    '</select></td>' +
+                    '<td><input type="number" name="rules[' + index + '][due_date_offset_days]" min="0" value="30"></td>' +
                     '<td><input type="checkbox" name="rules[' + index + '][is_active]" value="1" checked></td>' +
                     '<td><button type="button" class="button myvh-remove-rule-row">Remove</button></td>';
 

@@ -29,8 +29,20 @@ class AutoInvoiceTest extends UnitTestCase
     /** @test */
     public function generate_returns_sum_of_single_and_recurring_invoice_counts(): void
     {
-        $this->single->shouldReceive('process')->once()->andReturn(3);
-        $this->recurring->shouldReceive('process')->once()->andReturn(2);
+        $this->recurring->shouldReceive('process_with_result')->once()->andReturn([
+            'created_invoice_ids' => [101, 102],
+            'treat_as_single_bookings' => [
+                ['Id' => 77, 'Status' => 'confirmed'],
+            ],
+        ]);
+        $this->single->shouldReceive('process_with_result')
+            ->once()
+            ->with([
+                ['Id' => 77, 'Status' => 'confirmed'],
+            ])
+            ->andReturn([
+                'created_invoice_ids' => [201, 202, 203],
+            ]);
 
         $result = $this->auto_invoice->generate();
 
@@ -40,8 +52,24 @@ class AutoInvoiceTest extends UnitTestCase
     /** @test */
     public function generate_returns_zero_when_no_invoices_generated(): void
     {
-        $this->single->shouldReceive('process')->once()->andReturn(0);
-        $this->recurring->shouldReceive('process')->once()->andReturn(0);
+        $recurring_ran = false;
+
+        $this->recurring->shouldReceive('process_with_result')->once()->andReturnUsing(function () use (&$recurring_ran) {
+            $recurring_ran = true;
+
+            return [
+                'created_invoice_ids' => [],
+                'treat_as_single_bookings' => [],
+            ];
+        });
+
+        $this->single->shouldReceive('process_with_result')->once()->andReturnUsing(function () use (&$recurring_ran) {
+            $this->assertTrue($recurring_ran);
+
+            return [
+                'created_invoice_ids' => [],
+            ];
+        });
 
         $result = $this->auto_invoice->generate();
 

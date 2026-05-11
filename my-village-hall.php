@@ -26,6 +26,7 @@ use MYVH\Organisations\OrganisationTypeController;
 use MYVH\Pricing\RoomRateController;
 use MYVH\Addons\AddonController;
 use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleController;
+use MYVH\AutoInvoicing\RecurringBookingAutoInvoiceRuleController;
 use MYVH\Invoices\InvoiceController;
 use MYVH\Payments\PaymentController;
 use MYVH\Settings\GeneralSettings;
@@ -345,6 +346,7 @@ class MyVillageHall {
         $this->on_admin_post( 'myvh_delete_invoice',        InvoiceController::class, 'delete' );
         $this->on_admin_post( 'myvh_update_invoice_status', InvoiceController::class, 'update_status' );
         $this->on_admin_post( 'myvh_save_single_booking_auto_invoice_rules', SingleBookingAutoInvoiceRuleController::class, 'save' );
+        $this->on_admin_post( 'myvh_save_recurring_booking_auto_invoice_rules', RecurringBookingAutoInvoiceRuleController::class, 'save' );
         $this->on_admin_post( 'myvh_record_payment',        PaymentController::class, 'create' );
         $this->on_admin_post( 'myvh_delete_payment',        PaymentController::class, 'delete' );
 
@@ -372,18 +374,13 @@ class MyVillageHall {
      * Registers the plugin's admin submenu.
      *
      * Structure:
-     *   My Village Hall  (top-level ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Bookings list)
+     *   My Village Hall  (top-level Bookings list)
      *     All Bookings
      *     Calendar
-     *     ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ separator ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
      *     Customers
-     *     ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ separator ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
      *     Organisations / Org Types / Org Members / Client Admins
-     *     ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ separator ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
      *     Venues / Rooms
-     *     ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ separator ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
      *     Room Rates / Add-ons / Invoices / Payments / Generate Invoices
-     *     ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ separator ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
      *     Recurring Patterns
      *     Audit Log  (conditional)
      */
@@ -508,17 +505,25 @@ class MyVillageHall {
 
         add_submenu_page( 'my-village-hall',
             __( 'Single Booking Invoice Rules', 'my-village-hall' ),
-            self::menu_label( 'dashicons-filter', __( 'Single Invoice Rules', 'my-village-hall' ) ),
+            self::menu_label( 'dashicons-filter', __( 'Single Booking Invoice Rules', 'my-village-hall' ) ),
             'manage_options',
             'myvh-single-booking-invoice-rules',
             [ $this, 'render_single_booking_invoice_rules_page' ]
+        );
+
+        add_submenu_page( 'my-village-hall',
+            __( 'Recurring Booking Invoice Rules', 'my-village-hall' ),
+            self::menu_label( 'dashicons-filter', __( 'Recurring Booking Invoice Rules', 'my-village-hall' ) ),
+            'manage_options',
+            'myvh-recurring-booking-invoice-rules',
+            [ $this, 'render_recurring_booking_invoice_rules_page' ]
         );
 
         $this->add_menu_separator();
 
         add_submenu_page( 'my-village-hall',
             __( 'Recurring Bookings',  'my-village-hall' ),
-            self::menu_label( 'dashicons-update-alt', __( 'Recurring Patterns', 'my-village-hall' ) ),
+            self::menu_label( 'dashicons-update-alt', __( 'Recurring Bookings', 'my-village-hall' ) ),
             'manage_options', 'myvh-recurring', [ $this, 'render_recurring_page' ]
         );
 
@@ -560,6 +565,7 @@ class MyVillageHall {
             'admin.php?page=myvh-payments'                   => 'dashicons-money',
             'admin.php?page=myvh-invoice-generate'           => 'dashicons-media-document',
             'admin.php?page=myvh-single-booking-invoice-rules' => 'dashicons-filter',
+            'admin.php?page=myvh-recurring-booking-invoice-rules' => 'dashicons-filter',
             'admin.php?page=myvh-recurring'                  => 'dashicons-update-alt',
             'admin.php?page=myvh-audit-log'                  => 'dashicons-visibility',
             'admin.php?page=myvh-settings'                   => 'dashicons-admin-generic',
@@ -615,6 +621,7 @@ li a[href=\"admin.php?page={$safe}\"] span { display: none; }
     public function render_invoices_page(): void          { $this->render_page( 'invoices', true ); }
     public function render_invoice_generate_page(): void  { $this->render_page( 'invoice-generate' ); }
     public function render_single_booking_invoice_rules_page(): void { $this->render_page( 'single-booking-invoice-rules' ); }
+    public function render_recurring_booking_invoice_rules_page(): void { $this->render_page( 'recurring-booking-invoice-rules' ); }
     public function render_recurring_page(): void         { $this->render_page( 'recurring' ); }
     public function render_audit_log_page(): void         { $this->render_page( 'audit-log' ); }
 
