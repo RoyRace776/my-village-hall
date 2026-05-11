@@ -3,7 +3,7 @@
  * Plugin Name: My Village Hall
  * Plugin URI: https://example.com/my-village-hall
  * Description: A comprehensive venue and room booking management system with multi-client support, recurring bookings, and customer portal
- * Version: 0.6.2
+ * Version: 0.7.0
  * Author: Richard Barrett
  * Author URI: https://example.com
  * License: GPL v2 or later
@@ -49,7 +49,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'MYVH_VERSION',         '0.6.2' );
+define( 'MYVH_VERSION',         '0.7.0' );
 define( 'MYVH_PLUGIN_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'MYVH_PLUGIN_URL',      plugin_dir_url( __FILE__ ) );
 define( 'MYVH_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -166,7 +166,7 @@ class MyVillageHall {
         return self::$instance;
     }
 
-    /** Private constructor ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â use get_instance(). */
+    /** Private constructor ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â use get_instance(). */
     private function __construct() {
         $this->register_hooks();
     }
@@ -694,7 +694,7 @@ li a[href=\"admin.php?page={$safe}\"] span { display: none; }
             echo '<div class="wrap">';
             echo '<h1>' . esc_html__( 'Client Administrators', 'my-village-hall' ) . '</h1>';
             echo '<div class="notice notice-warning"><p>'
-                . esc_html__( 'Only network administrators can manage cross-site client admin assignments. Ask a network admin to use Network Admin ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Client Admins.', 'my-village-hall' )
+                . esc_html__( 'Only network administrators can manage cross-site client admin assignments. Ask a network admin to use Network Admin ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Client Admins.', 'my-village-hall' )
                 . '</p></div>';
             echo '</div>';
             return;
