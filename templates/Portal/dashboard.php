@@ -377,7 +377,7 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
                   <td><a href="#bookings?status=pending&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) intval($row['pending_bookings'] ?? 0)); ?></a></td>
                   <td><a href="#bookings?datePreset=past&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) intval($row['last_month_bookings'] ?? 0)); ?></a></td>
                   <td><?php echo esc_html(number_format((float) ($row['last_month_hours'] ?? 0), 2)); ?></td>
-                  <td><?php echo esc_html((string) intval($row['next_month_bookings'] ?? 0)); ?></td>
+                  <td><a href="#bookings?datePreset=upcoming&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) intval($row['next_month_bookings'] ?? 0)); ?></a></td>
                   <td><?php echo esc_html(number_format((float) ($row['next_month_hours'] ?? 0), 2)); ?></td>
                 </tr>
               <?php endforeach; ?>

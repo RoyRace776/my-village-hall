@@ -186,6 +186,7 @@ class MyVillageHall {
         add_action( 'plugins_loaded', [ $this, 'on_plugins_loaded' ] );
         add_action( 'init',           [ $this, 'on_init' ] );
         add_action( 'admin_menu',     [ $this, 'register_admin_menu' ] );
+        add_action( 'wp_head',        [ $this, 'hide_portal_page_title' ], 20 );
 
         AssetLoader::init();
 
@@ -228,6 +229,31 @@ class MyVillageHall {
             Installer::run();
             update_option( 'myvh_version', MYVH_VERSION );
         }
+    }
+
+    /**
+     * Hides theme-rendered page titles on the frontend portal page.
+     */
+    public function hide_portal_page_title(): void {
+        if ( is_admin() || ! is_singular( 'page' ) ) {
+            return;
+        }
+
+        $post = get_queried_object();
+        if ( ! ( $post instanceof WP_Post ) ) {
+            return;
+        }
+
+        $content = (string) ( $post->post_content ?? '' );
+        if ( $content === '' || ! has_shortcode( $content, 'myvh_portal' ) ) {
+            return;
+        }
+
+        echo '<style id="myvh-hide-portal-page-title">'
+            . '.page .entry-title,'
+            . '.page .page-title,'
+            . '.page h1.wp-block-post-title{display:none !important;}'
+            . '</style>';
     }
 
 
