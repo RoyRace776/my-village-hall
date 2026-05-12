@@ -28,8 +28,8 @@ $charge_type_labels = [
             <h2>Room Rates</h2>
             <p>Manage room pricing for this client site.</p>
         </div>
-        <a href="#room-rate-add" class="button button-primary myvh-portal-add-button">
-            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+        <a href="#room-rate-add" class="myvh-portal-add-btn">
+            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
             <span>Add Room Rate</span>
         </a>
     </div>
@@ -43,8 +43,8 @@ $charge_type_labels = [
         <?php if (empty($rates)): ?>
             <p>No room rates found for this site.</p>
             <p>
-                <a href="#room-rate-add" class="button button-primary myvh-portal-add-button">
-                    <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+                <a href="#room-rate-add" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
                     <span>Create First Room Rate</span>
                 </a>
             </p>

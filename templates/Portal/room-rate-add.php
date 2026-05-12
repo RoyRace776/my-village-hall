@@ -31,7 +31,10 @@ if (!$selected_room) {
     <div class="myvh-card myvh-account-card">
         <?php if (empty($rooms)): ?>
             <p>You need to create at least one room before adding room rates.</p>
-            <p><a href="#room-add" class="button button-primary">Add Room</a></p>
+            <p><a href="#room-add" class="myvh-portal-add-btn">
+                <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                <span>Add Room</span>
+            </a></p>
         <?php else: ?>
             <?php if ($selected_room): ?>
                 <p class="myvh-muted">Adding a rate for <strong><?php echo esc_html($selected_room['Name'] ?? ''); ?></strong>.</p>
@@ -126,7 +129,10 @@ if (!$selected_room) {
                 </label>
 
                 <div class="myvh-account-actions">
-                    <button type="submit" class="button button-primary">Create Room Rate</button>
+                    <button type="submit" class="myvh-portal-add-btn">
+                        <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                        <span>Create Room Rate</span>
+                    </button>
                     <a href="#room-rates" class="button">Cancel</a>
                     <div id="myvh-room-rate-create-message" class="myvh-muted" aria-live="polite"></div>
                 </div>

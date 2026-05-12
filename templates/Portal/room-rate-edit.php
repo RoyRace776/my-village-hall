@@ -114,7 +114,10 @@ $current_org_type_id = (int) ($rate['OrganisationTypeId'] ?? 0);
             </label>
 
             <div class="myvh-account-actions">
-                <button type="submit" class="button button-primary">Update Room Rate</button>
+                <button type="submit" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                    <span>Update Room Rate</span>
+                </button>
                 <a href="#room-rates" class="button">Cancel</a>
                 <div id="myvh-room-rate-edit-message" class="myvh-muted" aria-live="polite"></div>
             </div>
