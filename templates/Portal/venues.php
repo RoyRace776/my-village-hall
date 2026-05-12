@@ -10,8 +10,8 @@ $venue_room_counts = isset($venue_room_counts) && is_array($venue_room_counts) ?
             <h2>Venues</h2>
             <p>Manage venue details and opening hours for this client site.</p>
         </div>
-        <a href="#venue-add" class="myvh-portal-add-btn">
-            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+        <a href="#venue-add" class="button button-primary myvh-portal-add-button">
+            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
             <span>Add Venue</span>
         </a>
     </div>

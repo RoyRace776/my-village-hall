@@ -20,8 +20,8 @@ $edit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             <h2>Customers</h2>
             <p>View, edit, or remove customers for this client site.</p>
         </div>
-        <a href="#customer-add" class="myvh-portal-add-btn">
-            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+        <a href="#customer-add" class="button button-primary myvh-portal-add-button">
+            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
             <span>Add Customer</span>
         </a>
     </div>

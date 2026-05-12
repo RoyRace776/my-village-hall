@@ -3,6 +3,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+$is_client_admin = !empty($is_client_admin);
 $invoice_bookings = $invoice['BookingsSummary'] ?? [];
 $invoice_payments = $invoice['Payments'] ?? [];
 $available_statuses = $available_statuses ?? [];
@@ -24,14 +25,14 @@ $has_payments = !empty($invoice_payments);
         </div>
         <div>
             <?php if (!empty($invoice['Id'])): ?>
-                <a href="<?php echo esc_url($portal_pdf_url); ?>" class="myvh-button" target="_blank" rel="noopener noreferrer">View PDF</a>
+                <a href="<?php echo esc_url($portal_pdf_url); ?>" class="button" target="_blank" rel="noopener noreferrer">View PDF</a>
             <?php endif; ?>
             <?php if ($is_client_admin): ?>
                 <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
-                    <a href="#payments?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>" class="myvh-button">Payments</a>
+                    <a href="#payments?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>" class="button">Payments</a>
                 <?php endif; ?>
             <?php endif; ?>
-            <a href="#invoices" class="myvh-button">Back to Invoices</a>
+            <a href="#invoices" class="button">Back to Invoices</a>
         </div>
     </div>
 
@@ -115,7 +116,7 @@ $has_payments = !empty($invoice_payments);
                                         </select>
                                     </div>
                                     <div style="align-self: end;">
-                                        <button type="submit" class="myvh-button myvh-button-primary">Update Status</button>
+                                        <button type="submit" class="button button-primary">Update Status</button>
                                     </div>
                                 </div>
                                 <p class="myvh-muted" data-invoice-status-message></p>
@@ -162,7 +163,7 @@ $has_payments = !empty($invoice_payments);
                                                         <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) intval($payment['Id'] ?? 0)); ?>">
                                                         <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>">
                                                         <input type="hidden" name="redirect_route" value="invoice-view?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>">
-                                                        <button type="submit" class="myvh-button myvh-button-small">Delete</button>
+                                                        <button type="submit" class="button">Delete</button>
                                                     </form>
                                                     <p class="myvh-muted" id="<?php echo esc_attr($payment_message_id); ?>"></p>
                                                 </td>
@@ -219,7 +220,7 @@ $has_payments = !empty($invoice_payments);
                                 <p>
                                     <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="4"></textarea>
                                 </p>
-                                <button type="submit" class="myvh-button myvh-button-primary">Save Payment</button>
+                                <button type="submit" class="button button-primary">Save Payment</button>
                                 <p class="myvh-muted" id="myvh-portal-payment-create-message"></p>
                             </form>
                         <?php endif; ?>

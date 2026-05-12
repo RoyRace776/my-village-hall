@@ -19,10 +19,7 @@ foreach ($organisation_types as $organisation_type) {
             <h2>Organisations</h2>
             <p>View your memberships, request access, and manage organisations you administer.</p>
         </div>
-        <a href="#organisation-add" class="myvh-portal-add-btn">
-            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
-            <span>Add Organisation</span>
-        </a>
+        <a href="#organisation-add" class="button">Add Organisation</a>
     </div>
 
     <div class="myvh-account-grid">
@@ -88,7 +85,7 @@ foreach ($organisation_types as $organisation_type) {
                     </label>
 
                     <div class="myvh-account-actions">
-                        <button type="submit" class="button myvh-cal-btn">Send Request</button>
+                        <button type="submit" class="button button-primary">Send Request</button>
                         <div id="myvh-org-request-message" class="myvh-muted" aria-live="polite"></div>
                     </div>
                 </form>
@@ -161,7 +158,7 @@ foreach ($organisation_types as $organisation_type) {
                                     </label>
 
                                     <div class="myvh-account-actions">
-                                        <button type="submit" class="button myvh-cal-btn">Save Organisation Type</button>
+                                        <button type="submit" class="button button-primary">Save Organisation Type</button>
                                     </div>
                                 </form>
                             <?php endif; ?>
@@ -268,7 +265,7 @@ foreach ($organisation_types as $organisation_type) {
                             </div>
 
                             <div class="myvh-account-actions">
-                                <button type="submit" class="button myvh-cal-btn">Save Organisation Details</button>
+                                <button type="submit" class="button button-primary">Save Organisation Details</button>
                             </div>
 
                         </form>
@@ -331,7 +328,7 @@ foreach ($organisation_types as $organisation_type) {
                                     </span>
                                 </label>
 
-                                <button type="submit" class="button myvh-cal-btn">Add Member</button>
+                                <button type="submit" class="button button-primary">Add Member</button>
                             </form>
                         </div>
                     </div>

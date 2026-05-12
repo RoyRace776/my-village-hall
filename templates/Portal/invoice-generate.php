@@ -279,7 +279,7 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                 </div>
 
                 <div class="myvh-account-actions myvh-generate-submit-row">
-                    <button type="submit" class="myvh-button myvh-button-primary">Create Invoice(s)</button>
+                    <button type="submit" class="button button-primary">Create Invoice(s)</button>
                     <p class="myvh-account-hint">The selected bookings will be invoiced using the grouping option above.</p>
                 </div>
             <?php else: ?>
@@ -297,7 +297,7 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
               data-message-target="myvh-auto-invoicing-portal-message"
               data-reload-page="invoice-generate">
             <div class="myvh-account-actions myvh-generate-submit-row">
-                <button type="submit" class="myvh-button">Run Auto-Invoicing</button>
+                <button type="submit" class="button">Run Auto-Invoicing</button>
                 <p class="myvh-account-hint">Use your Auto-Invoicing settings to generate invoices without manually selecting bookings.</p>
             </div>
             <p id="myvh-auto-invoicing-portal-message" class="myvh-form-message" role="status" aria-live="polite"></p>

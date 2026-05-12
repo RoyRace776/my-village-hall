@@ -77,7 +77,7 @@ $redirect_route = $selected_invoice_id > 0 ? 'payments?invoice_id=' . $selected_
                     <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="4"></textarea>
                 </div>
 
-                <button type="submit" class="myvh-button myvh-button-primary">Save Payment</button>
+                <button type="submit" class="button button-primary">Save Payment</button>
                 <p class="myvh-muted" id="myvh-payment-create-message"></p>
             </form>
         </div>

@@ -18,10 +18,7 @@ $selected_statuses = isset($selected_statuses) && is_array($selected_statuses) ?
                 : 'Review invoice statuses, balances, and due dates for your account.'; ?></p>
         </div>
         <?php if ($is_client_admin_view): ?>
-            <a href="#invoice-generate" class="myvh-portal-add-btn">
-                <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
-                <span>Generate Invoices</span>
-            </a>
+            <a href="#invoice-generate" class="button">Generate Invoices</a>
         <?php endif; ?>
     </div>
     <div class="myvh-card myvh-account-card myvh-invoices-card">

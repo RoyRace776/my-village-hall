@@ -1405,6 +1405,41 @@ body .site-main:has(#myvh-portal) {
   align-items: center;
 }
 
+.myvh-account-header .myvh-portal-add-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #b5451b 0%, #933517 100%);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(181, 69, 27, 0.28);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+
+.myvh-account-header .myvh-portal-add-button:hover,
+.myvh-account-header .myvh-portal-add-button:focus {
+  background: linear-gradient(135deg, #b5451b 0%, #933517 100%);
+  border-color: transparent;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(181, 69, 27, 0.34);
+  text-decoration: none;
+}
+
+.myvh-account-header .myvh-portal-add-button .dashicons {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  line-height: 16px;
+}
+
 .myvh-account-hint {
   margin: 0;
   color: var(--muted);
@@ -1417,9 +1452,85 @@ body .site-main:has(#myvh-portal) {
   font-size: .85rem;
 }
 
+.myvh-rooms-page .myvh-account-actions,
+.myvh-venues-page .myvh-account-actions,
+.myvh-addons-page .myvh-account-actions,
+.myvh-customers-page .myvh-account-actions,
+.myvh-room-rate-add-page .myvh-account-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
 .myvh-rooms-page .myvh-account-card {
   border: 1px solid #e4d9ca;
   box-shadow: 0 10px 20px rgba(28, 26, 23, .05);
+}
+
+.myvh-rooms-page .myvh-account-actions .button.button-primary,
+.myvh-venues-page .myvh-account-actions .button.button-primary,
+.myvh-addons-page .myvh-account-actions .button.button-primary,
+.myvh-customers-page .myvh-account-actions .button.button-primary,
+.myvh-room-rate-add-page .myvh-account-actions .button.button-primary {
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #b5451b 0%, #933517 100%);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  padding: 10px 16px;
+  box-shadow: 0 6px 18px rgba(181, 69, 27, 0.28);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+
+.myvh-rooms-page .myvh-account-actions .button.button-primary:hover,
+.myvh-rooms-page .myvh-account-actions .button.button-primary:focus,
+.myvh-venues-page .myvh-account-actions .button.button-primary:hover,
+.myvh-venues-page .myvh-account-actions .button.button-primary:focus,
+.myvh-addons-page .myvh-account-actions .button.button-primary:hover,
+.myvh-addons-page .myvh-account-actions .button.button-primary:focus,
+.myvh-customers-page .myvh-account-actions .button.button-primary:hover,
+.myvh-customers-page .myvh-account-actions .button.button-primary:focus,
+.myvh-room-rate-add-page .myvh-account-actions .button.button-primary:hover,
+.myvh-room-rate-add-page .myvh-account-actions .button.button-primary:focus {
+  background: linear-gradient(135deg, #b5451b 0%, #933517 100%);
+  border-color: transparent;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(181, 69, 27, 0.34);
+}
+
+.myvh-rooms-page .myvh-account-actions .button,
+.myvh-venues-page .myvh-account-actions .button,
+.myvh-addons-page .myvh-account-actions .button,
+.myvh-customers-page .myvh-account-actions .button,
+.myvh-room-rate-add-page .myvh-account-actions .button {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #f8f8f8;
+  color: #333;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: background .12s ease, border-color .12s ease;
+}
+
+.myvh-rooms-page .myvh-account-actions .button:hover,
+.myvh-rooms-page .myvh-account-actions .button:focus,
+.myvh-venues-page .myvh-account-actions .button:hover,
+.myvh-venues-page .myvh-account-actions .button:focus,
+.myvh-addons-page .myvh-account-actions .button:hover,
+.myvh-addons-page .myvh-account-actions .button:focus,
+.myvh-customers-page .myvh-account-actions .button:hover,
+.myvh-customers-page .myvh-account-actions .button:focus,
+.myvh-room-rate-add-page .myvh-account-actions .button:hover,
+.myvh-room-rate-add-page .myvh-account-actions .button:focus {
+  color: #333;
+  background: #fff;
+  border-color: #999;
 }
 
 .myvh-room-colour-row {

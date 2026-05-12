@@ -16,8 +16,8 @@ $charge_type_labels = [
             <h2>Add-ons</h2>
             <p>Manage booking add-ons for this client site.</p>
         </div>
-        <a href="#addon-add" class="myvh-portal-add-btn">
-            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+        <a href="#addon-add" class="button button-primary myvh-portal-add-button">
+            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
             <span>Add Add-on</span>
         </a>
     </div>
@@ -30,7 +30,12 @@ $charge_type_labels = [
 
         <?php if (empty($addons)): ?>
             <p>No add-ons found for this site.</p>
-            <p><a href="#addon-add" class="button">Create First Add-on</a></p>
+            <p>
+                <a href="#addon-add" class="button button-primary myvh-portal-add-button">
+                    <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+                    <span>Create First Add-on</span>
+                </a>
+            </p>
         <?php else: ?>
             <table class="myvh-customer-list-table">
                 <thead>
