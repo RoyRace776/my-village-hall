@@ -17,6 +17,11 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
     <?php if ($account_label === ''): ?>
         <?php $account_label = __('Account', 'my-village-hall'); ?>
     <?php endif; ?>
+    <?php $accessible_site_count = count($accessible_sites); ?>
+    <?php $account_label_display = $account_label; ?>
+    <?php if ($accessible_site_count > 1): ?>
+        <?php $account_label_display .= sprintf(' [%d]', $accessible_site_count); ?>
+    <?php endif; ?>
 
     <?php $brand_title = trim((string) ($portal_branding['site_title'] ?? '')); ?>
     <?php if ($brand_title === ''): ?>
@@ -34,19 +39,6 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                 <span class="myvh-portal-brand__title"><?php echo esc_html($brand_title); ?></span>
             </div>
         </div>
-
-        <?php if (count($accessible_sites) > 1): ?>
-            <div class="myvh-portal-sites">
-                <span class="myvh-portal-sites-label">Your clients</span>
-                <div class="myvh-portal-sites-list">
-                    <?php foreach ($accessible_sites as $site): ?>
-                        <a class="myvh-portal-site-link<?php echo !empty($site['is_current']) ? ' is-current' : ''; ?>" href="<?php echo esc_url($site['url']); ?>">
-                            <?php echo esc_html($site['name']); ?>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        <?php endif; ?>
 
         <!-- Portal navigation: part of sticky header -->
         <nav class="<?php echo esc_attr( apply_filters( 'myvh_portal_nav_class', 'portal-nav' ) ); ?>" data-portal-nav>
@@ -98,11 +90,23 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                     aria-controls="myvh-portal-account-menu"
                 >
                     <span class="myvh-portal-menu-icon dashicons dashicons-admin-users" aria-hidden="true"></span>
-                    <span><?php echo esc_html($account_label); ?></span>
+                    <span><?php echo esc_html($account_label_display); ?></span>
                     <span class="myvh-portal-nav-toggle-icon" aria-hidden="true"></span>
                 </button>
                 <div id="myvh-portal-account-menu" class="myvh-portal-nav-submenu myvh-portal-nav-submenu--account">
                     <a href="#account"><span class="myvh-portal-menu-icon dashicons dashicons-id" aria-hidden="true"></span><span>Account</span></a>
+                    <?php if ($accessible_site_count > 1): ?>
+                        <div class="myvh-portal-account-sites">
+                            <span class="myvh-portal-sites-label">Your clients</span>
+                            <div class="myvh-portal-account-sites-list">
+                                <?php foreach ($accessible_sites as $site): ?>
+                                    <a href="<?php echo esc_url($site['url']); ?>"<?php echo !empty($site['is_current']) ? ' aria-current="page"' : ''; ?>>
+                                        <?php echo esc_html($site['name']); ?>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <a href="<?php echo esc_url($portal_logout_url); ?>"><span class="myvh-portal-menu-icon dashicons dashicons-external" aria-hidden="true"></span><span>Logout</span></a>
                 </div>
             </div>

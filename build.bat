@@ -250,6 +250,16 @@ if "!RELEASE_MODE!"=="1" (
 )
 
 REM ----------------------------
+REM STEP 12: Reset dev environment
+REM ----------------------------
+echo Resetting Composer dependencies...
+call composer install
+if errorlevel 1 (
+  echo ERROR: Composer reset failed, but build was successful. Please run "composer install" manually to fix your environment.
+  exit /b 1
+)
+
+REM ----------------------------
 REM DONE
 REM ----------------------------
 echo ============================

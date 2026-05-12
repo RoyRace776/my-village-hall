@@ -586,6 +586,22 @@ body .site-main:has(#myvh-portal) {
   outline: none;
 }
 
+.myvh-portal-account-sites {
+  padding-top: 4px;
+  border-top: 1px solid #ece2d7;
+}
+
+.myvh-portal-account-sites-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.myvh-portal-account-sites-list a[aria-current="page"] {
+  background: var(--cream);
+  color: var(--accent);
+}
+
 .myvh-portal-sites {
   max-width: 1600px;
   margin: 0 auto;
