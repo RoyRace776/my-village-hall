@@ -51,6 +51,20 @@ class PortalBillingAjaxControllerTest extends UnitTestCase {
             'get_current_blog_id' => 1,
         ]);
 
+        Functions\when('wp_send_json')->alias(function ($data = null, $status_code = null) {
+            $status = (int) ($status_code ?? 200);
+
+            if (is_array($data) && array_key_exists('success', $data)) {
+                $success = (bool) $data['success'];
+                $status = (int) ($status_code ?? ($data['code'] ?? ($success ? 200 : 400)));
+                $payload = $data['data'] ?? ($data['message'] ?? null);
+
+                throw new PortalBillingJsonResponseException($success, $payload, $status);
+            }
+
+            throw new PortalBillingJsonResponseException(true, $data, $status);
+        });
+
         Functions\when('wp_send_json_success')->alias(function ($data = null, $status_code = null) {
             throw new PortalBillingJsonResponseException(true, $data, (int) ($status_code ?? 200));
         });

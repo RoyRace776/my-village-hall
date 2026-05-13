@@ -30,6 +30,18 @@ class AutoInvoicingAjaxControllerTest extends UnitTestCase
             'is_user_logged_in'   => true,
             'current_user_can'    => true,
             '_n'                  => fn($s, $p, $n) => $n === 1 ? $s : $p,
+            'wp_send_json'       => function ($data, $code = 200) {
+                if (is_array($data) && array_key_exists('success', $data)) {
+                    if ((bool) $data['success']) {
+                        $payload = is_array($data['data'] ?? null) ? $data['data'] : [];
+                        throw new \RuntimeException('json_success:' . ($payload['invoice_count'] ?? '?'));
+                    }
+
+                    throw new \RuntimeException('json_error:' . (int) ($data['code'] ?? $code));
+                }
+
+                throw new \RuntimeException('json_success:?');
+            },
             'wp_send_json_error'  => function ($data, $code = 400) {
                 throw new \RuntimeException("json_error:$code");
             },

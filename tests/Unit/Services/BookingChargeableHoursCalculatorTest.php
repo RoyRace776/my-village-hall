@@ -45,4 +45,21 @@ class BookingChargeableHoursCalculatorTest extends UnitTestCase {
 
         $this->assertSame(14.0, $hours);
     }
+
+    /** @test */
+    public function calculate_handles_overnight_opening_window_when_subtracting_closed_hours(): void {
+        $hours = $this->service->calculate(
+            '2026-06-01',
+            '10:00:00',
+            '2026-06-02',
+            '10:00:00',
+            [
+                'CalcClosedHours' => 0,
+                'OpeningTime' => '20:00:00',
+                'ClosingTime' => '02:00:00',
+            ]
+        );
+
+        $this->assertSame(6.0, $hours);
+    }
 }

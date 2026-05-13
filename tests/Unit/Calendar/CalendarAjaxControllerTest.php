@@ -59,7 +59,17 @@ class CalendarAjaxControllerTest extends UnitTestCase {
         ]);
 
         Functions\when('wp_send_json')->alias(function ($data = null, $status_code = null) {
-            throw new CalendarJsonResponseException(true, $data, (int) ($status_code ?? 200));
+            $status = (int) ($status_code ?? 200);
+
+            if (is_array($data) && array_key_exists('success', $data)) {
+                $success = (bool) $data['success'];
+                $status = (int) ($status_code ?? ($data['code'] ?? ($success ? 200 : 400)));
+                $payload = $data['data'] ?? ($data['message'] ?? null);
+
+                throw new CalendarJsonResponseException($success, $payload, $status);
+            }
+
+            throw new CalendarJsonResponseException(true, $data, $status);
         });
 
         Functions\when('wp_send_json_success')->alias(function ($data = null, $status_code = null) {

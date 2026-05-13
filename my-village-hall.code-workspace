@@ -9,7 +9,8 @@
 		"chat.tools.terminal.autoApprove": {
 			"npx playwright": true,
 			"phpunit": true,
-			"vendor\\bin\\phpunit": true
+			"vendor\\bin\\phpunit": true,
+			"phpdbg": true
 		}
 	}
 }
