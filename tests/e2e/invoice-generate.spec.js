@@ -4,6 +4,10 @@ const {
   loginAsPortalAdmin,
   openPortalRoute,
 } = require('./helpers/portal-auth');
+const {
+  cancelInvoiceById,
+  listVisibleInvoiceIds,
+} = require('./helpers/portal-cleanup');
 
 function firstActiveBookingCheckbox(page) {
   return page
@@ -45,32 +49,53 @@ test.describe('Portal invoice generation', () => {
     test.skip(!hasAdminCreds(), 'Set PW_ADMIN_USERNAME and PW_ADMIN_PASSWORD to run this test.');
 
     await loginAsPortalAdmin(page);
-    await openPortalRoute(page, '#invoice-generate');
 
-    const form = page.locator('form[data-portal-action="myvh_portal_create_invoice"]');
-    await expect(form).toBeVisible({ timeout: 15000 });
+    const existingInvoiceIds = await listVisibleInvoiceIds(page);
+    const existingInvoiceIdSet = new Set(existingInvoiceIds);
+    let createdInvoiceIds = [];
 
-    const createButton = form
-      .getByRole('button', { name: /create invoice/i })
-      .or(form.locator('button[type="submit"]', { hasText: /create invoice/i }))
-      .or(form.locator('input[type="submit"][value*="Invoice" i]'));
+    try {
+      await openPortalRoute(page, '#invoice-generate');
 
-    const buttonCount = await createButton.count();
-    test.skip(buttonCount === 0, 'Invoice generation UI not available in this environment.');
+      const form = page.locator('form[data-portal-action="myvh_portal_create_invoice"]');
+      await expect(form).toBeVisible({ timeout: 15000 });
 
-    const checkbox = firstActiveBookingCheckbox(page);
-    const hasSelectableBooking = (await checkbox.count()) > 0;
+      const createButton = form
+        .getByRole('button', { name: /create invoice/i })
+        .or(form.locator('button[type="submit"]', { hasText: /create invoice/i }))
+        .or(form.locator('input[type="submit"][value*="Invoice" i]'));
 
-    test.skip(!hasSelectableBooking, 'No uninvoiced bookings available for invoice generation test.');
+      const buttonCount = await createButton.count();
+      test.skip(buttonCount === 0, 'Invoice generation UI not available in this environment.');
 
-    await checkbox.check();
-    await expect(createButton.first()).toBeEnabled({ timeout: 15000 });
-    await createButton.first().click();
+      const checkbox = firstActiveBookingCheckbox(page);
+      const hasSelectableBooking = (await checkbox.count()) > 0;
 
-    await expect
-      .poll(() => new URL(page.url()).hash, { timeout: 15000 })
-      .toBe('#invoices');
+      test.skip(!hasSelectableBooking, 'No uninvoiced bookings available for invoice generation test.');
 
-    await expect(page.getByRole('heading', { name: /invoice/i }).first()).toBeVisible({ timeout: 15000 });
+      await checkbox.check();
+      await expect(createButton.first()).toBeEnabled({ timeout: 15000 });
+      await createButton.first().click();
+
+      await expect
+        .poll(() => new URL(page.url()).hash, { timeout: 15000 })
+        .toBe('#invoices');
+
+      await expect(page.getByRole('heading', { name: /invoice/i }).first()).toBeVisible({ timeout: 15000 });
+
+      const visibleInvoiceIds = await listVisibleInvoiceIds(page);
+      createdInvoiceIds = visibleInvoiceIds.filter((id) => !existingInvoiceIdSet.has(id));
+
+      await expect(createdInvoiceIds.length).toBeGreaterThan(0);
+    } finally {
+      if (createdInvoiceIds.length === 0) {
+        const visibleInvoiceIds = await listVisibleInvoiceIds(page);
+        createdInvoiceIds = visibleInvoiceIds.filter((id) => !existingInvoiceIdSet.has(id));
+      }
+
+      for (const invoiceId of createdInvoiceIds) {
+        await cancelInvoiceById(page, invoiceId);
+      }
+    }
   });
 });

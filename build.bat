@@ -142,6 +142,7 @@ if exist "vite.config.js"   del /q "vite.config.js"
 if exist "set-version.ps1"  del /q "set-version.ps1"
 if exist "create-zip.ps1"   del /q "create-zip.ps1"
 if exist "build.bat"        del /q "build.bat"
+if exist "version.bat"      del /q "version.bat"
 if exist ".env"             del /q ".env"
 
 del /q *.log 2>nul
@@ -253,6 +254,7 @@ REM ----------------------------
 REM STEP 12: Reset dev environment
 REM ----------------------------
 echo Resetting Composer dependencies...
+cd %ROOT_DIR%
 call composer install
 if errorlevel 1 (
   echo ERROR: Composer reset failed, but build was successful. Please run "composer install" manually to fix your environment.

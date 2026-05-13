@@ -4,6 +4,7 @@ const {
   loginAsPortalAdmin,
   openPortalRoute,
 } = require('./helpers/portal-auth');
+const { deleteCustomerByEmail } = require('./helpers/portal-cleanup');
 
 async function createCustomer(page, { name, email, phone }) {
   await openPortalRoute(page, '#customer-add');
@@ -41,26 +42,30 @@ test.describe('Portal customer management', () => {
       phone: '07000000001',
     };
 
-    await createCustomer(page, customer);
+    try {
+      await createCustomer(page, customer);
 
-    const row = await getCustomerRow(page, customer.email);
-    await expect(row).toBeVisible({ timeout: 15000 });
+      const row = await getCustomerRow(page, customer.email);
+      await expect(row).toBeVisible({ timeout: 15000 });
 
-    await row.getByRole('link', { name: /edit customer/i }).click();
+      await row.getByRole('link', { name: /edit customer/i }).click();
 
-    await expect(page.getByRole('heading', { name: /edit customer/i })).toBeVisible({ timeout: 15000 });
+      await expect(page.getByRole('heading', { name: /edit customer/i })).toBeVisible({ timeout: 15000 });
 
-    const updatedName = `${customer.name} Updated`;
-    await page.locator('input[name="name"]').fill(updatedName);
-    await page.getByRole('button', { name: /update customer/i }).click();
+      const updatedName = `${customer.name} Updated`;
+      await page.locator('input[name="name"]').fill(updatedName);
+      await page.getByRole('button', { name: /update customer/i }).click();
 
-    await expect
-      .poll(() => new URL(page.url()).hash, { timeout: 15000 })
-      .toBe('#customers');
+      await expect
+        .poll(() => new URL(page.url()).hash, { timeout: 15000 })
+        .toBe('#customers');
 
-    const updatedRow = await getCustomerRow(page, customer.email);
-    await expect(updatedRow).toBeVisible({ timeout: 15000 });
-    await expect(updatedRow).toContainText(updatedName);
+      const updatedRow = await getCustomerRow(page, customer.email);
+      await expect(updatedRow).toBeVisible({ timeout: 15000 });
+      await expect(updatedRow).toContainText(updatedName);
+    } finally {
+      await deleteCustomerByEmail(page, customer.email);
+    }
   });
 
   test('deletes a customer successfully', async ({ page }) => {
