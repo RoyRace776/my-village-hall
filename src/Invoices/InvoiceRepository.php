@@ -33,9 +33,21 @@ class InvoiceRepository extends RepositoryBase{
         $sql = "SELECT
                     i.*,
                     COALESCE(c.Name, i.BillingName, i.BillingOrganisationName, '') as CustomerName,
-                    COALESCE(c.Email, i.BillingEmail, '') as CustomerEmail
+                    COALESCE(c.Email, i.BillingEmail, '') as CustomerEmail,
+                    COALESCE(MAX(b.OrganisationId), 0) as OrganisationId,
+                    CASE
+                        WHEN COALESCE(MAX(b.OrganisationId), 0) = 0
+                         AND COALESCE(MAX(i.BillingOrganisationName), '') = ''
+                        THEN 1
+                        ELSE 0
+                    END as IsPersonalInvoice,
+                    COALESCE(MAX(o.Name), MAX(i.BillingOrganisationName), '') as OrganisationName
                 FROM $this->table_name i
                 LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON i.CustomerId = c.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON i.Id = ii.InvoiceId
+                LEFT JOIN {$this->wpdb->prefix}myvh_bookings b ON ii.BookingId = b.Id
+                LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+                GROUP BY i.Id
                 ORDER BY i.InvoiceDate DESC";
 
         $results = $this->wpdb->get_results($sql, ARRAY_A);

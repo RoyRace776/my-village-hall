@@ -93,12 +93,17 @@ $selected_statuses = isset($selected_statuses) && is_array($selected_statuses) ?
                                 </td>
                                 <td class="myvh-invoice-billing">
                                     <?php
-                                        $invoice_type = !empty($invoice['IsPersonalInvoice']) ? 'Personal' : 'Organisation';
-                                        if (!empty($invoice['OrganisationName'])) {
-                                            echo esc_html($invoice['OrganisationName']);
+                                        $is_personal_invoice = !empty($invoice['IsPersonalInvoice']);
+                                        $organisation_name = trim((string) ($invoice['OrganisationName'] ?? ''));
+                                        $is_personal_organisation_name = strtolower($organisation_name) === 'personal booking';
+
+                                        if ($is_personal_invoice || $is_personal_organisation_name) {
+                                            echo 'Personal booking';
+                                        } elseif ($organisation_name !== '') {
+                                            echo esc_html($organisation_name);
                                             echo ' <span class="myvh-badge myvh-badge-org">Org</span>';
                                         } else {
-                                            echo esc_html($invoice_type);
+                                            echo 'Organisation';
                                         }
 
                                         if (!empty($invoice['BillingName'])) {

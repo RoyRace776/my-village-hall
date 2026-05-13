@@ -27,6 +27,11 @@ class PortalBillingPageRenderer {
         $valid_statuses = $this->invoice_service->get_valid_statuses();
         $selected_statuses = array_values(array_intersect($selected_statuses, $valid_statuses));
 
+        // If no statuses selected, default to all statuses
+        if (empty($selected_statuses)) {
+            $selected_statuses = $valid_statuses;
+        }
+
         $invoices = [];
         if ($is_client_admin) {
             $invoices = $this->invoice_service->get_with_customers() ?: [];
