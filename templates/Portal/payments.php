@@ -10,7 +10,7 @@ $invoices = isset($invoices) && is_array($invoices) ? $invoices : [];
 $redirect_route = $selected_invoice_id > 0 ? 'payments?invoice_id=' . $selected_invoice_id : 'payments';
 ?>
 
-<div class="myvh-dashboard-section myvh-client-settings-page">
+<div class="myvh-dashboard-section myvh-client-settings-page myvh-payments-page">
     <div class="myvh-account-header">
         <div>
             <h2>Payments</h2>
@@ -77,7 +77,10 @@ $redirect_route = $selected_invoice_id > 0 ? 'payments?invoice_id=' . $selected_
                     <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="4"></textarea>
                 </div>
 
-                <button type="submit" class="button button-primary">Save Payment</button>
+                <button type="submit" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                    <span>Save Payment</span>
+                </button>
                 <p class="myvh-muted" id="myvh-payment-create-message"></p>
             </form>
         </div>

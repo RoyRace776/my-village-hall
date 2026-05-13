@@ -90,7 +90,7 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                     aria-controls="myvh-portal-account-menu"
                 >
                     <span class="myvh-portal-menu-icon dashicons dashicons-admin-users" aria-hidden="true"></span>
-                    <span><?php echo esc_html($account_label_display); ?></span>
+                    <span class="myvh-portal-account-label"><?php echo esc_html($account_label_display); ?></span>
                     <span class="myvh-portal-nav-toggle-icon" aria-hidden="true"></span>
                 </button>
                 <div id="myvh-portal-account-menu" class="myvh-portal-nav-submenu myvh-portal-nav-submenu--account">

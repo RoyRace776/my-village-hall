@@ -30,6 +30,7 @@ class CalendarShortcode {
     /** Shortcode tag */
     const TAG = 'myvh_calendar';
     const TAG_PUBLIC = 'myvh_public_calendar';
+    const TAG_PUBLIC_LEGACY = 'myvh_publicc_calendar';
 
     /** REST namespace / route */
     const REST_NAMESPACE = 'myvh/v1';
@@ -38,6 +39,7 @@ class CalendarShortcode {
     public function init(): void {
         add_shortcode( self::TAG, [ $this, 'render' ] );
         add_shortcode( self::TAG_PUBLIC, [ $this, 'render' ] );
+        add_shortcode( self::TAG_PUBLIC_LEGACY, [ $this, 'render' ] );
         add_action( 'rest_api_init', [ $this, 'register_rest_route' ] );
     }
 
@@ -218,10 +220,17 @@ class CalendarShortcode {
 
         ob_start();
         ?>
-        <div class="myvh-public-calendar-wrap">
+        <div class="myvh-public-calendar-wrap myvh-cal-full-bleed">
             <div class="myvh-cal-login-cta">
-                <?php if ( is_user_logged_in() ) : ?>
-                    <p><?php esc_html_e( 'You are currently logged in.', 'my-village-hall' ); ?></p>
+                <?php if ( is_user_logged_in() ) :
+                    $current_user = wp_get_current_user();
+                    $display_name = $current_user->display_name ?: $current_user->user_login;
+                ?>
+                    <p><?php printf(
+                        /* translators: %s: user display name */
+                        esc_html__( 'Logged in as %s', 'my-village-hall' ),
+                        '<strong>' . esc_html( $display_name ) . '</strong>'
+                    ); ?></p>
                     <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $logout_url ); ?>">
                         <?php esc_html_e( 'Log out', 'my-village-hall' ); ?>
                     </a>

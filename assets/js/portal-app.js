@@ -177,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const accountToggleLabel = document.querySelector('.myvh-portal-nav-group--account .myvh-portal-nav-toggle span');
+        const accountToggleLabel = document.querySelector('.myvh-portal-nav-group--account .myvh-portal-account-label');
         if (accountToggleLabel) {
             accountToggleLabel.textContent = normalizedLabel;
         }

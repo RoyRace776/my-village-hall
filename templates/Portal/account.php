@@ -10,7 +10,7 @@ $profile_address = !empty($customer['AddressLine1']) ? $customer['AddressLine1']
 $profile_post_code = !empty($customer['PostCode']) ? $customer['PostCode'] : '';
 ?>
 
-<div class="myvh-dashboard-section">
+<div class="myvh-dashboard-section myvh-account-page">
     <div class="myvh-account-header">
         <div>
             <h2>Account Settings</h2>
@@ -53,7 +53,10 @@ $profile_post_code = !empty($customer['PostCode']) ? $customer['PostCode'] : '';
                 </label>
 
                 <div class="myvh-account-actions">
-                    <button type="submit" class="button button-primary">Save Details</button>
+                    <button type="submit" class="myvh-portal-add-btn">
+                        <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                        <span>Save Details</span>
+                    </button>
                     <div id="myvh-account-details-message" class="myvh-muted" aria-live="polite"></div>
                 </div>
             </form>
@@ -84,7 +87,10 @@ $profile_post_code = !empty($customer['PostCode']) ? $customer['PostCode'] : '';
                 <p class="myvh-account-hint">Use at least 9 characters with uppercase, lowercase, number, and symbol.</p>
 
                 <div class="myvh-account-actions">
-                    <button type="submit" class="button button-primary">Update Password</button>
+                    <button type="submit" class="myvh-portal-add-btn">
+                        <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                        <span>Update Password</span>
+                    </button>
                     <div id="myvh-account-password-message" class="myvh-muted" aria-live="polite"></div>
                 </div>
             </form>

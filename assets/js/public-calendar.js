@@ -507,7 +507,9 @@
         var container = document.getElementById(cfg.containerId);
         if (!container) { return; }
 
-        ensureThreeLetterEnglishWeekdays(headerDateFormat);
+        if (typeof ensureThreeLetterEnglishWeekdays === 'function') {
+            ensureThreeLetterEnglishWeekdays(headerDateFormat);
+        }
 
         wrap = container.closest('.myvh-public-calendar-wrap');
         initialiseVenueSelector();

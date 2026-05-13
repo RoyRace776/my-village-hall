@@ -30,7 +30,10 @@ $accessible_sites = isset($accessible_sites) && is_array($accessible_sites) ? $a
                 <p class="myvh-account-hint">Site administrators and network super admins already have access even if they are not listed here.</p>
 
                 <div class="myvh-account-actions">
-                    <button type="submit" class="button button-primary">Add Client Admin</button>
+                    <button type="submit" class="myvh-portal-add-btn">
+                        <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                        <span>Add Client Admin</span>
+                    </button>
                     <div id="myvh-client-admin-message" class="myvh-muted" aria-live="polite"></div>
                 </div>
             </form>
@@ -55,7 +58,7 @@ $accessible_sites = isset($accessible_sites) && is_array($accessible_sites) ? $a
 
                             <form class="myvh-inline-form" data-portal-action="myvh_portal_remove_client_admin" data-message-target="myvh-client-admin-remove-message-<?php echo intval($assigned_admin['ID']); ?>" data-reload-page="client-admins" data-confirm="Remove this client administrator from the current site?">
                                 <input type="hidden" name="user_id" value="<?php echo intval($assigned_admin['ID']); ?>">
-                                <button type="submit" class="button">Remove</button>
+                                <button type="submit" class="myvh-client-admin-remove-btn">Remove</button>
                             </form>
                         </div>
                         <div id="myvh-client-admin-remove-message-<?php echo intval($assigned_admin['ID']); ?>" class="myvh-muted" aria-live="polite"></div>

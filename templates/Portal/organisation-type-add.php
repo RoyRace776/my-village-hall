@@ -27,7 +27,10 @@ if (!defined('ABSPATH')) exit;
             </label>
 
             <div class="myvh-account-actions">
-                <button type="submit" class="button button-primary">Create Organisation Type</button>
+                <button type="submit" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                    <span>Create Organisation Type</span>
+                </button>
                 <a href="#organisation-types" class="button">Cancel</a>
                 <div id="myvh-org-type-create-message" class="myvh-muted" aria-live="polite"></div>
             </div>

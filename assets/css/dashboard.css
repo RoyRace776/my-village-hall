@@ -663,6 +663,32 @@ body .site-main:has(#myvh-portal) {
   border-bottom: 0;
 }
 
+.myvh-client-admin-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid #dfc6be;
+  border-radius: 999px;
+  background: #fff6f3;
+  color: #9f2829;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.myvh-client-admin-remove-btn:hover,
+.myvh-client-admin-remove-btn:focus-visible {
+  background: #fdeae6;
+  border-color: #d69e92;
+  color: #8c2223;
+  transform: translateY(-1px);
+  outline: none;
+}
+
 .myvh-booking-details {
   min-width: 0;
   font-size: 14px;
@@ -1421,6 +1447,16 @@ body .site-main:has(#myvh-portal) {
   align-items: center;
 }
 
+.myvh-organisation-types-page .myvh-account-actions .myvh-portal-add-btn {
+  justify-self: start;
+  width: auto;
+}
+
+.myvh-payments-page .myvh-account-form .myvh-portal-add-btn {
+  justify-self: start;
+  width: auto;
+}
+
 .myvh-account-header .myvh-portal-add-button {
   display: inline-flex;
   align-items: center;
@@ -1472,6 +1508,8 @@ body .site-main:has(#myvh-portal) {
 .myvh-venues-page .myvh-account-actions,
 .myvh-addons-page .myvh-account-actions,
 .myvh-customers-page .myvh-account-actions,
+.myvh-account-page .myvh-account-actions,
+.myvh-client-admin-page .myvh-account-actions,
 .myvh-room-rate-add-page .myvh-account-actions {
   display: flex;
   gap: 10px;
