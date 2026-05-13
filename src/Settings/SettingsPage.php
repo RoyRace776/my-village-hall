@@ -171,161 +171,323 @@ class SettingsPage {
         </form>
 
         <script>
-        (function () {
-            var form    = document.querySelector('.myvh-settings-page .myvh-settings-form');
-            var btn     = document.getElementById('submit');
-            var isDirty = false;
+        document.addEventListener('DOMContentLoaded', function () {
 
-            if (!form || !btn) return;
+            const SettingsPage = (function () {
 
-            btn.disabled = true;
+                let form, submitBtn;
+                let isDirty = false;
+                const debugPrefix = '[MYVH Settings]';
 
-            function markDirty() {
-                if (!isDirty) {
-                    isDirty = true;
-                    btn.disabled = false;
-                }
-            }
-
-            form.addEventListener('change', markDirty);
-            form.addEventListener('input',  markDirty);
-
-            form.addEventListener('submit', function () {
-                isDirty = false;
-            });
-
-            function updateMediaField(field, url) {
-                var preview = field.querySelector('[data-myvh-media-preview]');
-                var clear = field.querySelector('[data-myvh-media-clear]');
-
-                if (!preview || !clear) {
-                    return;
+                function debugLog() {
+                    if (!window.console || typeof window.console.log !== 'function') {
+                        return;
+                    }
+                    const args = Array.prototype.slice.call(arguments);
+                    args.unshift(debugPrefix);
+                    window.console.log.apply(window.console, args);
                 }
 
-                if (url) {
-                    preview.classList.add('has-image');
-                    preview.innerHTML = '<img src="' + url.replace(/"/g, '&quot;') + '" alt="Selected logo">';
-                    clear.style.display = '';
-                } else {
-                    preview.classList.remove('has-image');
-                    preview.innerHTML = '';
-                    clear.style.display = 'none';
-                }
-            }
+                // ─────────────────────────────────────────
+                // Dirty state
+                // ─────────────────────────────────────────
 
-            function initMediaFields() {
-                if (!window.wp || !wp.media) {
-                    return;
-                }
-
-                var fields = form.querySelectorAll('[data-myvh-media-field]');
-
-                fields.forEach(function (field) {
-                    var input = field.querySelector('[data-myvh-media-input]');
-                    var select = field.querySelector('[data-myvh-media-select]');
-                    var clear = field.querySelector('[data-myvh-media-clear]');
-
-                    if (!input || !select || !clear) {
+                function enableSubmitControl() {
+                    if (!submitBtn) {
                         return;
                     }
 
-                    select.addEventListener('click', function () {
-                        var frame = wp.media({
-                            title: 'Select portal logo',
-                            button: { text: 'Use this logo' },
-                            multiple: false,
-                            library: { type: 'image' }
-                        });
-
-                        frame.on('select', function () {
-                            var attachment = frame.state().get('selection').first().toJSON();
-                            var imageUrl = attachment.url || '';
-                            input.value = imageUrl;
-                            updateMediaField(field, imageUrl);
-                            markDirty();
-                        });
-
-                        frame.open();
-                    });
-
-                    clear.addEventListener('click', function () {
-                        input.value = '';
-                        updateMediaField(field, '');
-                        markDirty();
-                    });
-                });
-            }
-
-            initMediaFields();
-
-            // ── Notices repeater ──────────────────────────────────────────────
-
-            function initNoticesRepeater() {
-                document.querySelectorAll('.myvh-notices-repeater').forEach(function (wrapper) {
-                    var tbody    = wrapper.querySelector('.myvh-notices-body');
-                    var addBtn   = wrapper.querySelector('.myvh-notice-add-row');
-                    var fieldName = addBtn ? addBtn.getAttribute('data-field') : '';
-
-                    if (!tbody || !addBtn) return;
-
-                    function rowCount() {
-                        return tbody.querySelectorAll('.myvh-notice-row').length;
-                    }
-
-                    function buildRow(idx) {
-                        var phFrom = addBtn.getAttribute('data-placeholder-from') || '';
-                        var phTo   = addBtn.getAttribute('data-placeholder-to')   || '';
-                        var tr = document.createElement('tr');
-                        tr.className = 'myvh-notice-row';
-                        tr.innerHTML =
-                            '<td><textarea name="' + fieldName + '[' + idx + '][message]" rows="2" style="width:100%;"></textarea></td>' +
-                            '<td><input type="text" name="' + fieldName + '[' + idx + '][start_date]" placeholder="' + phFrom + '" data-myvh-picker="date" autocomplete="off" style="width:100%;"></td>' +
-                            '<td><input type="text" name="' + fieldName + '[' + idx + '][end_date]"   placeholder="' + phTo   + '" data-myvh-picker="date" autocomplete="off" style="width:100%;"></td>' +
-                            '<td><button type="button" class="button myvh-notice-remove">Remove</button></td>';
-                        return tr;
-                    }
-
-                    function reindex() {
-                        tbody.querySelectorAll('.myvh-notice-row').forEach(function (row, i) {
-                            row.querySelectorAll('[name]').forEach(function (el) {
-                                el.name = el.name.replace(/\[\d+\]/, '[' + i + ']');
-                            });
-                        });
-                    }
-
-                    addBtn.addEventListener('click', function () {
-                        var row = buildRow(rowCount());
-                        tbody.appendChild(row);
-                        markDirty();
-                        // init flatpickr on newly added date inputs
-                        if (window.flatpickr) {
-                            row.querySelectorAll('[data-myvh-picker="date"]').forEach(function (el) {
-                                flatpickr(el, { dateFormat: 'Y-m-d', allowInput: true });
-                            });
-                        }
-                    });
-
-                    tbody.addEventListener('click', function (e) {
-                        if (e.target.classList.contains('myvh-notice-remove')) {
-                            e.target.closest('tr').remove();
-                            reindex();
-                            markDirty();
-                        }
-                    });
-                });
-            }
-
-            initNoticesRepeater();
-
-            window.addEventListener('beforeunload', function (e) {
-                if (isDirty) {
-                    e.preventDefault();
-                    e.returnValue = '';
+                    submitBtn.disabled = false;
+                    submitBtn.removeAttribute('disabled');
+                    submitBtn.setAttribute('aria-disabled', 'false');
+                    submitBtn.classList.remove('disabled');
+                    submitBtn.classList.remove('button-disabled');
                 }
-            });
-        })();
-        </script>
 
+                function markDirty(source = 'unknown') {
+                    if (!isDirty) {
+                        isDirty = true;
+                    }
+                    enableSubmitControl();
+                    debugLog('markDirty called', { source: source, hasSubmitButton: !!submitBtn, submitDisabled: !!(submitBtn && submitBtn.disabled) });
+                }
+
+                function resetDirty() {
+                    isDirty = false;
+                }
+
+                function initDirtyTracking() {
+                    if (!form) return;
+
+                    submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+                    if (submitBtn) {
+                        debugLog('submit control found', { tag: submitBtn.tagName, type: submitBtn.type || '' });
+                    } else {
+                        debugLog('submit control not found inside form');
+                    }
+
+                    // Generic inputs
+                    form.addEventListener('input', function () {
+                        markDirty('native:input');
+                    }, true);
+                    form.addEventListener('change', function () {
+                        markDirty('native:change');
+                    }, true);
+
+                    form.addEventListener('submit', function () {
+                        resetDirty();
+                    });
+
+                    window.addEventListener('beforeunload', function (e) {
+                        if (isDirty) {
+                            e.preventDefault();
+                            e.returnValue = '';
+                        }
+                    });
+
+                    // Expose globally for Flatpickr
+                    window.MyvhMarkDirty = markDirty;
+                }
+
+                // ─────────────────────────────────────────
+                // Flatpickr integration
+                // ─────────────────────────────────────────
+
+                function getDatePickerInitOptions() {
+                    return {
+                        '[data-myvh-picker="date"]': {
+                            onChange: [function () {
+                                debugLog('flatpickr onChange fired via init options');
+                                markDirty('flatpickr:initOptions');
+                            }]
+                        }
+                    };
+                }
+
+                function attachFlatpickrHook(input) {
+                    if (!input || input.dataset.myvhDirtyHookAttached === '1') {
+                        return true;
+                    }
+
+                    const instance = input._flatpickr;
+                    if (!instance) {
+                        debugLog('flatpickr instance missing for input (will retry)', { name: input.name || '', id: input.id || '' });
+                        return false;
+                    }
+
+                    const onChangeHooks = Array.isArray(instance.config.onChange)
+                        ? instance.config.onChange
+                        : [];
+
+                    onChangeHooks.push(function () {
+                        debugLog('flatpickr onChange fired via attachFlatpickrHook');
+                        markDirty('flatpickr:attachHook');
+                    });
+
+                    if (typeof instance.set === 'function') {
+                        instance.set('onChange', onChangeHooks);
+                    }
+
+                    input.dataset.myvhDirtyHookAttached = '1';
+                    debugLog('flatpickr hook attached', { name: input.name || '', id: input.id || '' });
+                    return true;
+                }
+
+                function initDateFields(scope = document, attempts = 0) {
+                    let pending = false;
+
+                    scope.querySelectorAll('[data-myvh-picker="date"]').forEach(function (input) {
+                        if (!attachFlatpickrHook(input)) {
+                            pending = true;
+                        }
+                    });
+
+                    // Flatpickr instances may be attached just after row render/init.
+                    if (pending && attempts < 8) {
+                        debugLog('date inputs pending flatpickr instance, scheduling retry', { attempts: attempts + 1 });
+                        setTimeout(function () {
+                            initDateFields(scope, attempts + 1);
+                        }, 50);
+                    } else if (pending) {
+                        debugLog('date inputs still pending flatpickr instance after retries');
+                    }
+                }
+
+                // ─────────────────────────────────────────
+                // Media fields
+                // ─────────────────────────────────────────
+
+                function updateMediaField(field, url) {
+                    const preview = field.querySelector('[data-myvh-media-preview]');
+                    const clear   = field.querySelector('[data-myvh-media-clear]');
+
+                    if (!preview || !clear) return;
+
+                    if (url) {
+                        preview.classList.add('has-image');
+                        preview.innerHTML = '<img src="' + url.replace(/"/g, '&quot;') + '" alt="">';
+                        clear.style.display = '';
+                    } else {
+                        preview.classList.remove('has-image');
+                        preview.innerHTML = '';
+                        clear.style.display = 'none';
+                    }
+                }
+
+                function initMediaFields() {
+                    if (!window.wp || !wp.media) return;
+
+                    form.querySelectorAll('[data-myvh-media-field]').forEach(function (field) {
+
+                        const input  = field.querySelector('[data-myvh-media-input]');
+                        const select = field.querySelector('[data-myvh-media-select]');
+                        const clear  = field.querySelector('[data-myvh-media-clear]');
+
+                        if (!input || !select || !clear) return;
+
+                        select.addEventListener('click', function () {
+
+                            const frame = wp.media({
+                                title: 'Select image',
+                                button: { text: 'Use this image' },
+                                multiple: false,
+                                library: { type: 'image' }
+                            });
+
+                            frame.on('select', function () {
+                                const attachment = frame.state().get('selection').first().toJSON();
+                                const url = attachment.url || '';
+
+                                input.value = url;
+                                updateMediaField(field, url);
+                                markDirty();
+                            });
+
+                            frame.open();
+                        });
+
+                        clear.addEventListener('click', function () {
+                            input.value = '';
+                            updateMediaField(field, '');
+                            markDirty();
+                        });
+                    });
+                }
+
+                // ─────────────────────────────────────────
+                // Notices repeater
+                // ─────────────────────────────────────────
+
+                function initNoticesRepeater() {
+
+                    document.querySelectorAll('.myvh-notices-repeater').forEach(function (wrapper) {
+
+                        const tbody  = wrapper.querySelector('.myvh-notices-body');
+                        const addBtn = wrapper.querySelector('.myvh-notice-add-row');
+
+                        if (!tbody || !addBtn) return;
+
+                        const fieldName = addBtn.dataset.field;
+
+                        function rowCount() {
+                            return tbody.querySelectorAll('.myvh-notice-row').length;
+                        }
+
+                        function reindex() {
+                            tbody.querySelectorAll('.myvh-notice-row').forEach(function (row, i) {
+                                row.querySelectorAll('[name]').forEach(function (el) {
+                                    el.name = el.name.replace(/\[\d+\]/, '[' + i + ']');
+                                });
+                            });
+                        }
+
+                        function buildRow(index) {
+                            const tr = document.createElement('tr');
+                            tr.className = 'myvh-notice-row';
+
+                            tr.innerHTML = `
+                                <td><textarea name="${fieldName}[${index}][message]" rows="2" style="width:100%;" required></textarea></td>
+                                <td><input type="text" name="${fieldName}[${index}][start_date]" data-myvh-picker="date" autocomplete="off"></td>
+                                <td><input type="text" name="${fieldName}[${index}][end_date]" data-myvh-picker="date" autocomplete="off"></td>
+                                <td><button type="button" class="button myvh-notice-remove">Remove</button></td>
+                            `;
+
+                            return tr;
+                        }
+
+                        // Add row
+                        addBtn.addEventListener('click', function () {
+
+                            const row = buildRow(rowCount());
+                            tbody.appendChild(row);
+
+                            markDirty();
+
+                            // Init flatpickr + hook
+                            if (window.MyvhFlatpickr) {
+                                window.MyvhFlatpickr.initWithin(row, getDatePickerInitOptions());
+                                debugLog('MyvhFlatpickr.initWithin called for new repeater row');
+                            } else {
+                                debugLog('MyvhFlatpickr unavailable when adding repeater row');
+                            }
+
+                            initDateFields(row);
+                        });
+
+                        // Remove row (event delegation)
+                        tbody.addEventListener('click', function (e) {
+                            if (e.target.classList.contains('myvh-notice-remove')) {
+                                e.target.closest('tr').remove();
+                                reindex();
+                                markDirty();
+                            }
+                        });
+
+                        // Existing rows
+                        initDateFields(wrapper);
+                    });
+                }
+
+                // ─────────────────────────────────────────
+                // Init
+                // ─────────────────────────────────────────
+
+                function init() {
+                    form = document.querySelector('.myvh-settings-form');
+                    if (!form) {
+                        debugLog('settings form not found');
+                        return;
+                    }
+                    debugLog('settings page init start');
+
+                    initDirtyTracking();
+
+                    // Ensure date pickers are initialized with a dirty-state callback.
+                    if (window.MyvhFlatpickr) {
+                        window.MyvhFlatpickr.initWithin(form, getDatePickerInitOptions());
+                        debugLog('MyvhFlatpickr.initWithin called for form');
+                    } else {
+                        debugLog('MyvhFlatpickr unavailable during init');
+                    }
+
+                    initMediaFields();
+                    initNoticesRepeater();
+
+                    // Initial date hook (after Flatpickr init)
+                    setTimeout(function () {
+                        debugLog('running deferred initDateFields');
+                        initDateFields(form);
+                    }, 0);
+                }
+
+                return { init };
+
+            })();
+
+            SettingsPage.init();
+
+        });
+        </script>
         <?php
 
     }
@@ -474,7 +636,7 @@ class SettingsPage {
                             <tr class="myvh-notice-row">
                                 <td>
                                     <textarea name="<?php echo esc_attr($name); ?>[<?php echo $i; ?>][message]"
-                                              rows="2" style="width:100%;"><?php echo esc_textarea($row['message'] ?? ''); ?></textarea>
+                                              rows="2" style="width:100%;" required><?php echo esc_textarea($row['message'] ?? ''); ?></textarea>
                                 </td>
                                 <td>
                                     <input type="text"

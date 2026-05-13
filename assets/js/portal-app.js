@@ -473,7 +473,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let tr = document.createElement('tr');
                 tr.className = 'myvh-notice-row';
                 tr.innerHTML =
-                    '<td style="padding:4px 8px;"><textarea name="' + fieldName + '[' + idx + '][message]" rows="2" style="width:100%;"></textarea></td>' +
+                    '<td style="padding:4px 8px;"><textarea name="' + fieldName + '[' + idx + '][message]" rows="2" style="width:100%;" required></textarea></td>' +
                     '<td style="padding:4px 8px;"><input type="text" name="' + fieldName + '[' + idx + '][start_date]" placeholder="' + phFrom + '" data-myvh-picker="date" autocomplete="off" style="width:100%;"></td>' +
                     '<td style="padding:4px 8px;"><input type="text" name="' + fieldName + '[' + idx + '][end_date]"   placeholder="' + phTo   + '" data-myvh-picker="date" autocomplete="off" style="width:100%;"></td>' +
                     '<td style="padding:4px 8px;"><button type="button" class="myvh-notice-remove" style="cursor:pointer;">&#x2715; Remove</button></td>';
@@ -840,9 +840,16 @@ document.addEventListener("DOMContentLoaded", () => {
         // Invoice status filter form: update hash for filtering
         const filterForm = invoicesPage.querySelector('#myvh-invoice-filter-form');
         if (filterForm) {
-            const setAllStatusCheckboxes = (checked) => {
-                Array.from(filterForm.querySelectorAll('input[name="statuses[]"]')).forEach((checkbox) => {
-                    checkbox.checked = checked;
+            const statusCheckboxes = Array.from(filterForm.querySelectorAll('input[name="statuses[]"]'));
+            const defaultStatusStates = statusCheckboxes.map((checkbox) => ({
+                value: checkbox.value,
+                checked: checkbox.checked,
+            }));
+
+            const restoreDefaultStatusCheckboxes = () => {
+                statusCheckboxes.forEach((checkbox) => {
+                    const defaultState = defaultStatusStates.find((state) => state.value === checkbox.value);
+                    checkbox.checked = defaultState ? defaultState.checked : checkbox.checked;
                 });
             };
 
@@ -924,7 +931,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     endDateInput.value = getDefaultInvoiceEndDate();
                 }
 
-                setAllStatusCheckboxes(true);
+                restoreDefaultStatusCheckboxes();
                 applyInvoiceFilterHash();
             };
 
@@ -1188,7 +1195,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!forms.length) return;
 
         forms.forEach((form) => {
-            const submitButton = form.querySelector('button[type="submit"]');
+            const submitButton = form.querySelector('button[type="submit"], input[type="submit"]');
             if (!submitButton) return;
 
             // Read tracked fields dynamically so add/remove notice rows are included.
@@ -1216,9 +1223,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 submitButton.disabled = !isDirty;
             };
 
+            // Flatpickr updates can be async/programmatic; defer to ensure value is committed first.
+            const syncDirtyStateDeferred = () => {
+                window.setTimeout(syncDirtyState, 0);
+            };
+
             // Use delegated listeners so dynamically added settings fields are tracked.
             form.addEventListener('input', syncDirtyState);
             form.addEventListener('change', syncDirtyState);
+            form.addEventListener('myvh:flatpickr-change', syncDirtyStateDeferred);
             form.addEventListener('click', (event) => {
                 const target = event.target;
                 if (!target) {
@@ -1229,6 +1242,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     syncDirtyState();
                 }
             });
+
+            if (window.MyvhFlatpickr && typeof window.MyvhFlatpickr.initWithin === 'function') {
+                window.MyvhFlatpickr.initWithin(form, {
+                    '[data-myvh-picker="date"]': {
+                        onChange: [syncDirtyStateDeferred],
+                        onValueUpdate: [syncDirtyStateDeferred]
+                    }
+                });
+            }
 
             // Reset baseline on form reset
             form.addEventListener('reset', () => {

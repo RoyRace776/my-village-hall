@@ -135,7 +135,11 @@ if ($show_reset_request) {
 <div class="myvh-login-container">
     <div class="myvh-login-shell">
     <header class="myvh-login-header">
-        <?php if (has_custom_logo()): ?>
+        <?php
+        $myvh_portal_logo_url = trim((string) myvh_setting('general.portal_logo_url', ''));
+        if ($myvh_portal_logo_url !== ''): ?>
+            <div class="myvh-login-logo"><img src="<?php echo esc_url($myvh_portal_logo_url); ?>" alt="<?php echo esc_attr(get_bloginfo('name')); ?>"></div>
+        <?php elseif (has_custom_logo()): ?>
             <div class="myvh-login-logo"><?php echo get_custom_logo(); ?></div>
         <?php endif; ?>
         <p class="myvh-login-kicker"><?php echo esc_html(get_bloginfo('name')); ?></p>

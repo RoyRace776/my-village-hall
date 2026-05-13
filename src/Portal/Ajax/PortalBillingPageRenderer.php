@@ -25,11 +25,16 @@ class PortalBillingPageRenderer {
         }
 
         $valid_statuses = $this->invoice_service->get_valid_statuses();
-        $selected_statuses = array_values(array_intersect($selected_statuses, $valid_statuses));
+        $available_statuses = $is_client_admin
+            ? $valid_statuses
+            : array_values(array_filter($valid_statuses, static fn(string $status): bool => $status !== 'draft'));
+        $selected_statuses = array_values(array_intersect($selected_statuses, $available_statuses));
 
-        // If no statuses selected, default to all statuses
+        $default_statuses = $available_statuses;
+
+        // If no statuses selected, default to the role-appropriate set
         if (empty($selected_statuses)) {
-            $selected_statuses = $valid_statuses;
+            $selected_statuses = $default_statuses;
         }
 
         $client_name = $is_client_admin ? $this->normalize_search_value($_GET['client_name'] ?? '') : '';
@@ -75,7 +80,6 @@ class PortalBillingPageRenderer {
             );
         }
 
-        $available_statuses = $valid_statuses;
         $quick_date_ranges = $this->get_quick_date_ranges();
         $selected_client_name = $client_name;
         $selected_client_name_match = $client_name_match;

@@ -136,7 +136,7 @@ $settings_groups = (isset($settings_groups) && is_array($settings_groups)) ? $se
                                                             <tr class="myvh-notice-row">
                                                                 <td style="padding:4px 8px;">
                                                                     <textarea name="<?php echo $notice_slug; ?>[<?php echo (int) $ni; ?>][message]"
-                                                                              rows="2" style="width:100%;"><?php echo esc_textarea($nr['message'] ?? ''); ?></textarea>
+                                                                              rows="2" style="width:100%;" required><?php echo esc_textarea($nr['message'] ?? ''); ?></textarea>
                                                                 </td>
                                                                 <td style="padding:4px 8px;">
                                                                     <input type="text"

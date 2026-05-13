@@ -314,6 +314,7 @@ class InvoiceRepository extends RepositoryBase{
             ORDER BY i.InvoiceDate DESC
         ";
 
+        array_unshift($prepare_args, $customer_id);
         $prepared_sql = $this->wpdb->prepare($sql, ...$prepare_args);
         $results = $this->wpdb->get_results($prepared_sql, ARRAY_A);
 

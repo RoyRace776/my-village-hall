@@ -2,6 +2,145 @@ jQuery(document).ready(function($) {
 
     window.MyvhFlatpickr?.initWithin(document);
 
+    // Settings page fallback dirty tracking (runs from shared admin bundle).
+    (function initSettingsDirtyTracking() {
+        const form = document.querySelector('.myvh-settings-form');
+        if (!form) {
+            return;
+        }
+
+        const debugPrefix = '[MYVH Admin Settings Fallback]';
+        const log = function() {
+            if (!window.console || typeof window.console.log !== 'function') {
+                return;
+            }
+
+            const args = Array.prototype.slice.call(arguments);
+            args.unshift(debugPrefix);
+            window.console.log.apply(window.console, args);
+        };
+
+        const submitControl = form.querySelector('button[type="submit"], input[type="submit"]');
+        let isDirty = false;
+
+        if (submitControl) {
+            log('submit control found', { tag: submitControl.tagName, type: submitControl.type || '' });
+        } else {
+            log('submit control not found');
+        }
+
+        const markDirty = function(source) {
+            if (!isDirty) {
+                isDirty = true;
+                if (submitControl) {
+                    submitControl.disabled = false;
+                }
+            }
+
+            log('markDirty', {
+                source: source,
+                hasSubmitControl: !!submitControl,
+                submitDisabled: !!(submitControl && submitControl.disabled)
+            });
+        };
+
+        const addDateHooks = function(scope, attempts) {
+            const root = scope || form;
+            const attemptCount = attempts || 0;
+            let pending = false;
+
+            root.querySelectorAll('[data-myvh-picker="date"]').forEach(function(input) {
+                if (input.dataset.myvhAdminDirtyHookAttached === '1') {
+                    return;
+                }
+
+                const instance = input._flatpickr;
+                if (!instance || typeof instance.set !== 'function') {
+                    pending = true;
+                    return;
+                }
+
+                const onChange = Array.isArray(instance.config.onChange) ? instance.config.onChange.slice() : [];
+                const onValueUpdate = Array.isArray(instance.config.onValueUpdate) ? instance.config.onValueUpdate.slice() : [];
+
+                onChange.push(function() {
+                    markDirty('flatpickr:onChange');
+                });
+
+                onValueUpdate.push(function() {
+                    markDirty('flatpickr:onValueUpdate');
+                });
+
+                instance.set('onChange', onChange);
+                instance.set('onValueUpdate', onValueUpdate);
+
+                input.dataset.myvhAdminDirtyHookAttached = '1';
+                log('flatpickr hooks attached', { name: input.name || '', id: input.id || '' });
+            });
+
+            if (pending && attemptCount < 10) {
+                setTimeout(function() {
+                    addDateHooks(root, attemptCount + 1);
+                }, 50);
+            } else if (pending) {
+                log('flatpickr hooks pending after retries');
+            }
+        };
+
+        form.addEventListener('input', function() {
+            markDirty('native:input');
+        }, true);
+
+        form.addEventListener('change', function() {
+            markDirty('native:change');
+        }, true);
+
+        form.addEventListener('submit', function() {
+            isDirty = false;
+            log('form submitted; dirty reset');
+        });
+
+        window.addEventListener('beforeunload', function(e) {
+            if (!isDirty) {
+                return;
+            }
+
+            e.preventDefault();
+            e.returnValue = '';
+        });
+
+        if (window.MyvhFlatpickr && typeof window.MyvhFlatpickr.initWithin === 'function') {
+            window.MyvhFlatpickr.initWithin(form, {
+                '[data-myvh-picker="date"]': {
+                    onChange: [function() {
+                        markDirty('flatpickr:initWithin:onChange');
+                    }],
+                    onValueUpdate: [function() {
+                        markDirty('flatpickr:initWithin:onValueUpdate');
+                    }]
+                }
+            });
+            log('MyvhFlatpickr.initWithin called with settings callbacks');
+        } else {
+            log('MyvhFlatpickr unavailable at init');
+        }
+
+        addDateHooks(form, 0);
+
+        form.addEventListener('click', function(event) {
+            if (!event.target || !event.target.closest('.myvh-notice-add-row')) {
+                return;
+            }
+
+            setTimeout(function() {
+                addDateHooks(form, 0);
+                log('repeater add-row detected; attempted hook attach for new inputs');
+            }, 0);
+        });
+
+        log('settings fallback tracker initialized');
+    })();
+
     // ==================== Helper functions ====================
 
     /**

@@ -146,6 +146,41 @@ class PortalBillingPageRendererTest extends UnitTestCase {
     }
 
     /** @test */
+    public function render_invoices_defaults_client_portal_without_draft_status(): void {
+        $_GET = [];
+
+        $this->invoice_service->shouldReceive('get_valid_statuses')
+            ->once()
+            ->andReturnUsing(static fn() => ['draft', 'sent', 'part-paid', 'paid', 'overdue', 'cancelled']);
+
+        $this->invoice_service->shouldReceive('get_for_portal')
+            ->once()
+            ->with(55, ['sent', 'part-paid', 'paid', 'overdue', 'cancelled'], '2026-04-13', '2026-05-13')
+            ->andReturn([
+                [
+                    'Id' => 7,
+                    'InvoiceNumber' => 'INV-000007',
+                    'InvoiceDate' => '2026-05-01',
+                    'DueDate' => '2026-05-31',
+                    'Status' => 'sent',
+                    'TotalAmount' => 120,
+                    'AmountPaid' => 0,
+                    'OrganisationName' => 'Community Group',
+                    'BillingName' => 'Alex Booker',
+                ],
+            ]);
+
+        $this->invoice_service->shouldNotReceive('get_with_customers');
+
+        ob_start();
+        $this->renderer->render_invoices(['Id' => 55], false, true);
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('INV-000007', $html);
+        $this->assertStringNotContainsString('value="draft"', $html);
+    }
+
+    /** @test */
     public function render_invoices_shows_client_filter_fields_for_admin_view(): void {
         $_GET = [];
 

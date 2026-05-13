@@ -1,6 +1,46 @@
 (function(window) {
     "use strict";
 
+    function ensureArray(value) {
+        if (!value) {
+            return [];
+        }
+
+        return Array.isArray(value) ? value.slice() : [value];
+    }
+
+    function settingsDirtyHook(input, selectedDates, dateStr, instance) {
+        if (typeof window.MyvhMarkDirty === "function") {
+            window.MyvhMarkDirty("flatpickr:shared");
+        }
+
+        const form = document.querySelector(".myvh-settings-form");
+        if (form && form.contains(input)) {
+            const submit = form.querySelector('button[type="submit"], input[type="submit"]');
+            if (submit) {
+                submit.disabled = false;
+                submit.removeAttribute("disabled");
+                submit.setAttribute("aria-disabled", "false");
+                if (submit.classList) {
+                    submit.classList.remove("disabled");
+                    submit.classList.remove("button-disabled");
+                }
+            }
+        }
+
+        if (instance && instance.altInput) {
+            instance.altInput.dispatchEvent(new CustomEvent("myvh:flatpickr-change", {
+                bubbles: true,
+                detail: { value: dateStr || "", selectedDates: selectedDates || [] }
+            }));
+        }
+
+        input.dispatchEvent(new CustomEvent("myvh:flatpickr-change", {
+            bubbles: true,
+            detail: { value: dateStr || "", selectedDates: selectedDates || [] }
+        }));
+    }
+
     function resolveFormat(input, mode) {
         if (input.dataset.myvhFormat) {
             return input.dataset.myvhFormat;
@@ -27,6 +67,11 @@
         const minDate = getAttributeValue(input, "data-min-date") || input.getAttribute("min") || undefined;
         const maxDate = getAttributeValue(input, "data-max-date") || input.getAttribute("max") || undefined;
         const firstDayOfWeek = parseInt(getAttributeValue(input, "data-myvh-first-day") || "1", 10);
+        const providedOnChange = ensureArray(options && options.onChange);
+        const providedOnValueUpdate = ensureArray(options && options.onValueUpdate);
+        const dirtyHook = function(selectedDates, dateStr, instance) {
+            settingsDirtyHook(input, selectedDates, dateStr, instance);
+        };
         const baseOptions = {
             allowInput: input.dataset.myvhAllowInput !== "0",
             clickOpens: !input.disabled,
@@ -34,7 +79,9 @@
             disableMobile: true,
             minDate: minDate,
             maxDate: maxDate,
-            ...options
+            ...options,
+            onChange: [...providedOnChange, dirtyHook],
+            onValueUpdate: [...providedOnValueUpdate, dirtyHook]
         };
 
         if (mode === "time") {
