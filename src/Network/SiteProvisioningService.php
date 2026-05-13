@@ -39,7 +39,7 @@ class SiteProvisioningService {
             'admin_email' => $data['admin_email'],
             'admin_first_name' => $data['admin_first_name'],
             'admin_last_name' => $data['admin_last_name'],
-            'admin_password' => $data['admin_password'], // TODO: hash password
+            'admin_password' => wp_hash_password($data['admin_password']),
             'user_id' => 0, // resolved at provisioning step
             'blog_id' => 0, // resolved at provisioning step
             'status' => 'pending',

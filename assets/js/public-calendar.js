@@ -12,36 +12,36 @@
         return;
     }
 
-    var cfg     = myvhCalConfig;
-    var wrap    = null;   // .myvh-public-calendar-wrap
-    var dp      = null;   // active DayPilot control
-    var nav     = null;   // DayPilot navigator control
-    var allRooms = Array.isArray(cfg.rooms) ? cfg.rooms.slice() : [];
-    var selectedVenueId = 0;
-    var pinnedVenueId = parseInt(cfg.venueId || '0', 10) || 0;
-    var VENUE_STORAGE_KEY = 'myvhCalendarVenue_public';
-    var lastEvents = [];
-        var selectedRoomIds = new Set();
-    var roomNameById = {};
-    var loadRequestSeq = 0;
-    var suppressNavSelect = false;
-    var headerDateFormat = cfg.headerDateFormat || 'd MMM';
-    var current = {
+    let cfg     = myvhCalConfig;
+    let wrap    = null;   // .myvh-public-calendar-wrap
+    let dp      = null;   // active DayPilot control
+    let nav     = null;   // DayPilot navigator control
+    let allRooms = Array.isArray(cfg.rooms) ? cfg.rooms.slice() : [];
+    let selectedVenueId = 0;
+    let pinnedVenueId = parseInt(cfg.venueId || '0', 10) || 0;
+    let VENUE_STORAGE_KEY = 'myvhCalendarVenue_public';
+    let lastEvents = [];
+        let selectedRoomIds = new Set();
+    let roomNameById = {};
+    let loadRequestSeq = 0;
+    let suppressNavSelect = false;
+    let headerDateFormat = cfg.headerDateFormat || 'd MMM';
+    let current = {
         mode : 'calendar',
         detail : cfg.view || 'month',
         date : DayPilot.Date.today(),
     };
 
     function getSchedulerWeekCellWidth() {
-        var container = document.getElementById(cfg.containerId);
-        var containerWidth = Math.round(
+        let container = document.getElementById(cfg.containerId);
+        let containerWidth = Math.round(
             (container && container.getBoundingClientRect ? container.getBoundingClientRect().width : 0)
             || (container && container.clientWidth)
             || (container && container.parentElement && container.parentElement.clientWidth)
             || 0
         );
-        var rowHeaderWidth = 220;
-        var availableWidth = containerWidth - rowHeaderWidth - 1;
+        let rowHeaderWidth = 220;
+        let availableWidth = containerWidth - rowHeaderWidth - 1;
 
         if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
             return null;
@@ -51,30 +51,30 @@
     }
 
     // ── Colour map ────────────────────────────────────────────────────────────
-    var DEFAULT_STATUS_COLOURS = {
+    let DEFAULT_STATUS_COLOURS = {
         confirmed : '#2271b1',
         pending   : '#f0a500',
         cancelled : '#9aa0a6',
         completed : '#2d8f45',
     };
-    var DEFAULT_EVENT_BACKGROUND = '#f7f3ee';
-    var STATUS_COLOURS = Object.assign({}, DEFAULT_STATUS_COLOURS, (cfg.statusColors && typeof cfg.statusColors === 'object') ? cfg.statusColors : {});
+    let DEFAULT_EVENT_BACKGROUND = '#f7f3ee';
+    let STATUS_COLOURS = Object.assign({}, DEFAULT_STATUS_COLOURS, (cfg.statusColors && typeof cfg.statusColors === 'object') ? cfg.statusColors : {});
 
     function normaliseHexColour(value) {
-        var text = String(value || '').trim().toLowerCase();
+        let text = String(value || '').trim().toLowerCase();
         return /^#[0-9a-f]{6}$/.test(text) ? text : '';
     }
 
     function getReadableTextColour(backgroundColour) {
-        var hex = normaliseHexColour(backgroundColour);
+        let hex = normaliseHexColour(backgroundColour);
         if (!hex) {
             return '#1f2933';
         }
 
-        var red = parseInt(hex.slice(1, 3), 16);
-        var green = parseInt(hex.slice(3, 5), 16);
-        var blue = parseInt(hex.slice(5, 7), 16);
-        var brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+        let red = parseInt(hex.slice(1, 3), 16);
+        let green = parseInt(hex.slice(3, 5), 16);
+        let blue = parseInt(hex.slice(5, 7), 16);
+        let brightness = (red * 299 + green * 587 + blue * 114) / 1000;
 
         return brightness < 145 ? '#ffffff' : '#1f2933';
     }
@@ -82,7 +82,7 @@
     function buildRoomIndex() {
         roomNameById = {};
 
-        var visibleRooms = getVisibleRooms();
+        let visibleRooms = getVisibleRooms();
         if (!Array.isArray(visibleRooms)) {
             return;
         }
@@ -92,8 +92,8 @@
                 return;
             }
 
-            var id = room.id;
-            var name = room.name;
+            let id = room.id;
+            let name = room.name;
 
             if (id === null || typeof id === 'undefined') {
                 return;
@@ -128,11 +128,11 @@
     }
 
     function buildVenueList() {
-        var byId = {};
+        let byId = {};
 
         allRooms.forEach(function(room) {
-            var venueId = parseInt((room && room.venueId) || (room && room.venue_id) || '0', 10) || 0;
-            var venueName = String((room && room.venue) || (room && room.VenueName) || '').trim();
+            let venueId = parseInt((room && room.venueId) || (room && room.venue_id) || '0', 10) || 0;
+            let venueName = String((room && room.venue) || (room && room.VenueName) || '').trim();
 
             if (venueId <= 0 || !venueName) {
                 return;
@@ -151,7 +151,7 @@
     }
 
     function getVisibleRooms() {
-            var venueFiltered = getVenueFilteredRooms();
+            let venueFiltered = getVenueFilteredRooms();
             if (selectedRoomIds.size === 0) {
                 return venueFiltered;
             }
@@ -165,15 +165,15 @@
                 return allRooms.slice();
             }
             return allRooms.filter(function(room) {
-            var venueId = parseInt((room && room.venueId) || (room && room.venue_id) || '0', 10) || 0;
+            let venueId = parseInt((room && room.venueId) || (room && room.venue_id) || '0', 10) || 0;
             return venueId === selectedVenueId;
         });
     }
 
     function initialiseVenueSelector() {
-        var venues = buildVenueList();
-        var venueWrap = wrap ? wrap.querySelector('.myvh-cal-venue-filter') : null;
-        var venueSelect = wrap ? wrap.querySelector('.myvh-cal-venue-select') : null;
+        let venues = buildVenueList();
+        let venueWrap = wrap ? wrap.querySelector('.myvh-cal-venue-filter') : null;
+        let venueSelect = wrap ? wrap.querySelector('.myvh-cal-venue-select') : null;
 
         if (pinnedVenueId > 0) {
             selectedVenueId = pinnedVenueId;
@@ -203,8 +203,8 @@
             return;
         }
 
-        var persistedVenueId = getPersistedVenueId();
-        var knownVenueIds = venues.map(function(venue) { return venue.id; });
+        let persistedVenueId = getPersistedVenueId();
+        let knownVenueIds = venues.map(function(venue) { return venue.id; });
         selectedVenueId = (persistedVenueId > 0 && knownVenueIds.indexOf(persistedVenueId) !== -1)
             ? persistedVenueId
             : venues[0].id;
@@ -219,7 +219,7 @@
         venueSelect.innerHTML = '';
 
         venues.forEach(function(venue) {
-            var option = document.createElement('option');
+            let option = document.createElement('option');
             option.value = String(venue.id);
             option.textContent = venue.name;
             option.selected = venue.id === selectedVenueId;
@@ -245,14 +245,14 @@
     }
 
     function createLegendItem(label, colour, itemClass, swatchClass, labelClass) {
-        var item = document.createElement('span');
+        let item = document.createElement('span');
         item.className = itemClass;
 
-        var swatch = document.createElement('span');
+        let swatch = document.createElement('span');
         swatch.className = swatchClass;
         swatch.style.backgroundColor = colour;
 
-        var text = document.createElement('span');
+        let text = document.createElement('span');
         text.className = labelClass;
         text.textContent = label;
 
@@ -267,13 +267,13 @@
             return;
         }
 
-        var keyRoot = wrap.querySelector('.myvh-cal-key');
+        let keyRoot = wrap.querySelector('.myvh-cal-key');
         if (!keyRoot) {
             return;
         }
 
-        var statusWrap = keyRoot.querySelector('.myvh-cal-key-status-items');
-        var roomWrap = keyRoot.querySelector('.myvh-cal-key-room-items');
+        let statusWrap = keyRoot.querySelector('.myvh-cal-key-status-items');
+        let roomWrap = keyRoot.querySelector('.myvh-cal-key-room-items');
         if (!statusWrap || !roomWrap) {
             return;
         }
@@ -282,7 +282,7 @@
         roomWrap.innerHTML = '';
 
         Object.keys(STATUS_COLOURS).forEach(function(status) {
-            var colour = normaliseHexColour(STATUS_COLOURS[status]);
+            let colour = normaliseHexColour(STATUS_COLOURS[status]);
             if (!colour) {
                 return;
             }
@@ -296,19 +296,19 @@
             ));
         });
 
-        var seenRoomIds = new Set();
+        let seenRoomIds = new Set();
         getVisibleRooms().forEach(function(room) {
             if (!room || room.id === null || typeof room.id === 'undefined') {
                 return;
             }
 
-            var roomId = String(room.id);
+            let roomId = String(room.id);
             if (seenRoomIds.has(roomId)) {
                 return;
             }
 
-            var roomName = String(room.name || '').trim();
-            var roomColour = normaliseHexColour(room.roomColour || room.colour);
+            let roomName = String(room.name || '').trim();
+            let roomColour = normaliseHexColour(room.roomColour || room.colour);
             if (!roomName || !roomColour) {
                 return;
             }
@@ -335,12 +335,12 @@
     }
 
         function renderRoomFilter() {
-            var filterEl = wrap ? wrap.querySelector('.myvh-cal-room-filter') : null;
+            let filterEl = wrap ? wrap.querySelector('.myvh-cal-room-filter') : null;
             if (!filterEl) {
                 return;
             }
 
-            var venueRooms = getVenueFilteredRooms();
+            let venueRooms = getVenueFilteredRooms();
 
             if (venueRooms.length <= 1) {
                 filterEl.style.display = 'none';
@@ -357,17 +357,17 @@
             filterEl.innerHTML = '';
 
             venueRooms.forEach(function(room) {
-                var roomId = parseInt((room && room.id) || 0, 10);
-                var roomName = String((room && room.name) || '').trim();
-                var roomColour = normaliseHexColour((room && (room.roomColour || room.colour)) || '');
+                let roomId = parseInt((room && room.id) || 0, 10);
+                let roomName = String((room && room.name) || '').trim();
+                let roomColour = normaliseHexColour((room && (room.roomColour || room.colour)) || '');
                 if (!roomName) {
                     return;
                 }
 
-                var item = document.createElement('label');
+                let item = document.createElement('label');
                 item.className = 'myvh-room-filter-item';
 
-                var cb = document.createElement('input');
+                let cb = document.createElement('input');
                 cb.type = 'checkbox';
                 cb.checked = !selectedRoomIds.has(roomId);
                 cb.addEventListener('change', function() {
@@ -376,7 +376,7 @@
                     } else {
                         selectedRoomIds.add(roomId);
                     }
-                    var allChecked = venueRooms.every(function(r) {
+                    let allChecked = venueRooms.every(function(r) {
                         return !selectedRoomIds.has(parseInt((r && r.id) || 0, 10));
                     });
                     if (allChecked) {
@@ -390,14 +390,14 @@
                 item.appendChild(cb);
 
                 if (roomColour) {
-                    var swatch = document.createElement('span');
+                    let swatch = document.createElement('span');
                     swatch.className = 'myvh-room-filter-swatch';
                     swatch.style.backgroundColor = roomColour;
                     swatch.setAttribute('aria-hidden', 'true');
                     item.appendChild(swatch);
                 }
 
-                var label = document.createElement('span');
+                let label = document.createElement('span');
                 label.className = 'myvh-room-filter-name';
                 label.textContent = roomName;
                 item.appendChild(label);
@@ -407,12 +407,12 @@
         }
 
     function resolveRoomName(event, tags) {
-        var direct = tags.room || tags.roomName || '';
+        let direct = tags.room || tags.roomName || '';
         if (String(direct).trim() !== '') {
             return String(direct).trim();
         }
 
-        var key = null;
+        let key = null;
         if (event && event.resource !== null && typeof event.resource !== 'undefined') {
             key = String(event.resource);
         } else if (tags.roomId !== null && typeof tags.roomId !== 'undefined') {
@@ -429,10 +429,10 @@
     function formatTimeFromISO(isoDatetime) {
         if (!isoDatetime) return '';
         try {
-            var date = new Date(isoDatetime);
+            let date = new Date(isoDatetime);
             if (isNaN(date.getTime())) return '';
-            var hours = String(date.getHours()).padStart(2, '0');
-            var mins = String(date.getMinutes()).padStart(2, '0');
+            let hours = String(date.getHours()).padStart(2, '0');
+            let mins = String(date.getMinutes()).padStart(2, '0');
             return hours + ':' + mins;
         } catch (e) {
             return '';
@@ -444,7 +444,7 @@
             return true;
         }
 
-        var raw = tags.isPublic;
+        let raw = tags.isPublic;
         if (raw === true || raw === 1 || raw === '1') {
             return true;
         }
@@ -461,7 +461,7 @@
             return false;
         }
 
-        var raw = tags.canViewPrivate;
+        let raw = tags.canViewPrivate;
         if (raw === true || raw === 1 || raw === '1') {
             return true;
         }
@@ -474,24 +474,24 @@
     }
 
     function buildEventTooltip(event) {
-        var tooltipParts = [];
-        var tags = event && event.tags ? event.tags : {};
+        let tooltipParts = [];
+        let tags = event && event.tags ? event.tags : {};
 
-        var room = resolveRoomName(event, tags);
+        let room = resolveRoomName(event, tags);
         if (String(room).trim() !== '') {
             tooltipParts.push(String(room).trim());
         }
 
         // Add time range
         if (event.start && event.end) {
-            var startTime = formatTimeFromISO(event.start);
-            var endTime = formatTimeFromISO(event.end);
+            let startTime = formatTimeFromISO(event.start);
+            let endTime = formatTimeFromISO(event.end);
             if (startTime && endTime) {
                 tooltipParts.push(startTime + '-' + endTime);
             }
         }
 
-        var description = tags.description ? String(tags.description).trim() : '';
+        let description = tags.description ? String(tags.description).trim() : '';
 
         if (!isPublicBooking(tags) && !canViewPrivateBooking(tags)) {
             tooltipParts.push('Private event');
@@ -504,7 +504,7 @@
 
     // ── Initialise on DOM ready ───────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
-        var container = document.getElementById(cfg.containerId);
+        let container = document.getElementById(cfg.containerId);
         if (!container) { return; }
 
         if (typeof ensureThreeLetterEnglishWeekdays === 'function') {
@@ -537,7 +537,7 @@
     function syncNavigatorSelection() {
         if (!nav) { return; }
         try {
-            var day = new DayPilot.Date(current.date);
+            let day = new DayPilot.Date(current.date);
             suppressNavSelect = true;
             nav.selectMode = getNavigatorSelectMode(current.detail);
             nav.select(day);
@@ -550,10 +550,10 @@
     }
 
     function initNavigator() {
-        var navContainerId = cfg.navContainerId;
+        let navContainerId = cfg.navContainerId;
         if (!navContainerId) { return; }
 
-        var navContainer = document.getElementById(navContainerId);
+        let navContainer = document.getElementById(navContainerId);
         if (!navContainer) { return; }
 
         try {
@@ -589,10 +589,10 @@
 
     // ── Mount / re-mount a DayPilot view ─────────────────────────────────────
     function mountView(detail, mode) {
-        var previousDetail = current.detail;
-        var previousMode = current.mode;
-        var container = document.getElementById(cfg.containerId);
-        var schedulerOrientation = String(cfg.schedulerOrientation || 'horizontal').trim().toLowerCase();
+        let previousDetail = current.detail;
+        let previousMode = current.mode;
+        let container = document.getElementById(cfg.containerId);
+        let schedulerOrientation = String(cfg.schedulerOrientation || 'horizontal').trim().toLowerCase();
 
         current.detail = detail;
         current.mode = mode;
@@ -656,12 +656,12 @@
     }
 
     function buildVerticalTimetableDp(container, detail) {
-        var startHour  = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 8;
-        var endHour    = Number.isFinite(Number(cfg.visibleEndHour))   ? Number(cfg.visibleEndHour)   : 22;
-        var cellDuration = 15;  // 15-minute intervals
-        var slotsPerHour = 60 / cellDuration;  // 4 slots per hour
-        var totalSlots = Math.max(1, (endHour - startHour) * slotsPerHour);
-        var rooms      = getVisibleRooms();
+        let startHour  = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 8;
+        let endHour    = Number.isFinite(Number(cfg.visibleEndHour))   ? Number(cfg.visibleEndHour)   : 22;
+        let cellDuration = 15;  // 15-minute intervals
+        let slotsPerHour = 60 / cellDuration;  // 4 slots per hour
+        let totalSlots = Math.max(1, (endHour - startHour) * slotsPerHour);
+        let rooms      = getVisibleRooms();
 
         function getVisibleDays(startDate) {
             if (detail === 'day') {
@@ -673,30 +673,30 @@
             }
 
             // Month: render the current month range.
-            var jsDate = new Date(startDate.toString('yyyy-MM-dd') + 'T00:00:00');
-            var y = jsDate.getFullYear();
-            var m = jsDate.getMonth();
+            let jsDate = new Date(startDate.toString('yyyy-MM-dd') + 'T00:00:00');
+            let y = jsDate.getFullYear();
+            let m = jsDate.getMonth();
             return new Date(y, m + 1, 0).getDate();
         }
 
         function renderTimetable(vtDp) {
-            var roomsForRender = rooms.length > 0 ? rooms : [ { id: 'all', name: 'Bookings' } ];
-            var roomCount = roomsForRender.length;
-            var dayCount = Math.max(1, vtDp.days);
-            var rowCount = dayCount * totalSlots;
-            var grid = [];
-            var dayData = [];
+            let roomsForRender = rooms.length > 0 ? rooms : [ { id: 'all', name: 'Bookings' } ];
+            let roomCount = roomsForRender.length;
+            let dayCount = Math.max(1, vtDp.days);
+            let rowCount = dayCount * totalSlots;
+            let grid = [];
+            let dayData = [];
 
-            for (var r = 0; r < rowCount; r++) {
-                var gridRow = [];
-                for (var gc = 0; gc < roomCount; gc++) {
+            for (let r = 0; r < rowCount; r++) {
+                let gridRow = [];
+                for (let gc = 0; gc < roomCount; gc++) {
                     gridRow.push(null);
                 }
                 grid.push(gridRow);
             }
 
-            for (var dayOffset = 0; dayOffset < dayCount; dayOffset++) {
-                var dayDate = new DayPilot.Date(vtDp.startDate).addDays(dayOffset);
+            for (let dayOffset = 0; dayOffset < dayCount; dayOffset++) {
+                let dayDate = new DayPilot.Date(vtDp.startDate).addDays(dayOffset);
                 dayData.push({
                     dayOffset: dayOffset,
                     dayDate: dayDate,
@@ -706,45 +706,45 @@
             }
 
             dayData.forEach(function(day) {
-                var dayStart = new Date(day.dayStr + 'T00:00:00');
-                var dayEnd = new Date(dayStart);
+                let dayStart = new Date(day.dayStr + 'T00:00:00');
+                let dayEnd = new Date(dayStart);
                 dayEnd.setDate(dayEnd.getDate() + 1);
 
                 roomsForRender.forEach(function(room, roomIndex) {
-                    var col = roomIndex;
+                    let col = roomIndex;
 
-                    var matchingEvents = vtDp.events.list.filter(function(event) {
-                        var rid = String(event.resource || (event.tags && event.tags.roomId) || '');
+                    let matchingEvents = vtDp.events.list.filter(function(event) {
+                        let rid = String(event.resource || (event.tags && event.tags.roomId) || '');
                         if (room.id !== 'all' && rid !== String(room.id)) {
                             return false;
                         }
 
-                        var evStart = new Date(event.start);
-                        var evEnd = new Date(event.end);
+                        let evStart = new Date(event.start);
+                        let evEnd = new Date(event.end);
                         return evStart < dayEnd && evEnd > dayStart;
                     });
 
                     matchingEvents.forEach(function(event) {
-                        var evStart = new Date(event.start);
-                        var evEnd = new Date(event.end);
-                        var clippedStart = evStart > dayStart ? evStart : dayStart;
-                        var clippedEnd = evEnd < dayEnd ? evEnd : dayEnd;
+                        let evStart = new Date(event.start);
+                        let evEnd = new Date(event.end);
+                        let clippedStart = evStart > dayStart ? evStart : dayStart;
+                        let clippedEnd = evEnd < dayEnd ? evEnd : dayEnd;
 
-                        var sh = clippedStart.getHours() + clippedStart.getMinutes() / 60;
-                        var eh = clippedEnd.getHours() + clippedEnd.getMinutes() / 60;
-                        var startSlot = Math.max(0, Math.floor((sh - startHour) * slotsPerHour));
-                        var endSlot = Math.min(totalSlots, Math.ceil((eh - startHour) * slotsPerHour));
+                        let sh = clippedStart.getHours() + clippedStart.getMinutes() / 60;
+                        let eh = clippedEnd.getHours() + clippedEnd.getMinutes() / 60;
+                        let startSlot = Math.max(0, Math.floor((sh - startHour) * slotsPerHour));
+                        let endSlot = Math.min(totalSlots, Math.ceil((eh - startHour) * slotsPerHour));
                         if (endSlot <= startSlot) {
                             endSlot = Math.min(totalSlots, startSlot + 1);
                         }
 
-                        var span = Math.max(1, endSlot - startSlot);
+                        let span = Math.max(1, endSlot - startSlot);
 
                         if (startSlot < totalSlots) {
-                            var startRow = day.dayOffset * totalSlots + startSlot;
+                            let startRow = day.dayOffset * totalSlots + startSlot;
                             if (grid[startRow][col] === null) {
                                 grid[startRow][col] = { event: event, span: span };
-                                for (var s = startSlot + 1; s < startSlot + span && s < totalSlots; s++) {
+                                for (let s = startSlot + 1; s < startSlot + span && s < totalSlots; s++) {
                                     grid[day.dayOffset * totalSlots + s][col] = 'occupied';
                                 }
                             }
@@ -753,8 +753,8 @@
                 });
             });
 
-            var timetableClass = detail === 'day' ? 'myvh-timetable myvh-timetable--day' : 'myvh-timetable';
-            var html = '<div class="myvh-timetable-scroll">';
+            let timetableClass = detail === 'day' ? 'myvh-timetable myvh-timetable--day' : 'myvh-timetable';
+            let html = '<div class="myvh-timetable-scroll">';
             html += '<table class="' + timetableClass + '" role="grid">';
             html += '<thead><tr>';
             html += '<th class="myvh-tt-corner">Date</th>';
@@ -764,15 +764,15 @@
             });
             html += '</tr></thead><tbody>';
 
-            for (var dayOffset = 0; dayOffset < dayCount; dayOffset++) {
-                var day = dayData[dayOffset];
+            for (let dayOffset = 0; dayOffset < dayCount; dayOffset++) {
+                let day = dayData[dayOffset];
 
-                for (var slot = 0; slot < totalSlots; slot++) {
-                    var row = dayOffset * totalSlots + slot;
-                    var totalMinutes = Math.floor((slot / slotsPerHour) * 60);
-                    var hour = startHour + Math.floor(totalMinutes / 60);
-                    var minutes = totalMinutes % 60;
-                    var hourStr = (hour < 10 ? '0' : '') + hour + ':' + (minutes < 10 ? '0' : '') + minutes;
+                for (let slot = 0; slot < totalSlots; slot++) {
+                    let row = dayOffset * totalSlots + slot;
+                    let totalMinutes = Math.floor((slot / slotsPerHour) * 60);
+                    let hour = startHour + Math.floor(totalMinutes / 60);
+                    let minutes = totalMinutes % 60;
+                    let hourStr = (hour < 10 ? '0' : '') + hour + ':' + (minutes < 10 ? '0' : '') + minutes;
                     html += '<tr>';
 
                     if (slot === 0) {
@@ -781,8 +781,8 @@
 
                     html += '<th class="myvh-tt-time-cell" scope="row">' + escHtml(hourStr) + '</th>';
 
-                    for (var col = 0; col < roomCount; col++) {
-                        var cell = grid[row][col];
+                    for (let col = 0; col < roomCount; col++) {
+                        let cell = grid[row][col];
                         if (cell === 'occupied') {
                             continue;
                         }
@@ -790,16 +790,16 @@
                         if (cell === null) {
                             html += '<td class="myvh-tt-empty-cell"></td>';
                         } else {
-                            var event   = cell.event;
-                            var span    = cell.span;
-                                var accentColor = event.barColor || event.borderColor || '#2271b1';
-                                var backgroundColor = event.backColor || DEFAULT_EVENT_BACKGROUND;
-                                var textColor = event.fontColor || getReadableTextColour(backgroundColor);
-                            var title   = event.text || 'Booking';
-                            var tooltip = event.toolTip ? String(event.toolTip).replace(/\n/g, '&#10;') : '';
-                            var startT  = formatTimeFromISO(event.start);
-                            var endT    = formatTimeFromISO(event.end);
-                            var timeStr = (startT && endT) ? (startT + '-' + endT) : '';
+                            let event   = cell.event;
+                            let span    = cell.span;
+                                let accentColor = event.barColor || event.borderColor || '#2271b1';
+                                let backgroundColor = event.backColor || DEFAULT_EVENT_BACKGROUND;
+                                let textColor = event.fontColor || getReadableTextColour(backgroundColor);
+                            let title   = event.text || 'Booking';
+                            let tooltip = event.toolTip ? String(event.toolTip).replace(/\n/g, '&#10;') : '';
+                            let startT  = formatTimeFromISO(event.start);
+                            let endT    = formatTimeFromISO(event.end);
+                            let timeStr = (startT && endT) ? (startT + '-' + endT) : '';
 
                             html += '<td class="myvh-tt-event-cell"'
                                   + ' rowspan="' + span + '"'
@@ -823,7 +823,7 @@
             container.innerHTML = html;
 
             // Bind click handlers
-            var evList = vtDp.events.list;
+            let evList = vtDp.events.list;
             // Removed event click handler for public calendar
         }
 
@@ -838,12 +838,12 @@
     }
 
     function buildSchedulerConfig(detail) {
-        var start = new DayPilot.Date(current.date);
-        var maxBookingDaysAhead = Number.isFinite(Number(cfg.maxBookingDaysAhead)) ? Number(cfg.maxBookingDaysAhead) : 365;
-        var startHour = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 0;
-        var endHour = Number.isFinite(Number(cfg.visibleEndHour)) ? Number(cfg.visibleEndHour) : 24;
-        var schedulerDayHeaderFormat = 'ddd d';
-        var base = {
+        let start = new DayPilot.Date(current.date);
+        let maxBookingDaysAhead = Number.isFinite(Number(cfg.maxBookingDaysAhead)) ? Number(cfg.maxBookingDaysAhead) : 365;
+        let startHour = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 0;
+        let endHour = Number.isFinite(Number(cfg.visibleEndHour)) ? Number(cfg.visibleEndHour) : 24;
+        let schedulerDayHeaderFormat = 'ddd d';
+        let base = {
             startDate: detail === 'month' ? start.firstDayOfMonth() : start,
             eventResourceField: 'resource',
             treeEnabled: true,
@@ -854,7 +854,7 @@
             // onEventClick removed
             // onEventHover removed
             onBeforeRowHeaderRender: function(args) {
-                var tags = (args.row && args.row.tags) ? args.row.tags : {};
+                let tags = (args.row && args.row.tags) ? args.row.tags : {};
 
                 if (tags.type === 'venue') {
                     args.row.html = '<div style="font-weight:700;color:#2c3338;letter-spacing:.01em;">' + String(args.row.name || '') + '</div>';
@@ -893,7 +893,7 @@
                 { groupBy: 'Day', format: schedulerDayHeaderFormat }
             ];
 
-            var weekCellWidth = getSchedulerWeekCellWidth();
+            let weekCellWidth = getSchedulerWeekCellWidth();
             if (weekCellWidth !== null) {
                 base.cellWidth = weekCellWidth;
             }
@@ -903,14 +903,14 @@
     }
 
     function buildSchedulerResources(events) {
-        var visibleRooms = getVisibleRooms();
+        let visibleRooms = getVisibleRooms();
 
         if (Array.isArray(visibleRooms) && visibleRooms.length > 0) {
-            var groups = {};
+            let groups = {};
 
             visibleRooms.forEach(function (room) {
-                var venueId = room.venueId || 'venue-unknown';
-                var venueName = room.venue || 'Venue';
+                let venueId = room.venueId || 'venue-unknown';
+                let venueName = room.venue || 'Venue';
 
                 if (!groups[venueId]) {
                     groups[venueId] = {
@@ -925,14 +925,14 @@
                 });
             });
 
-            var flatResources = [];
+            let flatResources = [];
 
             Object.keys(groups).sort(function (a, b) {
-                var aName = (groups[a] && groups[a].name) ? groups[a].name.toLowerCase() : '';
-                var bName = (groups[b] && groups[b].name) ? groups[b].name.toLowerCase() : '';
+                let aName = (groups[a] && groups[a].name) ? groups[a].name.toLowerCase() : '';
+                let bName = (groups[b] && groups[b].name) ? groups[b].name.toLowerCase() : '';
                 return aName.localeCompare(bName);
             }).forEach(function (venueId) {
-                var venue = groups[venueId];
+                let venue = groups[venueId];
 
                 // Non-bookable visual heading row for the venue.
                 flatResources.push({
@@ -955,16 +955,16 @@
             return flatResources;
         }
 
-        var byId = {};
+        let byId = {};
 
         (events || []).forEach(function (event) {
-            var id = event.resource || (event.tags && event.tags.roomId) || 'all';
+            let id = event.resource || (event.tags && event.tags.roomId) || 'all';
             if (!id) {
                 id = 'all';
             }
 
             if (!byId[id]) {
-                var roomName = (event.tags && event.tags.room) ? event.tags.room : 'Room';
+                let roomName = (event.tags && event.tags.room) ? event.tags.room : 'Room';
                 byId[id] = {
                     id: id,
                     name: roomName
@@ -972,7 +972,7 @@
             }
         });
 
-        var list = Object.keys(byId).map(function (id) { return byId[id]; });
+        let list = Object.keys(byId).map(function (id) { return byId[id]; });
 
         if (list.length === 0) {
             list.push({ id: 'all', name: 'Bookings' });
@@ -996,8 +996,8 @@
 
     // ── DayPilot Calendar (week / day) config ─────────────────────────────────
     function buildWeekConfig(dayView) {
-        var startHour = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 0;
-        var endHour = Number.isFinite(Number(cfg.visibleEndHour)) ? Number(cfg.visibleEndHour) : 24;
+        let startHour = Number.isFinite(Number(cfg.visibleStartHour)) ? Number(cfg.visibleStartHour) : 0;
+        let endHour = Number.isFinite(Number(cfg.visibleEndHour)) ? Number(cfg.visibleEndHour) : 24;
 
         return {
             viewType           : dayView ? 'Day' : 'Week',
@@ -1020,10 +1020,10 @@
     function loadEvents() {
         if (!dp) { return; }
 
-        var requestId = ++loadRequestSeq;
+        let requestId = ++loadRequestSeq;
 
-        var range   = getVisibleRange();
-        var url     = cfg.eventsUrl
+        let range   = getVisibleRange();
+        let url     = cfg.eventsUrl
                     + '?start=' + encodeURIComponent(range.start)
                     + '&end='   + encodeURIComponent(range.end);
 
@@ -1045,22 +1045,22 @@
 
             lastEvents = data.slice();
 
-                var eventsToRender = data;
+                let eventsToRender = data;
                 if (current.mode !== 'scheduler' && selectedRoomIds.size > 0) {
                     eventsToRender = data.filter(function(e) {
-                        var rid = parseInt((e.tags && e.tags.roomId) || e.resource || 0, 10);
+                        let rid = parseInt((e.tags && e.tags.roomId) || e.resource || 0, 10);
                         return !selectedRoomIds.has(rid);
                     });
                 }
 
                 dp.events.list = eventsToRender.map(function (e) {
-                var normalized = normalizeEventRange(e.start, e.end);
+                let normalized = normalizeEventRange(e.start, e.end);
 
-                var tags = e.tags || {};
-                var status = String(tags.status || '').toLowerCase();
-                var accentColor = STATUS_COLOURS[status] || STATUS_COLOURS.confirmed;
-                var roomColour = normaliseHexColour(tags.roomColour || tags.colour || e.backColor);
-                var backgroundColour = roomColour || DEFAULT_EVENT_BACKGROUND;
+                let tags = e.tags || {};
+                let status = String(tags.status || '').toLowerCase();
+                let accentColor = STATUS_COLOURS[status] || STATUS_COLOURS.confirmed;
+                let roomColour = normaliseHexColour(tags.roomColour || tags.colour || e.backColor);
+                let backgroundColour = roomColour || DEFAULT_EVENT_BACKGROUND;
 
                 return {
                     id    : e.id,
@@ -1087,8 +1087,8 @@
     }
 
     function normalizeEventRange(start, end) {
-        var s = new Date(start);
-        var e = new Date(end);
+        let s = new Date(start);
+        let e = new Date(end);
 
         if (isNaN(s.getTime())) {
             return { start: start, end: end };
@@ -1106,7 +1106,7 @@
     }
 
     function toIsoLocal(d) {
-        var pad = function (n) { return String(n).padStart(2, '0'); };
+        let pad = function (n) { return String(n).padStart(2, '0'); };
         return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
             + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
     }
@@ -1115,16 +1115,16 @@
     function getVisibleRange() {
         if (!dp) {
             // Fallback
-            var d   = new DayPilot.Date(current.date);
-            var s   = d.firstDayOfMonth();
-            var end = s.addMonths(1);
+            let d   = new DayPilot.Date(current.date);
+            let s   = d.firstDayOfMonth();
+            let end = s.addMonths(1);
             return { start: s.toString('yyyy-MM-dd'), end: end.toString('yyyy-MM-dd') };
         }
 
         // Day/week scheduler/detail views can produce ambiguous visibleEnd values in some DayPilot builds,
         // so compute deterministic windows from the control startDate.
         if (current.detail === 'week' || current.detail === 'day') {
-            var calStart = new DayPilot.Date(dp.startDate || current.date);
+            let calStart = new DayPilot.Date(dp.startDate || current.date);
             return {
                 start: calStart.toString('yyyy-MM-dd'),
                 end: calStart.addDays(current.detail === 'day' ? 1 : 7).toString('yyyy-MM-dd'),
@@ -1142,7 +1142,7 @@
         } catch (e) { /* fall through */ }
 
         // Month fallback
-        var sd = new DayPilot.Date(dp.startDate || current.date);
+        let sd = new DayPilot.Date(dp.startDate || current.date);
         return {
             start : sd.firstDayOfMonth().toString('yyyy-MM-dd'),
             end   : sd.firstDayOfMonth().addMonths(1).toString('yyyy-MM-dd'),
@@ -1151,7 +1151,7 @@
 
     // ── Navigate ──────────────────────────────────────────────────────────────
     function navigate(direction) {
-        var d = new DayPilot.Date(current.date);
+        let d = new DayPilot.Date(current.date);
 
         switch (current.detail) {
             case 'month':
@@ -1185,18 +1185,18 @@
     // ── Title ─────────────────────────────────────────────────────────────────
     function updateTitle() {
         if (!wrap) { return; }
-        var el   = wrap.querySelector('.myvh-cal-title');
+        let el   = wrap.querySelector('.myvh-cal-title');
         if (!el) { return; }
 
-        var d   = new DayPilot.Date(current.date);
-        var out = '';
+        let d   = new DayPilot.Date(current.date);
+        let out = '';
 
         switch (current.detail) {
             case 'month':
                 out = d.toString(headerDateFormat);
                 break;
             case 'week':
-                var weekEnd = d.addDays(6);
+                let weekEnd = d.addDays(6);
                 out = d.toString(headerDateFormat) + ' – ' + weekEnd.toString(headerDateFormat);
                 break;
             case 'day':
@@ -1214,11 +1214,11 @@
     function bindToolbar() {
         if (!wrap) { return; }
 
-        var toolbar = wrap.querySelector('.myvh-cal-toolbar');
+        let toolbar = wrap.querySelector('.myvh-cal-toolbar');
         if (!toolbar) { return; }
 
         toolbar.addEventListener('click', function (e) {
-            var btn = e.target.closest('button');
+            let btn = e.target.closest('button');
             if (!btn) { return; }
 
             if (btn.classList.contains('myvh-cal-prev'))  { navigate(-1); return; }
@@ -1226,7 +1226,7 @@
             if (btn.classList.contains('myvh-cal-today')) { goToday();    return; }
 
             if (btn.classList.contains('myvh-mode-btn')) {
-                var mode = btn.dataset.mode;
+                let mode = btn.dataset.mode;
                 if (mode) {
                     mountView(current.detail, mode);
                         renderRoomFilter();
@@ -1235,7 +1235,7 @@
             }
 
             if (btn.classList.contains('myvh-detail-btn')) {
-                var view = btn.dataset.view;
+                let view = btn.dataset.view;
                 if (view) { mountView(view, current.mode); }
             }
         });

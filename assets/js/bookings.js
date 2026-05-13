@@ -12,17 +12,16 @@
 
 // Bookings list and actions for My Village Hall
 
-var Bookings = (function() {
+window.Bookings = (function() {
 
-    var globalHandlersBound = false;
-    var boundFilterRoot = null;
+    let globalHandlersBound = false;
+    let boundFilterRoot = null;
 
     function portalAlert(message) {
         if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
             return window.MyvhPortalDialog.alert(message);
         }
 
-        window.alert(message);
         return Promise.resolve(true);
     }
 
@@ -31,7 +30,7 @@ var Bookings = (function() {
             return window.MyvhPortalDialog.confirm(message);
         }
 
-        return Promise.resolve(window.confirm(message));
+        return Promise.resolve(false);
     }
 
     function runWhenBookingFlowReady(action) {
@@ -44,7 +43,7 @@ var Bookings = (function() {
             return;
         }
 
-        var onReady = function() {
+        let onReady = function() {
             document.removeEventListener('myvh:portal-booking-flow-ready', onReady);
             action();
         };
@@ -53,7 +52,7 @@ var Bookings = (function() {
     }
 
     function getRowDataValue(row, name) {
-        var value = row.getAttribute('data-' + name);
+        let value = row.getAttribute('data-' + name);
         if (value === null || value === undefined) {
             return '';
         }
@@ -62,7 +61,7 @@ var Bookings = (function() {
     }
 
     function normalizeTimeValue(timeValue) {
-        var raw = String(timeValue || '').trim();
+        let raw = String(timeValue || '').trim();
         if (!raw) {
             return '';
         }
@@ -79,8 +78,8 @@ var Bookings = (function() {
     }
 
     function toDateTimeString(dateValue, timeValue) {
-        var date = String(dateValue || '').trim();
-        var time = normalizeTimeValue(timeValue);
+        let date = String(dateValue || '').trim();
+        let time = normalizeTimeValue(timeValue);
 
         if (!date) {
             return '';
@@ -94,8 +93,8 @@ var Bookings = (function() {
     }
 
     function buildPrefillFromRow(row) {
-        var startDate = getRowDataValue(row, 'start-date');
-        var endDate = getRowDataValue(row, 'end-date') || startDate;
+        let startDate = getRowDataValue(row, 'start-date');
+        let endDate = getRowDataValue(row, 'end-date') || startDate;
 
         return {
             start: toDateTimeString(startDate, getRowDataValue(row, 'start-time')),
@@ -112,32 +111,32 @@ var Bookings = (function() {
     }
 
     function handlePortalBookingActionClick(event) {
-        var actionLink = event.target.closest('.myvh-booking-actions-inline .myvh-action-icon[href^="#booking-"]');
+        let actionLink = event.target.closest('.myvh-booking-actions-inline .myvh-action-icon[href^="#booking-"]');
         if (!actionLink) {
             return;
         }
 
-        var row = actionLink.closest('tr.myvh-bookings-table-row');
+        let row = actionLink.closest('tr.myvh-bookings-table-row');
         if (!row || !row.hasAttribute('data-booking-id')) {
             return;
         }
 
-        var bookingId = parseInt(row.getAttribute('data-booking-id') || '0', 10);
+        let bookingId = parseInt(row.getAttribute('data-booking-id') || '0', 10);
         if (!bookingId) {
             return;
         }
 
-        var href = String(actionLink.getAttribute('href') || '');
+        let href = String(actionLink.getAttribute('href') || '');
         if (!href) {
             return;
         }
 
-        var prefill = buildPrefillFromRow(row);
+        let prefill = buildPrefillFromRow(row);
 
         event.preventDefault();
 
         runWhenBookingFlowReady(function() {
-            var flow = window.MyvhPortalCalendarFlow;
+            let flow = window.MyvhPortalCalendarFlow;
             if (!flow) {
                 return;
             }
@@ -162,14 +161,14 @@ var Bookings = (function() {
      * Filter bookings table rows by selected statuses.
      */
     function filterByStatus() {
-        var checked = Array.from(document.querySelectorAll('.myvh-status-filter:checked')).map(function(cb) {
+        let checked = Array.from(document.querySelectorAll('.myvh-status-filter:checked')).map(function(cb) {
             return cb.value;
         });
 
         // Filter rows with data-status attribute (child rows and standalone bookings)
-        var rows = document.querySelectorAll('#myvh-bookings-table tbody tr[data-status]');
+        let rows = document.querySelectorAll('#myvh-bookings-table tbody tr[data-status]');
         rows.forEach(function(row) {
-            var status = row.getAttribute('data-status');
+            let status = row.getAttribute('data-status');
             if (!status || checked.indexOf(status) !== -1) {
                 row.classList.remove('myvh-hidden-by-filter');
             } else {
@@ -178,15 +177,15 @@ var Bookings = (function() {
         });
 
         // Hide/show group headers based on whether any children match the filter
-        var groupHeaders = document.querySelectorAll('#myvh-bookings-table tbody tr.myvh-booking-group-header');
+        let groupHeaders = document.querySelectorAll('#myvh-bookings-table tbody tr.myvh-booking-group-header');
         groupHeaders.forEach(function(header) {
-            var groupId = header.getAttribute('data-group');
+            let groupId = header.getAttribute('data-group');
             if (!groupId) {
                 return;
             }
 
-            var childRows = document.querySelectorAll('tr.myvh-recurring-child[data-group="' + groupId + '"]');
-            var hasVisibleChild = false;
+            let childRows = document.querySelectorAll('tr.myvh-recurring-child[data-group="' + groupId + '"]');
+            let hasVisibleChild = false;
 
             childRows.forEach(function(child) {
                 if (!child.classList.contains('myvh-hidden-by-filter')) {
@@ -207,7 +206,7 @@ var Bookings = (function() {
      * Bind status filter checkboxes for client-side filtering.
      */
     function bindStatusFilters() {
-        var boxes = document.querySelectorAll('.myvh-status-filter');
+        let boxes = document.querySelectorAll('.myvh-status-filter');
         boxes.forEach(function(cb) {
             cb.addEventListener('change', applyAllFilters);
         });
@@ -221,25 +220,25 @@ var Bookings = (function() {
      */
     function initializeFiltersFromUrl() {
         // Parse hash parameters
-        var hashParts = window.location.hash.split('?');
+        let hashParts = window.location.hash.split('?');
         if (hashParts.length < 2) {
             return; // No parameters
         }
 
-        var params = new URLSearchParams(hashParts[1]);
-        var statusParam = params.get('status');
-        var roomParam = params.get('room');
-        var datePresetParam = params.get('datePreset');
+        let params = new URLSearchParams(hashParts[1]);
+        let statusParam = params.get('status');
+        let roomParam = params.get('room');
+        let datePresetParam = params.get('datePreset');
 
         // Determine which page we're on
-        var bookingsTable = document.getElementById('myvh-bookings-table');
-        var dashboardTable = document.getElementById('myvh-dashboard-bookings-table');
-        var isBookingsPage = !!bookingsTable;
-        var prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
+        let bookingsTable = document.getElementById('myvh-bookings-table');
+        let dashboardTable = document.getElementById('myvh-dashboard-bookings-table');
+        let isBookingsPage = !!bookingsTable;
+        let prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
 
         // Apply status filter
         if (statusParam) {
-            var statusCheckbox = document.querySelector('.myvh-status-filter[value="' + statusParam + '"]');
+            let statusCheckbox = document.querySelector('.myvh-status-filter[value="' + statusParam + '"]');
             if (statusCheckbox) {
                 // Uncheck all, then check only the requested status
                 document.querySelectorAll('.myvh-status-filter').forEach(function(cb) {
@@ -251,7 +250,7 @@ var Bookings = (function() {
 
         // Apply room filter
         if (roomParam) {
-            var roomSelect = document.getElementById(prefix + 'room');
+            let roomSelect = document.getElementById(prefix + 'room');
             if (roomSelect) {
                 roomSelect.value = decodeURIComponent(roomParam);
             }
@@ -259,7 +258,7 @@ var Bookings = (function() {
 
         // Apply date preset filter
         if (datePresetParam) {
-            var datePresets = document.querySelectorAll('.' + prefix + 'date-preset');
+            let datePresets = document.querySelectorAll('.' + prefix + 'date-preset');
             datePresets.forEach(function(btn) {
                 btn.classList.remove('is-active');
                 if (btn.getAttribute('data-preset') === datePresetParam) {
@@ -269,7 +268,7 @@ var Bookings = (function() {
 
             // Hide date picker if not custom preset
             if (datePresetParam !== 'custom') {
-                var datePicker = document.getElementById(prefix + 'date-picker');
+                let datePicker = document.getElementById(prefix + 'date-picker');
                 if (datePicker) {
                     datePicker.hidden = true;
                 }
@@ -284,7 +283,7 @@ var Bookings = (function() {
      */
     function bindGroupToggles() {
         document.addEventListener('click', function(e) {
-            var header = e.target.closest('.myvh-booking-group-header');
+            let header = e.target.closest('.myvh-booking-group-header');
             if (!header) {
                 return;
             }
@@ -294,9 +293,9 @@ var Bookings = (function() {
                 return;
             }
 
-            var group = header.getAttribute('data-group');
-            var groupToggle = header.querySelector('.myvh-group-toggle');
-            var isOpen = !header.classList.contains('is-open');
+            let group = header.getAttribute('data-group');
+            let groupToggle = header.querySelector('.myvh-group-toggle');
+            let isOpen = !header.classList.contains('is-open');
 
             header.classList.toggle('is-open', isOpen);
 
@@ -308,7 +307,7 @@ var Bookings = (function() {
                 return;
             }
 
-            var children = document.querySelectorAll('tr.myvh-recurring-child[data-group="' + group + '"]');
+            let children = document.querySelectorAll('tr.myvh-recurring-child[data-group="' + group + '"]');
             children.forEach(function(row) {
                 row.classList.toggle('is-open', isOpen);
             });
@@ -326,7 +325,7 @@ var Bookings = (function() {
         document.addEventListener('click', function(e) {
             handlePortalBookingActionClick(e);
 
-            var cancelBtn = e.target.closest('.myvh-cancel-booking');
+            let cancelBtn = e.target.closest('.myvh-cancel-booking');
             if (!cancelBtn) {
                 return;
             }
@@ -350,17 +349,17 @@ var Bookings = (function() {
         });
 
         document.addEventListener('contextmenu', function(e) {
-            var statusChip = e.target.closest('.myvh-status-chip');
+            let statusChip = e.target.closest('.myvh-status-chip');
             if (!statusChip) {
                 return;
             }
 
-            var row = statusChip.closest('tr.myvh-bookings-table-row');
+            let row = statusChip.closest('tr.myvh-bookings-table-row');
             if (!row || row.getAttribute('data-status') !== 'pending') {
                 return;
             }
 
-            var bookingId = parseInt(row.getAttribute('data-booking-id') || '0', 10);
+            let bookingId = parseInt(row.getAttribute('data-booking-id') || '0', 10);
             if (!bookingId || !window.MyvhPortalAjax) {
                 return;
             }
@@ -390,12 +389,12 @@ var Bookings = (function() {
                     throw new Error('Unable to load booking details.');
                 }
 
-                var booking = result.data.booking;
-                var startDate = booking.StartDate || '';
-                var endDate = booking.EndDate || startDate;
-                var startTime = String(booking.StartTime || '00:00:00').slice(0, 8);
-                var endTime = String(booking.EndTime || '00:00:00').slice(0, 8);
-                var payload = {
+                let booking = result.data.booking;
+                let startDate = booking.StartDate || '';
+                let endDate = booking.EndDate || startDate;
+                let startTime = String(booking.StartTime || '00:00:00').slice(0, 8);
+                let endTime = String(booking.EndTime || '00:00:00').slice(0, 8);
+                let payload = {
                     booking_id: String(bookingId),
                     start: startDate + ' ' + startTime,
                     end: endDate + ' ' + endTime,
@@ -412,7 +411,7 @@ var Bookings = (function() {
             })
             .then(function(result) {
                 if (!result || !result.success) {
-                    var message = (result && result.data) ? String(result.data) : 'Could not update booking status.';
+                    let message = (result && result.data) ? String(result.data) : 'Could not update booking status.';
                     throw new Error(message);
                 }
 
@@ -435,8 +434,8 @@ var Bookings = (function() {
      * Apply all active filters to the bookings table.
      */
     function applyAllFilters() {
-        var rows = document.querySelectorAll('.myvh-bookings-table-row, .myvh-booking-group-header');
-        var groups = {};
+        let rows = document.querySelectorAll('.myvh-bookings-table-row, .myvh-booking-group-header');
+        let groups = {};
 
         rows.forEach(function(row) {
             if (row.classList.contains('myvh-booking-group-header')) {
@@ -444,20 +443,20 @@ var Bookings = (function() {
             }
 
             // Check all filter conditions
-            var filterState = getFilterState();
-            var matchesStatus = checkStatusFilter(row);
-            var matchesRoom = !filterState.room || row.getAttribute('data-room') === filterState.room;
-            var matchesCustomer = !filterState.customer || row.getAttribute('data-customer') === filterState.customer;
-            var matchesOrg = !filterState.organisation || row.getAttribute('data-organisation') === filterState.organisation;
-            var matchesDescription = !filterState.description || (row.getAttribute('data-description-search') || '').includes(filterState.description.toLowerCase());
-            var matchesDate = checkDateFilter(row);
+            let filterState = getFilterState();
+            let matchesStatus = checkStatusFilter(row);
+            let matchesRoom = !filterState.room || row.getAttribute('data-room') === filterState.room;
+            let matchesCustomer = !filterState.customer || row.getAttribute('data-customer') === filterState.customer;
+            let matchesOrg = !filterState.organisation || row.getAttribute('data-organisation') === filterState.organisation;
+            let matchesDescription = !filterState.description || (row.getAttribute('data-description-search') || '').includes(filterState.description.toLowerCase());
+            let matchesDate = checkDateFilter(row);
 
-            var isVisible = matchesStatus && matchesRoom && matchesCustomer && matchesOrg && matchesDescription && matchesDate;
+            let isVisible = matchesStatus && matchesRoom && matchesCustomer && matchesOrg && matchesDescription && matchesDate;
 
             row.classList.toggle('myvh-hidden-by-filter', !isVisible);
 
             // Track group visibility
-            var groupId = row.getAttribute('data-group');
+            let groupId = row.getAttribute('data-group');
             if (!groups[groupId]) {
                 groups[groupId] = false;
             }
@@ -467,9 +466,9 @@ var Bookings = (function() {
         });
 
         // Show/hide group headers based on child visibility
-        var groupHeaders = document.querySelectorAll('.myvh-booking-group-header');
+        let groupHeaders = document.querySelectorAll('.myvh-booking-group-header');
         groupHeaders.forEach(function(header) {
-            var groupId = header.getAttribute('data-group');
+            let groupId = header.getAttribute('data-group');
             header.classList.toggle('myvh-hidden-by-filter', !groups[groupId]);
         });
     }
@@ -479,11 +478,11 @@ var Bookings = (function() {
      */
     function getFilterState() {
         // Determine which filter container we're in (bookings page vs dashboard)
-        var bookingsTable = document.getElementById('myvh-bookings-table');
-        var dashboardTable = document.getElementById('myvh-dashboard-bookings-table');
-        var isBookingsPage = !!bookingsTable;
+        let bookingsTable = document.getElementById('myvh-bookings-table');
+        let dashboardTable = document.getElementById('myvh-dashboard-bookings-table');
+        let isBookingsPage = !!bookingsTable;
 
-        var prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
+        let prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
 
         return {
             room: getSelectValue(prefix + 'room'),
@@ -500,7 +499,7 @@ var Bookings = (function() {
      * Get value from a select element.
      */
     function getSelectValue(elementId) {
-        var el = document.getElementById(elementId);
+        let el = document.getElementById(elementId);
         return el ? el.value : '';
     }
 
@@ -508,7 +507,7 @@ var Bookings = (function() {
      * Get value from a text input element.
      */
     function getInputValue(elementId) {
-        var el = document.getElementById(elementId);
+        let el = document.getElementById(elementId);
         return el ? el.value : '';
     }
 
@@ -516,7 +515,7 @@ var Bookings = (function() {
      * Get Date object from a date input element.
      */
     function getDateInput(elementId) {
-        var el = document.getElementById(elementId);
+        let el = document.getElementById(elementId);
         if (!el || !el.value) {
             return null;
         }
@@ -527,7 +526,7 @@ var Bookings = (function() {
      * Get the currently selected date preset.
      */
     function getDatePreset(prefix) {
-        var activePreset = document.querySelector('.' + prefix + 'date-preset.is-active');
+        let activePreset = document.querySelector('.' + prefix + 'date-preset.is-active');
         if (activePreset) {
             return activePreset.getAttribute('data-preset') || 'all';
         }
@@ -538,8 +537,8 @@ var Bookings = (function() {
      * Check if a row matches the status filter.
      */
     function checkStatusFilter(row) {
-        var status = row.getAttribute('data-status');
-        var checkbox = document.querySelector('.myvh-status-filter[value="' + status + '"]');
+        let status = row.getAttribute('data-status');
+        let checkbox = document.querySelector('.myvh-status-filter[value="' + status + '"]');
         return checkbox ? checkbox.checked : true;
     }
 
@@ -547,14 +546,14 @@ var Bookings = (function() {
      * Check if a row matches the date filter.
      */
     function checkDateFilter(row) {
-        var bookingDateStr = row.getAttribute('data-booking-date');
+        let bookingDateStr = row.getAttribute('data-booking-date');
         if (!bookingDateStr) {
             return true;
         }
 
-        var filterState = getFilterState();
-        var bookingDate = new Date(bookingDateStr);
-        var today = new Date();
+        let filterState = getFilterState();
+        let bookingDate = new Date(bookingDateStr);
+        let today = new Date();
         today.setHours(0, 0, 0, 0);
 
         if (filterState.datePreset === 'upcoming') {
@@ -562,12 +561,12 @@ var Bookings = (function() {
         } else if (filterState.datePreset === 'past') {
             return bookingDate < today;
         } else if (filterState.datePreset === 'custom') {
-            var matches = true;
+            let matches = true;
             if (filterState.dateStart) {
                 matches = matches && bookingDate >= filterState.dateStart;
             }
             if (filterState.dateEnd) {
-                var endOfDay = new Date(filterState.dateEnd);
+                let endOfDay = new Date(filterState.dateEnd);
                 endOfDay.setHours(23, 59, 59, 999);
                 matches = matches && bookingDate <= endOfDay;
             }
@@ -582,21 +581,21 @@ var Bookings = (function() {
      */
     function bindExpandedFilters() {
         // Determine which page we're on
-        var bookingsTable = document.getElementById('myvh-bookings-table');
-        var isBookingsPage = !!bookingsTable;
-        var prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
-        var expandedFiltersId = isBookingsPage ? 'myvh-expanded-filters' : 'myvh-dashboard-expanded-filters';
+        let bookingsTable = document.getElementById('myvh-bookings-table');
+        let isBookingsPage = !!bookingsTable;
+        let prefix = isBookingsPage ? 'myvh-filter-' : 'myvh-dashboard-filter-';
+        let expandedFiltersId = isBookingsPage ? 'myvh-expanded-filters' : 'myvh-dashboard-expanded-filters';
 
         // Collapsible expanded filters toggle
-        var filterToggleBtn = document.querySelector('.myvh-filter-toggle-btn');
-        var expandedFilters = document.getElementById(expandedFiltersId);
+        let filterToggleBtn = document.querySelector('.myvh-filter-toggle-btn');
+        let expandedFilters = document.getElementById(expandedFiltersId);
 
         if (filterToggleBtn && expandedFilters) {
             filterToggleBtn.addEventListener('click', function() {
-                var isExpanded = this.getAttribute('aria-expanded') === 'true';
+                let isExpanded = this.getAttribute('aria-expanded') === 'true';
                 this.setAttribute('aria-expanded', !isExpanded);
                 expandedFilters.hidden = isExpanded;
-                var icon = this.querySelector('.myvh-filter-toggle-icon');
+                let icon = this.querySelector('.myvh-filter-toggle-icon');
                 if (icon) {
                     icon.style.transform = isExpanded ? '' : 'rotate(180deg)';
                 }
@@ -604,29 +603,29 @@ var Bookings = (function() {
         }
 
         // Room filter
-        var roomFilter = document.getElementById(prefix + 'room');
+        let roomFilter = document.getElementById(prefix + 'room');
         if (roomFilter) {
             roomFilter.addEventListener('change', applyAllFilters);
         }
 
         // Customer filter
-        var customerFilter = document.getElementById(prefix + 'customer');
+        let customerFilter = document.getElementById(prefix + 'customer');
         if (customerFilter) {
             customerFilter.addEventListener('change', applyAllFilters);
         }
 
         // Organisation filter
-        var orgFilter = document.getElementById(prefix + 'organisation');
+        let orgFilter = document.getElementById(prefix + 'organisation');
         if (orgFilter) {
             orgFilter.addEventListener('change', applyAllFilters);
         }
 
         // Date preset buttons
-        var datePresets = document.querySelectorAll('.' + prefix + 'date-preset');
+        let datePresets = document.querySelectorAll('.' + prefix + 'date-preset');
         datePresets.forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var preset = this.getAttribute('data-preset');
-                var datePicker = document.getElementById(prefix + 'date-picker');
+                let preset = this.getAttribute('data-preset');
+                let datePicker = document.getElementById(prefix + 'date-picker');
 
                 if (preset === 'custom') {
                     if (datePicker) {
@@ -655,8 +654,8 @@ var Bookings = (function() {
         }
 
         // Custom date picker inputs
-        var dateStart = document.getElementById(prefix + 'date-start');
-        var dateEnd = document.getElementById(prefix + 'date-end');
+        let dateStart = document.getElementById(prefix + 'date-start');
+        let dateEnd = document.getElementById(prefix + 'date-end');
 
         if (dateStart) {
             dateStart.addEventListener('change', applyAllFilters);
@@ -666,13 +665,13 @@ var Bookings = (function() {
         }
 
         // Description search
-        var descriptionFilter = document.getElementById(prefix + 'description');
+        let descriptionFilter = document.getElementById(prefix + 'description');
         if (descriptionFilter) {
             descriptionFilter.addEventListener('input', applyAllFilters);
         }
 
         // Clear filters button
-        var clearBtn = document.getElementById(prefix + 'clear');
+        let clearBtn = document.getElementById(prefix + 'clear');
         if (clearBtn) {
             clearBtn.addEventListener('click', function() {
                 // Reset all filter selects
@@ -684,7 +683,7 @@ var Bookings = (function() {
                 if (dateEnd) dateEnd.value = '';
 
                 // Hide date picker
-                var datePicker = document.getElementById(prefix + 'date-picker');
+                let datePicker = document.getElementById(prefix + 'date-picker');
                 if (datePicker) {
                     datePicker.hidden = true;
                 }
@@ -717,7 +716,7 @@ var Bookings = (function() {
             globalHandlersBound = true;
         }
 
-        var currentFilterRoot = document.getElementById('myvh-bookings-table') || document.getElementById('myvh-dashboard-bookings-table');
+        let currentFilterRoot = document.getElementById('myvh-bookings-table') || document.getElementById('myvh-dashboard-bookings-table');
         if (!currentFilterRoot || currentFilterRoot === boundFilterRoot) {
             return;
         }

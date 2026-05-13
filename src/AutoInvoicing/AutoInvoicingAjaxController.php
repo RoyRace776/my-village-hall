@@ -2,6 +2,7 @@
 namespace MYVH\AutoInvoicing;
 
 use MYVH\Portal\ClientAdminService;
+use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Portal\Support\PortalAuth;
 
 if (!defined('ABSPATH')) {
@@ -23,7 +24,7 @@ class AutoInvoicingAjaxController {
         check_ajax_referer('myvh_auto_invoicing', 'nonce');
 
         if (!is_user_logged_in() || !current_user_can('manage_myvh')) {
-            wp_send_json_error(['message' => __('Permission denied', 'my-village-hall')], 403);
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
         }
 
         $this->run_and_respond();
@@ -38,9 +39,7 @@ class AutoInvoicingAjaxController {
         try {
             $invoice_count = (int) $this->auto_invoice->generate();
         } catch (\Throwable $exception) {
-            wp_send_json_error([
-                'message' => __('Auto-invoicing failed. Please try again.', 'my-village-hall'),
-            ], 500);
+            AjaxResponse::server_error(__('Auto-invoicing failed. Please try again.', 'my-village-hall'));
         }
 
         $message = sprintf(
@@ -53,9 +52,8 @@ class AutoInvoicingAjaxController {
             $invoice_count
         );
 
-        wp_send_json_success([
-            'message' => $message,
+        AjaxResponse::success([
             'invoice_count' => $invoice_count,
-        ]);
+        ], $message);
     }
 }

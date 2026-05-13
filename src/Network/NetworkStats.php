@@ -65,7 +65,15 @@ class NetworkStats {
             $table = $wpdb->prefix . 'myvh_bookings';
             $table_like = $wpdb->esc_like($table);
 
-            if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_like))) {
+            // Use information_schema to check table existence (single query)
+            $table_exists = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s LIMIT 1",
+                    $table
+                )
+            );
+
+            if ($table_exists) {
 
                 $rows = $wpdb->get_results(
                     $wpdb->prepare(

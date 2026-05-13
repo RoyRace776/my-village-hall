@@ -1,8 +1,8 @@
 window.MyvhPortalDialog = (function() {
-    var queue = [];
-    var active = false;
-    var styleInjected = false;
-    var activeElements = null;
+    let queue = [];
+    let active = false;
+    let styleInjected = false;
+    let activeElements = null;
 
     function getSiteName() {
         if (window.myvhPortal && window.myvhPortal.site_name) {
@@ -29,7 +29,7 @@ window.MyvhPortalDialog = (function() {
             return;
         }
 
-        var style = document.createElement('style');
+        let style = document.createElement('style');
         style.id = 'myvh-portal-dialog-styles';
         style.textContent = [
             '.myvh-portal-dialog-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;}',
@@ -51,9 +51,9 @@ window.MyvhPortalDialog = (function() {
             return;
         }
 
-        var resolver = activeElements.resolve;
-        var backdrop = activeElements.backdrop;
-        var onKeydown = activeElements.onKeydown;
+        let resolver = activeElements.resolve;
+        let backdrop = activeElements.backdrop;
+        let onKeydown = activeElements.onKeydown;
 
         document.removeEventListener('keydown', onKeydown);
         if (backdrop && backdrop.parentNode) {
@@ -73,30 +73,30 @@ window.MyvhPortalDialog = (function() {
     function renderDialog(item) {
         ensureStyles();
 
-        var isConfirm = item.type === 'confirm';
-        var options = item.options || {};
-        var titleText = String(options.title || getSiteName());
+        let isConfirm = item.type === 'confirm';
+        let options = item.options || {};
+        let titleText = String(options.title || getSiteName());
 
-        var backdrop = document.createElement('div');
+        let backdrop = document.createElement('div');
         backdrop.className = 'myvh-portal-dialog-backdrop';
 
-        var dialog = document.createElement('div');
+        let dialog = document.createElement('div');
         dialog.className = 'myvh-portal-dialog';
         dialog.setAttribute('role', 'dialog');
         dialog.setAttribute('aria-modal', 'true');
 
-        var head = document.createElement('div');
+        let head = document.createElement('div');
         head.className = 'myvh-portal-dialog__head';
         head.textContent = titleText;
 
-        var body = document.createElement('div');
+        let body = document.createElement('div');
         body.className = 'myvh-portal-dialog__body';
         body.textContent = String(item.message || '');
 
-        var actions = document.createElement('div');
+        let actions = document.createElement('div');
         actions.className = 'myvh-portal-dialog__actions';
 
-        var cancelButton = null;
+        let cancelButton = null;
         if (isConfirm) {
             cancelButton = document.createElement('button');
             cancelButton.type = 'button';
@@ -108,7 +108,7 @@ window.MyvhPortalDialog = (function() {
             actions.appendChild(cancelButton);
         }
 
-        var okButton = document.createElement('button');
+        let okButton = document.createElement('button');
         okButton.type = 'button';
         okButton.className = 'myvh-portal-dialog__btn myvh-portal-dialog__btn--primary';
         okButton.textContent = String(options.okText || 'OK');
@@ -135,7 +135,7 @@ window.MyvhPortalDialog = (function() {
             closeCurrent(true);
         });
 
-        var onKeydown = function(event) {
+        let onKeydown = function(event) {
             if (event.key === 'Escape') {
                 event.preventDefault();
                 closeCurrent(isConfirm ? false : true);
@@ -143,8 +143,8 @@ window.MyvhPortalDialog = (function() {
             }
 
             if (event.key === 'Tab') {
-                var focusable = isConfirm ? [cancelButton, okButton] : [okButton];
-                var currentIndex = focusable.indexOf(document.activeElement);
+                let focusable = isConfirm ? [cancelButton, okButton] : [okButton];
+                let currentIndex = focusable.indexOf(document.activeElement);
                 if (event.shiftKey) {
                     if (currentIndex <= 0) {
                         event.preventDefault();

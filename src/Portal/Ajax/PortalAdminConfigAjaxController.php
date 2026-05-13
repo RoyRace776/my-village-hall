@@ -20,6 +20,7 @@ use MYVH\Settings\SettingsRegistry;
 use MYVH\Venues\SaveVenueRequest;
 use MYVH\Venues\VenueRequestValidator;
 use MYVH\Venues\VenueService;
+use MYVH\Portal\Support\AjaxResponse;
 
 use Throwable;
 
@@ -64,21 +65,21 @@ class PortalAdminConfigAjaxController {
         try {
             $saved = $this->organisation_type_service->save($payload);
         } catch (Throwable $throwable) {
-            wp_send_json_error($throwable->getMessage(), 400);
+            AjaxResponse::server_error($throwable->getMessage());
         }
 
         if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
+            AjaxResponse::error($saved->get_error_message());
         }
 
         if (!$saved) {
-            wp_send_json_error('Organisation type save failed', 400);
+            AjaxResponse::error(__('Organisation type save failed', 'my-village-hall'));
         }
 
-        wp_send_json_success([
-            'message' => !empty($payload['org_type_id']) ? 'Organisation type updated' : 'Organisation type created',
+        $message = !empty($payload['org_type_id']) ? __('Organisation type updated', 'my-village-hall') : __('Organisation type created', 'my-village-hall');
+        AjaxResponse::success([
             'org_type_id' => !empty($payload['org_type_id']) ? (int) $payload['org_type_id'] : (int) $saved,
-        ]);
+        ], $message);
     }
 
     public function delete_organisation_type(): void {
@@ -87,20 +88,20 @@ class PortalAdminConfigAjaxController {
         $org_type_id = intval($_POST['org_type_id'] ?? 0);
 
         if ($org_type_id <= 0) {
-            wp_send_json_error('Organisation type ID is required', 400);
+            AjaxResponse::error(__('Organisation type ID is required', 'my-village-hall'));
         }
 
         $deleted = $this->organisation_type_service->delete($org_type_id);
 
         if (is_wp_error($deleted)) {
-            wp_send_json_error($deleted->get_error_message(), 400);
+            AjaxResponse::error($deleted->get_error_message());
         }
 
         if (!$deleted) {
-            wp_send_json_error('Failed to delete organisation type', 400);
+            AjaxResponse::error(__('Failed to delete organisation type', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Organisation type deleted']);
+        AjaxResponse::success([], __('Organisation type deleted', 'my-village-hall'));
     }
 
     public function save_room(): void {
@@ -110,30 +111,30 @@ class PortalAdminConfigAjaxController {
         $validation = $this->room_request_validator->validate($payload);
 
         if (is_wp_error($validation)) {
-            wp_send_json_error($validation->get_error_message(), 400);
+            AjaxResponse::validation_error(['room' => $validation->get_error_message()]);
         }
 
         try {
             $saved = $this->room_service->save($payload);
         } catch (Throwable $throwable) {
-            wp_send_json_error($throwable->getMessage(), 400);
+            AjaxResponse::server_error($throwable->getMessage());
         }
 
         if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
+            AjaxResponse::error($saved->get_error_message());
         }
 
         if (!$saved) {
-            wp_send_json_error('Room save failed', 400);
+            AjaxResponse::error(__('Room save failed', 'my-village-hall'));
         }
 
-        wp_send_json_success([
-            'message' => !empty($payload['room_id']) ? 'Room updated' : 'Room created',
+        $message = !empty($payload['room_id']) ? __('Room updated', 'my-village-hall') : __('Room created', 'my-village-hall');
+        AjaxResponse::success([
             'room_id' => !empty($payload['room_id']) ? (int) $payload['room_id'] : (int) $saved,
             'redirect' => !empty($payload['room_id'])
                 ? 'rooms'
                 : ('room-rate-add?room_id=' . (int) $saved),
-        ]);
+        ], $message);
     }
 
     public function save_venue(): void {
@@ -143,28 +144,28 @@ class PortalAdminConfigAjaxController {
         $validation = $this->venue_request_validator->validate($payload);
 
         if (is_wp_error($validation)) {
-            wp_send_json_error($validation->get_error_message(), 400);
+            AjaxResponse::validation_error(['venue' => $validation->get_error_message()]);
         }
 
         try {
             $saved = $this->venue_service->save($payload);
         } catch (Throwable $throwable) {
-            wp_send_json_error($throwable->getMessage(), 400);
+            AjaxResponse::server_error($throwable->getMessage());
         }
 
         if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
+            AjaxResponse::error($saved->get_error_message());
         }
 
         if (!$saved) {
-            wp_send_json_error('Venue save failed', 400);
+            AjaxResponse::error(__('Venue save failed', 'my-village-hall'));
         }
 
-        wp_send_json_success([
-            'message' => !empty($payload['venue_id']) ? 'Venue updated' : 'Venue created',
+        $message = !empty($payload['venue_id']) ? __('Venue updated', 'my-village-hall') : __('Venue created', 'my-village-hall');
+        AjaxResponse::success([
             'venue_id' => !empty($payload['venue_id']) ? (int) $payload['venue_id'] : (int) $saved,
             'redirect' => 'venues',
-        ]);
+        ], $message);
     }
 
     public function delete_room(): void {
@@ -173,20 +174,20 @@ class PortalAdminConfigAjaxController {
         $room_id = intval($_POST['room_id'] ?? 0);
 
         if ($room_id <= 0) {
-            wp_send_json_error('Room ID is required', 400);
+            AjaxResponse::error(__('Room ID is required', 'my-village-hall'));
         }
 
         $deleted = $this->room_service->delete($room_id);
 
         if (is_wp_error($deleted)) {
-            wp_send_json_error($deleted->get_error_message(), 400);
+            AjaxResponse::error($deleted->get_error_message());
         }
 
         if (!$deleted) {
-            wp_send_json_error('Failed to delete room', 400);
+            AjaxResponse::error(__('Failed to delete room', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Room deleted']);
+        AjaxResponse::success([], __('Room deleted', 'my-village-hall'));
     }
 
     public function delete_venue(): void {
@@ -195,20 +196,20 @@ class PortalAdminConfigAjaxController {
         $venue_id = intval($_POST['venue_id'] ?? 0);
 
         if ($venue_id <= 0) {
-            wp_send_json_error('Venue ID is required', 400);
+            AjaxResponse::error(__('Venue ID is required', 'my-village-hall'));
         }
 
         $deleted = $this->venue_service->delete($venue_id);
 
         if (is_wp_error($deleted)) {
-            wp_send_json_error($deleted->get_error_message(), 400);
+            AjaxResponse::error($deleted->get_error_message());
         }
 
         if (!$deleted) {
-            wp_send_json_error('Failed to delete venue', 400);
+            AjaxResponse::error(__('Failed to delete venue', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Venue deleted']);
+        AjaxResponse::success([], __('Venue deleted', 'my-village-hall'));
     }
 
     public function save_room_rate(): void {
@@ -218,28 +219,28 @@ class PortalAdminConfigAjaxController {
         $validation = $this->room_rate_request_validator->validate($payload);
 
         if (is_wp_error($validation)) {
-            wp_send_json_error($validation->get_error_message(), 400);
+            AjaxResponse::validation_error(['rate' => $validation->get_error_message()]);
         }
 
         try {
             $saved = $this->room_rate_service->save($payload);
         } catch (Throwable $throwable) {
-            wp_send_json_error($throwable->getMessage(), 400);
+            AjaxResponse::server_error($throwable->getMessage());
         }
 
         if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
+            AjaxResponse::error($saved->get_error_message());
         }
 
         if (!$saved) {
-            wp_send_json_error('Room rate save failed', 400);
+            AjaxResponse::error(__('Room rate save failed', 'my-village-hall'));
         }
 
-        wp_send_json_success([
-            'message' => !empty($payload['rate_id']) ? 'Room rate updated' : 'Room rate created',
+        $message = !empty($payload['rate_id']) ? __('Room rate updated', 'my-village-hall') : __('Room rate created', 'my-village-hall');
+        AjaxResponse::success([
             'rate_id' => !empty($payload['rate_id']) ? (int) $payload['rate_id'] : (int) $saved,
-            'redirect' => !empty($payload['rate_id']) ? 'room-rates' : 'room-rates',
-        ]);
+            'redirect' => 'room-rates',
+        ], $message);
     }
 
     public function delete_room_rate(): void {
@@ -248,16 +249,16 @@ class PortalAdminConfigAjaxController {
         $rate_id = intval($_POST['rate_id'] ?? 0);
 
         if ($rate_id <= 0) {
-            wp_send_json_error('Room rate ID is required', 400);
+            AjaxResponse::error(__('Room rate ID is required', 'my-village-hall'));
         }
 
         $deleted = $this->room_rate_service->delete($rate_id);
 
         if (!$deleted) {
-            wp_send_json_error('Failed to delete room rate', 400);
+            AjaxResponse::error(__('Failed to delete room rate', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Room rate deleted']);
+        AjaxResponse::success([], __('Room rate deleted', 'my-village-hall'));
     }
 
     public function save_addon(): void {
@@ -267,28 +268,28 @@ class PortalAdminConfigAjaxController {
         $validation = $this->addon_request_validator->validate($payload);
 
         if (is_wp_error($validation)) {
-            wp_send_json_error($validation->get_error_message(), 400);
+            AjaxResponse::validation_error(['addon' => $validation->get_error_message()]);
         }
 
         try {
             $saved = $this->addon_service->save($payload);
         } catch (Throwable $throwable) {
-            wp_send_json_error($throwable->getMessage(), 400);
+            AjaxResponse::server_error($throwable->getMessage());
         }
 
         if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
+            AjaxResponse::error($saved->get_error_message());
         }
 
         if (!$saved) {
-            wp_send_json_error('Add-on save failed', 400);
+            AjaxResponse::error(__('Add-on save failed', 'my-village-hall'));
         }
 
-        wp_send_json_success([
-            'message' => !empty($payload['addon_id']) ? 'Add-on updated' : 'Add-on created',
+        $message = !empty($payload['addon_id']) ? __('Add-on updated', 'my-village-hall') : __('Add-on created', 'my-village-hall');
+        AjaxResponse::success([
             'addon_id' => !empty($payload['addon_id']) ? (int) $payload['addon_id'] : (int) $saved,
             'redirect' => 'addons',
-        ]);
+        ], $message);
     }
 
     public function delete_addon(): void {
@@ -297,16 +298,16 @@ class PortalAdminConfigAjaxController {
         $addon_id = intval($_POST['addon_id'] ?? 0);
 
         if ($addon_id <= 0) {
-            wp_send_json_error('Add-on ID is required', 400);
+            AjaxResponse::error(__('Add-on ID is required', 'my-village-hall'));
         }
 
         $deleted = $this->addon_service->delete($addon_id);
 
         if (!$deleted) {
-            wp_send_json_error('Failed to archive add-on', 400);
+            AjaxResponse::error(__('Failed to archive add-on', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Add-on archived']);
+        AjaxResponse::success([], __('Add-on archived', 'my-village-hall'));
     }
 
     public function save_client_settings(): void {
@@ -315,18 +316,18 @@ class PortalAdminConfigAjaxController {
         $group = sanitize_key($_POST['settings_group'] ?? '');
 
         if ($group === '') {
-            wp_send_json_error('Settings group is required', 400);
+            AjaxResponse::error(__('Settings group is required', 'my-village-hall'));
         }
 
         $settings = SettingsRegistry::get($group);
 
         if (!$settings) {
-            wp_send_json_error('Settings group not found', 404);
+            AjaxResponse::not_found(__('Settings group not found', 'my-village-hall'));
         }
 
         $current_user_id = get_current_user_id();
         if (!$settings->is_visible_to_client_admin($current_user_id)) {
-            wp_send_json_error('Permission denied for this settings group', 403);
+            AjaxResponse::permission_error(__('Permission denied for this settings group', 'my-village-hall'));
         }
 
         $input = wp_unslash($_POST);
@@ -339,16 +340,16 @@ class PortalAdminConfigAjaxController {
             $all['enable_auditing'] = !empty($input['enable_auditing']);
             $settings->save($all);
 
-            wp_send_json_success(['message' => 'Client settings updated']);
+            AjaxResponse::success([], __('Client settings updated', 'my-village-hall'));
         }
 
         if (!$settings->user_can_access($current_user_id)) {
-            wp_send_json_error('Permission denied for this settings group', 403);
+            AjaxResponse::permission_error(__('Permission denied for this settings group', 'my-village-hall'));
         }
 
         $settings->save($input);
 
-        wp_send_json_success(['message' => 'Client settings updated']);
+        AjaxResponse::success([], __('Client settings updated', 'my-village-hall'));
     }
 
     public function save_single_booking_invoice_rules(): void {
@@ -417,10 +418,9 @@ class PortalAdminConfigAjaxController {
 
         update_option('myvh_invoicing_settings', $settings);
 
-        wp_send_json_success([
-            'message' => 'Single booking invoice rules updated',
+        AjaxResponse::success([
             'redirect' => 'single-booking-invoice-rules',
-        ]);
+        ], __('Single booking invoice rules updated', 'my-village-hall'));
     }
 
     public function save_recurring_booking_invoice_rules(): void {
@@ -495,9 +495,8 @@ class PortalAdminConfigAjaxController {
 
         update_option('myvh_invoicing_settings', $settings);
 
-        wp_send_json_success([
-            'message' => 'Recurring booking invoice rules updated',
+        AjaxResponse::success([
             'redirect' => 'recurring-booking-invoice-rules',
-        ]);
+        ], __('Recurring booking invoice rules updated', 'my-village-hall'));
     }
 }

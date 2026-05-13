@@ -4,7 +4,7 @@ window.MyvhPortalEmail = (function() {
             return window.MyvhPortalDialog.confirm(message);
         }
 
-        return Promise.resolve(window.confirm(message));
+        return Promise.resolve(false);
     }
 
     function showMessage(target, text, isError) {

@@ -6,6 +6,7 @@ use MYVH\Organisations\OrganisationService;
 use MYVH\Organisations\SaveOrganisationRequest;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\PortalAuth;
+use MYVH\Portal\Support\AjaxResponse;
 
 class PortalOrganisationAjaxController {
     public function __construct(
@@ -34,16 +35,16 @@ class PortalOrganisationAjaxController {
         $message = sanitize_text_field($_POST['message'] ?? '');
 
         if ($org_id <= 0) {
-            wp_send_json_error('Please choose an organisation', 400);
+            AjaxResponse::error(__('Please choose an organisation', 'my-village-hall'));
         }
 
         $result = $this->organisation_service->create_membership_request($org_id, (int) $customer['Id'], $message);
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success(['message' => 'Membership request sent']);
+        AjaxResponse::success([], __('Membership request sent', 'my-village-hall'));
     }
 
     public function approve_organisation_membership_request(): void {
@@ -51,16 +52,16 @@ class PortalOrganisationAjaxController {
         $request_id = intval($_POST['request_id'] ?? 0);
 
         if ($request_id <= 0) {
-            wp_send_json_error('Request ID is required', 400);
+            AjaxResponse::error(__('Request ID is required', 'my-village-hall'));
         }
 
         $result = $this->organisation_service->approve_membership_request($request_id, (int) $customer['Id']);
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success(['message' => 'Request approved']);
+        AjaxResponse::success([], __('Request approved', 'my-village-hall'));
     }
 
     public function reject_organisation_membership_request(): void {
@@ -68,16 +69,16 @@ class PortalOrganisationAjaxController {
         $request_id = intval($_POST['request_id'] ?? 0);
 
         if ($request_id <= 0) {
-            wp_send_json_error('Request ID is required', 400);
+            AjaxResponse::error(__('Request ID is required', 'my-village-hall'));
         }
 
         $result = $this->organisation_service->reject_membership_request($request_id, (int) $customer['Id']);
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success(['message' => 'Request rejected']);
+        AjaxResponse::success([], __('Request rejected', 'my-village-hall'));
     }
 
     public function add_organisation(): void {
@@ -93,13 +94,13 @@ class PortalOrganisationAjaxController {
         $saved = $this->organisation_service->save($payload, $allow_type_changes);
 
         if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
+            AjaxResponse::error($saved->get_error_message());
         }
 
         $organisation_id = (int) $saved;
 
         if ($organisation_id <= 0) {
-            wp_send_json_error('Organisation save failed', 400);
+            AjaxResponse::error(__('Organisation save failed', 'my-village-hall'));
         }
 
         $membership = $this->organisation_service->add_member($organisation_id, (int) $customer['Id'], true);
@@ -108,14 +109,13 @@ class PortalOrganisationAjaxController {
             $this->organisation_service->delete($organisation_id);
             $message = is_wp_error($membership)
                 ? $membership->get_error_message()
-                : 'Organisation membership assignment failed';
-            wp_send_json_error($message, 400);
+                : __('Organisation membership assignment failed', 'my-village-hall');
+            AjaxResponse::error($message);
         }
 
-        wp_send_json_success([
-            'message' => 'Organisation created',
+        AjaxResponse::success([
             'organisation_id' => $organisation_id,
-        ]);
+        ], __('Organisation created', 'my-village-hall'));
     }
 
     public function save_organisation_type_assignment(): void {
@@ -123,12 +123,12 @@ class PortalOrganisationAjaxController {
 
         $organisation_id = intval($_POST['organisation_id'] ?? 0);
         if ($organisation_id <= 0) {
-            wp_send_json_error('Organisation is required', 400);
+            AjaxResponse::error(__('Organisation is required', 'my-village-hall'));
         }
 
         $existing = $this->organisation_service->get_by_id($organisation_id);
         if (empty($existing['Id'])) {
-            wp_send_json_error('Organisation not found', 404);
+            AjaxResponse::not_found(__('Organisation not found', 'my-village-hall'));
         }
 
         $payload = [
@@ -157,14 +157,14 @@ class PortalOrganisationAjaxController {
         $saved = $this->organisation_service->save($payload, true);
 
         if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
+            AjaxResponse::error($saved->get_error_message());
         }
 
         if (!$saved) {
-            wp_send_json_error('Organisation update failed', 400);
+            AjaxResponse::error(__('Organisation update failed', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Organisation type updated']);
+        AjaxResponse::success([], __('Organisation type updated', 'my-village-hall'));
     }
 
     public function delete_organisation(): void {
@@ -173,7 +173,7 @@ class PortalOrganisationAjaxController {
         $org_id = intval($_POST['organisation_id'] ?? 0);
 
         if ($org_id <= 0) {
-            wp_send_json_error('Organisation is required', 400);
+            AjaxResponse::error(__('Organisation is required', 'my-village-hall'));
         }
 
         $is_client_admin = $this->current_user_is_client_admin();
@@ -181,23 +181,23 @@ class PortalOrganisationAjaxController {
         if (!$is_client_admin) {
             $customer = $this->customer_service->get_by_user_id(get_current_user_id());
             if (empty($customer['Id'])) {
-                wp_send_json_error('Customer profile not found', 400);
+                AjaxResponse::error(__('Customer profile not found', 'my-village-hall'));
             }
             $is_org_admin = $this->organisation_service->is_customer_admin_for_organisation($org_id, (int) $customer['Id']);
             if (!$is_org_admin) {
-                wp_send_json_error('Only organisation admins can delete this organisation', 403);
+                AjaxResponse::permission_error(__('Only organisation admins can delete this organisation', 'my-village-hall'));
             }
         }
 
         $result = $this->organisation_service->delete($org_id);
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
         if (!$result) {
-            wp_send_json_error('Organisation delete failed', 400);
+            AjaxResponse::error(__('Organisation delete failed', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Organisation deleted']);
+        AjaxResponse::success([], __('Organisation deleted', 'my-village-hall'));
     }
 
     public function save_organisation_billing(): void {
@@ -229,10 +229,10 @@ class PortalOrganisationAjaxController {
         );
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success(['message' => 'Organisation billing details updated']);
+        AjaxResponse::success([], __('Organisation billing details updated', 'my-village-hall'));
     }
 
     public function organisation_add_member(): void {
@@ -243,16 +243,16 @@ class PortalOrganisationAjaxController {
         $is_admin = !empty($_POST['is_admin']);
 
         if ($org_id <= 0) {
-            wp_send_json_error('Organisation is required', 400);
+            AjaxResponse::error(__('Organisation is required', 'my-village-hall'));
         }
 
         if ($email === '' || !is_email($email)) {
-            wp_send_json_error('Valid member email is required', 400);
+            AjaxResponse::error(__('Valid member email is required', 'my-village-hall'));
         }
 
         $target_customer = $this->customer_service->get_by_email($email);
         if (empty($target_customer['Id'])) {
-            wp_send_json_error('No customer exists with that email address', 400);
+            AjaxResponse::error(__('No customer exists with that email address', 'my-village-hall'));
         }
 
         $result = $this->organisation_service->add_member_by_admin(
@@ -263,10 +263,10 @@ class PortalOrganisationAjaxController {
         );
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success(['message' => 'Member added']);
+        AjaxResponse::success([], __('Member added', 'my-village-hall'));
     }
 
     public function organisation_remove_member(): void {
@@ -274,16 +274,16 @@ class PortalOrganisationAjaxController {
         $member_id = intval($_POST['member_id'] ?? 0);
 
         if ($member_id <= 0) {
-            wp_send_json_error('Member ID is required', 400);
+            AjaxResponse::error(__('Member ID is required', 'my-village-hall'));
         }
 
         $result = $this->organisation_service->remove_member_by_admin($member_id, (int) $customer['Id']);
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success(['message' => 'Member removed']);
+        AjaxResponse::success([], __('Member removed', 'my-village-hall'));
     }
 
     public function organisation_set_member_admin(): void {
@@ -293,16 +293,16 @@ class PortalOrganisationAjaxController {
         $is_admin = !empty($_POST['is_admin']);
 
         if ($member_id <= 0) {
-            wp_send_json_error('Member ID is required', 400);
+            AjaxResponse::error(__('Member ID is required', 'my-village-hall'));
         }
 
         $result = $this->organisation_service->set_member_admin_status_by_admin($member_id, (int) $customer['Id'], $is_admin);
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success(['message' => 'Member status updated']);
+        AjaxResponse::success([], __('Member status updated', 'my-village-hall'));
     }
 
     private function get_authenticated_customer(): array {
@@ -310,7 +310,7 @@ class PortalOrganisationAjaxController {
 
         $customer = $this->customer_service->get_by_user_id(get_current_user_id());
         if (empty($customer['Id'])) {
-            wp_send_json_error('Customer profile not found', 400);
+            AjaxResponse::error(__('Customer profile not found', 'my-village-hall'));
         }
 
         return $customer;

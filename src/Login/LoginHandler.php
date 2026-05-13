@@ -354,8 +354,15 @@ class LoginHandler {
             return;
         }
 
-        $user_id = (int) $_GET['uid'];
-        $token = (string) $_GET['token'];
+        $user_id = intval($_GET['uid'] ?? 0);
+        $token = sanitize_text_field(wp_unslash((string) ($_GET['token'] ?? '')));
+
+        // Validate that we have a valid user ID and token
+        if ($user_id <= 0 || empty($token)) {
+            set_transient('myvh_verification_error', 'Invalid verification link.', 60);
+            wp_safe_redirect($this->resolve_login_page_url());
+            exit;
+        }
 
         $verified = $this->get_verification_service()->verify_token($user_id, $token);
 

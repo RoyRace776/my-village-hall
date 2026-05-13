@@ -8,6 +8,7 @@ use MYVH\Rooms\RoomVisibilityService;
 use MYVH\Customers\CustomerService;
 use MYVH\Organisations\OrganisationMemberRepository;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Portal\Support\BookingAccess;
 use MYVH\Pricing\RoomRateService;
 
@@ -64,12 +65,12 @@ class CalendarAjaxController {
 
         check_ajax_referer('myvh_calendar', 'nonce');
         if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in', 401);
+            AjaxResponse::auth_error(__('Not logged in', 'my-village-hall'));
         }
 
         $booking_id = intval($_GET['booking_id'] ?? $_POST['booking_id'] ?? 0);
         if (!$booking_id) {
-            wp_send_json_error('Missing booking_id', 400);
+            AjaxResponse::error(__('Missing booking_id', 'my-village-hall'));
         }
         $customer = $this->customer_service->get_by_user_id(get_current_user_id());
         $is_client_admin = $this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
@@ -86,7 +87,7 @@ class CalendarAjaxController {
             }
         }
         if (!$booking) {
-            wp_send_json_error('Booking not found or not accessible', 404);
+            AjaxResponse::not_found(__('Booking not found or not accessible', 'my-village-hall'));
         }
 
         $can_manage_no_invoice_required = $this->current_user_can_manage_no_invoice_required();
@@ -94,7 +95,7 @@ class CalendarAjaxController {
 
         $edit_rules = $this->booking_service->can_edit($booking);
         $delete_rules = $this->booking_service->can_delete($booking);
-        wp_send_json_success([
+        AjaxResponse::success([
             'booking' => $booking,
             'charges' => $this->booking_service->get_charges_for_booking($booking_id),
             'addons' => $this->booking_service->get_addons_for_booking($booking_id),
@@ -113,7 +114,7 @@ class CalendarAjaxController {
         check_ajax_referer('myvh_calendar', 'nonce');
 
         if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in', 401);
+            AjaxResponse::auth_error(__('Not logged in', 'my-village-hall'));
         }
 
         $user_id = get_current_user_id();
@@ -148,7 +149,7 @@ class CalendarAjaxController {
         check_ajax_referer('myvh_calendar', 'nonce');
 
         if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in', 401);
+            AjaxResponse::auth_error(__('Not logged in', 'my-village-hall'));
         }
 
         $user_id = get_current_user_id();
@@ -180,7 +181,7 @@ class CalendarAjaxController {
         if ( $context === 'portal' ) {
             $this->authorize_user();
         } elseif ( ! current_user_can( 'manage_myvh' ) ) {
-            wp_send_json_error( 'Permission denied', 403 );
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
         }
 
         wp_send_json($this->build_room_columns($this->get_bookable_rooms($venue_id)));
@@ -193,7 +194,7 @@ class CalendarAjaxController {
 
         $venue_id = absint($_GET['venue_id'] ?? $_POST['venue_id'] ?? 0);
 
-        wp_send_json_success([
+        AjaxResponse::success([
             'rooms' => $this->get_bookable_rooms($venue_id),
         ]);
     }
@@ -235,7 +236,7 @@ class CalendarAjaxController {
         check_ajax_referer('myvh_calendar', 'nonce');
 
         if ( ! current_user_can( 'manage_myvh' ) ) {
-            wp_send_json_error( 'Permission denied', 403 );
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
         }
 
         $request = $this->get_request_data();
@@ -246,7 +247,7 @@ class CalendarAjaxController {
         $room  = intval($request['room_id'] ?? 0);
 
         if (!$id || !$start || !$end) {
-            wp_send_json_error('Missing booking movement data', 400);
+            AjaxResponse::error(__('Missing booking movement data', 'my-village-hall'));
         }
 
         $result = $this->booking_service->move_booking(
@@ -257,10 +258,10 @@ class CalendarAjaxController {
         );
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message());
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success();
+        AjaxResponse::success([], __('Booking moved', 'my-village-hall'));
     }
 
     public function create_event(): void {
@@ -273,20 +274,20 @@ class CalendarAjaxController {
         if ($context === 'portal') {
             $this->authorize_user();
         } elseif (!current_user_can('manage_myvh')) {
-            wp_send_json_error('Permission denied', 403);
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
         }
 
         try {
             $result = $this->calendar_service->create_event($request, $context, get_current_user_id());
 
             if (is_wp_error($result)) {
-                wp_send_json_error($result->get_error_message());
+                AjaxResponse::error($result->get_error_message());
             }
 
-            wp_send_json_success($result);
+            AjaxResponse::success($result);
 
         } catch (Exception $e) {
-            wp_send_json_error($e->getMessage());
+            AjaxResponse::server_error($e->getMessage());
         }
     }
 
@@ -299,7 +300,7 @@ class CalendarAjaxController {
 
         if ($context === 'portal') {
             if (!is_user_logged_in()) {
-                wp_send_json_error('Login required', 401);
+                AjaxResponse::auth_error(__('Login required', 'my-village-hall'));
             }
 
             $user_id = get_current_user_id();
@@ -308,7 +309,7 @@ class CalendarAjaxController {
             $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
 
             if ($booking_id <= 0) {
-                wp_send_json_error('Booking ID is required', 400);
+                AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
             }
 
             $booking = BookingAccess::get_accessible_booking(
@@ -320,15 +321,15 @@ class CalendarAjaxController {
             );
 
             if (!$booking) {
-                wp_send_json_error('Booking not found or not accessible', 404);
+                AjaxResponse::not_found(__('Booking not found or not accessible', 'my-village-hall'));
             }
 
             $edit_rules = $this->booking_service->can_edit($booking);
             if (empty($edit_rules['can_edit'])) {
-                wp_send_json_error($edit_rules['reason'] ?? 'Permission denied', 403);
+                AjaxResponse::permission_error($edit_rules['reason'] ?? __('Permission denied', 'my-village-hall'));
             }
         } elseif (!current_user_can('manage_myvh')) {
-            wp_send_json_error('Permission denied', 403);
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
         }
 
         try {
@@ -340,22 +341,22 @@ class CalendarAjaxController {
 
         } catch (Exception $e) {
             $status = $e->getCode();
-            wp_send_json_error($e->getMessage(), $status >= 400 ? $status : 400);
+            AjaxResponse::error($e->getMessage(), $status >= 400 ? $status : 400);
         }
 
-        wp_send_json_success($result);
-}
+        AjaxResponse::success($result);
+    }
 
 
     private function authorize_admin(): void {
         if (!current_user_can('manage_myvh')) {
-            wp_send_json_error('Unauthorized', 403);
+            AjaxResponse::permission_error(__('Unauthorized', 'my-village-hall'));
         }
     }
 
     private function authorize_user(): void {
         if (!is_user_logged_in()) {
-            wp_send_json_error('Login required', 401);
+            AjaxResponse::auth_error(__('Login required', 'my-village-hall'));
         }
     }
 
@@ -385,7 +386,7 @@ class CalendarAjaxController {
         }
 
         if (!$valid) {
-            wp_send_json_error('Invalid nonce', 403);
+            AjaxResponse::permission_error(__('Invalid nonce', 'my-village-hall'));
         }
     }
 

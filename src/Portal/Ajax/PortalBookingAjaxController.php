@@ -8,6 +8,7 @@ use MYVH\Portal\Actions\QuoteBookingAction;
 use MYVH\Portal\Actions\UpdateBookingAction;
 use MYVH\Portal\Actions\DeleteBookingAction;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Portal\Support\PortalAuth;
 
 use Exception;
@@ -41,10 +42,10 @@ class PortalBookingAjaxController {
             $edit_rules = $this->booking_service->can_edit($booking);
             $delete_rules = $this->booking_service->can_delete($booking);
         } catch (Exception $e) {
-            wp_send_json_error($e->getMessage(), 400);
+            AjaxResponse::error($e->getMessage());
         }
 
-        wp_send_json_success([
+        AjaxResponse::success([
             'booking' => $booking,
             'charges' => $this->booking_service->get_charges_for_booking($booking_id),
             'addons' => $this->booking_service->get_addons_for_booking($booking_id),
@@ -64,10 +65,10 @@ class PortalBookingAjaxController {
         try {
             $this->update_action->execute($_POST);
         } catch (Exception $e) {
-            wp_send_json_error($e->getMessage(), 400);
+            AjaxResponse::error($e->getMessage());
         }
 
-        wp_send_json_success(['message' => 'Booking updated']);
+        AjaxResponse::success([], __('Booking updated', 'my-village-hall'));
     }
 
     public function delete(): void {
@@ -77,10 +78,10 @@ class PortalBookingAjaxController {
             $booking_id = intval($_POST['booking_id'] ?? 0);
             $this->delete_action->execute($booking_id);
         } catch (Exception $e) {
-            wp_send_json_error($e->getMessage(), 400);
+            AjaxResponse::error($e->getMessage());
         }
 
-        wp_send_json_success(['message' => 'Booking deleted']);
+        AjaxResponse::success([], __('Booking deleted', 'my-village-hall'));
     }
 
     public function create_for_modal(): void {
@@ -92,13 +93,13 @@ class PortalBookingAjaxController {
             $result = $this->calendar_service->create_event($request, 'portal', get_current_user_id());
 
             if (is_wp_error($result)) {
-                wp_send_json_error($result->get_error_message(), 400);
+                AjaxResponse::error($result->get_error_message());
             }
         } catch (Exception $e) {
-            wp_send_json_error($e->getMessage(), 400);
+            AjaxResponse::error($e->getMessage());
         }
 
-        wp_send_json_success($result);
+        AjaxResponse::success($result);
     }
 
     public function quote_for_modal(): void {
@@ -110,13 +111,13 @@ class PortalBookingAjaxController {
             $result = $this->quote_action->execute($request);
 
             if (is_wp_error($result)) {
-                wp_send_json_error($result->get_error_message(), 400);
+                AjaxResponse::error($result->get_error_message());
             }
         } catch (Exception $e) {
-            wp_send_json_error($e->getMessage(), 400);
+            AjaxResponse::error($e->getMessage());
         }
 
-        wp_send_json_success($result);
+        AjaxResponse::success($result);
     }
 
     public function update_for_modal(): void {
@@ -127,7 +128,7 @@ class PortalBookingAjaxController {
         $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
 
         if ($booking_id <= 0) {
-            wp_send_json_error('Booking ID is required', 400);
+            AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
         }
 
         try {
@@ -135,7 +136,7 @@ class PortalBookingAjaxController {
             $edit_rules = $this->booking_service->can_edit($booking);
 
             if (empty($edit_rules['can_edit'])) {
-                throw new Exception($edit_rules['reason'] ?? 'Permission denied', 403);
+                throw new Exception($edit_rules['reason'] ?? __('Permission denied', 'my-village-hall'), 403);
             }
 
             $result = $this->calendar_service->update_event($request);
@@ -145,10 +146,10 @@ class PortalBookingAjaxController {
             }
         } catch (Exception $e) {
             $status = $e->getCode();
-            wp_send_json_error($e->getMessage(), $status >= 400 ? $status : 400);
+            AjaxResponse::error($e->getMessage(), $status >= 400 ? $status : 400);
         }
 
-        wp_send_json_success($result);
+        AjaxResponse::success($result);
     }
 
     private function current_user_can_manage_no_invoice_required(): bool {

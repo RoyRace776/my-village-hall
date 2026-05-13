@@ -10,7 +10,6 @@ window.BookingModalView = (function() {
             return window.MyvhPortalDialog.alert(message);
         }
 
-        window.alert(message);
         return Promise.resolve(true);
     }
 

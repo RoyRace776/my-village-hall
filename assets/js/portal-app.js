@@ -93,6 +93,22 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener('myvh:portal-booking-flow-ready', handleReady, { once: true });
     }
 
+    function portalAlert(message) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
+            return window.MyvhPortalDialog.alert(message);
+        }
+
+        return Promise.resolve(true);
+    }
+
+    function portalConfirm(message) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.confirm === 'function') {
+            return window.MyvhPortalDialog.confirm(message);
+        }
+
+        return Promise.resolve(false);
+    }
+
     function initPortalNavigation() {
         const portalNav = document.querySelector('[data-portal-nav]');
         if (!portalNav || portalNav.dataset.bound === '1') {
@@ -441,11 +457,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (wrapper._myvhNoticesInit) return;
             wrapper._myvhNoticesInit = true;
 
-            var tbody    = wrapper.querySelector('.myvh-notices-body');
-            var addBtn   = wrapper.querySelector('.myvh-notice-add-row');
-            var fieldName = wrapper.getAttribute('data-field') || 'notices';
-            var phFrom   = wrapper.getAttribute('data-placeholder-from') || '';
-            var phTo     = wrapper.getAttribute('data-placeholder-to') || '';
+            let tbody    = wrapper.querySelector('.myvh-notices-body');
+            let addBtn   = wrapper.querySelector('.myvh-notice-add-row');
+            let fieldName = wrapper.getAttribute('data-field') || 'notices';
+            let phFrom   = wrapper.getAttribute('data-placeholder-from') || '';
+            let phTo     = wrapper.getAttribute('data-placeholder-to') || '';
 
             if (!tbody || !addBtn) return;
 
@@ -454,7 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             function buildRow(idx) {
-                var tr = document.createElement('tr');
+                let tr = document.createElement('tr');
                 tr.className = 'myvh-notice-row';
                 tr.innerHTML =
                     '<td style="padding:4px 8px;"><textarea name="' + fieldName + '[' + idx + '][message]" rows="2" style="width:100%;"></textarea></td>' +
@@ -473,7 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             addBtn.addEventListener('click', function () {
-                var row = buildRow(rowCount());
+                let row = buildRow(rowCount());
                 tbody.appendChild(row);
                 window.MyvhFlatpickr?.initWithin(row);
             });
@@ -894,7 +910,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         // Email invoice handler
-        invoicesPage.addEventListener('click', function (event) {
+        invoicesPage.addEventListener('click', async function (event) {
             const emailBtn = event.target.closest('[data-invoice-email]');
             if (!emailBtn) {
                 return;
@@ -904,11 +920,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const invoiceId = parseInt(emailBtn.getAttribute('data-invoice-email'), 10);
             if (!invoiceId || invoiceId <= 0) {
-                alert('Invalid invoice ID');
+                await portalAlert('Invalid invoice ID');
                 return;
             }
 
-            if (!confirm('Send this invoice to the customer via email?')) {
+            if (!(await portalConfirm('Send this invoice to the customer via email?'))) {
                 return;
             }
 
@@ -920,7 +936,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 .then(res => {
                     emailBtn.disabled = false;
                     if (!res.success) {
-                        alert('Error: ' + (res.data?.message || 'Failed to email invoice'));
+                        portalAlert('Error: ' + (res.data?.message || 'Failed to email invoice'));
                         return;
                     }
 
@@ -936,11 +952,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     }
 
-                    alert(res.data?.message || 'Invoice emailed successfully');
+                    portalAlert(res.data?.message || 'Invoice emailed successfully');
                 })
                 .catch(err => {
                     emailBtn.disabled = false;
-                    alert('Error: Unexpected error while emailing invoice');
+                    portalAlert('Error: Unexpected error while emailing invoice');
                     console.error(err);
                 });
         });
@@ -1419,7 +1435,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Delegate form submission handling for all portal forms
-    document.getElementById('portal-content').addEventListener('submit', function (e) {
+    document.getElementById('portal-content').addEventListener('submit', async function (e) {
         const form = e.target;
 
         // Account details form
@@ -1510,7 +1526,7 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
 
             const confirmMessage = form.dataset.confirm || '';
-            if (confirmMessage && !window.confirm(confirmMessage)) {
+            if (confirmMessage && !(await portalConfirm(confirmMessage))) {
                 return;
             }
 
@@ -1545,7 +1561,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Send password reset email handler
-    document.getElementById('portal-content').addEventListener('click', function (e) {
+    document.getElementById('portal-content').addEventListener('click', async function (e) {
         const button = e.target.closest('.myvh-send-password-reset, .myvh-send-password-reset-btn');
         if (!button) {
             return;
@@ -1555,7 +1571,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const customerId = button.dataset.customerId;
         if (!customerId) {
-            alert('Invalid customer ID');
+            await portalAlert('Invalid customer ID');
             return;
         }
 
@@ -1573,16 +1589,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 button.textContent = originalText;
 
                 if (!res.success) {
-                    alert('Error: ' + (res.data?.message || res.data || 'Failed to send email'));
+                    portalAlert('Error: ' + (res.data?.message || res.data || 'Failed to send email'));
                     return;
                 }
 
-                alert(res.data?.message || 'Password reset email sent successfully');
+                portalAlert(res.data?.message || 'Password reset email sent successfully');
             })
             .catch(() => {
                 button.disabled = false;
                 button.textContent = originalText;
-                alert('An error occurred. Please try again.');
+                portalAlert('An error occurred. Please try again.');
             });
     });
 

@@ -30,15 +30,16 @@ class NetworkSitesTable extends WP_List_Table {
             'fields' => '',
         ]);
         $data = [];
+        global $wpdb;
 
         foreach ($sites as $site) {
 
+            $count = 0;
+
             switch_to_blog($site->blog_id);
 
-            global $wpdb;
             $table = $wpdb->prefix . 'myvh_bookings';
             $table_like = $wpdb->esc_like($table);
-            $count = 0;
 
             if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_like))) {
                 $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM `$table`");

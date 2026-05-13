@@ -1,26 +1,26 @@
 // Portal calendar logic for My Village Hall
-var Calendar = (function() {
+window.Calendar = (function() {
 
-        var api = null;
-        var createModal = null;
-        var viewModal = null;
-        var nav = null;
-        var suppressNavSelect = false;
-        var selectedVenueId = 0;
-        var allVenues = [];
-        var DEFAULT_STATUS_COLORS = {
+        let api = null;
+        let createModal = null;
+        let viewModal = null;
+        let nav = null;
+        let suppressNavSelect = false;
+        let selectedVenueId = 0;
+        let allVenues = [];
+        let DEFAULT_STATUS_COLORS = {
             confirmed: '#2271b1',
             pending: '#f0a500',
             cancelled: '#9aa0a6',
             completed: '#2d8f45'
         };
-        var VENUE_STORAGE_KEY = 'myvhCalendarVenue_portal';
+        let VENUE_STORAGE_KEY = 'myvhCalendarVenue_portal';
 
-            var selectedRoomIds = new Set();
-            var allPortalRooms = [];
+            let selectedRoomIds = new Set();
+            let allPortalRooms = [];
 
         function normaliseHexColour(value) {
-            var text = String(value || '').trim().toLowerCase();
+            let text = String(value || '').trim().toLowerCase();
             return /^#[0-9a-f]{6}$/.test(text) ? text : '';
         }
 
@@ -35,7 +35,6 @@ var Calendar = (function() {
                 return window.MyvhPortalDialog.alert(message);
             }
 
-            window.alert(message);
             return Promise.resolve(true);
         }
 
@@ -44,18 +43,18 @@ var Calendar = (function() {
                 return window.MyvhPortalDialog.confirm(message);
             }
 
-            return Promise.resolve(window.confirm(message));
+            return Promise.resolve(false);
         }
 
         function createLegendItem(label, colour) {
-            var item = document.createElement('span');
+            let item = document.createElement('span');
             item.className = 'myvh-calendar-key-item';
 
-            var swatch = document.createElement('span');
+            let swatch = document.createElement('span');
             swatch.className = 'myvh-calendar-key-swatch';
             swatch.style.backgroundColor = colour;
 
-            var text = document.createElement('span');
+            let text = document.createElement('span');
             text.className = 'myvh-calendar-key-label';
             text.textContent = label;
 
@@ -65,13 +64,13 @@ var Calendar = (function() {
         }
 
         function renderCalendarKey(rooms) {
-            var root = document.getElementById('myvh-calendar-key');
+            let root = document.getElementById('myvh-calendar-key');
             if (!root) {
                 return;
             }
 
-            var statusWrap = root.querySelector('.myvh-calendar-key-status-items');
-            var roomWrap = root.querySelector('.myvh-calendar-key-room-items');
+            let statusWrap = root.querySelector('.myvh-calendar-key-status-items');
+            let roomWrap = root.querySelector('.myvh-calendar-key-room-items');
             if (!statusWrap || !roomWrap) {
                 return;
             }
@@ -79,10 +78,10 @@ var Calendar = (function() {
             statusWrap.innerHTML = '';
             roomWrap.innerHTML = '';
 
-            var statusColors = Object.assign({}, DEFAULT_STATUS_COLORS, (myvhCal && typeof myvhCal.statusColors === 'object') ? myvhCal.statusColors : {});
+            let statusColors = Object.assign({}, DEFAULT_STATUS_COLORS, (myvhCal && typeof myvhCal.statusColors === 'object') ? myvhCal.statusColors : {});
 
             Object.keys(statusColors).forEach(function(status) {
-                var colour = normaliseHexColour(statusColors[status]);
+                let colour = normaliseHexColour(statusColors[status]);
                 if (!colour) {
                     return;
                 }
@@ -90,19 +89,19 @@ var Calendar = (function() {
                 statusWrap.appendChild(createLegendItem(toStatusLabel(status), colour));
             });
 
-            var seenRoomIds = new Set();
+            let seenRoomIds = new Set();
             (Array.isArray(rooms) ? rooms : []).forEach(function(room) {
                 if (!room || room.id === null || typeof room.id === 'undefined') {
                     return;
                 }
 
-                var roomId = String(room.id);
+                let roomId = String(room.id);
                 if (seenRoomIds.has(roomId)) {
                     return;
                 }
 
-                var roomName = String(room.name || '').trim();
-                var roomColour = normaliseHexColour(room.roomColour || room.colour);
+                let roomName = String(room.name || '').trim();
+                let roomColour = normaliseHexColour(room.roomColour || room.colour);
                 if (!roomName || !roomColour) {
                     return;
                 }
@@ -117,14 +116,14 @@ var Calendar = (function() {
         }
 
             function renderRoomFilter(rooms) {
-                var container = document.getElementById('myvh-calendar-room-filter');
+                let container = document.getElementById('myvh-calendar-room-filter');
                 if (!container) {
                     return;
                 }
 
-                var venueRooms = (Array.isArray(rooms) ? rooms : []).filter(function(room) {
+                let venueRooms = (Array.isArray(rooms) ? rooms : []).filter(function(room) {
                     if (selectedVenueId <= 0) return true;
-                    var vid = parseInt((room && (room.venue_id || room.venueId)) || 0, 10);
+                    let vid = parseInt((room && (room.venue_id || room.venueId)) || 0, 10);
                     return vid === selectedVenueId;
                 });
 
@@ -134,7 +133,7 @@ var Calendar = (function() {
                     return;
                 }
 
-                var currentState = api && typeof api.getState === 'function' ? api.getState() : { mode: 'Calendar' };
+                let currentState = api && typeof api.getState === 'function' ? api.getState() : { mode: 'Calendar' };
                 if (currentState.mode === 'Scheduler') {
                     container.style.display = 'none';
                     return;
@@ -144,17 +143,17 @@ var Calendar = (function() {
                 container.innerHTML = '';
 
                 venueRooms.forEach(function(room) {
-                    var roomId = parseInt(room.id, 10);
-                    var roomName = String(room.name || '').trim();
-                    var roomColour = normaliseHexColour(room.roomColour || room.colour);
+                    let roomId = parseInt(room.id, 10);
+                    let roomName = String(room.name || '').trim();
+                    let roomColour = normaliseHexColour(room.roomColour || room.colour);
                     if (!roomName) {
                         return;
                     }
 
-                    var item = document.createElement('label');
+                    let item = document.createElement('label');
                     item.className = 'myvh-room-filter-item';
 
-                    var cb = document.createElement('input');
+                    let cb = document.createElement('input');
                     cb.type = 'checkbox';
                     cb.checked = !selectedRoomIds.has(roomId);
                     cb.addEventListener('change', function() {
@@ -172,14 +171,14 @@ var Calendar = (function() {
                     item.appendChild(cb);
 
                     if (roomColour) {
-                        var swatch = document.createElement('span');
+                        let swatch = document.createElement('span');
                         swatch.className = 'myvh-room-filter-swatch';
                         swatch.style.backgroundColor = roomColour;
                         swatch.setAttribute('aria-hidden', 'true');
                         item.appendChild(swatch);
                     }
 
-                    var label = document.createElement('span');
+                    let label = document.createElement('span');
                     label.className = 'myvh-room-filter-name';
                     label.textContent = roomName;
                     item.appendChild(label);
@@ -189,7 +188,7 @@ var Calendar = (function() {
             }
 
             function onRoomFilterChange() {
-                var state = api && typeof api.getState === 'function' ? api.getState() : {};
+                let state = api && typeof api.getState === 'function' ? api.getState() : {};
                 if (state.mode === 'Scheduler') {
                     return;
                 }
@@ -224,11 +223,11 @@ var Calendar = (function() {
         }
 
         function buildVenuesFromRooms(rooms) {
-            var byId = {};
+            let byId = {};
 
             (Array.isArray(rooms) ? rooms : []).forEach(function(room) {
-                var venueId = parseInt(room && room.venue_id, 10) || 0;
-                var venueName = String((room && room.venue) || '').trim();
+                let venueId = parseInt(room && room.venue_id, 10) || 0;
+                let venueName = String((room && room.venue) || '').trim();
 
                 if (venueId <= 0 || !venueName) {
                     return;
@@ -251,13 +250,13 @@ var Calendar = (function() {
                 return 0;
             }
 
-            var venueIds = venues.map(function(venue) { return venue.id; });
+            let venueIds = venues.map(function(venue) { return venue.id; });
 
             if (venues.length === 1) {
                 return venueIds[0];
             }
 
-            var persistedVenueId = getPersistedVenueId();
+            let persistedVenueId = getPersistedVenueId();
             if (persistedVenueId > 0 && venueIds.indexOf(persistedVenueId) !== -1) {
                 return persistedVenueId;
             }
@@ -266,7 +265,7 @@ var Calendar = (function() {
         }
 
         function loadRoomsForVenue(venueId) {
-            var url = myvhCal.ajax_url + '?action=myvh_calendar_rooms&nonce=' + encodeURIComponent(myvhCal.nonce) + '&context=portal';
+            let url = myvhCal.ajax_url + '?action=myvh_calendar_rooms&nonce=' + encodeURIComponent(myvhCal.nonce) + '&context=portal';
             if (venueId > 0) {
                 url += '&venue_id=' + encodeURIComponent(venueId);
             }
@@ -297,8 +296,8 @@ var Calendar = (function() {
         }
 
         function renderVenueSelector() {
-            var wrap = document.getElementById('myvh-calendar-venue-wrap');
-            var select = document.getElementById('myvh-calendar-venue-select');
+            let wrap = document.getElementById('myvh-calendar-venue-wrap');
+            let select = document.getElementById('myvh-calendar-venue-select');
 
             if (!wrap || !select) {
                 return;
@@ -314,7 +313,7 @@ var Calendar = (function() {
             select.innerHTML = '';
 
             allVenues.forEach(function(venue) {
-                var option = document.createElement('option');
+                let option = document.createElement('option');
                 option.value = String(venue.id);
                 option.textContent = venue.name;
                 option.selected = venue.id === selectedVenueId;
@@ -322,7 +321,7 @@ var Calendar = (function() {
             });
 
             select.onchange = function() {
-                var nextVenueId = parseInt(select.value || '0', 10) || 0;
+                let nextVenueId = parseInt(select.value || '0', 10) || 0;
                 selectedVenueId = nextVenueId;
                 setPersistedVenueId(nextVenueId);
                     selectedRoomIds = new Set();
@@ -440,15 +439,15 @@ var Calendar = (function() {
         function openReadOnlyModal(args) {
             if (!viewModal || !args || !args.e) return;
 
-            var eventData = typeof args.e.data === 'function' ? args.e.data() : (args.e.data || {});
-            var tags = eventData.tags || {};
+            let eventData = typeof args.e.data === 'function' ? args.e.data() : (args.e.data || {});
+            let tags = eventData.tags || {};
 
             // Visibility check (unchanged)
-            var isPublic = !Object.prototype.hasOwnProperty.call(tags, 'isPublic')
+            let isPublic = !Object.prototype.hasOwnProperty.call(tags, 'isPublic')
                 || tags.isPublic === true || tags.isPublic === 1
                 || tags.isPublic === '1'
                 || String(tags.isPublic).toLowerCase() !== 'false';
-            var canViewPrivate = Object.prototype.hasOwnProperty.call(tags, 'canViewPrivate')
+            let canViewPrivate = Object.prototype.hasOwnProperty.call(tags, 'canViewPrivate')
                 && (tags.canViewPrivate === true || tags.canViewPrivate === 1
                     || tags.canViewPrivate === '1'
                     || String(tags.canViewPrivate).toLowerCase() === 'true');
@@ -458,7 +457,7 @@ var Calendar = (function() {
             const bookingId = args.e.id ? args.e.id() : (eventData.id || eventData.Id);
             if (!bookingId) return;
 
-            var prefill = {
+            let prefill = {
                 start: eventData.start?.toString(),
                 end: eventData.end?.toString(),
                 roomId: tags.roomId || null,
@@ -498,7 +497,7 @@ var Calendar = (function() {
                 return;
             }
 
-            var prefill = options && options.prefill ? options.prefill : null;
+            let prefill = options && options.prefill ? options.prefill : null;
 
             createModal.open({
                 editMode: true,
@@ -512,8 +511,8 @@ var Calendar = (function() {
                 return;
             }
 
-            var prefill = options && options.prefill ? options.prefill : null;
-            var payload = options && options.payload ? options.payload : null;
+            let prefill = options && options.prefill ? options.prefill : null;
+            let payload = options && options.payload ? options.payload : null;
 
             viewModal.open({
                 bookingId: bookingId,
@@ -806,7 +805,7 @@ var Calendar = (function() {
                         filterEvents: function(events) {
                             if (selectedRoomIds.size === 0) return events;
                             return events.filter(function(e) {
-                                var rid = parseInt((e.tags && e.tags.roomId) || e.resource || 0, 10);
+                                let rid = parseInt((e.tags && e.tags.roomId) || e.resource || 0, 10);
                                 return !selectedRoomIds.has(rid);
                             });
                         }

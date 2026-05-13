@@ -5,6 +5,7 @@ use MYVH\Customers\CustomerService;
 use MYVH\Email\PasswordSetupEmailService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\PortalAuth;
+use MYVH\Portal\Support\AjaxResponse;
 
 use Throwable;
 
@@ -27,18 +28,18 @@ class PortalPeopleAjaxController {
         $identifier = sanitize_text_field($_POST['user_identifier'] ?? '');
 
         if ($identifier === '') {
-            wp_send_json_error('Email address or username is required', 400);
+            AjaxResponse::error(__('Email address or username is required', 'my-village-hall'));
         }
 
         $user = $this->client_admin_service->find_user($identifier);
 
         if (!$user) {
-            wp_send_json_error('No WordPress user was found with those details', 404);
+            AjaxResponse::not_found(__('No WordPress user was found with those details', 'my-village-hall'));
         }
 
         $this->client_admin_service->add_assignment(get_current_blog_id(), (int) $user->ID);
 
-        wp_send_json_success(['message' => 'Client administrator added']);
+        AjaxResponse::success([], __('Client administrator added', 'my-village-hall'));
     }
 
     public function remove_client_admin(): void {
@@ -47,12 +48,12 @@ class PortalPeopleAjaxController {
         $user_id = intval($_POST['user_id'] ?? 0);
 
         if ($user_id <= 0) {
-            wp_send_json_error('User ID is required', 400);
+            AjaxResponse::error(__('User ID is required', 'my-village-hall'));
         }
 
         $this->client_admin_service->remove_assignment(get_current_blog_id(), $user_id);
 
-        wp_send_json_success(['message' => 'Client administrator removed']);
+        AjaxResponse::success([], __('Client administrator removed', 'my-village-hall'));
     }
 
     public function save_customer(): void {
@@ -67,11 +68,11 @@ class PortalPeopleAjaxController {
         $email_verified = !empty($_POST['email_verified']);
 
         if ($name === '') {
-            wp_send_json_error('Customer name is required', 400);
+            AjaxResponse::validation_error(['name' => __('Customer name is required', 'my-village-hall')]);
         }
 
         if ($email === '' || !is_email($email)) {
-            wp_send_json_error('A valid customer email is required', 400);
+            AjaxResponse::validation_error(['email' => __('A valid customer email is required', 'my-village-hall')]);
         }
 
         $payload = [
@@ -96,11 +97,11 @@ class PortalPeopleAjaxController {
         try {
             $saved = $this->customer_service->save($payload);
         } catch (Throwable $throwable) {
-            wp_send_json_error($throwable->getMessage(), 400);
+            AjaxResponse::server_error($throwable->getMessage());
         }
 
         if (is_wp_error($saved)) {
-            wp_send_json_error($saved->get_error_message(), 400);
+            AjaxResponse::error($saved->get_error_message());
         }
 
         if ($is_new_customer && !$existing_user) {
@@ -112,10 +113,10 @@ class PortalPeopleAjaxController {
             }
         }
 
-        wp_send_json_success([
-            'message' => $customer_id > 0 ? 'Customer updated' : 'Customer created',
+        $message = $customer_id > 0 ? __('Customer updated', 'my-village-hall') : __('Customer created', 'my-village-hall');
+        AjaxResponse::success([
             'customer_id' => (int) $saved,
-        ]);
+        ], $message);
     }
 
     public function delete_customer(): void {
@@ -124,19 +125,19 @@ class PortalPeopleAjaxController {
         $customer_id = intval($_POST['customer_id'] ?? 0);
 
         if ($customer_id <= 0) {
-            wp_send_json_error('Customer ID is required', 400);
+            AjaxResponse::error(__('Customer ID is required', 'my-village-hall'));
         }
 
         $deleted = $this->customer_service->delete($customer_id);
 
         if (is_wp_error($deleted)) {
-            wp_send_json_error($deleted->get_error_message(), 400);
+            AjaxResponse::error($deleted->get_error_message());
         }
 
         if (!$deleted) {
-            wp_send_json_error('Failed to delete customer', 400);
+            AjaxResponse::error(__('Failed to delete customer', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Customer deleted']);
+        AjaxResponse::success([], __('Customer deleted', 'my-village-hall'));
     }
 }

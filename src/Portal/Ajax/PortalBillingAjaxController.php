@@ -8,6 +8,7 @@ use MYVH\Invoices\InvoiceGeneratorService;
 use MYVH\Invoices\InvoiceService;
 use MYVH\Payments\PaymentService;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Portal\Support\PortalAuth;
 
 class PortalBillingAjaxController {
@@ -81,11 +82,11 @@ class PortalBillingAjaxController {
         }
 
         if (!$customer_id && !$organisation_id) {
-            wp_send_json_error('Missing customer_id or organisation_id', 400);
+            AjaxResponse::error(__('Missing customer_id or organisation_id', 'my-village-hall'));
         }
 
         $bookings = $this->booking_service->get_uninvoiced_bookings($args);
-        wp_send_json_success(['bookings' => $bookings]);
+        AjaxResponse::success(['bookings' => $bookings]);
     }
 
     public function create_invoice(): void {
@@ -100,7 +101,7 @@ class PortalBillingAjaxController {
         $booking_ids = array_filter($booking_ids);
 
         if (empty($booking_ids)) {
-            wp_send_json_error('No bookings selected', 400);
+            AjaxResponse::error(__('No bookings selected', 'my-village-hall'));
         }
 
         $group_by = sanitize_key($_POST['group_by'] ?? 'per_booking');
@@ -116,15 +117,14 @@ class PortalBillingAjaxController {
         $result = $this->invoice_generator_service->generate_invoices_from_bookings($booking_ids, $options);
 
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message(), 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
         $count = count($result);
-        wp_send_json_success([
-            'message' => sprintf(__('Created %d invoice(s)', 'my-village-hall'), $count),
+        AjaxResponse::success([
             'invoice_ids' => $result,
             'count' => $count,
-        ]);
+        ], sprintf(__('Created %d invoice(s)', 'my-village-hall'), $count));
     }
 
     public function create_payment(): void {
@@ -134,20 +134,19 @@ class PortalBillingAjaxController {
         $result = $this->payment_service->create($payload);
 
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => $result->get_error_message()], 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
         $invoice_id = intval($payload['invoice_id'] ?? 0);
         $invoice = $this->invoice_service->get_detail($invoice_id);
 
-        wp_send_json_success([
-            'message' => __('Payment saved.', 'my-village-hall'),
+        AjaxResponse::success([
             'redirect' => sanitize_text_field($payload['redirect_route'] ?? ('payments?invoice_id=' . $invoice_id)),
             'status' => $invoice['Status'] ?? '',
             'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? '')),
             'amount_paid' => $invoice['AmountPaid'] ?? 0,
             'amount_due' => $invoice['AmountDue'] ?? 0,
-        ]);
+        ], __('Payment saved', 'my-village-hall'));
     }
 
     public function delete_payment(): void {
@@ -157,21 +156,20 @@ class PortalBillingAjaxController {
         $result = $this->payment_service->delete($payment_id);
 
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => $result->get_error_message()], 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
         $redirect = sanitize_text_field($_POST['redirect_route'] ?? 'payments');
         $invoice_id = intval($_POST['invoice_id'] ?? 0);
         $invoice = $invoice_id > 0 ? $this->invoice_service->get_detail($invoice_id) : null;
 
-        wp_send_json_success([
-            'message' => __('Payment deleted.', 'my-village-hall'),
+        AjaxResponse::success([
             'redirect' => $redirect,
             'status' => $invoice['Status'] ?? '',
             'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? '')),
             'amount_paid' => $invoice['AmountPaid'] ?? 0,
             'amount_due' => $invoice['AmountDue'] ?? 0,
-        ]);
+        ], __('Payment deleted', 'my-village-hall'));
     }
 
     public function update_invoice_status(): void {
@@ -181,23 +179,22 @@ class PortalBillingAjaxController {
         $status = sanitize_text_field($_POST['status'] ?? '');
 
         if ($invoice_id <= 0) {
-            wp_send_json_error(['message' => 'Invalid invoice'], 400);
+            AjaxResponse::error(__('Invalid invoice', 'my-village-hall'));
         }
 
         if (!$this->invoice_service->get($invoice_id)) {
-            wp_send_json_error(['message' => 'Invoice not found'], 404);
+            AjaxResponse::not_found(__('Invoice not found', 'my-village-hall'));
         }
 
         $result = $this->invoice_service->update_status($invoice_id, $status);
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => $result->get_error_message()], 400);
+            AjaxResponse::error($result->get_error_message());
         }
 
-        wp_send_json_success([
-            'message' => 'Invoice status updated.',
+        AjaxResponse::success([
             'status' => $status,
             'status_label' => $this->invoice_service->get_status_label($status),
-        ]);
+        ], __('Invoice status updated', 'my-village-hall'));
     }
 
     public function email_invoice(): void {
@@ -205,22 +202,22 @@ class PortalBillingAjaxController {
 
         $invoice_id = intval($_POST['invoice_id'] ?? 0);
         if ($invoice_id <= 0) {
-            wp_send_json_error(['message' => __('Invalid invoice ID.', 'my-village-hall')], 400);
+            AjaxResponse::error(__('Invalid invoice ID', 'my-village-hall'));
         }
 
         $invoice = $this->invoice_service->get_detail($invoice_id);
         if (empty($invoice)) {
-            wp_send_json_error(['message' => __('Invoice not found.', 'my-village-hall')], 404);
+            AjaxResponse::not_found(__('Invoice not found', 'my-village-hall'));
         }
 
         $recipient = $this->resolve_recipient($invoice);
         if ($recipient === '') {
-            wp_send_json_error(['message' => __('No valid recipient email found for this invoice.', 'my-village-hall')], 400);
+            AjaxResponse::error(__('No valid recipient email found for this invoice', 'my-village-hall'));
         }
 
         $pdf_path = $this->invoice_service->generate_pdf($invoice_id);
         if (is_wp_error($pdf_path)) {
-            wp_send_json_error(['message' => $pdf_path->get_error_message()], 400);
+            AjaxResponse::error($pdf_path->get_error_message());
         }
 
         $email_service = new EmailService();
@@ -232,22 +229,21 @@ class PortalBillingAjaxController {
         ]);
 
         if (!$send_result) {
-            wp_send_json_error(['message' => __('Failed to send invoice email.', 'my-village-hall')], 400);
+            AjaxResponse::server_error(__('Failed to send invoice email', 'my-village-hall'));
         }
 
         $status_result = $this->invoice_service->update_status($invoice_id, 'sent');
         if (is_wp_error($status_result) || $status_result === false) {
             $message = is_wp_error($status_result)
                 ? $status_result->get_error_message()
-                : __('Unknown error while updating invoice status.', 'my-village-hall');
-            wp_send_json_error(['message' => $message], 400);
+                : __('Unknown error while updating invoice status', 'my-village-hall');
+            AjaxResponse::server_error($message);
         }
 
-        wp_send_json_success([
-            'message' => __('Invoice emailed and marked as sent.', 'my-village-hall'),
+        AjaxResponse::success([
             'status' => 'sent',
             'status_label' => $this->invoice_service->get_status_label('sent'),
-        ]);
+        ], __('Invoice emailed and marked as sent', 'my-village-hall'));
     }
 
     private function resolve_recipient(array $invoice): string {

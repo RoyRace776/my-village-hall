@@ -1,19 +1,19 @@
 // Public calendar logic for My Village Hall
-var CalendarPublic = (function() {
+window.CalendarPublic = (function() {
 
-    var api = null;
+    let api = null;
 
     /**
      * Bind UI controls for calendar view and navigation.
      */
     function bindControls() {
 
-        var dayBtn   = document.getElementById('myvh-day');
-        var weekBtn  = document.getElementById('myvh-week');
-        var monthBtn = document.getElementById('myvh-month');
-        var nextBtn  = document.getElementById('myvh-next');
-        var prevBtn  = document.getElementById('myvh-prev');
-        var todayBtn = document.getElementById('myvh-today');
+        let dayBtn   = document.getElementById('myvh-day');
+        let weekBtn  = document.getElementById('myvh-week');
+        let monthBtn = document.getElementById('myvh-month');
+        let nextBtn  = document.getElementById('myvh-next');
+        let prevBtn  = document.getElementById('myvh-prev');
+        let todayBtn = document.getElementById('myvh-today');
 
         if (dayBtn)   dayBtn.addEventListener('click',   function() { api.setView('Day'); });
         if (weekBtn)  weekBtn.addEventListener('click',  function() { api.setView('Week'); });
@@ -22,6 +22,14 @@ var CalendarPublic = (function() {
         if (nextBtn)  nextBtn.addEventListener('click',  function() { api.next(); });
         if (prevBtn)  prevBtn.addEventListener('click',  function() { api.prev(); });
         if (todayBtn) todayBtn.addEventListener('click', function() { api.today(); });
+    }
+
+    function portalAlert(message) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
+            return window.MyvhPortalDialog.alert(message);
+        }
+
+        return Promise.resolve(true);
     }
 
     /**
@@ -46,8 +54,8 @@ var CalendarPublic = (function() {
             readOnly:   true,
 
             onEventClick: function(args) {
-                var data = args.e.data;
-                alert((data.text || 'Booking') + '\n' + data.start + '  ' + data.end);
+                let data = args.e.data;
+                portalAlert((data.text || 'Booking') + '\n' + data.start + ' - ' + data.end);
             }
         });
 

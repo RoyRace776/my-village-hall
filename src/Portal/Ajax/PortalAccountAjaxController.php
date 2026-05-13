@@ -5,6 +5,7 @@ use MYVH\Customers\CustomerService;
 use MYVH\Email\PasswordSetupEmailService;
 use MYVH\Login\PasswordValidator;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Portal\Support\PortalAuth;
 
 class PortalAccountAjaxController {
@@ -31,11 +32,11 @@ class PortalAccountAjaxController {
         $post_code = sanitize_text_field($_POST['post_code'] ?? '');
 
         if ($name === '') {
-            wp_send_json_error('Name is required', 400);
+            AjaxResponse::error(__('Name is required', 'my-village-hall'));
         }
 
         if ($email === '' || !is_email($email)) {
-            wp_send_json_error('Valid email is required', 400);
+            AjaxResponse::error(__('Valid email is required', 'my-village-hall'));
         }
 
         $wp_update = wp_update_user([
@@ -45,7 +46,7 @@ class PortalAccountAjaxController {
         ]);
 
         if (is_wp_error($wp_update)) {
-            wp_send_json_error($wp_update->get_error_message(), 400);
+            AjaxResponse::error($wp_update->get_error_message());
         }
 
         $customer = $this->customer_service->get_by_user_id($user_id);
@@ -63,16 +64,15 @@ class PortalAccountAjaxController {
             ]);
 
             if (is_wp_error($saved)) {
-                wp_send_json_error($saved->get_error_message(), 400);
+                AjaxResponse::error($saved->get_error_message());
             }
         } elseif (!$this->current_user_is_client_admin()) {
-            wp_send_json_error('Customer profile not found', 400);
+            AjaxResponse::error(__('Customer profile not found', 'my-village-hall'));
         }
 
-        wp_send_json_success([
-            'message' => 'Account details updated',
+        AjaxResponse::success([
             'display_name' => $name,
-        ]);
+        ], __('Account details updated', 'my-village-hall'));
     }
 
     public function change_password(): void {
@@ -84,22 +84,22 @@ class PortalAccountAjaxController {
         $confirm_password = (string) ($_POST['confirm_password'] ?? '');
 
         if ($current_password === '' || $new_password === '' || $confirm_password === '') {
-            wp_send_json_error('All password fields are required', 400);
+            AjaxResponse::error(__('All password fields are required', 'my-village-hall'));
         }
 
         if ($new_password !== $confirm_password) {
-            wp_send_json_error('New password and confirmation do not match', 400);
+            AjaxResponse::error(__('New password and confirmation do not match', 'my-village-hall'));
         }
 
         $password_error = $this->password_validator->validate($new_password);
         if ($password_error !== null) {
-            wp_send_json_error($password_error, 400);
+            AjaxResponse::error($password_error);
         }
 
         $user = get_userdata($user_id);
 
         if (!$user || !wp_check_password($current_password, $user->user_pass, $user_id)) {
-            wp_send_json_error('Current password is incorrect', 400);
+            AjaxResponse::error(__('Current password is incorrect', 'my-village-hall'));
         }
 
         $updated = wp_update_user([
@@ -108,11 +108,11 @@ class PortalAccountAjaxController {
         ]);
 
         if (is_wp_error($updated)) {
-            wp_send_json_error($updated->get_error_message(), 400);
+            AjaxResponse::error($updated->get_error_message());
         }
 
         wp_set_auth_cookie($user_id, true);
-        wp_send_json_success(['message' => 'Password changed successfully']);
+        AjaxResponse::success([], __('Password changed successfully', 'my-village-hall'));
     }
 
     public function send_password_reset_email(): void {
@@ -121,26 +121,26 @@ class PortalAccountAjaxController {
         $customer_id = intval($_POST['customer_id'] ?? 0);
 
         if ($customer_id <= 0) {
-            wp_send_json_error('Customer ID is required', 400);
+            AjaxResponse::error(__('Customer ID is required', 'my-village-hall'));
         }
 
         $customer = $this->customer_service->get($customer_id);
         if (empty($customer['Id'])) {
-            wp_send_json_error('Customer not found', 404);
+            AjaxResponse::not_found(__('Customer not found', 'my-village-hall'));
         }
 
         if (empty($customer['WPUserId'])) {
-            wp_send_json_error('Customer does not have a WordPress account', 400);
+            AjaxResponse::error(__('Customer does not have a WordPress account', 'my-village-hall'));
         }
 
         $email_service = new PasswordSetupEmailService();
         $result = $email_service->send_password_setup_email($customer_id, (int) $customer['WPUserId']);
 
         if (!$result) {
-            wp_send_json_error('Failed to send password reset email', 500);
+            AjaxResponse::server_error(__('Failed to send password reset email', 'my-village-hall'));
         }
 
-        wp_send_json_success(['message' => 'Password reset email sent successfully']);
+        AjaxResponse::success([], __('Password reset email sent successfully', 'my-village-hall'));
     }
 
     private function current_user_is_client_admin(): bool {

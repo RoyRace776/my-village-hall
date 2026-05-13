@@ -36,9 +36,9 @@ window.MyvhPortalAjax = (function() {
     }
 
     function post(action, payload, options) {
-        var scope = (options && options.scope) || 'portal';
-        var config = getConfig(scope);
-        var formData = (payload instanceof HTMLFormElement) ? new FormData(payload) : new FormData();
+        let scope = (options && options.scope) || 'portal';
+        let config = getConfig(scope);
+        let formData = (payload instanceof HTMLFormElement) ? new FormData(payload) : new FormData();
 
         if (!(payload instanceof HTMLFormElement) && payload && typeof payload === 'object') {
             Object.keys(payload).forEach(function(key) {
@@ -59,9 +59,9 @@ window.MyvhPortalAjax = (function() {
     }
 
     function get(params, options) {
-        var scope = (options && options.scope) || 'portal';
-        var config = getConfig(scope);
-        var query = new URLSearchParams(params || {});
+        let scope = (options && options.scope) || 'portal';
+        let config = getConfig(scope);
+        let query = new URLSearchParams(params || {});
 
         if (!query.has('nonce')) {
             query.set('nonce', config.nonce);

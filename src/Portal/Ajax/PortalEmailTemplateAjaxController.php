@@ -5,6 +5,7 @@ use MYVH\Email\EmailService;
 use MYVH\Email\EmailTemplateRegistry;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\PortalAuth;
+use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Settings\EmailTemplateSettings;
 
 class PortalEmailTemplateAjaxController {
@@ -27,22 +28,21 @@ class PortalEmailTemplateAjaxController {
         $slug = sanitize_key((string) ($_POST['template'] ?? ''));
 
         if (!EmailTemplateRegistry::has($slug)) {
-            wp_send_json_error('Unknown email template', 400);
+            AjaxResponse::error(__('Unknown email template', 'my-village-hall'));
         }
 
         $subject = sanitize_text_field((string) ($_POST['subject'] ?? ''));
         $html_body = $this->sanitize_email_html((string) ($_POST['html_body'] ?? ''));
 
         if ($subject === '' || $html_body === '') {
-            wp_send_json_error('Subject and body are required', 400);
+            AjaxResponse::validation_error(['template' => __('Subject and body are required', 'my-village-hall')]);
         }
 
         $this->email_template_settings->save_template($slug, $subject, $html_body);
 
-        wp_send_json_success([
-            'message' => 'Email template saved',
+        AjaxResponse::success([
             'template' => $slug,
-        ]);
+        ], __('Email template saved', 'my-village-hall'));
     }
 
     public function reset_template(): void {
@@ -51,15 +51,14 @@ class PortalEmailTemplateAjaxController {
         $slug = sanitize_key((string) ($_POST['template'] ?? ''));
 
         if (!EmailTemplateRegistry::has($slug)) {
-            wp_send_json_error('Unknown email template', 400);
+            AjaxResponse::error(__('Unknown email template', 'my-village-hall'));
         }
 
         $this->email_template_settings->reset_template($slug);
 
-        wp_send_json_success([
-            'message' => 'Email template reset to default',
+        AjaxResponse::success([
             'template' => $slug,
-        ]);
+        ], __('Email template reset to default', 'my-village-hall'));
     }
 
     public function preview_template(): void {
@@ -68,7 +67,7 @@ class PortalEmailTemplateAjaxController {
         $slug = sanitize_key((string) ($_POST['template'] ?? ''));
 
         if (!EmailTemplateRegistry::has($slug)) {
-            wp_send_json_error('Unknown email template', 400);
+            AjaxResponse::error(__('Unknown email template', 'my-village-hall'));
         }
 
         $subject = sanitize_text_field((string) ($_POST['subject'] ?? ''));
@@ -89,7 +88,7 @@ class PortalEmailTemplateAjaxController {
         $html = strtr($html_body, $replacements);
         $subject = strtr($subject, $replacements);
 
-        wp_send_json_success([
+        AjaxResponse::success([
             'subject' => $subject,
             'html' => $html,
         ]);
@@ -101,7 +100,7 @@ class PortalEmailTemplateAjaxController {
         $slug = sanitize_key((string) ($_POST['template'] ?? ''));
 
         if (!EmailTemplateRegistry::has($slug)) {
-            wp_send_json_error('Unknown email template', 400);
+            AjaxResponse::error(__('Unknown email template', 'my-village-hall'));
         }
 
         $subject = sanitize_text_field((string) ($_POST['subject'] ?? ''));
@@ -124,20 +123,19 @@ class PortalEmailTemplateAjaxController {
 
         $recipient = wp_get_current_user()->user_email;
         if (!$recipient || !is_email($recipient)) {
-            wp_send_json_error('Could not determine admin email address', 400);
+            AjaxResponse::error(__('Could not determine admin email address', 'my-village-hall'));
         }
 
         $headers = ['Content-Type: text/html; charset=UTF-8'];
         $sent    = wp_mail($recipient, $subject, $html, $headers);
 
         if (!$sent) {
-            wp_send_json_error('Failed to send test email — check your site mail configuration', 500);
+            AjaxResponse::server_error(__('Failed to send test email — check your site mail configuration', 'my-village-hall'));
         }
 
-        wp_send_json_success([
-            'message'   => 'Test email sent to ' . $recipient,
+        AjaxResponse::success([
             'recipient' => $recipient,
-        ]);
+        ], __('Test email sent to ' . $recipient, 'my-village-hall'));
     }
 
     private function sanitize_email_html(string $html): string {

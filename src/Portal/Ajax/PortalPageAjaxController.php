@@ -4,6 +4,7 @@ namespace MYVH\Portal\Ajax;
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Portal\Support\AjaxResponse;
 
 class PortalPageAjaxController {
     public function __construct(
@@ -22,7 +23,7 @@ class PortalPageAjaxController {
 
     public function load_page(): void {
         if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in', 401);
+            AjaxResponse::auth_error(__('Not logged in', 'my-village-hall'));
         }
 
         check_ajax_referer('myvh_portal', 'nonce');
