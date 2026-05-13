@@ -43,7 +43,7 @@ test.describe('Portal customer creation', () => {
       }
 
       await expect(successMessage).toBeVisible({ timeout: 15000 });
-      await expect(successMessage).toContainText(/customer created/i);
+      await expect(successMessage).toContainText(/customer created/i, { timeout: 15000 });
 
       await expect
         .poll(() => new URL(page.url()).hash, { timeout: 15000 })

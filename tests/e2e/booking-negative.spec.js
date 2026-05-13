@@ -24,10 +24,18 @@ async function selectFirstNonEmptyOption(selectLocator) {
   });
 
   if (!optionValue) {
-    test.skip(true, 'No selectable option available in this environment.');
+    throw new Error('No selectable option available.');
   }
 
   await selectLocator.selectOption(optionValue);
+}
+
+async function setHiddenDateValue(page, selector, value) {
+  await page.locator(selector).evaluate((input, nextValue) => {
+    input.value = nextValue;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
 }
 
 async function openCreateBookingModal(page) {
@@ -57,9 +65,9 @@ async function createBooking(page, description) {
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const dateText = tomorrow.toISOString().slice(0, 10);
 
-  await form.locator('#myvh-modal-start-date').fill(dateText);
-  await form.locator('#myvh-modal-start-time').fill('12:00');
-  await form.locator('#myvh-modal-end-time').fill('13:00');
+  await setHiddenDateValue(page, '#myvh-modal-start-date', dateText);
+  await setHiddenDateValue(page, '#myvh-modal-start-time', '12:00');
+  await setHiddenDateValue(page, '#myvh-modal-end-time', '13:00');
   await form.locator('input[name="text"]').fill(description);
 
   await form.getByRole('button', { name: /^create booking$/i }).first().click();

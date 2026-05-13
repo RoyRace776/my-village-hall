@@ -17,7 +17,8 @@ test.describe('Password reset request', () => {
     await expect(page).toHaveURL(/reset|login/i, { timeout: 15000 });
 
     const emailField = page
-      .getByTestId('reset-email')
+      .getByTestId('myvh-reset-email')
+      .or(page.locator('#myvh-reset-email'))
       .or(page.getByLabel(/email/i))
       .or(page.getByRole('textbox', { name: /email/i }));
 
