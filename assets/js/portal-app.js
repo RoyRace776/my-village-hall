@@ -452,6 +452,15 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         })();
 
+        // Collapsible cards (e.g. Hall Notices)
+        document.querySelectorAll('[data-myvh-collapsible] .myvh-collapse-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const card = btn.closest('[data-myvh-collapsible]');
+                const collapsed = card.classList.toggle('is-collapsed');
+                btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            });
+        });
+
         // Notices repeater (portal settings page)
         document.querySelectorAll('[data-notices-repeater]').forEach(function (wrapper) {
             if (wrapper._myvhNoticesInit) return;
@@ -814,6 +823,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const currentHash = window.location.hash || '';
+            const currentRoute = getHashRoute(currentHash);
+            const currentRoutePage = routeAliases[currentRoute.page] || currentRoute.page;
             const hasInvoiceFiltersInHash = currentHash.indexOf('#invoices?') === 0 && (
                 currentHash.indexOf('statuses=') > -1 ||
                 currentHash.indexOf('start_date=') > -1 ||
@@ -828,6 +839,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 } catch (e) {
                     initialTab = '';
                 }
+            }
+
+            if (!initialTab && currentRoutePage === 'invoice-generate') {
+                initialTab = currentRoute.params.invoice_tab || 'create';
             }
 
             if (!initialTab || !invoiceTabs.some((tab) => tab.dataset.invoicesTab === initialTab)) {
@@ -1021,7 +1036,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 activateBookingTypeTab(clickedBookingTypeTab.dataset.bookingTypeTab || 'single');
             });
 
-            const initialBookingType = bookingTypeTabs[0]?.dataset.bookingTypeTab || 'single';
+            const currentRoute = getHashRoute(window.location.hash || '');
+            const currentRoutePage = routeAliases[currentRoute.page] || currentRoute.page;
+            let initialBookingType = bookingTypeTabs[0]?.dataset.bookingTypeTab || 'single';
+
+            if (currentRoutePage === 'invoice-generate') {
+                const requestedBookingType = (currentRoute.params.booking_type || '').toLowerCase();
+                if (bookingTypeTabs.some((tab) => (tab.dataset.bookingTypeTab || '') === requestedBookingType)) {
+                    initialBookingType = requestedBookingType;
+                }
+            }
+
             activateBookingTypeTab(initialBookingType);
         }
 
@@ -1553,6 +1578,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ensure in-content hash links still work when clicking the same route twice.
     document.getElementById('portal-content').addEventListener('click', function (e) {
+        const dashboardInvoiceRow = e.target.closest('[data-dashboard-invoice-route]');
+        if (dashboardInvoiceRow) {
+            const clickedControl = e.target.closest('a, button, input, select, textarea, label');
+            if (!clickedControl) {
+                e.preventDefault();
+
+                const rowHash = dashboardInvoiceRow.getAttribute('data-dashboard-invoice-route') || '';
+                if (rowHash) {
+                    navigateToHash(rowHash);
+                }
+                return;
+            }
+        }
+
         const link = e.target.closest('a[href^="#"]');
         if (!link) {
             return;

@@ -1213,6 +1213,54 @@ body .site-main:has(#myvh-portal) {
 }
 
 /* ==========================================================================
+   10b. COLLAPSIBLE CARD
+   ========================================================================== */
+
+[data-myvh-collapsible] .myvh-account-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  cursor: default;
+}
+
+.myvh-collapse-toggle {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.myvh-collapse-toggle:hover {
+  color: var(--ink);
+}
+
+.myvh-collapse-toggle__icon {
+  display: inline-block;
+  font-size: 2.6rem;
+  transition: transform .2s ease;
+}
+
+[data-myvh-collapsible].is-collapsed .myvh-collapse-toggle__icon {
+  transform: rotate(-90deg);
+}
+
+.myvh-collapsible-body {
+  overflow: hidden;
+  transition: max-height .25s ease, opacity .2s ease;
+  max-height: 600px;
+  opacity: 1;
+}
+
+[data-myvh-collapsible].is-collapsed .myvh-collapsible-body {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* ==========================================================================
    11. NOTICES PANEL
    ========================================================================== */
 

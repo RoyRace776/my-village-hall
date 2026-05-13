@@ -891,7 +891,12 @@ function myvh_activate( bool $network_wide ): void {
     };
 
     if ( is_multisite() && $network_wide ) {
-        foreach ( get_sites( [ 'number' => 0 ] ) as $site ) {
+        $sites = get_sites( [ 'number' => 0, 'count' => false ] );
+        if ( ! is_array( $sites ) ) {
+            $sites = [];
+        }
+
+        foreach ( $sites as $site ) {
             switch_to_blog( $site->blog_id );
             $grant_cap();
             MyVillageHall::get_instance()->activate();
@@ -909,7 +914,12 @@ register_activation_hook( __FILE__, 'myvh_activate' );
  */
 function myvh_deactivate( bool $network_wide ): void {
     if ( is_multisite() && $network_wide ) {
-        foreach ( get_sites( [ 'number' => 0 ] ) as $site ) {
+        $sites = get_sites( [ 'number' => 0, 'count' => false ] );
+        if ( ! is_array( $sites ) ) {
+            $sites = [];
+        }
+
+        foreach ( $sites as $site ) {
             switch_to_blog( $site->blog_id );
             MyVillageHall::get_instance()->deactivate( $network_wide );
             restore_current_blog();

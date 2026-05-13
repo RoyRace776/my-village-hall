@@ -321,6 +321,7 @@ class PortalPageAjaxController {
 
         $sql = "SELECT
                     b.Id,
+                    b.RecurringPatternId,
                     b.StartDate,
                     b.StartTime,
                     b.EndTime,
@@ -345,9 +346,74 @@ class PortalPageAjaxController {
                 HAVING ActiveInvoiceCount = 0
                    OR (DraftInvoiceCount > 0 AND NonDraftInvoiceCount = 0)
                 ORDER BY b.StartDate ASC, b.StartTime ASC
-                LIMIT 12";
+                LIMIT 250";
 
-        return $wpdb->get_results($sql, ARRAY_A) ?: [];
+        $rows = $wpdb->get_results($sql, ARRAY_A) ?: [];
+        if (empty($rows)) {
+            return [];
+        }
+
+        $result = [];
+        $group_index_by_key = [];
+
+        foreach ($rows as $row) {
+            $pattern_id = intval($row['RecurringPatternId'] ?? 0);
+            $is_groupable_recurring = $pattern_id > 0;
+            if (!$is_groupable_recurring) {
+                $row['IsRecurringGroup'] = 0;
+                $row['RecurringBookingCount'] = 1;
+                $result[] = $row;
+                continue;
+            }
+
+            $group_key = 'recurring-' . (string) $pattern_id;
+            if (!isset($group_index_by_key[$group_key])) {
+                $row['IsRecurringGroup'] = 1;
+                $row['RecurringBookingCount'] = 1;
+                $row['RecurringLastDate'] = (string) ($row['StartDate'] ?? '');
+                $row['RecurringDraftInvoiceNumbers'] = [];
+                if (!empty($row['DraftInvoiceNumber'])) {
+                    $row['RecurringDraftInvoiceNumbers'][] = (string) $row['DraftInvoiceNumber'];
+                }
+
+                $result[] = $row;
+                $group_index_by_key[$group_key] = count($result) - 1;
+                continue;
+            }
+
+            $result_index = $group_index_by_key[$group_key];
+            $result[$result_index]['RecurringBookingCount'] = intval($result[$result_index]['RecurringBookingCount'] ?? 1) + 1;
+
+            $existing_last_date = (string) ($result[$result_index]['RecurringLastDate'] ?? '');
+            $current_date = (string) ($row['StartDate'] ?? '');
+            if ($current_date !== '' && ($existing_last_date === '' || strcmp($current_date, $existing_last_date) > 0)) {
+                $result[$result_index]['RecurringLastDate'] = $current_date;
+            }
+
+            if (!empty($row['DraftInvoiceNumber'])) {
+                $draft_numbers = $result[$result_index]['RecurringDraftInvoiceNumbers'] ?? [];
+                $draft_numbers[] = (string) $row['DraftInvoiceNumber'];
+                $result[$result_index]['RecurringDraftInvoiceNumbers'] = array_values(array_unique($draft_numbers));
+            }
+        }
+
+        foreach ($result as &$entry) {
+            $draft_numbers = $entry['RecurringDraftInvoiceNumbers'] ?? [];
+            if (count($draft_numbers) > 1) {
+                $entry['DraftInvoiceNumber'] = '';
+                $entry['HasMultipleDraftInvoices'] = 1;
+            } elseif (count($draft_numbers) === 1) {
+                $entry['DraftInvoiceNumber'] = $draft_numbers[0];
+                $entry['HasMultipleDraftInvoices'] = 0;
+            } else {
+                $entry['HasMultipleDraftInvoices'] = 0;
+            }
+
+            unset($entry['RecurringDraftInvoiceNumbers']);
+        }
+        unset($entry);
+
+        return array_slice($result, 0, 12);
     }
 
     private function get_admin_overdue_invoices(): array {

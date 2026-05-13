@@ -116,13 +116,17 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
     </a>
   </div>
 
-  <div class="myvh-card myvh-account-card myvh-portal-dashboard-notices-card">
+  <div class="myvh-card myvh-account-card myvh-portal-dashboard-notices-card" data-myvh-collapsible>
     <div class="myvh-account-card-head">
       <div>
-        <h3>Hall Notices</h3>
+        <h3>Hall Notices (<?php echo count($myvh_active_notices); ?>)</h3>
         <span>Latest site updates</span>
       </div>
+      <button type="button" class="myvh-collapse-toggle" aria-expanded="true" aria-label="<?php esc_attr_e('Toggle notices', 'my-village-hall'); ?>">
+        <span class="myvh-collapse-toggle__icon" aria-hidden="true">&#x25BC;</span>
+      </button>
     </div>
+    <div class="myvh-collapsible-body">
     <?php if (!empty($myvh_active_notices)): ?>
       <ul class="myvh-portal-notices-list">
         <?php foreach ($myvh_active_notices as $myvh_notice): ?>
@@ -132,6 +136,7 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
     <?php else: ?>
       <p class="myvh-portal-notices-empty"><?php esc_html_e('No current notices.', 'my-village-hall'); ?></p>
     <?php endif; ?>
+    </div>
   </div>
 
   <div class="myvh-portal-dashboard-grid myvh-portal-dashboard-grid-member">
@@ -303,13 +308,17 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
     </a>
   </div>
 
-  <div class="myvh-card myvh-account-card myvh-portal-dashboard-notices-card">
+  <div class="myvh-card myvh-account-card myvh-portal-dashboard-notices-card" data-myvh-collapsible>
     <div class="myvh-account-card-head">
       <div>
-        <h3>Hall Notices</h3>
+        <h3>Hall Notices (<?php echo count($myvh_active_notices); ?>)</h3>
         <span>Latest site updates</span>
       </div>
+      <button type="button" class="myvh-collapse-toggle" aria-expanded="true" aria-label="<?php esc_attr_e('Toggle notices', 'my-village-hall'); ?>">
+        <span class="myvh-collapse-toggle__icon" aria-hidden="true">&#x25BC;</span>
+      </button>
     </div>
+    <div class="myvh-collapsible-body">
     <?php if (!empty($myvh_active_notices)): ?>
       <ul class="myvh-portal-notices-list">
         <?php foreach ($myvh_active_notices as $myvh_notice): ?>
@@ -319,6 +328,7 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
     <?php else: ?>
       <p class="myvh-portal-notices-empty"><?php esc_html_e('No current notices.', 'my-village-hall'); ?></p>
     <?php endif; ?>
+    </div>
   </div>
 
   <div class="myvh-portal-dashboard-kpi-grid">
@@ -410,21 +420,45 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
               <tbody>
                 <?php foreach ($admin_invoice_action_bookings as $booking): ?>
                   <?php
-                    $invoice_state = !empty($booking['DraftInvoiceNumber'])
-                      ? ('Draft: ' . (string) $booking['DraftInvoiceNumber'])
-                      : 'Uninvoiced';
+                    $is_recurring_group = !empty($booking['IsRecurringGroup']);
+                    $recurring_count = intval($booking['RecurringBookingCount'] ?? 1);
+                    $invoice_generate_hash = $is_recurring_group
+                      ? '#invoice-generate?invoice_tab=create&booking_type=recurring'
+                      : '#invoice-generate?invoice_tab=create&booking_type=single';
+                    if (!empty($booking['HasMultipleDraftInvoices'])) {
+                      $invoice_state = 'Draft: multiple';
+                    } else {
+                      $invoice_state = !empty($booking['DraftInvoiceNumber'])
+                        ? ('Draft: ' . (string) $booking['DraftInvoiceNumber'])
+                        : 'Uninvoiced';
+                    }
                   ?>
-                  <tr class="myvh-bookings-table-row">
+                  <tr class="myvh-bookings-table-row myvh-dashboard-invoice-nav-row" data-dashboard-invoice-route="<?php echo esc_attr($invoice_generate_hash); ?>" style="cursor:pointer;">
                     <td>
-                      <strong><?php echo esc_html((string) ($booking['RoomName'] ?? 'Room booking')); ?></strong>
+                      <?php if ($is_recurring_group): ?>
+                        <strong><?php echo esc_html((string) ($booking['Description'] ?? 'Recurring booking')); ?></strong>
+                        <?php if ($recurring_count > 1): ?>
+                          <div class="myvh-muted"><?php echo esc_html((string) $recurring_count . ' bookings awaiting invoice'); ?></div>
+                        <?php endif; ?>
+                        <div class="myvh-muted"><?php echo esc_html((string) ($booking['RoomName'] ?? 'Room booking')); ?></div>
+                      <?php else: ?>
+                        <strong><?php echo esc_html((string) ($booking['RoomName'] ?? 'Room booking')); ?></strong>
+                      <?php endif; ?>
                       <?php if (!empty($booking['CustomerName'])): ?>
                         <div class="myvh-muted"><?php echo esc_html((string) $booking['CustomerName']); ?></div>
                       <?php endif; ?>
                     </td>
                     <td>
-                      <?php echo esc_html($format_booking_date($booking['StartDate'] ?? '')); ?>
-                      <?php echo esc_html(date('H:i', strtotime((string) ($booking['StartTime'] ?? '00:00:00')))); ?>-
-                      <?php echo esc_html(date('H:i', strtotime((string) ($booking['EndTime'] ?? '00:00:00')))); ?>
+                      <?php if ($is_recurring_group && $recurring_count > 1): ?>
+                        <?php echo esc_html($format_booking_date($booking['StartDate'] ?? '')); ?>
+                        <?php if (!empty($booking['RecurringLastDate']) && (string) $booking['RecurringLastDate'] !== (string) ($booking['StartDate'] ?? '')): ?>
+                          <?php echo esc_html(' to ' . $format_booking_date($booking['RecurringLastDate'])); ?>
+                        <?php endif; ?>
+                      <?php else: ?>
+                        <?php echo esc_html($format_booking_date($booking['StartDate'] ?? '')); ?>
+                        <?php echo esc_html(date('H:i', strtotime((string) ($booking['StartTime'] ?? '00:00:00')))); ?>-
+                        <?php echo esc_html(date('H:i', strtotime((string) ($booking['EndTime'] ?? '00:00:00')))); ?>
+                      <?php endif; ?>
                     </td>
                     <td><?php echo esc_html($invoice_state); ?></td>
                   </tr>
