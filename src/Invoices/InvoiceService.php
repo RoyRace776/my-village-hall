@@ -128,8 +128,8 @@ class InvoiceService {
         return $this->repo->get_by_id($id);
     }
 
-    public function get_with_customers(): ?array {
-        return $this->repo->get_all_with_customers();
+    public function get_with_customers(?string $start_date = null, ?string $end_date = null): ?array {
+        return $this->repo->get_all_with_customers($start_date, $end_date);
     }
 
     public function get_detail($id): ?array {
@@ -317,8 +317,8 @@ class InvoiceService {
         return (int) $id;
     }
 
-    public function get_for_portal($customer_id, $statuses = []): ?array {
-        return $this->repo->get_for_customer_portal($customer_id, $statuses);
+    public function get_for_portal($customer_id, $statuses = [], ?string $start_date = null, ?string $end_date = null): ?array {
+        return $this->repo->get_for_customer_portal($customer_id, $statuses, $start_date, $end_date);
     }
 
     public function update_status($id, $status): bool|WP_Error {

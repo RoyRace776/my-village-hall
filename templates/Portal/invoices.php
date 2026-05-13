@@ -7,6 +7,13 @@ $is_client_admin_view = !empty($is_client_admin);
 $invoice_count = isset($invoices) && is_array($invoices) ? count($invoices) : 0;
 $available_statuses = isset($available_statuses) && is_array($available_statuses) ? $available_statuses : [];
 $selected_statuses = isset($selected_statuses) && is_array($selected_statuses) ? $selected_statuses : [];
+$selected_start_date = isset($selected_start_date) ? (string) $selected_start_date : '';
+$selected_end_date = isset($selected_end_date) ? (string) $selected_end_date : '';
+$quick_date_ranges = isset($quick_date_ranges) && is_array($quick_date_ranges) ? $quick_date_ranges : [];
+$selected_client_name = isset($selected_client_name) ? (string) $selected_client_name : '';
+$selected_client_name_match = isset($selected_client_name_match) ? (string) $selected_client_name_match : 'contains';
+$selected_invoice_number = isset($selected_invoice_number) ? (string) $selected_invoice_number : '';
+$selected_invoice_number_match = isset($selected_invoice_number_match) ? (string) $selected_invoice_number_match : 'contains';
 ?>
 
 <div class="myvh-dashboard-section myvh-client-settings-page myvh-invoices-page">
@@ -31,6 +38,41 @@ $selected_statuses = isset($selected_statuses) && is_array($selected_statuses) ?
 
         <div class="myvh-invoice-filter-section">
             <form id="myvh-invoice-filter-form" class="myvh-invoice-filter-form">
+                <?php if ($is_client_admin_view): ?>
+                    <div class="myvh-invoice-filter-group">
+                        <span class="myvh-invoice-filter-label">Filter by client and invoice</span>
+                        <div class="myvh-invoice-admin-search-grid">
+                            <label class="myvh-invoice-text-field">
+                                <span>Client name</span>
+                                <input type="text"
+                                       name="client_name"
+                                       value="<?php echo esc_attr($selected_client_name); ?>"
+                                       placeholder="Enter client name">
+                            </label>
+                            <label class="myvh-invoice-select-field">
+                                <span>Match</span>
+                                <select name="client_name_match">
+                                    <option value="begins_with" <?php selected($selected_client_name_match, 'begins_with'); ?>>Begins with</option>
+                                    <option value="contains" <?php selected($selected_client_name_match, 'contains'); ?>>Contains</option>
+                                </select>
+                            </label>
+                            <label class="myvh-invoice-text-field">
+                                <span>Invoice number</span>
+                                <input type="text"
+                                       name="invoice_number"
+                                       value="<?php echo esc_attr($selected_invoice_number); ?>"
+                                       placeholder="Enter invoice number">
+                            </label>
+                            <label class="myvh-invoice-select-field">
+                                <span>Match</span>
+                                <select name="invoice_number_match">
+                                    <option value="begins_with" <?php selected($selected_invoice_number_match, 'begins_with'); ?>>Begins with</option>
+                                    <option value="contains" <?php selected($selected_invoice_number_match, 'contains'); ?>>Contains</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <div class="myvh-invoice-filter-group">
                     <span class="myvh-invoice-filter-label">Filter by status</span>
                     <div class="myvh-checkbox-group">
@@ -45,7 +87,42 @@ $selected_statuses = isset($selected_statuses) && is_array($selected_statuses) ?
                         <?php endforeach; ?>
                     </div>
                 </div>
-                <button type="submit" class="myvh-invoice-filter-submit">Apply Filter</button>
+                <div class="myvh-invoice-filter-group">
+                    <span class="myvh-invoice-filter-label">Filter by invoice date</span>
+                    <div class="myvh-invoice-date-filter">
+                        <label class="myvh-invoice-date-field">
+                            <span>Start date</span>
+                            <input type="date"
+                                   name="start_date"
+                                   value="<?php echo esc_attr($selected_start_date); ?>">
+                        </label>
+                        <label class="myvh-invoice-date-field">
+                            <span>End date</span>
+                            <input type="date"
+                                   name="end_date"
+                                   value="<?php echo esc_attr($selected_end_date); ?>">
+                        </label>
+                    </div>
+                    <?php if (!empty($quick_date_ranges)): ?>
+                        <div class="myvh-invoice-date-quick-actions" aria-label="Quick date ranges">
+                            <?php foreach ($quick_date_ranges as $key => $range): ?>
+                                <button type="button"
+                                    class="myvh-filter-date-preset myvh-invoice-date-range-quick"
+                                        data-invoice-date-range="<?php echo esc_attr($key); ?>"
+                                        data-start-date="<?php echo esc_attr((string) ($range['start_date'] ?? '')); ?>"
+                                        data-end-date="<?php echo esc_attr((string) ($range['end_date'] ?? '')); ?>">
+                                    <?php echo esc_html((string) ($range['label'] ?? $key)); ?>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="myvh-invoice-filter-actions">
+                    <button type="submit" class="myvh-invoice-filter-submit">Apply Filter</button>
+                    <button type="button" class="myvh-invoice-filter-submit myvh-invoice-filter-reset" data-invoice-filter-reset>
+                        Reset Filters
+                    </button>
+                </div>
             </form>
         </div>
 
@@ -159,7 +236,7 @@ $selected_statuses = isset($selected_statuses) && is_array($selected_statuses) ?
             <div class="myvh-empty-state myvh-invoices-empty-state">
                 <p class="myvh-invoices-empty-state__title">No invoices found.</p>
                 <p><?php echo !empty($selected_statuses)
-                    ? 'Try adjusting the selected statuses to see more invoices.'
+                    ? 'Try adjusting the selected statuses or invoice date range to see more invoices.'
                     : 'Invoices will appear here once they have been generated for this account.'; ?></p>
             </div>
         <?php endif; ?>

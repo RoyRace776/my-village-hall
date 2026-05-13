@@ -814,9 +814,13 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const currentHash = window.location.hash || '';
-            const hasStatusFiltersInHash = currentHash.indexOf('#invoices?') === 0 && currentHash.indexOf('statuses=') > -1;
+            const hasInvoiceFiltersInHash = currentHash.indexOf('#invoices?') === 0 && (
+                currentHash.indexOf('statuses=') > -1 ||
+                currentHash.indexOf('start_date=') > -1 ||
+                currentHash.indexOf('end_date=') > -1
+            );
 
-            let initialTab = hasStatusFiltersInHash ? 'list' : '';
+            let initialTab = hasInvoiceFiltersInHash ? 'list' : '';
 
             if (!initialTab) {
                 try {
@@ -836,15 +840,143 @@ document.addEventListener("DOMContentLoaded", () => {
         // Invoice status filter form: update hash for filtering
         const filterForm = invoicesPage.querySelector('#myvh-invoice-filter-form');
         if (filterForm) {
-            filterForm.addEventListener('submit', function (event) {
-                event.preventDefault();
+            const setAllStatusCheckboxes = (checked) => {
+                Array.from(filterForm.querySelectorAll('input[name="statuses[]"]')).forEach((checkbox) => {
+                    checkbox.checked = checked;
+                });
+            };
 
+            const applyInvoiceFilterHash = () => {
+                const clientName = (filterForm.querySelector('input[name="client_name"]') || {}).value || '';
+                const clientNameMatch = (filterForm.querySelector('select[name="client_name_match"]') || {}).value || '';
+                const invoiceNumber = (filterForm.querySelector('input[name="invoice_number"]') || {}).value || '';
+                const invoiceNumberMatch = (filterForm.querySelector('select[name="invoice_number_match"]') || {}).value || '';
                 const selected = Array.from(filterForm.querySelectorAll('input[name="statuses[]"]:checked'))
                     .map((checkbox) => checkbox.value)
                     .filter(Boolean);
 
-                const statusCsv = selected.join(',');
-                location.hash = statusCsv ? '#invoices?statuses=' + encodeURIComponent(statusCsv) : '#invoices';
+                const startDate = (filterForm.querySelector('input[name="start_date"]') || {}).value || '';
+                const endDate = (filterForm.querySelector('input[name="end_date"]') || {}).value || '';
+
+                const query = new URLSearchParams();
+
+                if (selected.length) {
+                    query.set('statuses', selected.join(','));
+                }
+
+                if (clientName) {
+                    query.set('client_name', clientName);
+                }
+
+                if (clientNameMatch) {
+                    query.set('client_name_match', clientNameMatch);
+                }
+
+                if (invoiceNumber) {
+                    query.set('invoice_number', invoiceNumber);
+                }
+
+                if (invoiceNumberMatch) {
+                    query.set('invoice_number_match', invoiceNumberMatch);
+                }
+
+                if (startDate) {
+                    query.set('start_date', startDate);
+                }
+
+                if (endDate) {
+                    query.set('end_date', endDate);
+                }
+
+                const queryString = query.toString();
+                location.hash = queryString ? '#invoices?' + queryString : '#invoices';
+            };
+
+            const resetInvoiceFilters = () => {
+                const clientNameInput = filterForm.querySelector('input[name="client_name"]');
+                const clientNameMatchSelect = filterForm.querySelector('select[name="client_name_match"]');
+                const invoiceNumberInput = filterForm.querySelector('input[name="invoice_number"]');
+                const invoiceNumberMatchSelect = filterForm.querySelector('select[name="invoice_number_match"]');
+                const startDateInput = filterForm.querySelector('input[name="start_date"]');
+                const endDateInput = filterForm.querySelector('input[name="end_date"]');
+
+                if (clientNameInput) {
+                    clientNameInput.value = '';
+                }
+
+                if (clientNameMatchSelect) {
+                    clientNameMatchSelect.value = 'contains';
+                }
+
+                if (invoiceNumberInput) {
+                    invoiceNumberInput.value = '';
+                }
+
+                if (invoiceNumberMatchSelect) {
+                    invoiceNumberMatchSelect.value = 'contains';
+                }
+
+                if (startDateInput) {
+                    startDateInput.value = getDefaultInvoiceStartDate();
+                }
+
+                if (endDateInput) {
+                    endDateInput.value = getDefaultInvoiceEndDate();
+                }
+
+                setAllStatusCheckboxes(true);
+                applyInvoiceFilterHash();
+            };
+
+            const getDefaultInvoiceEndDate = () => {
+                const today = new Date();
+                return today.toISOString().slice(0, 10);
+            };
+
+            const getDefaultInvoiceStartDate = () => {
+                const date = new Date();
+                date.setMonth(date.getMonth() - 1);
+                return date.toISOString().slice(0, 10);
+            };
+
+            const setDateRange = (startDate, endDate) => {
+                const startInput = filterForm.querySelector('input[name="start_date"]');
+                const endInput = filterForm.querySelector('input[name="end_date"]');
+
+                if (startInput && startDate) {
+                    startInput.value = startDate;
+                }
+
+                if (endInput && endDate) {
+                    endInput.value = endDate;
+                }
+            };
+
+            invoicesPage.addEventListener('click', (event) => {
+                const quickRangeButton = event.target.closest('[data-invoice-date-range]');
+                if (!quickRangeButton || !filterForm.contains(quickRangeButton)) {
+                    return;
+                }
+
+                event.preventDefault();
+                setDateRange(
+                    quickRangeButton.getAttribute('data-start-date') || '',
+                    quickRangeButton.getAttribute('data-end-date') || ''
+                );
+                applyInvoiceFilterHash();
+            });
+
+            const resetButton = filterForm.querySelector('[data-invoice-filter-reset]');
+            if (resetButton) {
+                resetButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    resetInvoiceFilters();
+                });
+            }
+
+            filterForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                applyInvoiceFilterHash();
             });
         }
 

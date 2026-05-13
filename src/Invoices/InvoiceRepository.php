@@ -29,7 +29,21 @@ class InvoiceRepository extends RepositoryBase{
      *
      * @return array|null Array of records or null on failure
      */
-    public function get_all_with_customers(): ?array {
+    public function get_all_with_customers(?string $start_date = null, ?string $end_date = null): ?array {
+        $where = [];
+        $prepare_args = [];
+
+        if (!empty($start_date)) {
+            $where[] = 'i.InvoiceDate >= %s';
+            $prepare_args[] = $start_date;
+        }
+
+        if (!empty($end_date)) {
+            $where[] = 'i.InvoiceDate <= %s';
+            $prepare_args[] = $end_date;
+        }
+
+        $where_clause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
         $sql = "SELECT
                     i.*,
                     COALESCE(c.Name, i.BillingName, i.BillingOrganisationName, '') as CustomerName,
@@ -47,10 +61,12 @@ class InvoiceRepository extends RepositoryBase{
                 LEFT JOIN {$this->wpdb->prefix}myvh_invoice_items ii ON i.Id = ii.InvoiceId
                 LEFT JOIN {$this->wpdb->prefix}myvh_bookings b ON ii.BookingId = b.Id
                 LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
+                {$where_clause}
                 GROUP BY i.Id
                 ORDER BY i.InvoiceDate DESC";
 
-        $results = $this->wpdb->get_results($sql, ARRAY_A);
+            $prepared_sql = !empty($prepare_args) ? $this->wpdb->prepare($sql, ...$prepare_args) : $sql;
+            $results = $this->wpdb->get_results($prepared_sql, ARRAY_A);
 
         if ($results === null) {
             error_log('MYVH Invoice Repository Error (get_all_with_customers): ' . $this->wpdb->last_error);
@@ -252,7 +268,7 @@ class InvoiceRepository extends RepositoryBase{
      * @param array $statuses Optional array of statuses to filter by
      * @return array|null Array of invoice records with organisation metadata
      */
-    public function get_for_customer_portal($customer_id, $statuses = []): ?array {
+    public function get_for_customer_portal($customer_id, $statuses = [], ?string $start_date = null, ?string $end_date = null): ?array {
         $customer_id = intval($customer_id);
 
         $where = "(i.CustomerId = %d OR b.OrganisationId IN (
@@ -263,6 +279,16 @@ class InvoiceRepository extends RepositoryBase{
         ))";
 
         $prepare_args = [$customer_id, $customer_id];
+
+        if (!empty($start_date)) {
+            $where .= ' AND i.InvoiceDate >= %s';
+            $prepare_args[] = $start_date;
+        }
+
+        if (!empty($end_date)) {
+            $where .= ' AND i.InvoiceDate <= %s';
+            $prepare_args[] = $end_date;
+        }
 
         if (!empty($statuses)) {
             $statuses = array_values(array_filter(array_map('sanitize_text_field', (array) $statuses)));
@@ -288,7 +314,6 @@ class InvoiceRepository extends RepositoryBase{
             ORDER BY i.InvoiceDate DESC
         ";
 
-        array_unshift($prepare_args, $customer_id);
         $prepared_sql = $this->wpdb->prepare($sql, ...$prepare_args);
         $results = $this->wpdb->get_results($prepared_sql, ARRAY_A);
 

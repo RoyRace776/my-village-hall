@@ -104,10 +104,40 @@ class InvoicesTemplateTest extends UnitTestCase {
         $this->assertStringNotContainsString('myvh-badge myvh-badge-org', $html);
     }
 
-    private function render_invoices_table(array $invoices): string {
+    /** @test */
+    public function filter_form_renders_date_inputs_and_quick_choices(): void {
+        $html = $this->render_invoices_table([], [
+            'selected_start_date' => '2026-04-13',
+            'selected_end_date' => '2026-05-13',
+            'quick_date_ranges' => [
+                'last_month' => [
+                    'label' => 'Last month',
+                    'start_date' => '2026-04-13',
+                    'end_date' => '2026-05-13',
+                ],
+                'last_6_months' => [
+                    'label' => 'Last 6 months',
+                    'start_date' => '2025-11-13',
+                    'end_date' => '2026-05-13',
+                ],
+            ],
+        ]);
+
+        $this->assertStringContainsString('name="start_date"', $html);
+        $this->assertStringContainsString('name="end_date"', $html);
+        $this->assertStringContainsString('data-invoice-date-range="last_month"', $html);
+        $this->assertStringContainsString('data-invoice-date-range="last_6_months"', $html);
+        $this->assertStringContainsString('value="2026-04-13"', $html);
+        $this->assertStringContainsString('value="2026-05-13"', $html);
+    }
+
+    private function render_invoices_table(array $invoices, array $extra_vars = []): string {
         $is_client_admin = false;
         $available_statuses = [];
         $selected_statuses = [];
+        $selected_start_date = $extra_vars['selected_start_date'] ?? '';
+        $selected_end_date = $extra_vars['selected_end_date'] ?? '';
+        $quick_date_ranges = $extra_vars['quick_date_ranges'] ?? [];
 
         ob_start();
         include MYVH_PLUGIN_DIR . 'templates/Portal/invoices.php';

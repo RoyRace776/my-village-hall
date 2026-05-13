@@ -2,6 +2,7 @@
 
 namespace MYVH\Tests\Unit\Portal;
 
+use Brain\Monkey\Functions;
 use MYVH\Bookings\BookingService;
 use MYVH\Invoices\InvoiceService;
 use MYVH\Payments\PaymentService;
@@ -10,12 +11,33 @@ use MYVH\Tests\Unit\UnitTestCase;
 
 class PortalBillingPageRendererTest extends UnitTestCase {
     private BookingService $booking_service;
-    private InvoiceService $invoice_service;
+    private $invoice_service;
     private PaymentService $payment_service;
     private PortalBillingPageRenderer $renderer;
 
     protected function setUp(): void {
         parent::setUp();
+
+        Functions\stubs([
+            'esc_html' => static fn($value) => (string) $value,
+            'esc_attr' => static fn($value) => (string) $value,
+            'esc_url' => static fn($value) => (string) $value,
+            'sanitize_key' => static fn($value) => strtolower((string) $value),
+            'selected' => static function ($selected, $current = true, $display = true) {
+                return $selected == $current ? 'selected="selected"' : '';
+            },
+            'checked' => static function ($checked, $current = true, $display = true) {
+                return $checked == $current ? 'checked="checked"' : '';
+            },
+            'wp_create_nonce' => static fn($action = '') => 'nonce-token',
+            'admin_url' => static fn($path = '') => '/wp-admin/' . ltrim((string) $path, '/'),
+            'add_query_arg' => static fn($args, $url = '') => (string) $url,
+            'sanitize_text_field' => static fn($value) => (string) $value,
+            'wp_unslash' => static fn($value) => $value,
+            'current_time' => static function (string $type = 'mysql') {
+                return $type === 'timestamp' ? strtotime('2026-05-13 12:00:00') : '2026-05-13';
+            },
+        ]);
 
         $this->booking_service = $this->mock(BookingService::class);
         $this->invoice_service = $this->mock(InvoiceService::class);
@@ -73,5 +95,91 @@ class PortalBillingPageRendererTest extends UnitTestCase {
 
         $this->assertCount(1, $result);
         $this->assertSame('INV-000011', $result[0]['InvoiceNumber']);
+    }
+
+    /** @test */
+    public function render_invoices_applies_default_date_range_and_passes_it_to_the_service(): void {
+        $_GET = [];
+
+        $this->invoice_service->shouldReceive('get_valid_statuses')
+            ->once()
+            ->andReturnUsing(static fn() => ['draft', 'sent']);
+
+        $this->invoice_service->shouldReceive('get_with_customers')
+            ->once()
+            ->with('2026-04-13', '2026-05-13')
+            ->andReturn([]);
+
+        $this->invoice_service->shouldNotReceive('get_for_portal');
+
+        ob_start();
+        $this->renderer->render_invoices([], true, false);
+        ob_end_clean();
+
+        $this->assertTrue(true);
+    }
+
+    /** @test */
+    public function render_invoices_normalizes_date_filters_for_customer_portal(): void {
+        $_GET = [
+            'start_date' => '2026-03-01',
+            'end_date' => '2026-05-01',
+            'statuses' => 'sent,paid',
+        ];
+
+        $this->invoice_service->shouldReceive('get_valid_statuses')
+            ->once()
+            ->andReturnUsing(static fn() => ['draft', 'sent', 'paid']);
+
+        $this->invoice_service->shouldReceive('get_for_portal')
+            ->once()
+            ->with(55, ['sent', 'paid'], '2026-03-01', '2026-05-01')
+            ->andReturn([]);
+
+        $this->invoice_service->shouldNotReceive('get_with_customers');
+
+        ob_start();
+        $this->renderer->render_invoices(['Id' => 55], false, true);
+        ob_end_clean();
+
+        $this->assertTrue(true);
+    }
+
+    /** @test */
+    public function render_invoices_shows_client_filter_fields_for_admin_view(): void {
+        $_GET = [];
+
+        $this->invoice_service->shouldReceive('get_valid_statuses')
+            ->once()
+            ->andReturnUsing(static fn() => ['draft', 'sent']);
+
+        $this->invoice_service->shouldReceive('get_with_customers')
+            ->once()
+            ->with('2026-04-13', '2026-05-13')
+            ->andReturn([
+                [
+                    'Id' => 1,
+                    'InvoiceNumber' => 'INV-000123',
+                    'CustomerName' => 'Acme Community Group',
+                    'CustomerEmail' => 'acme@example.com',
+                    'InvoiceDate' => '2026-05-01',
+                    'DueDate' => '2026-05-31',
+                    'Status' => 'sent',
+                    'TotalAmount' => 100,
+                    'AmountPaid' => 0,
+                    'OrganisationName' => 'Acme Community Group',
+                    'BillingName' => 'Acme Community Group',
+                ],
+            ]);
+
+        ob_start();
+        $this->renderer->render_invoices([], true, false);
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('name="client_name"', $html);
+        $this->assertStringContainsString('name="invoice_number"', $html);
+        $this->assertStringContainsString('Begins with', $html);
+        $this->assertStringContainsString('Contains', $html);
+        $this->assertStringContainsString('data-invoice-filter-reset', $html);
     }
 }

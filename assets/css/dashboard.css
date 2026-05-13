@@ -1999,6 +1999,58 @@ body .site-main:has(#myvh-portal) {
   flex: 1 1 460px;
 }
 
+.myvh-invoice-admin-search-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.myvh-invoice-text-field,
+.myvh-invoice-select-field,
+.myvh-invoice-date-field {
+  display: grid;
+  gap: 6px;
+}
+
+.myvh-invoice-text-field span,
+.myvh-invoice-select-field span,
+.myvh-invoice-date-field span {
+  color: var(--ink);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.myvh-invoice-text-field input,
+.myvh-invoice-select-field select,
+.myvh-invoice-date-field input {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid #d7c7b8;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 12px;
+}
+
+.myvh-invoice-text-field input:focus,
+.myvh-invoice-select-field select:focus,
+.myvh-invoice-date-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(181, 69, 27, 0.12);
+}
+
+.myvh-invoice-date-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.myvh-invoice-date-field {
+  min-width: 180px;
+  flex: 1 1 180px;
+}
+
 .myvh-invoice-filter-label {
   color: var(--ink);
   font-size: .84rem;
@@ -2042,6 +2094,17 @@ body .site-main:has(#myvh-portal) {
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(181, 69, 27, 0.16);
   transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.myvh-invoice-filter-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.myvh-invoice-filter-reset {
+  min-height: 42px;
 }
 
 .myvh-invoice-filter-submit:hover,
