@@ -21,7 +21,19 @@ class AddonService {
     }
 
     public function get_all($args = []): array {
-        return $this->repo->get_all_active($args);
+        $addons = $this->repo->get_all_active($args);
+
+        return array_values(array_filter($addons, static function ($addon): bool {
+            if (!is_array($addon)) {
+                return false;
+            }
+
+            if (!array_key_exists('IsActive', $addon)) {
+                return true;
+            }
+
+            return !empty($addon['IsActive']);
+        }));
     }
 
     public function get($id): ?array {

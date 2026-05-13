@@ -11,8 +11,7 @@ use MYVH\Addons\AddonService;
 
 global $myvh_container;
 $addon_service = $myvh_container->get(AddonService::class);
-$all_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
-$available_addons = array_values(array_filter($all_addons ?? [], fn($a) => !empty($a['IsActive'])));
+$available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
 
 // Read-only booking view modal.
 

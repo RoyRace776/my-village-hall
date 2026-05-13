@@ -99,12 +99,9 @@ if (!$selected_room) {
                     <textarea name="description" rows="3"></textarea>
                 </label>
 
-                <div class="myvh-account-grid">
-                    <label class="myvh-account-field">
-                        <span>Minimum Hours</span>
-                        <input type="number" name="minimum_hours" min="0" step="0.5">
-                    </label>
+                <input type="hidden" name="minimum_hours" value="1">
 
+                <div class="myvh-account-grid">
                     <label class="myvh-account-field">
                         <span>Priority</span>
                         <input type="number" name="priority" min="0" value="0">

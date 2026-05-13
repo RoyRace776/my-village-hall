@@ -84,6 +84,7 @@ if (!in_array($deposit_action, ['auto_add', 'require_review'], true)) {
                 <span>Room Colour</span>
                 <div class="myvh-room-colour-row">
                     <input
+                        class="myvh-room-colour-input"
                         type="color"
                         name="room_colour"
                         value="<?php echo esc_attr($room_colour); ?>"

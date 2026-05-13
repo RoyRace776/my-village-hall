@@ -17,7 +17,10 @@ class RoomRateService {
     }
 
     public function get_all(): array {
-        return $this->repo->get_all();
+        return $this->repo->get_all([
+            'orderby' => 'Priority',
+            'order' => 'DESC',
+        ]);
     }
 
     public function get_by_room($room_id): array {
@@ -52,6 +55,11 @@ class RoomRateService {
             return new \WP_Error('validation', __('Rate must be zero or greater', 'my-village-hall'));
         }
 
+        $minimum_hours = $data['minimum_hours'] ?? null;
+        if (!isset($data['minimum_hours']) || floatval($minimum_hours) <= 0) {
+            return new \WP_Error('validation', __('Minimum hours must be greater than zero', 'my-village-hall'));
+        }
+
         $record = [
             'RoomId'             => intval($data['room_id']),
             'OrganisationTypeId' => !empty($data['organisation_type_id']) ? intval($data['organisation_type_id']) : null,
@@ -59,7 +67,7 @@ class RoomRateService {
             'Rate'               => $rate,
             'Name'               => sanitize_text_field($data['name']),
             'Description'        => sanitize_textarea_field($data['description'] ?? ''),
-            'MinimumHours'       => !empty($data['minimum_hours']) ? floatval($data['minimum_hours']) : null,
+            'MinimumHours'       => floatval($minimum_hours),
             'IsActive'           => isset($data['is_active']) ? 1 : 0,
             'ValidFrom'          => !empty($data['valid_from']) ? sanitize_text_field($data['valid_from']) : null,
             'ValidTo'            => !empty($data['valid_to'])   ? sanitize_text_field($data['valid_to'])   : null,

@@ -55,6 +55,7 @@ $charge_type_labels = [
                         <th style="padding-right:24px;">Rate Name</th>
                         <th style="padding-right:24px;">Room</th>
                         <th style="padding-right:24px;">Amount</th>
+                        <th style="padding-right:24px;">Priority</th>
                         <th style="padding-right:24px;">Type</th>
                         <th style="padding-right:24px;">Organisation Type</th>
                         <th style="padding-right:24px;">Status</th>
@@ -78,6 +79,7 @@ $charge_type_labels = [
                         </td>
                         <td style="padding-right:24px;"><?php echo esc_html($room_names[$room_id] ?? 'Unknown room'); ?></td>
                         <td style="padding-right:24px;">£<?php echo number_format((float) ($rate['Rate'] ?? 0), 2); ?></td>
+                        <td style="padding-right:24px;"><?php echo esc_html((string) ($rate['Priority'] ?? '0')); ?></td>
                         <td style="padding-right:24px;"><?php echo esc_html($charge_type_labels[$rate['ChargeType'] ?? ''] ?? ($rate['ChargeType'] ?? '')); ?></td>
                         <td style="padding-right:24px;"><?php echo esc_html($org_type_id > 0 ? ($org_type_names[$org_type_id] ?? 'Unknown type') : 'All Types'); ?></td>
                         <td style="padding-right:24px;"><?php echo !empty($rate['IsActive']) ? 'Active' : 'Inactive'; ?></td>

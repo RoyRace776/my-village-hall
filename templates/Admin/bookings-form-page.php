@@ -42,7 +42,7 @@ $return_to = isset($_GET['return_to']) ? wp_validate_redirect(wp_unslash($_GET['
 $customers      = $customer_service->get_all();
 $organisations  = $org_service->get_all(true);
 $rooms          = $room_service->get_all_with_venues();
-$all_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
+$available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
 
 $customer_organisations_map = [];
 foreach ($customers as $customer_row) {
@@ -60,9 +60,6 @@ foreach ($customers as $customer_row) {
         ];
     }, $customer_orgs ?: []);
 }
-
-// Active addons only for the form
-$available_addons = array_filter($all_addons ?? [], fn($a) => !empty($a['IsActive']));
 
 // Existing booking addons (for edit/view mode)
 $booking_addons = [];

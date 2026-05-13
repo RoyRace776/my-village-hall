@@ -25,7 +25,10 @@ $selected_invoice_number_match = isset($selected_invoice_number_match) ? (string
                 : 'Review invoice statuses, balances, and due dates for your account.'; ?></p>
         </div>
         <?php if ($is_client_admin_view): ?>
-            <a href="#invoice-generate" class="button">Generate Invoices</a>
+            <a href="#invoice-generate" class="button button-primary myvh-portal-add-button">
+                <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+                <span>Generate Invoices</span>
+            </a>
         <?php endif; ?>
     </div>
     <div class="myvh-card myvh-account-card myvh-invoices-card">

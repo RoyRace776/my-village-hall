@@ -21,7 +21,7 @@ class RoomRateFactory
             'Rate'               => number_format($faker->randomFloat(2, 5, 200), 2, '.', ''),
             'Name'               => ucfirst($faker->unique()->word) . ' Rate',
             'Description'        => $faker->sentence,
-            'MinimumHours'       => null,
+            'MinimumHours'       => 1.0,
             'IsActive'           => '1',
             'ValidFrom'          => null,
             'ValidTo'            => null,
@@ -38,6 +38,7 @@ class RoomRateFactory
             ? null
             : RoomFactory::create();
 
+        /** @var RoomRateService $service */
         $service = app(RoomRateService::class);
 
         $rate_id = $service->save(array_merge([
@@ -47,7 +48,7 @@ class RoomRateFactory
             'rate' => $faker->randomFloat(2, 5, 200),
             'name' => ucfirst($faker->unique()->word) . ' Rate',
             'description' => $faker->sentence,
-            'minimum_hours' => null,
+            'minimum_hours' => 1.0,
             'is_active' => 1,
             'valid_from' => null,
             'valid_to' => null,
@@ -67,6 +68,7 @@ class RoomRateFactory
             throw new RuntimeException('RoomRateFactory create failed: rate could not be loaded.');
         }
 
+        /** @var array $rate */
         return $rate;
     }
 }

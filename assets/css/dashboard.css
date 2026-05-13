@@ -1639,6 +1639,18 @@ body .site-main:has(#myvh-portal) {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.myvh-room-colour-input,
+.myvh-room-colour-row input[type="color"] {
+  width: 56px;
+  min-width: 56px;
+  height: 44px;
+  padding: 4px;
+  border-radius: 10px;
+  flex: 0 0 56px;
+  cursor: pointer;
 }
 
 .myvh-room-colour-preview-box {

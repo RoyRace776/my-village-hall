@@ -95,6 +95,7 @@ if ($selected_room_id > 0) {
                             <th><?php _e('Name', 'my-village-hall'); ?></th>
                             <th><?php _e('Room', 'my-village-hall'); ?></th>
                             <th><?php _e('Rate', 'my-village-hall'); ?></th>
+                            <th><?php _e('Priority', 'my-village-hall'); ?></th>
                             <th><?php _e('Type', 'my-village-hall'); ?></th>
                             <th><?php _e('Org Type', 'my-village-hall'); ?></th>
                             <th><?php _e('Status', 'my-village-hall'); ?></th>
@@ -104,7 +105,7 @@ if ($selected_room_id > 0) {
                     <tbody>
                         <?php if (empty($rates)): ?>
                             <tr>
-                                <td colspan="7"><?php _e('No rates found. Add a rate to get started.', 'my-village-hall'); ?></td>
+                                <td colspan="8"><?php _e('No rates found. Add a rate to get started.', 'my-village-hall'); ?></td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($rates as $rate): ?>
@@ -135,6 +136,7 @@ if ($selected_room_id > 0) {
                                     </td>
                                     <td><?php echo $room ? esc_html($room['Name']) : '<em>' . __('Deleted', 'my-village-hall') . '</em>'; ?></td>
                                     <td><strong>£<?php echo number_format($rate['Rate'], 2); ?></strong></td>
+                                    <td><?php echo esc_html((string) ($rate['Priority'] ?? '0')); ?></td>
                                     <td>
                                         <?php
                                         $charge_types = [
@@ -301,14 +303,7 @@ if ($selected_room_id > 0) {
                             </td>
                         </tr>
 
-                        <tr>
-                            <th><?php _e('Minimum Hours', 'my-village-hall'); ?></th>
-                            <td>
-                                <input type="number" name="minimum_hours" step="0.5" min="0" class="small-text"
-                                    value="<?php echo $edit_rate ? esc_attr($edit_rate['MinimumHours']) : ''; ?>">
-                                <span class="description"><?php _e('Optional minimum booking duration', 'my-village-hall'); ?></span>
-                            </td>
-                        </tr>
+                        <input type="hidden" name="minimum_hours" value="<?php echo $edit_rate ? esc_attr($edit_rate['MinimumHours']) : '1'; ?>">
 
                         <tr>
                             <th><?php _e('Valid From', 'my-village-hall'); ?></th>

@@ -57,6 +57,7 @@ $day_labels = [
                     <span>Room Colour</span>
                     <div class="myvh-room-colour-row">
                         <input
+                            class="myvh-room-colour-input"
                             type="color"
                             name="room_colour"
                             value="<?php echo esc_attr($default_colour); ?>"

@@ -291,8 +291,10 @@ for ($day = 0; $day <= 6; $day++) {
                         <tr>
                             <th><?php _e('Room Colour', 'my-village-hall'); ?> *</th>
                             <td>
-                                <input type="color" name="room_colour" value="<?php echo esc_attr($form_room_colour); ?>" required>
-                                <span class="description"><?php echo esc_html($form_room_colour); ?></span>
+                                <div class="myvh-room-colour-row">
+                                    <input class="myvh-room-colour-input" type="color" name="room_colour" value="<?php echo esc_attr($form_room_colour); ?>" required>
+                                    <span class="myvh-room-colour-code"><?php echo esc_html($form_room_colour); ?></span>
+                                </div>
                             </td>
                         </tr>
 
