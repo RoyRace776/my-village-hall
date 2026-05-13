@@ -10,7 +10,10 @@ $login_url = $login_page ? get_permalink($login_page->ID) : home_url('/login/');
 <div class="myvh-login-container">
     <div class="myvh-login-shell">
         <header class="myvh-login-header">
-            <p class="myvh-login-kicker">My Village Hall</p>
+            <?php if (has_custom_logo()): ?>
+                <div class="myvh-login-logo"><?php echo get_custom_logo(); ?></div>
+            <?php endif; ?>
+            <p class="myvh-login-kicker"><?php echo esc_html(get_bloginfo('name')); ?></p>
             <h1>Forgot your password?</h1>
             <p>Enter your email address and we'll send you a link to reset your password.</p>
         </header>

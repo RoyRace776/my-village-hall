@@ -56,6 +56,26 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                         type="button"
                         class="myvh-portal-nav-toggle"
                         aria-expanded="false"
+                        aria-controls="myvh-portal-manage-invoices-menu"
+                    >
+                        <span class="myvh-portal-menu-icon dashicons dashicons-media-spreadsheet" aria-hidden="true"></span>
+                        <span>Manage Invoices</span>
+                        <span class="myvh-portal-nav-toggle-icon" aria-hidden="true"></span>
+                    </button>
+                    <div id="myvh-portal-manage-invoices-menu" class="myvh-portal-nav-submenu">
+                        <a href="#invoice-generate"><span class="myvh-portal-menu-icon dashicons dashicons-media-document" aria-hidden="true"></span><span>Generate Invoices</span></a>
+                        <a href="#payments"><span class="myvh-portal-menu-icon dashicons dashicons-money" aria-hidden="true"></span><span>Payments</span></a>
+                        <a href="#single-booking-invoice-rules"><span class="myvh-portal-menu-icon dashicons dashicons-filter" aria-hidden="true"></span><span>Single Invoice Rules</span></a>
+                        <a href="#recurring-booking-invoice-rules"><span class="myvh-portal-menu-icon dashicons dashicons-filter" aria-hidden="true"></span><span>Recurring Invoice Rules</span></a>
+                    </div>
+                </div>
+            <?php endif; ?>
+            <?php if ($is_client_admin): ?>
+                <div class="myvh-portal-nav-group myvh-portal-nav-group--admin" data-portal-nav-group>
+                    <button
+                        type="button"
+                        class="myvh-portal-nav-toggle"
+                        aria-expanded="false"
                         aria-controls="myvh-portal-admin-menu"
                     >
                         <span class="myvh-portal-menu-icon dashicons dashicons-admin-tools" aria-hidden="true"></span>
@@ -70,10 +90,6 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                         <a href="#rooms"><span class="myvh-portal-menu-icon dashicons dashicons-admin-home" aria-hidden="true"></span><span>Rooms</span></a>
                         <a href="#room-rates"><span class="myvh-portal-menu-icon dashicons dashicons-money-alt" aria-hidden="true"></span><span>Room Rates</span></a>
                         <a href="#addons"><span class="myvh-portal-menu-icon dashicons dashicons-admin-plugins" aria-hidden="true"></span><span>Add-ons</span></a>
-                        <a href="#payments"><span class="myvh-portal-menu-icon dashicons dashicons-money" aria-hidden="true"></span><span>Payments</span></a>
-                        <a href="#invoice-generate"><span class="myvh-portal-menu-icon dashicons dashicons-media-document" aria-hidden="true"></span><span>Generate Invoices</span></a>
-                        <a href="#single-booking-invoice-rules"><span class="myvh-portal-menu-icon dashicons dashicons-filter" aria-hidden="true"></span><span>Single Invoice Rules</span></a>
-                        <a href="#recurring-booking-invoice-rules"><span class="myvh-portal-menu-icon dashicons dashicons-filter" aria-hidden="true"></span><span>Recurring Invoice Rules</span></a>
                         <a href="#email-templates"><span class="myvh-portal-menu-icon dashicons dashicons-email-alt" aria-hidden="true"></span><span>Email Templates</span></a>
                         <a href="#settings"><span class="myvh-portal-menu-icon dashicons dashicons-admin-generic" aria-hidden="true"></span><span>Settings</span></a>
                         <?php if (\MYVH\Audit\AuditTrail::is_enabled()): ?>

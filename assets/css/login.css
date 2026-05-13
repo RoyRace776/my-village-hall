@@ -45,6 +45,15 @@ body.page-template-templates-page-login .myvh-login-container {
     text-align: center;
 }
 
+.myvh-login-logo {
+    margin-bottom: 12px;
+}
+
+.myvh-login-logo img {
+    max-height: 64px;
+    width: auto;
+}
+
 .myvh-login-kicker {
     margin: 0;
     text-transform: uppercase;

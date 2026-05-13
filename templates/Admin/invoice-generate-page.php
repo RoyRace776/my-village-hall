@@ -219,8 +219,8 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                                                 >
                                                     <?php
                                                     echo esc_html(sprintf(
-                                                        'Pattern #%d (%d booking%s)',
-                                                        $group_id,
+                                                        '%s (%d booking%s)',
+                                                        !empty($first_booking['Description']) ? (string) $first_booking['Description'] : sprintf('Pattern #%d', $group_id),
                                                         count($group['bookings']),
                                                         count($group['bookings']) === 1 ? '' : 's'
                                                     ));

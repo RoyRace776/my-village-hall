@@ -512,26 +512,20 @@ class MyVillageHall {
         );
 
         add_submenu_page( 'my-village-hall',
-            __( 'View Invoices', 'my-village-hall' ),
-            self::menu_label( 'dashicons-media-spreadsheet', __( 'View Invoices', 'my-village-hall' ) ),
+            __( 'Manage Invoices', 'my-village-hall' ),
+            self::menu_label( 'dashicons-media-spreadsheet', __( 'Manage Invoices', 'my-village-hall' ) ),
             'manage_options', 'myvh-invoices', [ $this, 'render_invoices_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
-            __( 'Payments', 'my-village-hall' ),
-            self::menu_label( 'dashicons-money', __( 'Payments', 'my-village-hall' ) ),
-            'manage_options', 'myvh-payments', [ $this, 'render_payments_page' ]
-        );
-
-        add_submenu_page( 'my-village-hall',
             __( 'Generate Invoices', 'my-village-hall' ),
-            self::menu_label( 'dashicons-media-document', __( 'Generate Invoices', 'my-village-hall' ) ),
+            self::menu_label( 'dashicons-media-document', __( '&nbsp;&nbsp;&nbsp;Generate Invoices', 'my-village-hall' ) ),
             'manage_options', 'myvh-invoice-generate', [ $this, 'render_invoice_generate_page' ]
         );
 
         add_submenu_page( 'my-village-hall',
             __( 'Single Booking Invoice Rules', 'my-village-hall' ),
-            self::menu_label( 'dashicons-filter', __( 'Single Booking Invoice Rules', 'my-village-hall' ) ),
+            self::menu_label( 'dashicons-filter', __( '&nbsp;&nbsp;&nbsp;Single Invoice Rules', 'my-village-hall' ) ),
             'manage_options',
             'myvh-single-booking-invoice-rules',
             [ $this, 'render_single_booking_invoice_rules_page' ]
@@ -539,10 +533,16 @@ class MyVillageHall {
 
         add_submenu_page( 'my-village-hall',
             __( 'Recurring Booking Invoice Rules', 'my-village-hall' ),
-            self::menu_label( 'dashicons-filter', __( 'Recurring Booking Invoice Rules', 'my-village-hall' ) ),
+            self::menu_label( 'dashicons-filter', __( '&nbsp;&nbsp;&nbsp;Recurring Invoice Rules', 'my-village-hall' ) ),
             'manage_options',
             'myvh-recurring-booking-invoice-rules',
             [ $this, 'render_recurring_booking_invoice_rules_page' ]
+        );
+
+        add_submenu_page( 'my-village-hall',
+            __( 'Payments', 'my-village-hall' ),
+            self::menu_label( 'dashicons-money', __( '&nbsp;&nbsp;&nbsp;Payments', 'my-village-hall' ) ),
+            'manage_options', 'myvh-payments', [ $this, 'render_payments_page' ]
         );
 
         $this->add_menu_separator();

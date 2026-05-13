@@ -135,7 +135,10 @@ if ($show_reset_request) {
 <div class="myvh-login-container">
     <div class="myvh-login-shell">
     <header class="myvh-login-header">
-        <p class="myvh-login-kicker">My Village Hall</p>
+        <?php if (has_custom_logo()): ?>
+            <div class="myvh-login-logo"><?php echo get_custom_logo(); ?></div>
+        <?php endif; ?>
+        <p class="myvh-login-kicker"><?php echo esc_html(get_bloginfo('name')); ?></p>
         <h1><?php echo esc_html($hero_title); ?></h1>
         <p><?php echo esc_html($hero_message); ?></p>
     </header>

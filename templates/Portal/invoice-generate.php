@@ -241,7 +241,7 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                                                     data-recurring-group="<?php echo esc_attr((string) $group_id); ?>"
                                                     aria-expanded="false"
                                                 >
-                                                    <span class="myvh-recurring-group-toggle__title">Pattern #<?php echo esc_html((string) $group_id); ?></span>
+                                                    <span class="myvh-recurring-group-toggle__title"><?php echo esc_html(!empty($first_booking['Description']) ? (string) $first_booking['Description'] : sprintf('Pattern #%d', $group_id)); ?></span>
                                                     <span class="myvh-recurring-group-toggle__meta"><?php echo esc_html((string) count($group['bookings'])); ?> <?php echo count($group['bookings']) === 1 ? 'booking' : 'bookings'; ?></span>
                                                 </button>
                                             </td>
