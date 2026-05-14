@@ -30,8 +30,32 @@ async function selectFirstNonEmptyOption(selectLocator) {
   await selectLocator.selectOption(optionValue);
 }
 
-async function setHiddenDateValue(container, selector, value) {
-  await container.locator(selector).first().evaluate((input, nextValue) => {
+function formatIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatFlatpickrAltDate(date) {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+async function setBookingDateOrTime(container, selector, value, altValue = null) {
+  const sourceInput = container.locator(selector).first();
+  const altInput = container.locator(`${selector} + input.flatpickr-alt-input`).first();
+
+  if (await altInput.count()) {
+    await altInput.fill(altValue ?? value);
+    await altInput.dispatchEvent('input');
+    await altInput.dispatchEvent('change');
+    await altInput.blur();
+  }
+
+  await sourceInput.evaluate((input, nextValue) => {
     input.value = nextValue;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -63,12 +87,18 @@ async function createBooking(page, description) {
   await selectFirstNonEmptyOption(organisationSelect);
 
   // Keep bookings in the future so delete rules are less likely to block cleanup.
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  const dateText = tomorrow.toISOString().slice(0, 10);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateText = formatIsoDate(tomorrow);
+  const altDateText = formatFlatpickrAltDate(tomorrow);
 
-  await setHiddenDateValue(form, '#myvh-modal-start-date', dateText);
-  await setHiddenDateValue(form, '#myvh-modal-start-time', '10:00');
-  await setHiddenDateValue(form, '#myvh-modal-end-time', '11:00');
+  await setBookingDateOrTime(form, '#myvh-modal-start-date', dateText, altDateText);
+  await setBookingDateOrTime(form, '#myvh-modal-start-time', '10:00');
+  await setBookingDateOrTime(form, '#myvh-modal-end-time', '11:00');
+
+  await expect(form.locator('input[name="start"]')).toHaveValue(`${dateText} 10:00`);
+  await expect(form.locator('input[name="end"]')).toHaveValue(`${dateText} 11:00`);
+
   await form.locator('input[name="text"]').fill(description);
 
   await form.getByRole('button', { name: /^create booking$/i }).first().click();
