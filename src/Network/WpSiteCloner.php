@@ -101,6 +101,14 @@ class WpSiteCloner {
             add_user_to_blog($blog_id, $user_id, 'administrator');
         }
 
+        $super_admins = get_super_admins(); // returns array of logins
+        foreach ( $super_admins as $login ) {
+            $user = get_user_by( 'login', $login );
+            if ( $user ) {
+                add_user_to_blog( $blog_id, $user->ID, 'administrator' );
+            }
+        }
+
         // -------------------------------------------------
         // 5. Hook for your provisioning system
         // -------------------------------------------------

@@ -7,7 +7,7 @@ namespace MYVH\Settings;
  * Configurable rules for automatic invoice generation
  * Two global rule sets: Single Bookings and Recurring Bookings
  */
-class AutoInvoicingSettings extends SettingsBase {
+class InvoicingSettings extends SettingsBase {
 
     protected $option_name = 'myvh_invoicing_settings';
     protected $hide_from_client_admin = false;
@@ -38,6 +38,13 @@ class AutoInvoicingSettings extends SettingsBase {
                     'default' => true,
                     'sanitize' => 'boolval',
                     'description' => 'When enabled, invoices are automatically emailed to customers after they are generated. Otherwise, they will need to be sent manually from the invoice detail view.'
+                ],
+                'run_overnight' => [
+                    'label' => 'Run overnight batch process to generate invoices for the next day',
+                    'type' => 'boolean',
+                    'default' => false,
+                    'sanitize' => 'boolval',
+                    'description' => 'When enabled, invoices are automatically generated overnight for the next day. Otherwise, they will need to be generated manually.'
                 ],
             ],
         ],

@@ -1,6 +1,9 @@
 <?php
 namespace MYVH\Settings;
 
+use MYVH\Events\EventDispatcher;
+use MYVH\Events\SettingsEvents;
+
 abstract class SettingsBase {
 
     protected $option_name = '';
@@ -201,6 +204,35 @@ abstract class SettingsBase {
         $this->update_option($clean);
 
         $this->settings = $clean;
+
+        $group = $this->get_settings_group_key();
+        $event_name = $group !== '' ? SettingsEvents::from_group($group) : null;
+
+        if ($event_name !== null) {
+            EventDispatcher::dispatch(
+                $event_name,
+                [
+                    'group' => $group,
+                    'option_name' => $this->option_name,
+                    'settings' => $clean,
+                    'user_id' => (int) get_current_user_id(),
+                ]
+            );
+        }
+    }
+
+    protected function get_settings_group_key(): string {
+        if (!method_exists($this, 'tab')) {
+            return '';
+        }
+
+        $tab = $this->tab();
+
+        if (!is_array($tab)) {
+            return '';
+        }
+
+        return sanitize_key((string) ($tab['key'] ?? ''));
     }
 
     protected function get_multisite_scope(): string {

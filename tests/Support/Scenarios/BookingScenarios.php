@@ -1,9 +1,10 @@
 <?php
-namespace Tests\Support\Seeders;
+namespace Tests\Support\Scenarios;
 
 use Tests\Support\Factories\BookingFactory;
 use Tests\Support\Factories\CustomerFactory;
 use Tests\Support\Factories\RoomFactory;
+use Tests\Support\Seeders\BookingSeeder;
 
 class BookingScenarios
 {
