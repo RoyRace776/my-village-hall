@@ -18,7 +18,25 @@ if not defined CURRENT_VERSION (
     exit /b 1
 )
 
-for /f "delims=" %%i in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$version = ''!CURRENT_VERSION!''; if ($version -notmatch ''^\d+\.\d+\.\d+$'') { exit 1 }; $parts = $version.Split(''.''); $parts[2] = ([int]$parts[2] + 1); $parts -join ''.''"') do set NEXT_VERSION=%%i
+for /f "tokens=1-3 delims=." %%a in ("!CURRENT_VERSION!") do (
+    set MAJOR=%%a
+    set MINOR=%%b
+    set PATCH=%%c
+)
+
+if not defined PATCH (
+    echo ERROR: Invalid version format "!CURRENT_VERSION!"
+    exit /b 1
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "if ('!CURRENT_VERSION!' -notmatch '^\d+\.\d+\.\d+$') { exit 1 }"
+if errorlevel 1 (
+    echo ERROR: Invalid version format "!CURRENT_VERSION!"
+    exit /b 1
+)
+
+set /a PATCH+=1
+set NEXT_VERSION=!MAJOR!.!MINOR!.!PATCH!
 
 if not defined NEXT_VERSION (
     echo ERROR: Failed to calculate next version from !CURRENT_VERSION!
