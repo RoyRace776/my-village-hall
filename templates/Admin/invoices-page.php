@@ -134,6 +134,23 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
             </div>
         </form>
 
+        <!-- Client-side status filter checkboxes -->
+        <div class="myvh-invoices-status-checkboxes" style="margin-top: 16px;">
+            <strong><?php esc_html_e('Filter by status:', 'my-village-hall'); ?></strong>
+            <div style="margin-top: 8px;">
+                <div>
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="draft" checked> <?php esc_html_e('Draft', 'my-village-hall'); ?></label>
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="sent" checked> <?php esc_html_e('Sent', 'my-village-hall'); ?></label>
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="part_paid" checked> <?php esc_html_e('Part Paid', 'my-village-hall'); ?></label>
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="overdue" checked> <?php esc_html_e('Overdue', 'my-village-hall'); ?></label>
+                </div>
+                <div style="margin-top: 8px;">
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="paid" checked> <?php esc_html_e('Paid', 'my-village-hall'); ?></label>
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="cancelled" checked> <?php esc_html_e('Cancelled', 'my-village-hall'); ?></label>
+                </div>
+            </div>
+        </div>
+
         <?php if ($is_filtered): ?>
             <p class="description" style="margin-top:0; margin-bottom:16px;"><?php esc_html_e('Showing invoices matching the selected filters.', 'my-village-hall'); ?></p>
         <?php endif; ?>
@@ -209,5 +226,46 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                 <?php endif; ?>
             </tbody>
         </table>
+
+        <script>
+        (function() {
+            function filterInvoicesByStatus() {
+                const checkedStatuses = Array.from(document.querySelectorAll('.myvh-invoice-status-filter:checked')).map(cb => cb.value);
+                const rows = document.querySelectorAll('table.wp-list-table tbody tr');
+                
+                rows.forEach(row => {
+                    // Skip the "no invoices" row
+                    if (row.textContent.includes('No invoices')) {
+                        return;
+                    }
+                    
+                    // Get the status from the status cell (7th column)
+                    const statusCell = row.querySelector('td:nth-child(7)');
+                    if (!statusCell) return;
+                    
+                    const statusText = statusCell.textContent.trim().toLowerCase();
+                    const isVisible = checkedStatuses.some(status => {
+                        // Map display statuses to actual statuses
+                        const statusMap = {
+                            'draft': 'draft',
+                            'sent': 'sent',
+                            'part_paid': 'part paid',
+                            'overdue': 'overdue',
+                            'paid': 'paid',
+                            'cancelled': 'cancelled'
+                        };
+                        return statusText === statusMap[status];
+                    });
+                    
+                    row.style.display = isVisible ? '' : 'none';
+                });
+            }
+            
+            // Add event listeners to checkboxes
+            document.querySelectorAll('.myvh-invoice-status-filter').forEach(checkbox => {
+                checkbox.addEventListener('change', filterInvoicesByStatus);
+            });
+        })();
+        </script>
     </div>
 </div>

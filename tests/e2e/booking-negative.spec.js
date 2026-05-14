@@ -30,8 +30,8 @@ async function selectFirstNonEmptyOption(selectLocator) {
   await selectLocator.selectOption(optionValue);
 }
 
-async function setHiddenDateValue(page, selector, value) {
-  await page.locator(selector).evaluate((input, nextValue) => {
+async function setHiddenDateValue(container, selector, value) {
+  await container.locator(selector).first().evaluate((input, nextValue) => {
     input.value = nextValue;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -65,9 +65,9 @@ async function createBooking(page, description) {
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const dateText = tomorrow.toISOString().slice(0, 10);
 
-  await setHiddenDateValue(page, '#myvh-modal-start-date', dateText);
-  await setHiddenDateValue(page, '#myvh-modal-start-time', '12:00');
-  await setHiddenDateValue(page, '#myvh-modal-end-time', '13:00');
+  await setHiddenDateValue(form, '#myvh-modal-start-date', dateText);
+  await setHiddenDateValue(form, '#myvh-modal-start-time', '10:00');
+  await setHiddenDateValue(form, '#myvh-modal-end-time', '11:00');
   await form.locator('input[name="text"]').fill(description);
 
   await form.getByRole('button', { name: /^create booking$/i }).first().click();

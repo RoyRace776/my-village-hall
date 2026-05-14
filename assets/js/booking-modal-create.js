@@ -400,6 +400,7 @@ window.BookingModalCreate = (function() {
         form.querySelectorAll(".myvh-modal-addon-row").forEach(row => {
             toggleAddonRow(row, false);
         });
+        syncAddonAvailability();
 
         const orgSelect = form.querySelector("[name=organisation_id]");
         if (orgSelect) {
@@ -461,6 +462,7 @@ window.BookingModalCreate = (function() {
 
         if (room) {
             room.addEventListener("change", () => {
+                syncAddonAvailability();
                 syncEndDateVisibility();
                 syncHiddenDateTimes();
             });
@@ -599,6 +601,39 @@ window.BookingModalCreate = (function() {
         }
     }
 
+    function roomSupportsAddon(row, selectedRoomId) {
+        const addonRoomId = String(row?.dataset?.roomId || '').trim();
+
+        if (addonRoomId === '' || addonRoomId === '0') {
+            return true;
+        }
+
+        if (selectedRoomId === '') {
+            return false;
+        }
+
+        return addonRoomId === selectedRoomId;
+    }
+
+    function syncAddonAvailability() {
+        const selectedRoomId = String(form?.querySelector('[name="room_id"]')?.value || '').trim();
+
+        form?.querySelectorAll('.myvh-modal-addon-row').forEach((row) => {
+            const checkbox = row.querySelector('.myvh-modal-addon-checkbox');
+            const isAllowed = roomSupportsAddon(row, selectedRoomId);
+
+            row.style.display = isAllowed ? '' : 'none';
+
+            if (!isAllowed) {
+                toggleAddonRow(row, false);
+            }
+
+            if (checkbox) {
+                checkbox.disabled = !isAllowed;
+            }
+        });
+    }
+
     function applyExistingAddons(addons) {
         const addonMap = {};
 
@@ -629,6 +664,8 @@ window.BookingModalCreate = (function() {
 
             toggleAddonRow(row, !!addon);
         });
+
+        syncAddonAvailability();
 
         scheduleQuoteRefresh();
     }

@@ -232,7 +232,7 @@ $fmt_date = static function (?string $date): string {
                     <?php echo htmlspecialchars($fmt_date($DueDate), ENT_QUOTES, 'UTF-8'); ?>
                 </div>
                 <?php endif; ?>
-                <?php if (!empty($Status)): ?>
+                <?php if (!empty($Status) && strtolower((string) $Status) !== 'draft'): ?>
                 <div style="margin-top:8pt;">
                     <span class="status-badge">
                         <?php echo htmlspecialchars(ucwords(str_replace('-', ' ', $Status)), ENT_QUOTES, 'UTF-8'); ?>

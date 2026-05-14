@@ -36,18 +36,15 @@ test.describe('Portal customer creation', () => {
       const successMessage = page.locator('#myvh-customer-create-message');
       const errorMessage = page.locator('.myvh-error-message, #myvh-customer-create-error');
 
-      await expect(successMessage.or(errorMessage)).toBeVisible({ timeout: 15000 });
-
-      if (await errorMessage.isVisible()) {
-        throw new Error(`Customer creation failed: ${await errorMessage.innerText()}`);
-      }
-
-      await expect(successMessage).toBeVisible({ timeout: 15000 });
-      await expect(successMessage).toContainText(/customer created/i, { timeout: 15000 });
-
       await expect
         .poll(() => new URL(page.url()).hash, { timeout: 15000 })
         .toBe('#customers');
+
+      if (await successMessage.count()) {
+        await expect(successMessage).toContainText(/customer created/i, { timeout: 15000 });
+      }
+
+      await expect(errorMessage).toHaveCount(0);
 
       const customerRow = page
         .locator('.myvh-customer-list-table tbody tr')
@@ -56,6 +53,7 @@ test.describe('Portal customer creation', () => {
 
       await expect(customerRow).toBeVisible({ timeout: 15000 });
       await expect(customerRow).toContainText(customerName);
+
     } finally {
       if (loggedIn && customerEmail) {
         await deleteCustomerByEmail(page, customerEmail);

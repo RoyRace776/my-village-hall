@@ -78,16 +78,33 @@ $selected_invoice_number_match = isset($selected_invoice_number_match) ? (string
                 <?php endif; ?>
                 <div class="myvh-invoice-filter-group">
                     <span class="myvh-invoice-filter-label">Filter by status</span>
-                    <div class="myvh-checkbox-group">
-                        <?php foreach ($available_statuses as $status): ?>
-                            <label class="myvh-checkbox-label">
-                                <input type="checkbox"
-                                       name="statuses[]"
-                                       value="<?php echo esc_attr($status); ?>"
-                                       <?php checked(in_array($status, $selected_statuses, true)); ?>>
-                                <span><?php echo ucfirst(esc_html($status)); ?></span>
-                            </label>
-                        <?php endforeach; ?>
+                    <div class="myvh-checkbox-group" style="display: grid; grid-template-columns: 1fr; gap: 8px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+                            <?php foreach ($available_statuses as $status): ?>
+                                <?php if (in_array($status, ['draft', 'sent', 'part-paid', 'overdue'], true)): ?>
+                                    <label class="myvh-checkbox-label">
+                                        <input type="checkbox"
+                                               name="statuses[]"
+                                               value="<?php echo esc_attr($status); ?>"
+                                               <?php checked(in_array($status, $selected_statuses, true)); ?>>
+                                        <span><?php echo ucfirst(esc_html(str_replace('-', ' ', $status))); ?></span>
+                                    </label>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+                            <?php foreach ($available_statuses as $status): ?>
+                                <?php if (in_array($status, ['paid', 'cancelled'], true)): ?>
+                                    <label class="myvh-checkbox-label">
+                                        <input type="checkbox"
+                                               name="statuses[]"
+                                               value="<?php echo esc_attr($status); ?>"
+                                               <?php checked(in_array($status, $selected_statuses, true)); ?>>
+                                        <span><?php echo ucfirst(esc_html(str_replace('-', ' ', $status))); ?></span>
+                                    </label>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
                 <div class="myvh-invoice-filter-group">

@@ -41,6 +41,29 @@ function buildModalFixture() {
         <select name="customer_id"><option value="">Select...</option></select>
         <select name="organisation_id"><option value="">Select...</option></select>
 
+        <table id="myvh-modal-addons-table">
+          <tbody>
+            <tr class="myvh-modal-addon-row" data-room-id="14">
+              <td>
+                <input type="checkbox" class="myvh-modal-addon-checkbox" value="1">
+                <input type="hidden" name="addons[0][addon_id]" value="101">
+                <input type="hidden" name="addons[0][enabled]" class="myvh-modal-addon-enabled" value="0">
+                <input type="hidden" name="addons[0][quantity]" class="myvh-modal-addon-qty" value="1">
+              </td>
+              <td><input type="number" class="myvh-modal-addon-price" value="10.00" disabled></td>
+            </tr>
+            <tr class="myvh-modal-addon-row" data-room-id="0">
+              <td>
+                <input type="checkbox" class="myvh-modal-addon-checkbox" value="1">
+                <input type="hidden" name="addons[1][addon_id]" value="102">
+                <input type="hidden" name="addons[1][enabled]" class="myvh-modal-addon-enabled" value="0">
+                <input type="hidden" name="addons[1][quantity]" class="myvh-modal-addon-qty" value="1">
+              </td>
+              <td><input type="number" class="myvh-modal-addon-price" value="5.00" disabled></td>
+            </tr>
+          </tbody>
+        </table>
+
         <input type="checkbox" name="public">
 
         <table id="myvh-modal-cost-summary-table" style="display:none">
@@ -301,5 +324,43 @@ describe('BookingModalCreate', () => {
     expect(document.getElementById('myvh-modal-cost-summary-table').style.display).toBe('');
     expect(document.getElementById('myvh-modal-quote-room-charge').textContent).toBe('£18.00');
     expect(document.getElementById('myvh-modal-quote-booking-total').textContent).toBe('£32.00');
+  });
+
+  test('filters add-ons to the selected room and clears incompatible selections', () => {
+    document.querySelector('[name="room_id"]').innerHTML = '<option value="">Select...</option><option value="14">Main Hall</option><option value="99">Committee Room</option>';
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'nonce-1'
+    });
+
+    window.BookingModalCreate.open({});
+
+    const roomSpecificRow = document.querySelector('.myvh-modal-addon-row[data-room-id="14"]');
+    const globalRow = document.querySelector('.myvh-modal-addon-row[data-room-id="0"]');
+    const roomSpecificCheckbox = roomSpecificRow.querySelector('.myvh-modal-addon-checkbox');
+
+    expect(roomSpecificRow.style.display).toBe('none');
+    expect(roomSpecificCheckbox.disabled).toBe(true);
+    expect(globalRow.style.display).toBe('');
+
+    const roomSelect = document.querySelector('[name="room_id"]');
+    roomSelect.value = '14';
+    roomSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(roomSpecificRow.style.display).toBe('');
+    expect(roomSpecificCheckbox.disabled).toBe(false);
+
+    roomSpecificCheckbox.checked = true;
+    roomSpecificCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(roomSpecificRow.querySelector('.myvh-modal-addon-enabled').value).toBe('1');
+
+    roomSelect.value = '99';
+    roomSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(roomSpecificRow.style.display).toBe('none');
+    expect(roomSpecificCheckbox.checked).toBe(false);
+    expect(roomSpecificCheckbox.disabled).toBe(true);
+    expect(roomSpecificRow.querySelector('.myvh-modal-addon-enabled').value).toBe('0');
   });
 });
