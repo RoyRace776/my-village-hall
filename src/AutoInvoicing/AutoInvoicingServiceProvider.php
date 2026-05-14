@@ -1,6 +1,9 @@
 <?php
 namespace MYVH\AutoInvoicing;
+
 use MYVH\Container\Container;
+use MYVH\Core\Scheduling\OvernightBatchRunner;
+use MYVH\Email\EmailService;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -20,5 +23,12 @@ class AutoInvoicingServiceProvider {
         $container->singleton(RecurringBookingAutoInvoicing::class);
         $container->singleton(AutoInvoice::class);
         $container->singleton(AutoInvoicingAjaxController::class);
+        $container->singleton(AutoInvoicingOvernightJob::class);
+        $container->singleton(OvernightBatchRunner::class, function ($container) {
+            return new OvernightBatchRunner(
+                [ $container->get(AutoInvoicingOvernightJob::class) ],
+                $container->get(EmailService::class)
+            );
+        });
     }
 }

@@ -18,6 +18,9 @@ $payment_service = $myvh_container->get(PaymentService::class);
 $selected_invoice_id = isset($_GET['invoice_id']) ? intval($_GET['invoice_id']) : 0;
 $payments = $payment_service->get_payments($selected_invoice_id);
 $invoices = $invoice_service->get_with_customers() ?: [];
+$invoices = array_values(array_filter($invoices, static function (array $invoice): bool {
+    return in_array((string) ($invoice['Status'] ?? ''), ['sent', 'part-paid'], true);
+}));
 $payment_methods = $payment_service->get_valid_methods();
 $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($selected_invoice_id) : null;
 ?>

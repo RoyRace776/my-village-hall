@@ -46,7 +46,11 @@ test.describe('Portal payments', () => {
     const hasInvoices = await hasInvoiceOptions(invoiceSelect);
     test.skip(!hasInvoices, 'No invoices available yet for payment e2e flow.');
 
+    const amountLabel = page.locator('label[for="myvh-portal-payment-amount"] strong');
+    await expect(amountLabel).toHaveText('Amount');
+
     await selectFirstInvoice(invoiceSelect);
+    await expect(amountLabel).toHaveText(/Amount \(£\d+\.\d{2} outstanding\)/);
 
     const suffix = Date.now();
     const reference = `E2E-PAY-${suffix}`;

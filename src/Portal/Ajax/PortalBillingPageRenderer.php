@@ -122,11 +122,73 @@ class PortalBillingPageRenderer {
         }
 
         $selected_invoice_id = intval($_GET['invoice_id'] ?? 0);
+        $payment_date_range = $this->get_payment_date_range();
+        $selected_start_date = $payment_date_range['start_date'];
+        $selected_end_date = $payment_date_range['end_date'];
+
         $payments = $this->payment_service->get_payments($selected_invoice_id);
+        $payments = array_values(array_filter($payments, static function (array $payment) use ($selected_start_date, $selected_end_date): bool {
+            $payment_date_raw = (string) ($payment['PaymentDate'] ?? '');
+            if ($payment_date_raw === '') {
+                return false;
+            }
+
+            $payment_timestamp = strtotime($payment_date_raw);
+            if ($payment_timestamp === false) {
+                return false;
+            }
+
+            $payment_date = date('Y-m-d', $payment_timestamp);
+
+            return $payment_date >= $selected_start_date && $payment_date <= $selected_end_date;
+        }));
         $payment_methods = $this->payment_service->get_valid_methods();
         $invoices = $this->invoice_service->get_with_customers() ?: [];
+        $invoices = array_values(array_filter($invoices, static function (array $invoice): bool {
+            return in_array((string) ($invoice['Status'] ?? ''), ['sent', 'part-paid'], true);
+        }));
+        $payment_quick_date_ranges = $this->get_payment_quick_date_ranges();
 
         include MYVH_PLUGIN_DIR . 'templates/Portal/payments.php';
+    }
+
+    private function get_payment_date_range(): array {
+        $default_end_date = current_time('Y-m-d');
+        $default_start_date = date('Y-m-d', strtotime('-1 month', current_time('timestamp')));
+
+        $start_date = $this->normalize_date_value($_GET['start_date'] ?? null, $default_start_date);
+        $end_date = $this->normalize_date_value($_GET['end_date'] ?? null, $default_end_date);
+
+        if ($start_date > $end_date) {
+            [$start_date, $end_date] = [$end_date, $start_date];
+        }
+
+        return [
+            'start_date' => $start_date,
+            'end_date' => $end_date,
+        ];
+    }
+
+    private function get_payment_quick_date_ranges(): array {
+        $today = current_time('Y-m-d');
+
+        return [
+            'last_month' => [
+                'label' => 'Last month',
+                'start_date' => date('Y-m-d', strtotime('-1 month', current_time('timestamp'))),
+                'end_date' => $today,
+            ],
+            'last_3_months' => [
+                'label' => 'Last 3 months',
+                'start_date' => date('Y-m-d', strtotime('-3 months', current_time('timestamp'))),
+                'end_date' => $today,
+            ],
+            'last_6_months' => [
+                'label' => 'Last 6 months',
+                'start_date' => date('Y-m-d', strtotime('-6 months', current_time('timestamp'))),
+                'end_date' => $today,
+            ],
+        ];
     }
 
     public function render_invoice_generate(bool $is_client_admin): void {

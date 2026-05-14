@@ -1063,6 +1063,7 @@ class Installer {
             'myvh_addons',
             'myvh_booking_addons',
             'myvh_single_booking_auto_invoice_rules',
+            'myvh_recurring_booking_auto_invoice_rules',
             'myvh_invoices',
             'myvh_invoice_items',
             'myvh_rooms',

@@ -146,6 +146,23 @@ class EmailTemplateRegistry {
                     'booking_details' => 'Includes 3 bookings in April 2026.',
                 ],
             ],
+            'overnight-batch-summary' => [
+                'label' => 'Overnight Batch Summary (Admin)',
+                'description' => 'Sent to the site administrator after each overnight batch run.',
+                'default_subject' => 'Overnight batch summary — {{run_date}}',
+                'placeholders' => [
+                    'run_date'     => 'Date and time the batch completed.',
+                    'summary_rows' => 'HTML table rows — one row per job with name, count, status, detail.',
+                    'site_name'    => 'Current site name.',
+                    'site_url'     => 'Current site URL.',
+                    'logo_url'     => 'Current site icon URL.',
+                ],
+                'default_html' => '',
+                'sample_vars' => [
+                    'run_date' => '14 May 2026 04:00',
+                    'summary_rows' => '<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">Auto-Invoicing</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;">3</td><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#2e7d32;font-weight:bold;">Success</td><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#666;">3 invoice(s) generated</td></tr>',
+                ],
+            ],
             'organisation-created' => [
                 'label' => 'Organisation Created (Admin)',
                 'description' => 'Sent to client administrators when a new organisation is created.',

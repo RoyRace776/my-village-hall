@@ -610,11 +610,152 @@ document.addEventListener("DOMContentLoaded", () => {
         initRoomColourPreviews();
         initOrganisationBillingToggles();
         initInvoicesPage();
+        initPaymentsPage();
 
         if (window.MyvhPortalEmail) {
             window.MyvhPortalEmail.initEmailTemplatesPage();
             window.MyvhPortalEmail.initEmailTemplateEditPage();
         }
+    }
+
+    /**
+     * Initialize payments page filters and amount label behavior.
+     */
+    function initPaymentsPage() {
+        const paymentsPage = document.querySelector('.myvh-payments-page');
+        if (!paymentsPage) {
+            return;
+        }
+
+        const filterForm = paymentsPage.querySelector('#myvh-payment-filter-form');
+        if (filterForm && filterForm.dataset.bound !== '1') {
+            const startDateInput = filterForm.querySelector('input[name="start_date"]');
+            const endDateInput = filterForm.querySelector('input[name="end_date"]');
+            const invoiceIdInput = filterForm.querySelector('input[name="invoice_id"]');
+            const resetButton = filterForm.querySelector('[data-payment-filter-reset]');
+            const lastMonthButton = filterForm.querySelector('[data-payment-date-range="last_month"]');
+
+            const getDefaultEndDate = () => {
+                const today = new Date();
+                return today.toISOString().slice(0, 10);
+            };
+
+            const getDefaultStartDate = () => {
+                const date = new Date();
+                date.setMonth(date.getMonth() - 1);
+                return date.toISOString().slice(0, 10);
+            };
+
+            const getLastMonthStartDate = () => {
+                if (lastMonthButton) {
+                    return lastMonthButton.getAttribute('data-start-date') || getDefaultStartDate();
+                }
+                return getDefaultStartDate();
+            };
+
+            const getLastMonthEndDate = () => {
+                if (lastMonthButton) {
+                    return lastMonthButton.getAttribute('data-end-date') || getDefaultEndDate();
+                }
+                return getDefaultEndDate();
+            };
+
+            const setDateRange = (startDate, endDate) => {
+                if (startDateInput && startDate) {
+                    startDateInput.value = startDate;
+                }
+
+                if (endDateInput && endDate) {
+                    endDateInput.value = endDate;
+                }
+            };
+
+            const applyPaymentFilterHash = () => {
+                const query = new URLSearchParams();
+
+                if (invoiceIdInput && invoiceIdInput.value) {
+                    query.set('invoice_id', invoiceIdInput.value);
+                }
+
+                if (startDateInput && startDateInput.value) {
+                    query.set('start_date', startDateInput.value);
+                }
+
+                if (endDateInput && endDateInput.value) {
+                    query.set('end_date', endDateInput.value);
+                }
+
+                const queryString = query.toString();
+                location.hash = queryString ? '#payments?' + queryString : '#payments';
+            };
+
+            filterForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                applyPaymentFilterHash();
+            });
+
+            paymentsPage.addEventListener('click', (event) => {
+                const quickRangeButton = event.target.closest('[data-payment-date-range]');
+                if (!quickRangeButton || !filterForm.contains(quickRangeButton)) {
+                    return;
+                }
+
+                event.preventDefault();
+                setDateRange(
+                    quickRangeButton.getAttribute('data-start-date') || '',
+                    quickRangeButton.getAttribute('data-end-date') || ''
+                );
+                applyPaymentFilterHash();
+            });
+
+            if (resetButton) {
+                resetButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    setDateRange(getLastMonthStartDate(), getLastMonthEndDate());
+                    applyPaymentFilterHash();
+                });
+            }
+
+            filterForm.dataset.bound = '1';
+        }
+
+        const invoiceSelect = paymentsPage.querySelector('#myvh-portal-payment-invoice');
+        const amountLabel = paymentsPage.querySelector('#myvh-portal-payment-amount-label');
+
+        if (!invoiceSelect || !amountLabel || invoiceSelect.dataset.amountLabelBound === '1') {
+            return;
+        }
+
+        const baseLabel = amountLabel.getAttribute('data-base-label') || 'Amount';
+        const currencyFormatter = new Intl.NumberFormat('en-GB', {
+            style: 'currency',
+            currency: 'GBP',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+
+        const updateAmountLabel = () => {
+            const selectedOption = invoiceSelect.options[invoiceSelect.selectedIndex];
+
+            if (!selectedOption || !selectedOption.value) {
+                amountLabel.textContent = baseLabel;
+                return;
+            }
+
+            const rawAmountDue = selectedOption.getAttribute('data-amount-due') || '';
+            const amountDue = Number.parseFloat(rawAmountDue);
+
+            if (!Number.isFinite(amountDue)) {
+                amountLabel.textContent = baseLabel;
+                return;
+            }
+
+            amountLabel.textContent = baseLabel + ' (' + currencyFormatter.format(amountDue) + ' outstanding)';
+        };
+
+        invoiceSelect.addEventListener('change', updateAmountLabel);
+        invoiceSelect.dataset.amountLabelBound = '1';
+        updateAmountLabel();
     }
 
     /**

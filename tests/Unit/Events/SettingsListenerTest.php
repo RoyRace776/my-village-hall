@@ -4,6 +4,7 @@ namespace MYVH\Tests\Unit\Events;
 
 use Brain\Monkey\Functions;
 use Mockery;
+use MYVH\Core\Scheduling\OvernightBatchRunner;
 use MYVH\Events\SettingsEvents;
 use MYVH\Events\SettingsListener;
 use MYVH\Tests\Unit\UnitTestCase;
@@ -29,6 +30,39 @@ class SettingsListenerTest extends UnitTestCase
         }
 
         (new SettingsListener())->register();
+        $this->addToAssertionCount(1);
+    }
+
+    /** @test */
+    public function handle_invoicing_settings_saved_schedules_batch_when_enabled(): void
+    {
+        Functions\when('myvh_setting')->justReturn(true);
+
+        Functions\expect('wp_next_scheduled')
+            ->with(OvernightBatchRunner::HOOK)
+            ->once()
+            ->andReturn(false);
+
+        Functions\expect('wp_timezone')
+            ->once()
+            ->andReturn(new \DateTimeZone('UTC'));
+
+        Functions\expect('wp_schedule_event')
+            ->with(Mockery::type('int'), 'daily', OvernightBatchRunner::HOOK)
+            ->once();
+
+        (new SettingsListener())->handle_invoicing_settings_saved([]);
+        $this->addToAssertionCount(1);
+    }
+
+    /** @test */
+    public function handle_invoicing_settings_saved_clears_batch_when_disabled(): void
+    {
+        Functions\expect('wp_clear_scheduled_hook')
+            ->with(OvernightBatchRunner::HOOK)
+            ->once();
+
+        (new SettingsListener())->handle_invoicing_settings_saved([]);
         $this->addToAssertionCount(1);
     }
 }

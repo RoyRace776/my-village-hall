@@ -3,14 +3,24 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+$invoice = $invoice ?? [];
 $is_client_admin = !empty($is_client_admin);
 $invoice_bookings = $invoice['BookingsSummary'] ?? [];
 $invoice_payments = $invoice['Payments'] ?? [];
 $available_statuses = $available_statuses ?? [];
 $has_payments = !empty($invoice_payments);
+$invoice_status = (string) ($invoice['Status'] ?? 'draft');
+$invoice_status_label = ucwords(str_replace('-', ' ', $invoice_status));
+$invoice_total = floatval($invoice['TotalAmount'] ?? 0);
+$invoice_paid = floatval($invoice['AmountPaid'] ?? 0);
+$invoice_due = floatval($invoice['AmountDue'] ?? 0);
+$invoice_booking_count = intval($invoice['BookingCount'] ?? count($invoice_bookings));
+$invoice_payment_count = count($invoice_payments);
+$invoice_customer_name = !empty($invoice['CustomerName']) ? (string) $invoice['CustomerName'] : 'Invoice details';
+$invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoice['BillingName'] ?: 'Unassigned'));
 ?>
 
-<div class="myvh-dashboard-section">
+<div class="myvh-dashboard-section myvh-client-settings-page myvh-invoices-page myvh-invoice-view-page">
     <?php
         $portal_pdf_url = add_query_arg([
             'action' => 'myvh_portal_view_invoice_pdf',
@@ -25,14 +35,17 @@ $has_payments = !empty($invoice_payments);
         </div>
         <div>
             <?php if (!empty($invoice['Id'])): ?>
-                <a href="<?php echo esc_url($portal_pdf_url); ?>" class="button" target="_blank" rel="noopener noreferrer">View PDF</a>
+                <a href="<?php echo esc_url($portal_pdf_url); ?>" class="button button-primary myvh-portal-add-button" target="_blank" rel="noopener noreferrer">View PDF</a>
             <?php endif; ?>
             <?php if ($is_client_admin): ?>
-                <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
-                    <a href="#payments?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>" class="button">Payments</a>
+                <?php if (!empty($invoice['Id']) && $invoice_status !== 'draft'): ?>
+                    <button type="button" class="button button-primary myvh-portal-add-button" data-invoice-email="<?php echo intval($invoice['Id']); ?>" aria-label="Resend invoice to customer" title="Resend invoice to customer">Resend Invoice</button>
+                <?php endif; ?>
+                <?php if ($invoice_status !== 'cancelled'): ?>
+                    <a href="#payments?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>" class="button button-primary myvh-portal-add-button">Payments</a>
                 <?php endif; ?>
             <?php endif; ?>
-            <a href="#invoices" class="button">Back to Invoices</a>
+            <a href="#invoices" class="button button-primary myvh-portal-add-button">Back to Invoices</a>
         </div>
     </div>
 
@@ -42,9 +55,47 @@ $has_payments = !empty($invoice_payments);
                 <p>Invoice not found or you do not have permission to view it.</p>
             </div>
         <?php else: ?>
+            <div class="myvh-card myvh-account-card myvh-invoice-view-hero">
+                <div class="myvh-invoice-view-hero__header">
+                    <div>
+                        <span class="myvh-invoice-view-kicker">Invoice <?php echo esc_html((string) ($invoice['InvoiceNumber'] ?? '')); ?></span>
+                        <h3><?php echo esc_html($invoice_customer_name); ?></h3>
+                        <p>Review the financial summary, status history, and any linked bookings below.</p>
+                    </div>
+                    <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice_status); ?>" data-invoice-status-badge><?php echo esc_html($invoice_status_label); ?></span>
+                </div>
+
+                <div class="myvh-invoice-view-stats">
+                    <div class="myvh-invoice-view-stat">
+                        <span>Status</span>
+                        <strong data-current-invoice-status><?php echo esc_html($invoice_status_label); ?></strong>
+                    </div>
+                    <div class="myvh-invoice-view-stat">
+                        <span>Invoice date</span>
+                        <strong><?php echo esc_html(date('j M Y', strtotime((string) ($invoice['InvoiceDate'] ?? 'now')))); ?></strong>
+                    </div>
+                    <div class="myvh-invoice-view-stat">
+                        <span>Due date</span>
+                        <strong><?php echo esc_html(date('j M Y', strtotime((string) ($invoice['DueDate'] ?? 'now')))); ?></strong>
+                    </div>
+                    <div class="myvh-invoice-view-stat">
+                        <span>Total</span>
+                        <strong>£<?php echo number_format($invoice_total, 2); ?></strong>
+                    </div>
+                    <div class="myvh-invoice-view-stat">
+                        <span>Paid</span>
+                        <strong>£<?php echo number_format($invoice_paid, 2); ?></strong>
+                    </div>
+                    <div class="myvh-invoice-view-stat">
+                        <span>Due</span>
+                        <strong>£<?php echo number_format($invoice_due, 2); ?></strong>
+                    </div>
+                </div>
+            </div>
+
             <div class="myvh-card myvh-account-card">
                 <div class="myvh-account-card-head">
-                    <h3><?php echo esc_html($invoice['InvoiceNumber'] ?? 'Invoice'); ?></h3>
+                    <h3>Invoice Details</h3>
                     <span><?php echo !empty($invoice['CustomerName']) ? 'For ' . esc_html($invoice['CustomerName']) : 'Invoice details'; ?></span>
                 </div>
 
@@ -53,8 +104,8 @@ $has_payments = !empty($invoice_payments);
                         <div class="myvh-account-card-head">
                             <h3>Status &amp; Dates</h3>
                         </div>
-                        <p><strong>Status:</strong> <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice['Status'] ?? 'draft'); ?>" data-invoice-status-badge><?php echo esc_html(ucwords(str_replace('-', ' ', (string) ($invoice['Status'] ?? 'draft')))); ?></span></p>
-                        <p><strong>Current status:</strong> <span data-current-invoice-status><?php echo esc_html(ucwords(str_replace('-', ' ', (string) ($invoice['Status'] ?? 'draft')))); ?></span></p>
+                        <p><strong>Status:</strong> <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice_status); ?>" data-invoice-status-badge><?php echo esc_html($invoice_status_label); ?></span></p>
+                        <p><strong>Current status:</strong> <span data-current-invoice-status><?php echo esc_html($invoice_status_label); ?></span></p>
                         <p><strong>Invoice date:</strong> <?php echo esc_html(date('j M Y', strtotime((string) ($invoice['InvoiceDate'] ?? 'now')))); ?></p>
                         <p><strong>Due date:</strong> <?php echo esc_html(date('j M Y', strtotime((string) ($invoice['DueDate'] ?? 'now')))); ?></p>
                     </div>
@@ -63,7 +114,7 @@ $has_payments = !empty($invoice_payments);
                         <div class="myvh-account-card-head">
                             <h3>Billing</h3>
                         </div>
-                        <p><strong>Billed to:</strong> <?php echo esc_html($invoice['BillingOrganisationName'] ?: ($invoice['BillingName'] ?: 'Unassigned')); ?></p>
+                        <p><strong>Billed to:</strong> <?php echo esc_html($invoice_billing_name); ?></p>
                         <?php if (!empty($invoice['BillingEmail'])): ?>
                             <p><strong>Email:</strong> <?php echo esc_html($invoice['BillingEmail']); ?></p>
                         <?php endif; ?>
@@ -87,52 +138,55 @@ $has_payments = !empty($invoice_payments);
                         <div class="myvh-account-card-head">
                             <h3>Amounts</h3>
                         </div>
-                        <p><strong>Total:</strong> £<?php echo number_format(floatval($invoice['TotalAmount'] ?? 0), 2); ?></p>
-                        <p><strong>Paid:</strong> £<?php echo number_format(floatval($invoice['AmountPaid'] ?? 0), 2); ?></p>
-                        <p><strong>Due:</strong> £<?php echo number_format(floatval($invoice['AmountDue'] ?? 0), 2); ?></p>
-                        <p><strong>Bookings linked:</strong> <?php echo intval($invoice['BookingCount'] ?? count($invoice_bookings)); ?></p>
+                        <p><strong>Total:</strong> £<?php echo number_format($invoice_total, 2); ?></p>
+                        <p><strong>Paid:</strong> £<?php echo number_format($invoice_paid, 2); ?></p>
+                        <p><strong>Due:</strong> £<?php echo number_format($invoice_due, 2); ?></p>
+                        <p><strong>Bookings linked:</strong> <?php echo esc_html((string) $invoice_booking_count); ?></p>
                     </div>
+
+                    <?php if ($is_client_admin): ?>
+                        <div class="myvh-account-card myvh-invoice-view-section">
+                            <div class="myvh-account-card-head">
+                                <h3>Amend Status</h3>
+                            </div>
+                            <?php if ($has_payments): ?>
+                                <p>Status is managed by recorded payments for this invoice.</p>
+                            <?php else: ?>
+                                <form id="myvh-portal-invoice-status-form">
+                                    <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                                    <div class="myvh-account-grid">
+                                        <div>
+                                            <label for="myvh-portal-invoice-status"><strong>Status</strong></label>
+                                            <select id="myvh-portal-invoice-status" name="status">
+                                                <?php foreach ($available_statuses as $status): ?>
+                                                    <?php if (in_array($status, ['draft', 'sent', 'overdue', 'cancelled'], true)): ?>
+                                                        <option value="<?php echo esc_attr($status); ?>" <?php selected(($invoice['Status'] ?? '') === $status); ?>><?php echo esc_html(ucwords(str_replace('-', ' ', $status))); ?></option>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div style="align-self: end;">
+                                            <button type="submit" class="button button-primary">Update Status</button>
+                                        </div>
+                                    </div>
+                                    <p class="myvh-muted" data-invoice-status-message></p>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
-                <?php if ($is_client_admin): ?>
-                    <div class="myvh-account-card" style="margin-top: 16px;">
-                        <div class="myvh-account-card-head">
-                            <h3>Amend Status</h3>
-                        </div>
-                        <?php if ($has_payments): ?>
-                            <p>Status is managed by recorded payments for this invoice.</p>
-                        <?php else: ?>
-                            <form id="myvh-portal-invoice-status-form">
-                                <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
-                                <div class="myvh-account-grid">
-                                    <div>
-                                        <label for="myvh-portal-invoice-status"><strong>Status</strong></label>
-                                        <select id="myvh-portal-invoice-status" name="status">
-                                            <?php foreach ($available_statuses as $status): ?>
-                                                <?php if (in_array($status, ['draft', 'sent', 'overdue', 'cancelled'], true)): ?>
-                                                    <option value="<?php echo esc_attr($status); ?>" <?php selected(($invoice['Status'] ?? '') === $status); ?>><?php echo esc_html(ucwords(str_replace('-', ' ', $status))); ?></option>
-                                                <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div style="align-self: end;">
-                                        <button type="submit" class="button button-primary">Update Status</button>
-                                    </div>
-                                </div>
-                                <p class="myvh-muted" data-invoice-status-message></p>
-                            </form>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-
-                <div class="myvh-account-card" style="margin-top: 16px;">
+                <div class="myvh-account-card myvh-invoice-view-section">
                     <div class="myvh-account-card-head">
                         <h3>Payments</h3>
-                        <span><?php echo count($invoice_payments); ?> payment<?php echo count($invoice_payments) === 1 ? '' : 's'; ?></span>
+                        <span><?php echo esc_html((string) $invoice_payment_count); ?> payment<?php echo $invoice_payment_count === 1 ? '' : 's'; ?></span>
                     </div>
 
                     <?php if (empty($invoice_payments)): ?>
-                        <p>No payments have been recorded for this invoice.</p>
+                        <div class="myvh-invoices-empty-state myvh-invoice-view-empty-state">
+                            <p class="myvh-invoices-empty-state__title">No payments recorded yet.</p>
+                            <p>This invoice has not had any payments logged against it.</p>
+                        </div>
                     <?php else: ?>
                         <div class="myvh-invoices-table-wrap">
                             <table class="myvh-customer-list-table myvh-invoices-table">
@@ -177,13 +231,13 @@ $has_payments = !empty($invoice_payments);
                 </div>
 
                 <?php if ($is_client_admin): ?>
-                    <div class="myvh-account-card" style="margin-top: 16px;">
+                    <div class="myvh-account-card myvh-invoice-view-section">
                         <div class="myvh-account-card-head">
                             <h3>Add Payment</h3>
                         </div>
-                        <?php if (($invoice['Status'] ?? '') === 'cancelled'): ?>
+                        <?php if ($invoice_status === 'cancelled'): ?>
                             <p>Reopen this invoice before recording payments.</p>
-                        <?php elseif (floatval($invoice['AmountDue'] ?? 0) <= 0): ?>
+                        <?php elseif ($invoice_due <= 0): ?>
                             <p>This invoice has already been fully paid.</p>
                         <?php else: ?>
                             <form class="myvh-account-form" data-portal-action="myvh_portal_create_payment" data-message-target="myvh-portal-payment-create-message">
@@ -220,21 +274,24 @@ $has_payments = !empty($invoice_payments);
                                 <p>
                                     <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="4"></textarea>
                                 </p>
-                                <button type="submit" class="button button-primary">Save Payment</button>
+                                <button type="submit" class="button button-primary myvh-portal-add-button">Save Payment</button>
                                 <p class="myvh-muted" id="myvh-portal-payment-create-message"></p>
                             </form>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
-                <div class="myvh-account-card" style="margin-top: 16px;">
+                <div class="myvh-account-card myvh-invoice-view-section">
                     <div class="myvh-account-card-head">
-                        <h3>Related Bookings</h3>
-                        <span><?php echo count($invoice_bookings); ?> booking<?php echo count($invoice_bookings) === 1 ? '' : 's'; ?></span>
+                        <h3>Bookings invoiced</h3>
+                        <span><?php echo esc_html((string) $invoice_booking_count); ?> booking<?php echo $invoice_booking_count === 1 ? '' : 's'; ?></span>
                     </div>
 
                     <?php if (empty($invoice_bookings)): ?>
-                        <p>No bookings were found on this invoice.</p>
+                        <div class="myvh-invoices-empty-state myvh-invoice-view-empty-state">
+                            <p class="myvh-invoices-empty-state__title">No linked bookings found.</p>
+                            <p>This invoice does not currently have any bookings attached to it.</p>
+                        </div>
                     <?php else: ?>
                         <div class="myvh-invoices-table-wrap">
                             <table class="myvh-customer-list-table myvh-invoices-table">

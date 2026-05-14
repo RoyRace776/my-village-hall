@@ -40,6 +40,7 @@ use MYVH\Bootstrap\Installer;
 use MYVH\Login\PasswordResetLoader;
 use MYVH\Audit\AuditTrail;
 use MYVH\Core\Support\AssetLoader;
+use MYVH\Core\Scheduling\OvernightJobScheduler;
 use MYVH\Container\Container;
 use MYVH\Settings\SettingsRegistry;
 use MYVH\Settings\SettingsPage;
@@ -270,6 +271,8 @@ class MyVillageHall {
 
     /** Runs on plugin deactivation. */
     public function deactivate( bool $network_wide ): void {
+        OvernightJobScheduler::clear( \MYVH\Core\Scheduling\OvernightBatchRunner::HOOK );
+
         $general_settings    = new GeneralSettings();
         $delete_on_deactivate = (bool) $general_settings->get( 'delete_on_deactivate' );
 

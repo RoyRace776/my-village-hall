@@ -1,6 +1,9 @@
 <?php
 namespace MYVH\Events;
 
+use MYVH\Core\Scheduling\OvernightBatchRunner;
+use MYVH\Core\Scheduling\OvernightJobScheduler;
+
 class SettingsListener {
     public function register(): void {
         add_action('myvh_event_' . SettingsEvents::ADMIN_SAVED, [$this, 'handle_admin_settings_saved']);
@@ -24,6 +27,14 @@ class SettingsListener {
     }
 
     public function handle_invoicing_settings_saved($payload): void {
+        $run_overnight = (bool) myvh_setting( 'invoicing.run_overnight', false );
+
+        if ( $run_overnight ) {
+            OvernightJobScheduler::schedule( OvernightBatchRunner::HOOK );
+            return;
+        }
+
+        OvernightJobScheduler::clear( OvernightBatchRunner::HOOK );
     }
 
     public function handle_notices_settings_saved($payload): void {

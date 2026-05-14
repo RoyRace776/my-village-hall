@@ -1,4 +1,16 @@
 <?php /* HTML email template for invoice notifications */ ?>
+<?php
+$site_name = $site_name ?? get_bloginfo('name');
+$logo_url = $logo_url ?? '';
+$invoice_ref = $invoice_ref ?? '';
+$customer_name = $customer_name ?? 'there';
+$invoice_total = $invoice_total ?? '';
+$invoice_due_date = $invoice_due_date ?? '';
+$invoice_status = $invoice_status ?? '';
+$organisation_name = $organisation_name ?? '';
+$booking_details = $booking_details ?? '';
+$invoice_url = $invoice_url ?? '';
+?>
 <table style="width:100%;max-width:560px;margin:auto;font-family:sans-serif;background:#fff;border-radius:8px;box-shadow:0 2px 8px #0001;">
 <tr><td style="padding:32px 32px 16px 32px;">
     <?php if (!empty($logo_url)): ?>

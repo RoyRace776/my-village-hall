@@ -19,10 +19,10 @@ foreach ($organisation_types as $organisation_type) {
             <h2>Organisations</h2>
             <p>View your memberships, request access, and manage organisations you administer.</p>
         </div>
-        <a href="#organisation-add" class="button button-primary myvh-portal-add-button">
-            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+        <button type="button" class="myvh-portal-add-btn myvh-portal-nav-btn" onclick="window.location.hash='organisation-add';">
+            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
             <span>Add Organisation</span>
-        </a>
+        </button>
     </div>
 
     <div class="myvh-account-grid">

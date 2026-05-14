@@ -167,4 +167,78 @@ describe('Portal app integration behaviors', () => {
 
     expect(submitButton.disabled).toBe(false);
   });
+
+  test('updates payment amount label when invoice is selected', async () => {
+    window.fetch.mockResolvedValue(
+      mockHtmlResponse(`
+        <div class="myvh-dashboard-section myvh-client-settings-page myvh-payments-page">
+          <form class="myvh-account-form" data-portal-action="myvh_portal_create_payment">
+            <div class="myvh-account-field">
+              <label for="myvh-portal-payment-invoice"><strong>Invoice</strong></label>
+              <select id="myvh-portal-payment-invoice" name="invoice_id" required>
+                <option value="">Select an invoice</option>
+                <option value="42" data-amount-due="45.00">INV-000042 - Test Customer</option>
+              </select>
+            </div>
+            <div class="myvh-account-field">
+              <label for="myvh-portal-payment-amount"><strong id="myvh-portal-payment-amount-label" data-base-label="Amount">Amount</strong></label>
+              <input id="myvh-portal-payment-amount" type="number" name="payment_amount" min="0.01" step="0.01" required>
+            </div>
+          </form>
+        </div>
+      `)
+    );
+
+    window.location.hash = '#payments';
+    window.dispatchEvent(new Event('hashchange'));
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    const invoiceSelect = document.getElementById('myvh-portal-payment-invoice');
+    const amountLabel = document.getElementById('myvh-portal-payment-amount-label');
+
+    expect(invoiceSelect).not.toBeNull();
+    expect(amountLabel).not.toBeNull();
+    expect(amountLabel.textContent).toBe('Amount');
+
+    invoiceSelect.value = '42';
+    invoiceSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(amountLabel.textContent).toBe('Amount (£45.00 outstanding)');
+  });
+
+  test('applies payments date filter via hash route', async () => {
+    window.fetch.mockResolvedValue(
+      mockHtmlResponse(`
+        <div class="myvh-dashboard-section myvh-client-settings-page myvh-payments-page">
+          <form id="myvh-payment-filter-form" class="myvh-invoice-filter-form">
+            <input type="hidden" name="invoice_id" value="17">
+            <input type="date" name="start_date" value="2026-04-13">
+            <input type="date" name="end_date" value="2026-05-13">
+            <button type="submit">Apply Filter</button>
+          </form>
+        </div>
+      `)
+    );
+
+    window.location.hash = '#payments';
+    window.dispatchEvent(new Event('hashchange'));
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    const filterForm = document.getElementById('myvh-payment-filter-form');
+    const startDateInput = filterForm.querySelector('input[name="start_date"]');
+    const endDateInput = filterForm.querySelector('input[name="end_date"]');
+
+    startDateInput.value = '2026-03-01';
+    endDateInput.value = '2026-05-01';
+    filterForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(window.location.hash).toContain('#payments?');
+    expect(window.location.hash).toContain('invoice_id=17');
+    expect(window.location.hash).toContain('start_date=2026-03-01');
+    expect(window.location.hash).toContain('end_date=2026-05-01');
+  });
 });

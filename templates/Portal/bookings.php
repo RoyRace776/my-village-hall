@@ -56,10 +56,10 @@ usort($groups, function ($a, $b) use ($today) {
         </div>
 
         <?php if ($is_client_admin || !empty($customer['Id'])): ?>
-            <a href="#new-booking" class="button button-primary myvh-portal-add-button">
-                <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+            <button type="button" class="myvh-portal-add-btn myvh-portal-nav-btn" onclick="window.location.hash='new-booking';">
+                <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
                 <span>New Booking</span>
-            </a>
+            </button>
         <?php endif; ?>
     </div>
 

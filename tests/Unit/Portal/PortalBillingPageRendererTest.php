@@ -12,7 +12,7 @@ use MYVH\Tests\Unit\UnitTestCase;
 class PortalBillingPageRendererTest extends UnitTestCase {
     private BookingService $booking_service;
     private $invoice_service;
-    private PaymentService $payment_service;
+    private $payment_service;
     private PortalBillingPageRenderer $renderer;
 
     protected function setUp(): void {
@@ -216,5 +216,77 @@ class PortalBillingPageRendererTest extends UnitTestCase {
         $this->assertStringContainsString('Begins with', $html);
         $this->assertStringContainsString('Contains', $html);
         $this->assertStringContainsString('data-invoice-filter-reset', $html);
+    }
+
+    /** @test */
+    public function render_payments_defaults_to_last_month_and_limits_invoice_dropdown_statuses(): void {
+        $_GET = [];
+
+        $this->payment_service->shouldReceive('get_payments')
+            ->once()
+            ->with(0)
+            ->andReturn([
+                [
+                    'Id' => 1,
+                    'InvoiceId' => 1,
+                    'InvoiceNumber' => 'INV-SENT',
+                    'CustomerName' => 'Sent Customer',
+                    'PaymentDate' => '2026-05-10',
+                    'Amount' => 10,
+                    'PaymentMethod' => 'card',
+                    'TransactionReference' => 'IN-RANGE',
+                    'Notes' => '',
+                ],
+                [
+                    'Id' => 2,
+                    'InvoiceId' => 1,
+                    'InvoiceNumber' => 'INV-SENT',
+                    'CustomerName' => 'Sent Customer',
+                    'PaymentDate' => '2026-03-31',
+                    'Amount' => 8,
+                    'PaymentMethod' => 'card',
+                    'TransactionReference' => 'OUT-OF-RANGE',
+                    'Notes' => '',
+                ],
+            ]);
+
+        $this->payment_service->shouldReceive('get_valid_methods')
+            ->once()
+            ->andReturnUsing(static fn() => ['bank_transfer']);
+
+        $this->invoice_service->shouldReceive('get_with_customers')
+            ->once()
+            ->andReturn([
+                [
+                    'Id' => 1,
+                    'InvoiceNumber' => 'INV-SENT',
+                    'CustomerName' => 'Sent Customer',
+                    'Status' => 'sent',
+                ],
+                [
+                    'Id' => 2,
+                    'InvoiceNumber' => 'INV-PART',
+                    'CustomerName' => 'Part Customer',
+                    'Status' => 'part-paid',
+                ],
+                [
+                    'Id' => 3,
+                    'InvoiceNumber' => 'INV-DRAFT',
+                    'CustomerName' => 'Draft Customer',
+                    'Status' => 'draft',
+                ],
+            ]);
+
+        ob_start();
+        $this->renderer->render_payments(true);
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('INV-SENT', $html);
+        $this->assertStringContainsString('INV-PART', $html);
+        $this->assertStringNotContainsString('INV-DRAFT', $html);
+        $this->assertStringContainsString('IN-RANGE', $html);
+        $this->assertStringNotContainsString('OUT-OF-RANGE', $html);
+        $this->assertStringContainsString('name="start_date" value="2026-04-13"', $html);
+        $this->assertStringContainsString('name="end_date" value="2026-05-13"', $html);
     }
 }

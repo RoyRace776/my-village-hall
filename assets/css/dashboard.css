@@ -314,9 +314,9 @@ body .site-main:has(#myvh-portal) {
 .myvh-card,
 .myvh-booking-card {
   background: var(--card-bg);
-  border: 1px solid #e4dbcf;
+  border: 0.75px solid #e4dbcf;
   border-radius: 12px;
-  padding: 16px;
+  padding: 14px;
   margin-bottom: 16px;
   box-shadow: 0 10px 28px rgba(28, 26, 23, 0.06);
 }
@@ -1404,7 +1404,7 @@ body .site-main:has(#myvh-portal) {
 }
 
 .myvh-account-card {
-  padding: 20px;
+  padding: 18px;
 }
 
 .myvh-account-card-head {
@@ -1505,7 +1505,8 @@ body .site-main:has(#myvh-portal) {
   width: auto;
 }
 
-.myvh-account-header .myvh-portal-add-button {
+.myvh-invoice-view-page .myvh-account-header .myvh-portal-add-button,
+.myvh-invoice-view-page .myvh-account-form .myvh-portal-add-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1522,8 +1523,10 @@ body .site-main:has(#myvh-portal) {
   transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
 }
 
-.myvh-account-header .myvh-portal-add-button:hover,
-.myvh-account-header .myvh-portal-add-button:focus {
+.myvh-invoice-view-page .myvh-account-header .myvh-portal-add-button:hover,
+.myvh-invoice-view-page .myvh-account-header .myvh-portal-add-button:focus,
+.myvh-invoice-view-page .myvh-account-form .myvh-portal-add-button:hover,
+.myvh-invoice-view-page .myvh-account-form .myvh-portal-add-button:focus {
   background: linear-gradient(135deg, #b5451b 0%, #933517 100%);
   border-color: transparent;
   color: #fff;
@@ -1533,7 +1536,8 @@ body .site-main:has(#myvh-portal) {
   text-decoration: none;
 }
 
-.myvh-account-header .myvh-portal-add-button .dashicons {
+.myvh-invoice-view-page .myvh-account-header .myvh-portal-add-button .dashicons,
+.myvh-invoice-view-page .myvh-account-form .myvh-portal-add-button .dashicons {
   width: 16px;
   height: 16px;
   font-size: 16px;
@@ -1567,7 +1571,7 @@ body .site-main:has(#myvh-portal) {
 }
 
 .myvh-rooms-page .myvh-account-card {
-  border: 1px solid #e4d9ca;
+  border: 0.75px solid #e4d9ca;
   box-shadow: 0 10px 20px rgba(28, 26, 23, .05);
 }
 
@@ -2030,12 +2034,120 @@ body .site-main:has(#myvh-portal) {
 }
 
 .myvh-invoices-page .myvh-account-card {
-  border: 1px solid #e4d9ca;
+  border: 0.75px solid #e4d9ca;
   box-shadow: 0 10px 20px rgba(28, 26, 23, 0.05);
 }
 
 .myvh-invoices-page .myvh-account-card-head {
   align-items: flex-end;
+}
+
+.myvh-invoice-view-page .myvh-account-header {
+  align-items: flex-end;
+  gap: 24px;
+}
+
+.myvh-invoice-view-page .myvh-account-header p {
+  max-width: 760px;
+}
+
+.myvh-invoice-view-page .myvh-account-header .button {
+  min-height: 42px;
+  margin: 0 0 0 8px;
+}
+
+.myvh-invoice-view-page .myvh-account-header button.myvh-portal-add-button {
+  min-height: 42px;
+  padding: 10px 16px;
+  line-height: 1.2;
+}
+
+.myvh-invoice-view-page .myvh-account-form .myvh-portal-add-button {
+  justify-self: start;
+  align-self: start;
+  width: auto;
+}
+
+.myvh-invoice-view-hero {
+  margin-bottom: 18px;
+}
+
+.myvh-invoice-view-hero__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.myvh-invoice-view-kicker {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.myvh-invoice-view-hero h3 {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.myvh-invoice-view-hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.myvh-invoice-view-stats {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.myvh-invoice-view-stat {
+  padding: 14px 16px;
+  border: 1px solid #e4d9ca;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #fbf7f2 100%);
+  box-shadow: 0 4px 12px rgba(28, 26, 23, 0.04);
+}
+
+.myvh-invoice-view-stat span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.myvh-invoice-view-stat strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
+
+.myvh-invoice-view-section {
+  margin-top: 16px;
+}
+
+.myvh-invoice-view-empty-state {
+  margin-top: 4px;
+}
+
+.myvh-invoice-view-page .myvh-account-card form select,
+.myvh-invoice-view-page .myvh-account-card form input,
+.myvh-invoice-view-page .myvh-account-card form textarea {
+  min-height: 42px;
+  border-color: #d7c7b8;
+  border-radius: 10px;
 }
 
 .myvh-invoice-filter-section {
@@ -2109,6 +2221,44 @@ body .site-main:has(#myvh-portal) {
 .myvh-invoice-date-field {
   min-width: 180px;
   flex: 1 1 180px;
+}
+
+.myvh-payments-page .myvh-invoice-date-field input[type="date"] {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .95rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+
+.myvh-invoices-page .myvh-invoice-date-field input[type="date"] {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .95rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+
+.myvh-payments-page .myvh-invoice-date-field input[type="date"]::-webkit-datetime-edit {
+  font: inherit;
+}
+
+.myvh-invoices-page .myvh-invoice-date-field input[type="date"]::-webkit-datetime-edit {
+  font: inherit;
+}
+
+.myvh-client-settings-page input[type="date"],
+.myvh-client-settings-page input[data-myvh-picker="date"],
+.myvh-client-settings-page .flatpickr-alt-input,
+.myvh-client-settings-page .myvh-filter-date-input {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .95rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+
+.myvh-client-settings-page input[type="date"]::-webkit-datetime-edit,
+.myvh-client-settings-page input[data-myvh-picker="date"]::-webkit-datetime-edit,
+.myvh-client-settings-page .myvh-filter-date-input::-webkit-datetime-edit {
+  font: inherit;
 }
 
 .myvh-invoice-filter-label {
@@ -2306,6 +2456,30 @@ body .site-main:has(#myvh-portal) {
 
 .myvh-invoices-empty-state p:last-child {
   margin-bottom: 0;
+}
+
+@media (max-width: 1100px) {
+  .myvh-invoice-view-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .myvh-invoice-view-page .myvh-account-header {
+    align-items: flex-start;
+  }
+
+  .myvh-invoice-view-page .myvh-account-header .button {
+    margin: 0 8px 8px 0;
+  }
+
+  .myvh-invoice-view-hero__header {
+    flex-direction: column;
+  }
+
+  .myvh-invoice-view-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .myvh-portal-nav-btn {
@@ -2960,7 +3134,7 @@ body .site-main:has(#myvh-portal) {
 
 .myvh-portal-dashboard-page .myvh-account-card,
 .myvh-portal-bookings-page .myvh-account-card {
-  border: 1px solid #e4d9ca;
+  border: 0.75px solid #e4d9ca;
   box-shadow: 0 10px 20px rgba(28, 26, 23, 0.05);
 }
 
