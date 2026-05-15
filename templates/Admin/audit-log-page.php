@@ -14,11 +14,11 @@ if (!AuditTrail::can_view_dashboard()) {
     );
 }
 
-$page = max(1, intval($_GET['paged'] ?? 1));
+$page = max(1, \intval($_GET['paged'] ?? 1));
 $action_filter = sanitize_key($_GET['action_filter'] ?? '');
 $entity_filter = sanitize_key($_GET['entity_filter'] ?? '');
 $origin_filter = sanitize_key($_GET['origin_filter'] ?? '');
-$user_filter = max(0, intval($_GET['user_filter'] ?? 0));
+$user_filter = max(0, \intval($_GET['user_filter'] ?? 0));
 
 $result = AuditTrail::query([
     'page' => $page,
@@ -30,8 +30,8 @@ $result = AuditTrail::query([
 ]);
 
 $rows = $result['rows'] ?? [];
-$total_pages = max(1, intval($result['total_pages'] ?? 1));
-$current_page = max(1, intval($result['page'] ?? 1));
+$total_pages = max(1, \intval($result['total_pages'] ?? 1));
+$current_page = max(1, \intval($result['page'] ?? 1));
 
 $entity_options = [
     '' => __('All entities', 'my-village-hall'),
@@ -125,7 +125,7 @@ $origin_options = [
             <?php else: ?>
                 <?php foreach ($rows as $row): ?>
                     <?php
-                    $actor_user_id = intval($row['ActorUserId'] ?? 0);
+                    $actor_user_id = \intval($row['ActorUserId'] ?? 0);
                     $actor_display = $actor_user_id > 0 ? '#' . $actor_user_id : __('System', 'my-village-hall');
                     $summary = !empty($row['SummaryArray']) ? wp_json_encode($row['SummaryArray']) : '';
                     ?>

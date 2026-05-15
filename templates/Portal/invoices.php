@@ -169,13 +169,13 @@ $selected_invoice_number_match = isset($selected_invoice_number_match) ? (string
                             <?php
                                 $portal_pdf_url = add_query_arg([
                                     'action' => 'myvh_portal_view_invoice_pdf',
-                                    'invoice_id' => intval($invoice['Id']),
+                                    'invoice_id' => \intval($invoice['Id']),
                                     'nonce' => wp_create_nonce('myvh_portal'),
                                 ], admin_url('admin-ajax.php'));
                             ?>
                             <tr class="myvh-invoice-row">
                                 <td class="myvh-invoice-number">
-                                    <strong><a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>"><?php echo esc_html($invoice['InvoiceNumber']); ?></a></strong>
+                                    <strong><a href="#invoice-view?invoice_id=<?php echo \intval($invoice['Id']); ?>"><?php echo esc_html($invoice['InvoiceNumber']); ?></a></strong>
                                 </td>
                                 <?php if ($is_client_admin_view): ?>
                                     <td>
@@ -239,11 +239,11 @@ $selected_invoice_number_match = isset($selected_invoice_number_match) ? (string
                                 </td>
                                 <td>
                                     <div class="myvh-invoice-actions">
-                                        <a href="#invoice-view?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-action-icon" aria-label="View invoice" title="View invoice">👁</a>
+                                        <a href="#invoice-view?invoice_id=<?php echo \intval($invoice['Id']); ?>" class="myvh-action-icon" aria-label="View invoice" title="View invoice">👁</a>
                                         <a href="<?php echo esc_url($portal_pdf_url); ?>" class="myvh-action-icon" target="_blank" rel="noopener noreferrer" aria-label="View invoice PDF" title="View invoice PDF">📄</a>
                                         <?php if ($is_client_admin_view && ($invoice['Status'] ?? '') !== 'cancelled'): ?>
-                                            <button type="button" class="myvh-action-icon" data-invoice-email="<?php echo intval($invoice['Id']); ?>" aria-label="Email invoice to customer" title="Email invoice to customer" style="background:none; border:none; padding:0; margin:0; cursor:pointer;">📧</button>
-                                            <a href="#payments?invoice_id=<?php echo intval($invoice['Id']); ?>" class="myvh-action-icon" aria-label="View invoice payments" title="View invoice payments">💳</a>
+                                            <button type="button" class="myvh-action-icon" data-invoice-email="<?php echo \intval($invoice['Id']); ?>" aria-label="Email invoice to customer" title="Email invoice to customer" style="background:none; border:none; padding:0; margin:0; cursor:pointer;">📧</button>
+                                            <a href="#payments?invoice_id=<?php echo \intval($invoice['Id']); ?>" class="myvh-action-icon" aria-label="View invoice payments" title="View invoice payments">💳</a>
                                         <?php endif; ?>
                                     </div>
                                 </td>

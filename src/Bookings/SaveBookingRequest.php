@@ -60,7 +60,7 @@ class SaveBookingRequest extends RequestMapperBase
 
         foreach ($addons as $addon) {
             $enabled = !empty($addon['enabled']) && strval($addon['enabled']) === '1';
-            $addon_id = intval($addon['addon_id'] ?? 0);
+            $addon_id = \intval($addon['addon_id'] ?? 0);
 
             if (!$enabled || $addon_id <= 0) {
                 continue;

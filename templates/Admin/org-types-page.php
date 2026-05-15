@@ -13,12 +13,12 @@ if ($manage_type !== '') {
     }
 
     if (ctype_digit($manage_type)) {
-        wp_safe_redirect(admin_url('admin.php?page=myvh-org-types&edit=' . intval($manage_type)));
+        wp_safe_redirect(admin_url('admin.php?page=myvh-org-types&edit=' . \intval($manage_type)));
         exit;
     }
 }
 
-$edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$edit_id      = isset($_GET['edit']) ? \intval($_GET['edit']) : 0;
 $type_service = $myvh_container->get(OrganisationTypeService::class);
 $edit_type    = $edit_id ? $type_service->get($edit_id) : null;
 $edit_type_is_system = !empty($edit_type['IsSystem']);
@@ -73,7 +73,7 @@ $invalid_edit = isset($_GET['edit']) && $edit_id > 0 && !$edit_type;
                                             $label .= ' (' . __('System', 'my-village-hall') . ')';
                                         }
                                     ?>
-                                    <option value="<?php echo intval($type['Id']); ?>" <?php selected($edit_id, intval($type['Id'])); ?>>
+                                    <option value="<?php echo \intval($type['Id']); ?>" <?php selected($edit_id, \intval($type['Id'])); ?>>
                                         <?php echo esc_html($label); ?>
                                     </option>
                                 <?php endforeach; ?>

@@ -12,7 +12,7 @@ global $myvh_container;
 use MYVH\Invoices\InvoiceService;
 use MYVH\Payments\PaymentService;
 
-$view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
+$view_id = isset($_GET['view']) ? \intval($_GET['view']) : 0;
 $invoice_service = $myvh_container->get(InvoiceService::class);
 $payment_service = $myvh_container->get(PaymentService::class);
 $invoice = $view_id > 0 ? $invoice_service->get_detail($view_id) : null;
@@ -147,10 +147,10 @@ $has_payments = !empty($invoice_payments);
                                         <td>
                                             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('Delete this payment?', 'my-village-hall')); ?>');">
                                                 <input type="hidden" name="action" value="myvh_delete_payment">
-                                                <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) intval($payment['Id'] ?? 0)); ?>">
-                                                <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>">
+                                                <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) \intval($payment['Id'] ?? 0)); ?>">
+                                                <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
                                                 <input type="hidden" name="redirect_page" value="myvh-invoices">
-                                                <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>">
+                                                <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
                                                 <?php wp_nonce_field('myvh_delete_payment'); ?>
                                                 <button type="submit" class="button button-small"><?php esc_html_e('Delete', 'my-village-hall'); ?></button>
                                             </form>
@@ -183,7 +183,7 @@ $has_payments = !empty($invoice_payments);
                                 <?php foreach ($invoice_bookings as $booking): ?>
                                     <tr>
                                         <td>
-                                            <a href="<?php echo esc_url(admin_url('admin.php?page=my-village-hall&view=' . intval($booking['BookingId']))); ?>">#<?php echo intval($booking['BookingId']); ?></a>
+                                            <a href="<?php echo esc_url(admin_url('admin.php?page=my-village-hall&view=' . \intval($booking['BookingId']))); ?>">#<?php echo \intval($booking['BookingId']); ?></a>
                                         </td>
                                         <td>
                                             <strong><?php echo esc_html($booking['Description'] ?? ''); ?></strong>
@@ -217,9 +217,9 @@ $has_payments = !empty($invoice_payments);
                     <?php else: ?>
                         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                             <input type="hidden" name="action" value="myvh_update_invoice_status">
-                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'])); ?>">
                             <input type="hidden" name="redirect_page" value="myvh-invoices">
-                            <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                            <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) \intval($invoice['Id'])); ?>">
                             <?php wp_nonce_field('myvh_update_invoice_status'); ?>
 
                             <p>
@@ -252,9 +252,9 @@ $has_payments = !empty($invoice_payments);
                     <?php else: ?>
                         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                             <input type="hidden" name="action" value="myvh_record_payment">
-                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'])); ?>">
                             <input type="hidden" name="redirect_page" value="myvh-invoices">
-                            <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                            <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) \intval($invoice['Id'])); ?>">
                             <?php wp_nonce_field('myvh_record_payment'); ?>
 
                             <p>

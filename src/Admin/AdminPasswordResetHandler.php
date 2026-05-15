@@ -27,7 +27,7 @@ class AdminPasswordResetHandler {
         check_ajax_referer('myvh_admin');
 
         // Get and validate customer ID
-        $customer_id = intval($_POST['customer_id'] ?? 0);
+        $customer_id = \intval($_POST['customer_id'] ?? 0);
         if ($customer_id <= 0) {
             wp_send_json_error('Invalid customer ID', 400);
         }

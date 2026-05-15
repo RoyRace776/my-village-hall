@@ -38,8 +38,8 @@ class AuditTrailTest extends UnitTestCase {
                 Mockery::on(function (array $data): bool {
                     return ($data['Action'] ?? '') === 'create'
                         && ($data['EntityType'] ?? '') === 'booking'
-                        && intval($data['EntityId'] ?? 0) === 42
-                        && intval($data['ActorUserId'] ?? 0) === 99
+                        && \intval($data['EntityId'] ?? 0) === 42
+                        && \intval($data['ActorUserId'] ?? 0) === 99
                         && ($data['Origin'] ?? '') === 'dashboard';
                 }),
                 Mockery::type('array')

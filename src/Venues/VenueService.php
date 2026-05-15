@@ -42,7 +42,7 @@ class VenueService {
         ];
 
         if (!empty($data['venue_id'])) {
-            $venue_id = intval($data['venue_id']);
+            $venue_id = \intval($data['venue_id']);
             $updated = $this->repo->update($record, ['Id' => $venue_id]);
             if (!$updated) {
                 return new WP_Error('save', __('Venue update failed', 'my-village-hall'));
@@ -63,7 +63,7 @@ class VenueService {
             return new WP_Error('save', __('Venue create failed', 'my-village-hall'));
         }
 
-        $venue_id = intval($created);
+        $venue_id = \intval($created);
 
         if (!empty($data['opening_hours_by_day']) && is_array($data['opening_hours_by_day'])) {
             $saved = $this->venue_hours_repository->replace_for_venue($venue_id, $data['opening_hours_by_day']);

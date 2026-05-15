@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
 }
 
 $rules = (isset($rules) && is_array($rules)) ? $rules : [];
-$default_rule_id = isset($default_rule_id) ? intval($default_rule_id) : 0;
+$default_rule_id = isset($default_rule_id) ? \intval($default_rule_id) : 0;
 $load_error = isset($load_error) ? trim((string) $load_error) : '';
 ?>
 
@@ -28,7 +28,7 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                     <option value="0">Auto-select first active rule</option>
                     <?php foreach ($rules as $rule): ?>
                         <?php if (empty($rule['IsActive'])) { continue; } ?>
-                        <option value="<?php echo intval($rule['Id']); ?>" <?php selected($default_rule_id, intval($rule['Id'])); ?>>
+                        <option value="<?php echo \intval($rule['Id']); ?>" <?php selected($default_rule_id, \intval($rule['Id'])); ?>>
                             <?php echo esc_html((string) ($rule['Name'] ?? 'Unnamed rule')); ?>
                         </option>
                     <?php endforeach; ?>
@@ -88,11 +88,11 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                             <?php foreach ($rules as $index => $rule): ?>
                                 <tr class="myvh-rule-row">
                                     <td>
-                                        <input type="hidden" name="rules[<?php echo intval($index); ?>][id]" value="<?php echo intval($rule['Id']); ?>">
-                                        <input type="text" name="rules[<?php echo intval($index); ?>][name]" required value="<?php echo esc_attr((string) ($rule['Name'] ?? '')); ?>">
+                                        <input type="hidden" name="rules[<?php echo \intval($index); ?>][id]" value="<?php echo \intval($rule['Id']); ?>">
+                                        <input type="text" name="rules[<?php echo \intval($index); ?>][name]" required value="<?php echo esc_attr((string) ($rule['Name'] ?? '')); ?>">
                                     </td>
                                     <td>
-                                        <select name="rules[<?php echo intval($index); ?>][trigger_timing]" style="min-width: 190px;">
+                                        <select name="rules[<?php echo \intval($index); ?>][trigger_timing]" style="min-width: 190px;">
                                             <option value="start_of_month" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'start_of_month'); ?>>Start of month</option>
                                             <option value="start_of_quarter" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'start_of_quarter'); ?>>Start of quarter</option>
                                             <option value="start_of_week" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'start_of_week'); ?>>Start of week</option>
@@ -101,21 +101,21 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="rules[<?php echo intval($index); ?>][trigger_direction]" style="min-width: 150px;">
+                                        <select name="rules[<?php echo \intval($index); ?>][trigger_direction]" style="min-width: 150px;">
                                             <option value="in_advance" <?php selected((string) ($rule['TriggerDirection'] ?? ''), 'in_advance'); ?>>In advance</option>
                                             <option value="in_arrears" <?php selected((string) ($rule['TriggerDirection'] ?? ''), 'in_arrears'); ?>>In arrears</option>
                                         </select>
                                     </td>
-                                    <td><input type="number" name="rules[<?php echo intval($index); ?>][trigger_period_count]" min="0" max="99" value="<?php echo intval($rule['TriggerOffsetDays'] ?? 0); ?>" style="width: 46px;"></td>
+                                    <td><input type="number" name="rules[<?php echo \intval($index); ?>][trigger_period_count]" min="0" max="99" value="<?php echo \intval($rule['TriggerOffsetDays'] ?? 0); ?>" style="width: 46px;"></td>
                                     <td>
-                                        <select name="rules[<?php echo intval($index); ?>][group_by]" style="min-width: 160px;">
+                                        <select name="rules[<?php echo \intval($index); ?>][group_by]" style="min-width: 160px;">
                                             <option value="per_booking" <?php selected((string) ($rule['GroupBy'] ?? ''), 'per_booking'); ?>>Per booking</option>
                                             <option value="by_customer" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_customer'); ?>>By customer</option>
                                             <option value="by_organisation" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_organisation'); ?>>By organisation</option>
                                         </select>
                                     </td>
-                                    <td><input type="number" name="rules[<?php echo intval($index); ?>][due_date_offset_days]" min="0" value="<?php echo intval($rule['DueDateOffsetDays'] ?? 30); ?>"></td>
-                                    <td><input type="checkbox" name="rules[<?php echo intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
+                                    <td><input type="number" name="rules[<?php echo \intval($index); ?>][due_date_offset_days]" min="0" value="<?php echo \intval($rule['DueDateOffsetDays'] ?? 30); ?>"></td>
+                                    <td><input type="checkbox" name="rules[<?php echo \intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
                                     <td><button type="button" class="button myvh-remove-rule-row">Remove</button></td>
                                 </tr>
                             <?php endforeach; ?>

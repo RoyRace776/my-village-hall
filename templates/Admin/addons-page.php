@@ -11,7 +11,7 @@ global $myvh_container;
 use MYVH\Addons\AddonService;
 use MYVH\Rooms\RoomService;
 
-$edit_id      = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$edit_id      = isset($_GET['edit']) ? \intval($_GET['edit']) : 0;
 $addon_service = $myvh_container->get(AddonService::class);
 $room_service  = $myvh_container->get(RoomService::class);
 $edit_addon    = $edit_id ? $addon_service->get($edit_id) : null;

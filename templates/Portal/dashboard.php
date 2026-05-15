@@ -64,7 +64,7 @@ $all_member_bookings = [];
 
 foreach ($groups as $group) {
   foreach (($group['bookings'] ?? []) as $booking) {
-    $booking_id = intval($booking['Id'] ?? 0);
+    $booking_id = \intval($booking['Id'] ?? 0);
     if ($booking_id <= 0) {
       continue;
     }
@@ -170,7 +170,7 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
               </div>
               <div class="myvh-dashboard-inline-actions">
                 <span class="myvh-status-chip <?php echo esc_attr($prev_status_class); ?>"><?php echo esc_html(ucfirst((string) ($previous_booking['Status'] ?? ''))); ?></span>
-                <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo intval($previous_booking['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
+                <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo \intval($previous_booking['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
               </div>
             </div>
           <?php else: ?>
@@ -212,7 +212,7 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
                         <span class="myvh-status-chip <?php echo esc_attr($status_class); ?>"><?php echo esc_html(ucfirst((string) ($b['Status'] ?? ''))); ?></span>
                       </td>
                       <td>
-                        <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo intval($b['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
+                        <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
                       </td>
                     </tr>
                   <?php endforeach; ?>
@@ -278,7 +278,7 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
                       £<?php echo esc_html(number_format(floatval($invoice['AmountDue'] ?? 0), 2)); ?>
                     </td>
                     <td>
-                      <a class="myvh-action-icon" href="#invoice-view?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>" aria-label="View invoice" title="View invoice">👁</a>
+                      <a class="myvh-action-icon" href="#invoice-view?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>" aria-label="View invoice" title="View invoice">👁</a>
                     </td>
                   </tr>
                 <?php endforeach; ?>
@@ -334,22 +334,22 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
   <div class="myvh-portal-dashboard-kpi-grid">
     <div class="myvh-card myvh-account-card myvh-portal-dashboard-kpi-card">
       <span class="myvh-portal-dashboard-kpi-label">Organisations</span>
-      <strong class="myvh-portal-dashboard-kpi-value"><?php echo esc_html((string) intval($admin_dashboard_counts['organisations_count'] ?? 0)); ?></strong>
+      <strong class="myvh-portal-dashboard-kpi-value"><?php echo esc_html((string) \intval($admin_dashboard_counts['organisations_count'] ?? 0)); ?></strong>
       <span class="myvh-portal-dashboard-kpi-meta">Excluding system organisations</span>
     </div>
     <div class="myvh-card myvh-account-card myvh-portal-dashboard-kpi-card">
       <span class="myvh-portal-dashboard-kpi-label">Outstanding Member Requests</span>
-      <strong class="myvh-portal-dashboard-kpi-value"><?php echo esc_html((string) intval($admin_dashboard_counts['pending_member_requests_count'] ?? 0)); ?></strong>
+      <strong class="myvh-portal-dashboard-kpi-value"><?php echo esc_html((string) \intval($admin_dashboard_counts['pending_member_requests_count'] ?? 0)); ?></strong>
       <span class="myvh-portal-dashboard-kpi-meta">Pending approval</span>
     </div>
     <div class="myvh-card myvh-account-card myvh-portal-dashboard-kpi-card">
       <span class="myvh-portal-dashboard-kpi-label">Customers</span>
-      <strong class="myvh-portal-dashboard-kpi-value"><?php echo esc_html((string) intval($admin_dashboard_counts['customers_count'] ?? 0)); ?></strong>
+      <strong class="myvh-portal-dashboard-kpi-value"><?php echo esc_html((string) \intval($admin_dashboard_counts['customers_count'] ?? 0)); ?></strong>
       <span class="myvh-portal-dashboard-kpi-meta">All non-system customers</span>
     </div>
     <div class="myvh-card myvh-account-card myvh-portal-dashboard-kpi-card">
       <span class="myvh-portal-dashboard-kpi-label">New Customers (Last Month)</span>
-      <strong class="myvh-portal-dashboard-kpi-value"><?php echo esc_html((string) intval($admin_dashboard_counts['customers_last_month_count'] ?? 0)); ?></strong>
+      <strong class="myvh-portal-dashboard-kpi-value"><?php echo esc_html((string) \intval($admin_dashboard_counts['customers_last_month_count'] ?? 0)); ?></strong>
       <span class="myvh-portal-dashboard-kpi-meta">Created in the last month</span>
     </div>
   </div>
@@ -384,10 +384,10 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
               <?php foreach ($admin_room_activity as $row): ?>
                 <tr class="myvh-bookings-table-row">
                   <td><strong><?php echo esc_html((string) ($row['room_name'] ?? 'Room booking')); ?></strong></td>
-                  <td><a href="#bookings?status=pending&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) intval($row['pending_bookings'] ?? 0)); ?></a></td>
-                  <td><a href="#bookings?datePreset=past&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) intval($row['last_month_bookings'] ?? 0)); ?></a></td>
+                  <td><a href="#bookings?status=pending&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) \intval($row['pending_bookings'] ?? 0)); ?></a></td>
+                  <td><a href="#bookings?datePreset=past&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) \intval($row['last_month_bookings'] ?? 0)); ?></a></td>
                   <td><?php echo esc_html(number_format((float) ($row['last_month_hours'] ?? 0), 2)); ?></td>
-                  <td><a href="#bookings?datePreset=upcoming&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) intval($row['next_month_bookings'] ?? 0)); ?></a></td>
+                  <td><a href="#bookings?datePreset=upcoming&room=<?php echo urlencode((string) ($row['room_name'] ?? 'Room booking')); ?>" style="text-decoration: none; color: inherit; cursor: pointer;"><?php echo esc_html((string) \intval($row['next_month_bookings'] ?? 0)); ?></a></td>
                   <td><?php echo esc_html(number_format((float) ($row['next_month_hours'] ?? 0), 2)); ?></td>
                 </tr>
               <?php endforeach; ?>
@@ -421,7 +421,7 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
                 <?php foreach ($admin_invoice_action_bookings as $booking): ?>
                   <?php
                     $is_recurring_group = !empty($booking['IsRecurringGroup']);
-                    $recurring_count = intval($booking['RecurringBookingCount'] ?? 1);
+                    $recurring_count = \intval($booking['RecurringBookingCount'] ?? 1);
                     $invoice_generate_hash = $is_recurring_group
                       ? '#invoice-generate?invoice_tab=create&booking_type=recurring'
                       : '#invoice-generate?invoice_tab=create&booking_type=single';

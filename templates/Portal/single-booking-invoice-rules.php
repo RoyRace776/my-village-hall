@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
 }
 
 $rules = (isset($rules) && is_array($rules)) ? $rules : [];
-$default_rule_id = isset($default_rule_id) ? intval($default_rule_id) : 0;
+$default_rule_id = isset($default_rule_id) ? \intval($default_rule_id) : 0;
 $load_error = isset($load_error) ? trim((string) $load_error) : '';
 ?>
 
@@ -28,7 +28,7 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                     <option value="0">Auto-select first active rule</option>
                     <?php foreach ($rules as $rule): ?>
                         <?php if (empty($rule['IsActive'])) { continue; } ?>
-                        <option value="<?php echo intval($rule['Id']); ?>" <?php selected($default_rule_id, intval($rule['Id'])); ?>>
+                        <option value="<?php echo \intval($rule['Id']); ?>" <?php selected($default_rule_id, \intval($rule['Id'])); ?>>
                             <?php echo esc_html((string) ($rule['Name'] ?? 'Unnamed rule')); ?>
                         </option>
                     <?php endforeach; ?>
@@ -81,11 +81,11 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                             <?php foreach ($rules as $index => $rule): ?>
                                 <tr class="myvh-rule-row">
                                     <td>
-                                        <input type="hidden" name="rules[<?php echo intval($index); ?>][id]" value="<?php echo intval($rule['Id']); ?>">
-                                        <input type="text" name="rules[<?php echo intval($index); ?>][name]" required value="<?php echo esc_attr((string) ($rule['Name'] ?? '')); ?>">
+                                        <input type="hidden" name="rules[<?php echo \intval($index); ?>][id]" value="<?php echo \intval($rule['Id']); ?>">
+                                        <input type="text" name="rules[<?php echo \intval($index); ?>][name]" required value="<?php echo esc_attr((string) ($rule['Name'] ?? '')); ?>">
                                     </td>
                                     <td>
-                                        <select name="rules[<?php echo intval($index); ?>][trigger_timing]">
+                                        <select name="rules[<?php echo \intval($index); ?>][trigger_timing]">
                                             <option value="confirmation" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'confirmation'); ?>>On booking confirmation</option>
                                             <option value="booking_date" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'booking_date'); ?>>On booking date</option>
                                             <option value="days_before_booking_date" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'days_before_booking_date'); ?>>N days before booking date</option>
@@ -93,16 +93,16 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                                             <option value="manual_invoicing" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'manual_invoicing'); ?>>Manual invoicing</option>
                                         </select>
                                     </td>
-                                    <td><input type="number" name="rules[<?php echo intval($index); ?>][trigger_offset_days]" min="0" value="<?php echo intval($rule['TriggerOffsetDays'] ?? 0); ?>"></td>
+                                    <td><input type="number" name="rules[<?php echo \intval($index); ?>][trigger_offset_days]" min="0" value="<?php echo \intval($rule['TriggerOffsetDays'] ?? 0); ?>"></td>
                                     <td>
-                                        <select name="rules[<?php echo intval($index); ?>][group_by]">
+                                        <select name="rules[<?php echo \intval($index); ?>][group_by]">
                                             <option value="per_booking" <?php selected((string) ($rule['GroupBy'] ?? ''), 'per_booking'); ?>>Per booking</option>
                                             <option value="by_customer" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_customer'); ?>>By customer</option>
                                             <option value="by_organisation" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_organisation'); ?>>By organisation</option>
                                         </select>
                                     </td>
-                                    <td><input type="number" name="rules[<?php echo intval($index); ?>][due_date_offset_days]" min="0" value="<?php echo intval($rule['DueDateOffsetDays'] ?? 30); ?>"></td>
-                                    <td><input type="checkbox" name="rules[<?php echo intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
+                                    <td><input type="number" name="rules[<?php echo \intval($index); ?>][due_date_offset_days]" min="0" value="<?php echo \intval($rule['DueDateOffsetDays'] ?? 30); ?>"></td>
+                                    <td><input type="checkbox" name="rules[<?php echo \intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
                                     <td><button type="button" class="button myvh-remove-rule-row">Remove</button></td>
                                 </tr>
                             <?php endforeach; ?>

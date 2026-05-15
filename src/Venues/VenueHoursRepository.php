@@ -33,7 +33,7 @@ class VenueHoursRepository extends RepositoryBase {
         }
 
         foreach ($rows as $row) {
-            $day_of_week = intval($row['day_of_week'] ?? -1);
+            $day_of_week = \intval($row['day_of_week'] ?? -1);
             if ($day_of_week < 0 || $day_of_week > 6) {
                 continue;
             }

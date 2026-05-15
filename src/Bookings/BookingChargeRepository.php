@@ -54,7 +54,7 @@ class BookingChargeRepository extends RepositoryBase
     {
         $result = $this->wpdb->delete(
             $this->table_name,
-            array('BookingId' => intval($booking_id)),
+            array('BookingId' => \intval($booking_id)),
             array('%d')
         );
 

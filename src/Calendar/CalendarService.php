@@ -155,8 +155,8 @@ class CalendarService {
         $addons = $this->normalize_addons($request['addons'] ?? []);
         $is_recurring = !empty($request['is_recurring']);
         $recurrence_type = sanitize_text_field($request['recurrence_type'] ?? 'weekly');
-        $recurrence_interval = intval($request['recurrence_interval'] ?? 1);
-        $recurrence_interval_md = intval($request['recurrence_interval_md'] ?? 1);
+        $recurrence_interval = \intval($request['recurrence_interval'] ?? 1);
+        $recurrence_interval_md = \intval($request['recurrence_interval_md'] ?? 1);
 
         if ($recurrence_type === 'monthly_day') {
             $recurrence_interval = max(1, $recurrence_interval_md);
@@ -169,9 +169,9 @@ class CalendarService {
             'end_time' => $end_time,
             'description' => sanitize_text_field($request['text'] ?? ''),
             'status' => sanitize_text_field($request['status'] ?? BookingStatus::PENDING->value),
-            'room_id' => intval($request['room_id'] ?? 0),
-            'customer_id' => intval($request['customer_id'] ?? 0),
-            'organisation_id' => intval($request['organisation_id'] ?? 0),
+            'room_id' => \intval($request['room_id'] ?? 0),
+            'customer_id' => \intval($request['customer_id'] ?? 0),
+            'organisation_id' => \intval($request['organisation_id'] ?? 0),
             'addons' => $addons,
             'is_recurring' => $is_recurring ? 1 : 0,
             'recurrence_type' => $recurrence_type,
@@ -180,15 +180,15 @@ class CalendarService {
             'recurrence_day' => sanitize_text_field($request['recurrence_day'] ?? ''),
             'recurrence_end_type' => sanitize_text_field($request['recurrence_end_type'] ?? 'date'),
             'recurrence_end_date' => sanitize_text_field($request['recurrence_end_date'] ?? ''),
-            'max_occurrences' => intval($request['max_occurrences'] ?? 0),
+            'max_occurrences' => \intval($request['max_occurrences'] ?? 0),
         ];
 
         if (array_key_exists('public', $request)) {
-            $data['public'] = intval($request['public']);
+            $data['public'] = \intval($request['public']);
         }
 
         if ($this->can_manage_no_invoice_required($context, $viewer_user_id) && array_key_exists('no_invoice_required', $request)) {
-            $data['no_invoice_required'] = intval($request['no_invoice_required']);
+            $data['no_invoice_required'] = \intval($request['no_invoice_required']);
         }
 
         if ($context === 'portal') {
@@ -242,9 +242,9 @@ class CalendarService {
             'start_time' => $start_time,
             'end_date' => $end_date,
             'end_time' => $end_time,
-            'room_id' => intval($request['room_id'] ?? 0),
-            'customer_id' => intval($request['customer_id'] ?? 0),
-            'organisation_id' => intval($request['organisation_id'] ?? 0),
+            'room_id' => \intval($request['room_id'] ?? 0),
+            'customer_id' => \intval($request['customer_id'] ?? 0),
+            'organisation_id' => \intval($request['organisation_id'] ?? 0),
         ];
 
         if ($context === 'portal') {
@@ -313,7 +313,7 @@ class CalendarService {
     public function update_event($request) {
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
-        $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
+        $booking_id = \intval($request['booking_id'] ?? $request['id'] ?? 0);
         $existing_booking = $booking_id > 0 ? $this->booking_service->get_by_id($booking_id) : null;
         $current_status = $existing_booking instanceof Booking
             ? $existing_booking->status()->value
@@ -328,22 +328,22 @@ class CalendarService {
             'end_time' => $end_time,
             'description' => sanitize_text_field($request['text'] ?? ''),
             'status' => sanitize_text_field($request['status'] ?? $current_status),
-            'room_id' => intval($request['room_id'] ?? 0),
-            'customer_id' => intval($request['customer_id'] ?? 0),
-            'organisation_id' => intval($request['organisation_id'] ?? 0),
+            'room_id' => \intval($request['room_id'] ?? 0),
+            'customer_id' => \intval($request['customer_id'] ?? 0),
+            'organisation_id' => \intval($request['organisation_id'] ?? 0),
             'addons' => $addons,
             'edit_scope' => sanitize_text_field($request['edit_scope'] ?? ''),
         ];
 
         if (array_key_exists('public', $request)) {
-            $data['public'] = intval($request['public']);
+            $data['public'] = \intval($request['public']);
         }
 
         if ($this->can_manage_no_invoice_required(
             sanitize_text_field($request['context'] ?? 'admin'),
             get_current_user_id()
         ) && array_key_exists('no_invoice_required', $request)) {
-            $data['no_invoice_required'] = intval($request['no_invoice_required']);
+            $data['no_invoice_required'] = \intval($request['no_invoice_required']);
         }
 
         $validation = $this->validate_calendar_update_payload($data);
@@ -804,7 +804,7 @@ class CalendarService {
                 return new WP_Error('validation', __('Recurrence type is required', 'my-village-hall'));
             }
 
-            if (($data['recurrence_end_type'] ?? '') === 'count' && intval($data['max_occurrences'] ?? 0) < 1) {
+            if (($data['recurrence_end_type'] ?? '') === 'count' && \intval($data['max_occurrences'] ?? 0) < 1) {
                 return new WP_Error('validation', __('Max occurrences must be at least 1', 'my-village-hall'));
             }
 
@@ -893,7 +893,7 @@ class CalendarService {
                 continue;
             }
 
-            $addon_id = intval($addon['addon_id'] ?? 0);
+            $addon_id = \intval($addon['addon_id'] ?? 0);
             if ($addon_id <= 0) {
                 continue;
             }
@@ -905,7 +905,7 @@ class CalendarService {
                 continue;
             }
 
-            $quantity = floatval($addon['quantity'] ?? 1);
+            $quantity = \floatval($addon['quantity'] ?? 1);
             if ($quantity <= 0) {
                 continue;
             }
@@ -913,7 +913,7 @@ class CalendarService {
             $normalized[] = [
                 'addon_id' => $addon_id,
                 'quantity' => $quantity,
-                'unit_price' => floatval($addon['unit_price'] ?? 0),
+                'unit_price' => \floatval($addon['unit_price'] ?? 0),
                 'description' => sanitize_text_field($addon['description'] ?? ''),
             ];
         }

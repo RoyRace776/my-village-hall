@@ -40,7 +40,7 @@ class GetBookingAction {
         if (!$is_admin) {
             unset($booking['NoInvoiceRequired']);
         } else {
-            $booking['NoInvoiceRequired'] = intval($booking['NoInvoiceRequired'] ?? 0);
+            $booking['NoInvoiceRequired'] = \intval($booking['NoInvoiceRequired'] ?? 0);
         }
 
         return $booking;

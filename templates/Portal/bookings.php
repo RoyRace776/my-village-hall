@@ -305,9 +305,9 @@ usort($groups, function ($a, $b) use ($today) {
                                 ?>
                                 <tr class="myvh-bookings-table-row myvh-recurring-child <?php echo $is_past ? 'is-past' : ''; ?>"
                                     data-group="<?php echo esc_attr($group_id); ?>"
-                                    data-booking-id="<?php echo intval($b['Id'] ?? 0); ?>"
+                                    data-booking-id="<?php echo \intval($b['Id'] ?? 0); ?>"
                                     data-status="<?php echo esc_attr(strtolower($b['Status'] ?? '')); ?>"
-                                    data-room-id="<?php echo intval($b['RoomId'] ?? 0); ?>"
+                                    data-room-id="<?php echo \intval($b['RoomId'] ?? 0); ?>"
                                     data-room-name="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                     data-room="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                     data-customer="<?php echo esc_attr($b['CustomerId'] ?? ''); ?>"
@@ -355,10 +355,10 @@ usort($groups, function ($a, $b) use ($today) {
                                     </td>
                                     <td>
                                         <div class="myvh-booking-actions-inline">
-                                            <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo intval($b['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
-                                            <a class="myvh-action-icon" href="#booking-edit?booking_id=<?php echo intval($b['Id'] ?? 0); ?>" aria-label="Edit booking" title="Edit booking">✎</a>
+                                            <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
+                                            <a class="myvh-action-icon" href="#booking-edit?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="Edit booking" title="Edit booking">✎</a>
                                             <?php if ($can_delete): ?>
-                                                <a class="myvh-action-icon myvh-action-danger" href="#booking-delete?booking_id=<?php echo intval($b['Id'] ?? 0); ?>" aria-label="Delete booking" title="Delete booking">🗑</a>
+                                                <a class="myvh-action-icon myvh-action-danger" href="#booking-delete?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="Delete booking" title="Delete booking">🗑</a>
                                             <?php else: ?>
                                                 <span class="myvh-action-icon myvh-action-danger myvh-action-icon-disabled" aria-disabled="true" title="Delete not available">🗑</span>
                                             <?php endif; ?>
@@ -374,9 +374,9 @@ usort($groups, function ($a, $b) use ($today) {
                             $can_delete = $can_delete_booking($b);
                             ?>
                             <tr class="myvh-bookings-table-row <?php echo $is_past ? 'is-past' : ''; ?>"
-                                data-booking-id="<?php echo intval($b['Id'] ?? 0); ?>"
+                                data-booking-id="<?php echo \intval($b['Id'] ?? 0); ?>"
                                 data-status="<?php echo esc_attr(strtolower($b['Status'] ?? '')); ?>"
-                                data-room-id="<?php echo intval($b['RoomId'] ?? 0); ?>"
+                                data-room-id="<?php echo \intval($b['RoomId'] ?? 0); ?>"
                                 data-room-name="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                 data-room="<?php echo esc_attr($b['RoomName'] ?? ''); ?>"
                                 data-customer="<?php echo esc_attr($b['CustomerId'] ?? ''); ?>"
@@ -425,10 +425,10 @@ usort($groups, function ($a, $b) use ($today) {
                                 </td>
                                 <td>
                                     <div class="myvh-booking-actions-inline">
-                                        <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo intval($b['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
-                                        <a class="myvh-action-icon" href="#booking-edit?booking_id=<?php echo intval($b['Id'] ?? 0); ?>" aria-label="Edit booking" title="Edit booking">✎</a>
+                                        <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
+                                        <a class="myvh-action-icon" href="#booking-edit?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="Edit booking" title="Edit booking">✎</a>
                                         <?php if ($can_delete): ?>
-                                            <a class="myvh-action-icon myvh-action-danger" href="#booking-delete?booking_id=<?php echo intval($b['Id'] ?? 0); ?>" aria-label="Delete booking" title="Delete booking">🗑</a>
+                                            <a class="myvh-action-icon myvh-action-danger" href="#booking-delete?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="Delete booking" title="Delete booking">🗑</a>
                                         <?php else: ?>
                                             <span class="myvh-action-icon myvh-action-danger myvh-action-icon-disabled" aria-disabled="true" title="Delete not available">🗑</span>
                                         <?php endif; ?>

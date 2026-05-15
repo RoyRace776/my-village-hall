@@ -24,7 +24,7 @@ class BookingMovementService
 
     public function move_booking($id, $start, $end, $room): int|WP_Error
     {
-        $room_id = intval($room);
+        $room_id = \intval($room);
 
         [$start_date, $start_time] = $this->split_datetime($start);
         [$end_date, $end_time] = $this->split_datetime($end, $start_date);
@@ -71,7 +71,7 @@ class BookingMovementService
             $start_time,
             $end_time,
             $end_date,
-            intval($id)
+            \intval($id)
         );
 
         if (!$is_available) {

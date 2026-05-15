@@ -76,7 +76,7 @@ class BookingRepository extends RepositoryBase
 
         if (!empty($args['booking_id'])) {
             $where[]  = 'b.Id = %d';
-            $params[] = intval($args['booking_id']);
+            $params[] = \intval($args['booking_id']);
         }
         if (!empty($args['status'])) {
             $where[]  = 'b.Status = %s';
@@ -84,11 +84,11 @@ class BookingRepository extends RepositoryBase
         }
         if (!empty($args['room_id'])) {
             $where[]  = 'b.RoomId = %d';
-            $params[] = intval($args['room_id']);
+            $params[] = \intval($args['room_id']);
         }
         if (!empty($args['customer_id'])) {
             $where[]  = 'b.CustomerId = %d';
-            $params[] = intval($args['customer_id']);
+            $params[] = \intval($args['customer_id']);
         }
 
         $where_sql = implode(' AND ', $where);
@@ -375,7 +375,7 @@ class BookingRepository extends RepositoryBase
             WHERE StartDate >= %s
             AND   CustomerId = %d",
             $start,
-            intval($customer_id));
+            \intval($customer_id));
 
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
@@ -437,17 +437,17 @@ class BookingRepository extends RepositoryBase
 
         if (!empty($args['organisation_id'])) {
             $where[] = 'b.OrganisationId = %d';
-            $params[] = intval($args['organisation_id']);
+            $params[] = \intval($args['organisation_id']);
         }
 
         if (!empty($args['customer_id'])) {
             $where[] = 'b.CustomerId = %d';
-            $params[] = intval($args['customer_id']);
+            $params[] = \intval($args['customer_id']);
         }
 
         if (isset($args['pattern_id'])) {
             $where[] = 'b.RecurringPatternId = %d';
-            $params[] = intval($args['pattern_id']);
+            $params[] = \intval($args['pattern_id']);
         }
 
         $where_sql = implode(' AND ', $where);
@@ -456,9 +456,9 @@ class BookingRepository extends RepositoryBase
         $limit_sql = '';
 
         if ($args['limit'] !== null) {
-            $limit_sql = ' LIMIT ' . intval($args['limit']);
+            $limit_sql = ' LIMIT ' . \intval($args['limit']);
             if ($args['offset'] !== null) {
-                $limit_sql .= ' OFFSET ' . intval($args['offset']);
+                $limit_sql .= ' OFFSET ' . \intval($args['offset']);
             }
         }
 
@@ -646,11 +646,11 @@ class BookingRepository extends RepositoryBase
             LEFT JOIN {$this->wpdb->prefix}myvh_invoices i ON ii.InvoiceId = i.Id
             WHERE ii.BookingId = %d
                 AND i.Status NOT IN ('cancelled')",
-            intval($booking_id)
+            \intval($booking_id)
         );
 
         $result = $this->wpdb->get_var($sql);
-        return intval($result) > 0;
+        return \intval($result) > 0;
     }
 
     /**
@@ -684,7 +684,7 @@ class BookingRepository extends RepositoryBase
             $booking_id
         );
 
-        return intval($this->wpdb->get_var($sql)) === 1;
+        return \intval($this->wpdb->get_var($sql)) === 1;
     }
 
     /**

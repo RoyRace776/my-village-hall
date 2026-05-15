@@ -123,7 +123,7 @@ class UpdateBookingActionTest extends UnitTestCase {
         $this->booking_service->shouldReceive('save')
             ->once()
             ->with(\Mockery::on(static function (array $payload): bool {
-                return intval($payload['booking_id'] ?? 0) === 43
+                return \intval($payload['booking_id'] ?? 0) === 43
                     && ($payload['description'] ?? '') === 'Changed booking';
             }))
             ->andReturn(43);

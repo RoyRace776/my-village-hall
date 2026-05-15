@@ -80,8 +80,8 @@ class NetworkDashboard {
             $bookings  = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}myvh_bookings`");
             $customers = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}myvh_customers`");
             $site_name = isset($site->blogname) ? esc_html($site->blogname) : '';
-            $bookings_count = esc_html((string) intval($bookings));
-            $customers_count = esc_html((string) intval($customers));
+            $bookings_count = esc_html((string) \intval($bookings));
+            $customers_count = esc_html((string) \intval($customers));
 
             echo "<tr>
                 <td>{$site_name}</td>

@@ -67,7 +67,7 @@ class CustomerController {
 
         check_admin_referer('myvh_delete_customer');
 
-        $id = intval($_GET['id']);
+        $id = \intval($_GET['id']);
         $this->service->delete($id);
 
         wp_redirect(admin_url('admin.php?page=myvh-customers&deleted=1'));

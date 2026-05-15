@@ -30,9 +30,9 @@ $recurring_uninvoiced_bookings = array_values(array_filter(
 ));
 $admin_recurring_booking_groups = [];
 foreach ($recurring_uninvoiced_bookings as $booking) {
-    $pattern_id = intval($booking['RecurringPatternId'] ?? 0);
+    $pattern_id = \intval($booking['RecurringPatternId'] ?? 0);
     if ($pattern_id <= 0) {
-        $pattern_id = intval($booking['Id'] ?? 0);
+        $pattern_id = \intval($booking['Id'] ?? 0);
     }
 
     if (!isset($admin_recurring_booking_groups[$pattern_id])) {
@@ -51,7 +51,7 @@ foreach ($admin_recurring_booking_groups as &$group) {
         $right_timestamp = strtotime((string) ($right['StartDate'] ?? ''));
 
         if ($left_timestamp === $right_timestamp) {
-            return intval($left['Id'] ?? 0) <=> intval($right['Id'] ?? 0);
+            return \intval($left['Id'] ?? 0) <=> \intval($right['Id'] ?? 0);
         }
 
         if (false === $left_timestamp) {
@@ -75,7 +75,7 @@ usort($admin_recurring_booking_groups, static function (array $left, array $righ
     $right_timestamp = strtotime((string) (($right['first_booking']['StartDate'] ?? '')));
 
     if ($left_timestamp === $right_timestamp) {
-        return intval($left['pattern_id'] ?? 0) <=> intval($right['pattern_id'] ?? 0);
+        return \intval($left['pattern_id'] ?? 0) <=> \intval($right['pattern_id'] ?? 0);
     }
 
     if (false === $left_timestamp) {
@@ -132,10 +132,10 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
 
                     <h2 class="nav-tab-wrapper" style="margin-bottom: 12px;">
                         <a href="#" class="nav-tab nav-tab-active myvh-admin-booking-type-tab" data-booking-type-tab="single">
-                            <?php echo esc_html(sprintf(__('Single Bookings (%d)', 'my-village-hall'), intval(count($single_uninvoiced_bookings)))); ?>
+                            <?php echo esc_html(sprintf(__('Single Bookings (%d)', 'my-village-hall'), \intval(count($single_uninvoiced_bookings)))); ?>
                         </a>
                         <a href="#" class="nav-tab myvh-admin-booking-type-tab" data-booking-type-tab="recurring">
-                            <?php echo esc_html(sprintf(__('Recurring Bookings (%d)', 'my-village-hall'), intval(count($recurring_uninvoiced_bookings)))); ?>
+                            <?php echo esc_html(sprintf(__('Recurring Bookings (%d)', 'my-village-hall'), \intval(count($recurring_uninvoiced_bookings)))); ?>
                         </a>
                     </h2>
 
@@ -165,8 +165,8 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                                 <?php else: ?>
                                     <?php foreach ($single_uninvoiced_bookings as $booking): ?>
                                         <tr>
-                                            <td><input type="checkbox" name="booking_ids[]" value="<?php echo esc_attr((string) intval($booking['Id'])); ?>" class="myvh-admin-uninvoiced-checkbox" data-booking-type="single"></td>
-                                            <td>#<?php echo esc_html((string) intval($booking['Id'])); ?></td>
+                                            <td><input type="checkbox" name="booking_ids[]" value="<?php echo esc_attr((string) \intval($booking['Id'])); ?>" class="myvh-admin-uninvoiced-checkbox" data-booking-type="single"></td>
+                                            <td>#<?php echo esc_html((string) \intval($booking['Id'])); ?></td>
                                             <td><?php echo esc_html($booking['CustomerName'] ?? 'Unknown'); ?></td>
                                             <td><?php echo esc_html($booking['OrganisationName'] ?? '-'); ?></td>
                                             <td><?php echo esc_html($booking['Description'] ?? '-'); ?></td>
@@ -205,7 +205,7 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($admin_recurring_booking_groups as $group): ?>
-                                        <?php $group_id = intval($group['pattern_id']); ?>
+                                        <?php $group_id = \intval($group['pattern_id']); ?>
                                         <?php $first_booking = $group['first_booking'] ?? []; ?>
                                         <tr>
                                             <td style="background:#f6f7f7;"></td>
@@ -236,9 +236,9 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                                         </tr>
                                         <?php foreach ($group['bookings'] as $booking): ?>
                                             <tr data-recurring-group-child="<?php echo esc_attr((string) $group_id); ?>" hidden>
-                                                <td><input type="checkbox" name="booking_ids[]" value="<?php echo esc_attr((string) intval($booking['Id'])); ?>" class="myvh-admin-uninvoiced-checkbox" data-booking-type="recurring" disabled></td>
-                                                <td>#<?php echo esc_html((string) intval($booking['Id'])); ?></td>
-                                                <td>#<?php echo esc_html((string) intval($booking['RecurringPatternId'] ?? 0)); ?></td>
+                                                <td><input type="checkbox" name="booking_ids[]" value="<?php echo esc_attr((string) \intval($booking['Id'])); ?>" class="myvh-admin-uninvoiced-checkbox" data-booking-type="recurring" disabled></td>
+                                                <td>#<?php echo esc_html((string) \intval($booking['Id'])); ?></td>
+                                                <td>#<?php echo esc_html((string) \intval($booking['RecurringPatternId'] ?? 0)); ?></td>
                                                 <td><?php echo esc_html($booking['CustomerName'] ?? 'Unknown'); ?></td>
                                                 <td><?php echo esc_html($booking['OrganisationName'] ?? '-'); ?></td>
                                                 <td><?php echo esc_html($booking['Description'] ?? '-'); ?></td>
@@ -278,7 +278,7 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                             <?php foreach ($uninvoiced_by_customer as $customer): ?>
                                 <tr>
                                     <td><?php echo esc_html($customer['CustomerName'] ?? 'Unknown'); ?></td>
-                                    <td><?php echo esc_html((string) intval($customer['UninvoicedCount'] ?? 0)); ?></td>
+                                    <td><?php echo esc_html((string) \intval($customer['UninvoicedCount'] ?? 0)); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -302,7 +302,7 @@ $uninvoiced_by_organisation = $booking_service->get_uninvoiced_by_organisation()
                             <?php foreach ($uninvoiced_by_organisation as $organisation): ?>
                                 <tr>
                                     <td><?php echo esc_html($organisation['OrganisationName'] ?? 'Unknown'); ?></td>
-                                    <td><?php echo esc_html((string) intval($organisation['UninvoicedCount'] ?? 0)); ?></td>
+                                    <td><?php echo esc_html((string) \intval($organisation['UninvoicedCount'] ?? 0)); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>

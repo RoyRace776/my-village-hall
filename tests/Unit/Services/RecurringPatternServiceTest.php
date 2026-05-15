@@ -141,8 +141,8 @@ class RecurringPatternServiceTest extends UnitTestCase {
         $this->repo->shouldReceive('create')
             ->once()
             ->with(Mockery::on(static function (array $record): bool {
-                return intval($record['ParentBookingId'] ?? 0) === 100
-                    && intval($record['OccurrenceCount'] ?? 0) === 2;
+                return \intval($record['ParentBookingId'] ?? 0) === 100
+                    && \intval($record['OccurrenceCount'] ?? 0) === 2;
             }))
             ->andReturn(201);
 
@@ -163,7 +163,7 @@ class RecurringPatternServiceTest extends UnitTestCase {
         $result = $this->service->split_pattern_from_booking($pattern_id, $selected_booking_id);
 
         $this->assertIsArray($result);
-        $this->assertSame(201, intval($result['new_pattern_id'] ?? 0));
+        $this->assertSame(201, \intval($result['new_pattern_id'] ?? 0));
         $this->assertFalse(isset($result['previous_bookings'][0]['RecurringPatternId']));
         $this->assertSame(2, count($result['future_bookings'] ?? []));
     }
@@ -199,8 +199,8 @@ class RecurringPatternServiceTest extends UnitTestCase {
         $this->repo->shouldReceive('create')
             ->once()
             ->with(Mockery::on(static function (array $record): bool {
-                return intval($record['ParentBookingId'] ?? 0) === 100
-                    && intval($record['OccurrenceCount'] ?? 0) === 1;
+                return \intval($record['ParentBookingId'] ?? 0) === 100
+                    && \intval($record['OccurrenceCount'] ?? 0) === 1;
             }))
             ->andReturn(201);
 
@@ -220,7 +220,7 @@ class RecurringPatternServiceTest extends UnitTestCase {
         $result = $this->service->split_pattern_from_booking($pattern_id, $selected_booking_id);
 
         $this->assertIsArray($result);
-        $this->assertSame(0, intval($result['new_pattern_id'] ?? -1));
+        $this->assertSame(0, \intval($result['new_pattern_id'] ?? -1));
         $this->assertFalse(isset($result['future_bookings'][0]['RecurringPatternId']));
         $this->assertSame(2, count($result['previous_bookings'] ?? []));
     }

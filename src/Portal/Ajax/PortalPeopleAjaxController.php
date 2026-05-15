@@ -45,7 +45,7 @@ class PortalPeopleAjaxController {
     public function remove_client_admin(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $user_id = intval($_POST['user_id'] ?? 0);
+        $user_id = \intval($_POST['user_id'] ?? 0);
 
         if ($user_id <= 0) {
             AjaxResponse::error(__('User ID is required', 'my-village-hall'));
@@ -59,7 +59,7 @@ class PortalPeopleAjaxController {
     public function save_customer(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $customer_id = intval($_POST['customer_id'] ?? 0);
+        $customer_id = \intval($_POST['customer_id'] ?? 0);
         $name = sanitize_text_field($_POST['name'] ?? '');
         $email = sanitize_email($_POST['email'] ?? '');
         $phone_number = sanitize_text_field($_POST['phone_number'] ?? '');
@@ -83,8 +83,8 @@ class PortalPeopleAjaxController {
             'post_code' => $post_code,
             'email_verified' => $email_verified,
             'allow_auto_confirm' => !empty($_POST['allow_auto_confirm']),
-            'single_booking_auto_invoice_rule_id' => intval($_POST['single_booking_auto_invoice_rule_id'] ?? 0),
-            'recurring_booking_auto_invoice_rule_id' => intval($_POST['recurring_booking_auto_invoice_rule_id'] ?? 0),
+            'single_booking_auto_invoice_rule_id' => \intval($_POST['single_booking_auto_invoice_rule_id'] ?? 0),
+            'recurring_booking_auto_invoice_rule_id' => \intval($_POST['recurring_booking_auto_invoice_rule_id'] ?? 0),
         ];
 
         if ($customer_id > 0) {
@@ -122,7 +122,7 @@ class PortalPeopleAjaxController {
     public function delete_customer(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $customer_id = intval($_POST['customer_id'] ?? 0);
+        $customer_id = \intval($_POST['customer_id'] ?? 0);
 
         if ($customer_id <= 0) {
             AjaxResponse::error(__('Customer ID is required', 'my-village-hall'));

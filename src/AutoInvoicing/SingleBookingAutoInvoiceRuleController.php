@@ -43,12 +43,12 @@ class SingleBookingAutoInvoiceRuleController {
             }
 
             $record = [
-                'Id' => intval($row['id'] ?? 0),
+                'Id' => \intval($row['id'] ?? 0),
                 'Name' => $name,
                 'TriggerTiming' => $trigger_timing,
-                'TriggerOffsetDays' => max(0, intval($row['trigger_offset_days'] ?? 0)),
+                'TriggerOffsetDays' => max(0, \intval($row['trigger_offset_days'] ?? 0)),
                 'GroupBy' => $group_by,
-                'DueDateOffsetDays' => max(0, intval($row['due_date_offset_days'] ?? 30)),
+                'DueDateOffsetDays' => max(0, \intval($row['due_date_offset_days'] ?? 30)),
                 'IsActive' => !empty($row['is_active']) ? 1 : 0,
             ];
 
@@ -58,7 +58,7 @@ class SingleBookingAutoInvoiceRuleController {
             }
 
             if ($record['IsActive'] === 1) {
-                $active_rule_ids[] = intval($saved_rule_id);
+                $active_rule_ids[] = \intval($saved_rule_id);
             }
         }
 
@@ -69,9 +69,9 @@ class SingleBookingAutoInvoiceRuleController {
             $settings = [];
         }
 
-        $default_rule_id = intval($settings['single_default_rule_id'] ?? 0);
+        $default_rule_id = \intval($settings['single_default_rule_id'] ?? 0);
         if ($default_rule_id <= 0 || !$this->rule_repository->is_active_rule($default_rule_id)) {
-            $settings['single_default_rule_id'] = intval($this->rule_repository->get_first_active_rule_id() ?? 0);
+            $settings['single_default_rule_id'] = \intval($this->rule_repository->get_first_active_rule_id() ?? 0);
             update_option('myvh_invoicing_settings', $settings);
         }
 

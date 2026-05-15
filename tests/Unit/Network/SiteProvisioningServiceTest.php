@@ -199,12 +199,12 @@ class SiteProvisioningServiceTest extends UnitTestCase {
         $this->repo->shouldReceive('update_status')->once()->with(42, 'verified');
         $this->repo->shouldReceive('update_status')->once()->with(42, 'cloning');
         $this->repo->shouldReceive('update_status')->once()->with(42, 'site cloned', \Mockery::on(static function (array $extra): bool {
-            return intval($extra['blog_id'] ?? 0) === 44 && intval($extra['user_id'] ?? 0) === 201;
+            return \intval($extra['blog_id'] ?? 0) === 44 && \intval($extra['user_id'] ?? 0) === 201;
         }));
 
         $this->cloner->shouldReceive('clone')
             ->once()
-            ->with(5, \Mockery::on(static fn(array $site): bool => ($site['name'] ?? '') === 'hall-b'), \Mockery::on(static fn(array $ctx): bool => intval($ctx['provision_id'] ?? 0) === 42))
+            ->with(5, \Mockery::on(static fn(array $site): bool => ($site['name'] ?? '') === 'hall-b'), \Mockery::on(static fn(array $ctx): bool => \intval($ctx['provision_id'] ?? 0) === 42))
             ->andReturn(44);
 
         $result = $this->service->verify_and_provision($token);

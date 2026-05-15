@@ -37,7 +37,7 @@ class PortalBookingAjaxController {
         PortalAuth::require_user();
 
         try {
-            $booking_id = intval($_POST['booking_id'] ?? $_GET['booking_id'] ?? 0);
+            $booking_id = \intval($_POST['booking_id'] ?? $_GET['booking_id'] ?? 0);
             $booking = $this->get_action->execute($booking_id);
             $edit_rules = $this->booking_service->can_edit($booking);
             $delete_rules = $this->booking_service->can_delete($booking);
@@ -75,7 +75,7 @@ class PortalBookingAjaxController {
         PortalAuth::require_user();
 
         try {
-            $booking_id = intval($_POST['booking_id'] ?? 0);
+            $booking_id = \intval($_POST['booking_id'] ?? 0);
             $this->delete_action->execute($booking_id);
         } catch (Exception $e) {
             AjaxResponse::error($e->getMessage());
@@ -125,7 +125,7 @@ class PortalBookingAjaxController {
 
         $request = wp_unslash($_POST);
         $request['context'] = 'portal';
-        $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
+        $booking_id = \intval($request['booking_id'] ?? $request['id'] ?? 0);
 
         if ($booking_id <= 0) {
             AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));

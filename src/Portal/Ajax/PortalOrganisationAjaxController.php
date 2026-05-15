@@ -31,7 +31,7 @@ class PortalOrganisationAjaxController {
     public function request_organisation_membership(): void {
         $customer = $this->get_authenticated_customer();
 
-        $org_id = intval($_POST['organisation_id'] ?? 0);
+        $org_id = \intval($_POST['organisation_id'] ?? 0);
         $message = sanitize_text_field($_POST['message'] ?? '');
 
         if ($org_id <= 0) {
@@ -49,7 +49,7 @@ class PortalOrganisationAjaxController {
 
     public function approve_organisation_membership_request(): void {
         $customer = $this->get_authenticated_customer();
-        $request_id = intval($_POST['request_id'] ?? 0);
+        $request_id = \intval($_POST['request_id'] ?? 0);
 
         if ($request_id <= 0) {
             AjaxResponse::error(__('Request ID is required', 'my-village-hall'));
@@ -66,7 +66,7 @@ class PortalOrganisationAjaxController {
 
     public function reject_organisation_membership_request(): void {
         $customer = $this->get_authenticated_customer();
-        $request_id = intval($_POST['request_id'] ?? 0);
+        $request_id = \intval($_POST['request_id'] ?? 0);
 
         if ($request_id <= 0) {
             AjaxResponse::error(__('Request ID is required', 'my-village-hall'));
@@ -87,7 +87,7 @@ class PortalOrganisationAjaxController {
         $allow_type_changes = $this->current_user_is_client_admin();
         $payload = SaveOrganisationRequest::from_post(wp_unslash($_POST), false);
         if ($allow_type_changes) {
-            $payload['organisation_type_id'] = intval($_POST['organisation_type_id'] ?? 0);
+            $payload['organisation_type_id'] = \intval($_POST['organisation_type_id'] ?? 0);
         }
         $payload['is_active'] = 1;
 
@@ -121,7 +121,7 @@ class PortalOrganisationAjaxController {
     public function save_organisation_type_assignment(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $organisation_id = intval($_POST['organisation_id'] ?? 0);
+        $organisation_id = \intval($_POST['organisation_id'] ?? 0);
         if ($organisation_id <= 0) {
             AjaxResponse::error(__('Organisation is required', 'my-village-hall'));
         }
@@ -137,11 +137,11 @@ class PortalOrganisationAjaxController {
             'contact_email' => $existing['ContactEmail'] ?? '',
             'contact_phone' => $existing['ContactPhone'] ?? '',
             'website_url' => $existing['WebsiteUrl'] ?? null,
-            'organisation_type_id' => intval($_POST['organisation_type_id'] ?? 0),
+            'organisation_type_id' => \intval($_POST['organisation_type_id'] ?? 0),
             'invoice_organisation_bookings' => !empty($existing['InvoiceOrganisationBookings']) ? 1 : 0,
             'send_booking_emails_to_organisation' => !empty($existing['SendBookingEmailsToOrganisation']) ? 1 : 0,
-            'single_booking_auto_invoice_rule_id' => intval($existing['SingleBookingAutoInvoiceRuleId'] ?? 0),
-            'recurring_booking_auto_invoice_rule_id' => intval($existing['RecurringBookingAutoInvoiceRuleId'] ?? 0),
+            'single_booking_auto_invoice_rule_id' => \intval($existing['SingleBookingAutoInvoiceRuleId'] ?? 0),
+            'recurring_booking_auto_invoice_rule_id' => \intval($existing['RecurringBookingAutoInvoiceRuleId'] ?? 0),
             'billing_contact_name' => $existing['BillingContactName'] ?? '',
             'billing_email' => $existing['BillingEmail'] ?? '',
             'billing_address_line1' => $existing['BillingAddressLine1'] ?? '',
@@ -170,7 +170,7 @@ class PortalOrganisationAjaxController {
     public function delete_organisation(): void {
         PortalAuth::require_user();
 
-        $org_id = intval($_POST['organisation_id'] ?? 0);
+        $org_id = \intval($_POST['organisation_id'] ?? 0);
 
         if ($org_id <= 0) {
             AjaxResponse::error(__('Organisation is required', 'my-village-hall'));
@@ -202,7 +202,7 @@ class PortalOrganisationAjaxController {
 
     public function save_organisation_billing(): void {
         $customer = $this->get_authenticated_customer();
-        $org_id = intval($_POST['organisation_id'] ?? 0);
+        $org_id = \intval($_POST['organisation_id'] ?? 0);
 
         if ($org_id <= 0) {
             wp_send_json_error('Organisation is required', 400);
@@ -216,8 +216,8 @@ class PortalOrganisationAjaxController {
                 'contact_phone' => sanitize_text_field($_POST['contact_phone'] ?? ''),
                 'send_booking_emails_to_organisation' => !empty($_POST['send_booking_emails_to_organisation']) ? 1 : 0,
                 'invoice_organisation_bookings' => !empty($_POST['invoice_organisation_bookings']) ? 1 : 0,
-                'single_booking_auto_invoice_rule_id' => intval($_POST['single_booking_auto_invoice_rule_id'] ?? 0),
-                'recurring_booking_auto_invoice_rule_id' => intval($_POST['recurring_booking_auto_invoice_rule_id'] ?? 0),
+                'single_booking_auto_invoice_rule_id' => \intval($_POST['single_booking_auto_invoice_rule_id'] ?? 0),
+                'recurring_booking_auto_invoice_rule_id' => \intval($_POST['recurring_booking_auto_invoice_rule_id'] ?? 0),
                 'billing_contact_name' => sanitize_text_field($_POST['billing_contact_name'] ?? ''),
                 'billing_email' => sanitize_email($_POST['billing_email'] ?? ''),
                 'billing_address_line1' => sanitize_text_field($_POST['billing_address_line1'] ?? ''),
@@ -238,7 +238,7 @@ class PortalOrganisationAjaxController {
     public function organisation_add_member(): void {
         $customer = $this->get_authenticated_customer();
 
-        $org_id = intval($_POST['organisation_id'] ?? 0);
+        $org_id = \intval($_POST['organisation_id'] ?? 0);
         $email = sanitize_email($_POST['email'] ?? '');
         $is_admin = !empty($_POST['is_admin']);
 
@@ -271,7 +271,7 @@ class PortalOrganisationAjaxController {
 
     public function organisation_remove_member(): void {
         $customer = $this->get_authenticated_customer();
-        $member_id = intval($_POST['member_id'] ?? 0);
+        $member_id = \intval($_POST['member_id'] ?? 0);
 
         if ($member_id <= 0) {
             AjaxResponse::error(__('Member ID is required', 'my-village-hall'));
@@ -289,7 +289,7 @@ class PortalOrganisationAjaxController {
     public function organisation_set_member_admin(): void {
         $customer = $this->get_authenticated_customer();
 
-        $member_id = intval($_POST['member_id'] ?? 0);
+        $member_id = \intval($_POST['member_id'] ?? 0);
         $is_admin = !empty($_POST['is_admin']);
 
         if ($member_id <= 0) {

@@ -25,7 +25,7 @@ class InvoiceAutoSendListener {
     }
 
     public function handle_invoice_generated($invoice_id, $bookings = [], $options = []): void {
-        $invoice_id = intval($invoice_id);
+        $invoice_id = \intval($invoice_id);
 
         if ($invoice_id <= 0) {
             return;
@@ -133,7 +133,7 @@ class InvoiceAutoSendListener {
     }
 
     private function build_booking_details(array $invoice, array $bookings): string {
-        $booking_count = intval($invoice['BookingCount'] ?? count($bookings));
+        $booking_count = \intval($invoice['BookingCount'] ?? count($bookings));
         if ($booking_count <= 0) {
             return '';
         }

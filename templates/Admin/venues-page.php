@@ -14,7 +14,7 @@ use MYVH\Venues\VenueHoursRepository;
 use MYVH\Availability\AvailabilityService;
 
 $action   = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
-$venue_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$venue_id = isset($_GET['id']) ? \intval($_GET['id']) : 0;
 
 $venue_service = $myvh_container->get(VenueService::class);
 $venue_hours_repository = $myvh_container->get(VenueHoursRepository::class);
@@ -88,7 +88,7 @@ for ($day = 0; $day <= 6; $day++) {
                 <?php else: ?>
                     <?php foreach ($venues as $venue): ?>
                         <tr>
-                            <td><?php echo intval($venue['Id']); ?></td>
+                            <td><?php echo \intval($venue['Id']); ?></td>
                             <td><strong><?php echo esc_html($venue['Name']); ?></strong></td>
                             <td><?php echo esc_html($venue['ShortName']); ?></td>
                             <td><?php echo esc_html($venue['PostCode']); ?></td>

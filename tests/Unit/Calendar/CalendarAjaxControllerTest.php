@@ -373,7 +373,7 @@ class CalendarAjaxControllerTest extends UnitTestCase {
             ->with(
                 \Mockery::on(static function (array $request): bool {
                     return ($request['context'] ?? '') === 'portal'
-                        && intval($request['booking_id'] ?? 0) === 56;
+                        && \intval($request['booking_id'] ?? 0) === 56;
                 })
             )
             ->andReturn(['id' => 56]);

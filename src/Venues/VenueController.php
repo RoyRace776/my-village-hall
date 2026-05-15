@@ -51,7 +51,7 @@ class VenueController {
 
         check_admin_referer('myvh_delete_venue');
 
-        $id = intval($_GET['id']);
+        $id = \intval($_GET['id']);
         $this->service->delete($id);
 
         wp_redirect(admin_url('admin.php?page=myvh-venues&deleted=1'));

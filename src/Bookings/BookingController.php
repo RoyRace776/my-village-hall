@@ -64,7 +64,7 @@ class BookingController
         ];
 
         if (!empty($data['booking_id'])) {
-            $query_args['edit'] = intval($data['booking_id']);
+            $query_args['edit'] = \intval($data['booking_id']);
         } else {
             $query_args['add'] = 1;
         }
@@ -98,7 +98,7 @@ class BookingController
         // Only read booking ID after nonce validation
         check_admin_referer('myvh_cancel_booking');
 
-        $id = isset($_POST['id']) ? intval($_POST['id']) : (isset($_GET['id']) ? intval($_GET['id']) : 0);
+        $id = isset($_POST['id']) ? \intval($_POST['id']) : (isset($_GET['id']) ? \intval($_GET['id']) : 0);
         if ($id <= 0) {
             wp_die(__('Invalid booking ID', 'my-village-hall'));
         }

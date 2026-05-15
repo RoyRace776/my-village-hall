@@ -30,7 +30,7 @@ class BookingDeletionService
 
     public function delete($id): bool|WP_Error
     {
-        $booking_id = intval($id);
+        $booking_id = \intval($id);
         if ($booking_id <= 0) {
             return new WP_Error('validation', __('Booking ID is required', 'my-village-hall'));
         }

@@ -60,7 +60,7 @@ class OrganisationService {
 
         if ($is_new) {
             if ($allow_type_changes && !empty($data['organisation_type_id'])) {
-                $organisation_type_id = intval($data['organisation_type_id']);
+                $organisation_type_id = \intval($data['organisation_type_id']);
             } else {
                 $default_type = $this->type_repo->get_default();
                 if (empty($default_type['Id'])) {
@@ -69,21 +69,21 @@ class OrganisationService {
                 if (empty($default_type['Id'])) {
                     return new WP_Error('configuration', __('No default organisation type has been configured', 'my-village-hall'));
                 }
-                $organisation_type_id = intval($default_type['Id']);
+                $organisation_type_id = \intval($default_type['Id']);
             }
         } else {
-            $organisation_id = intval($data['organisation_id']);
+            $organisation_id = \intval($data['organisation_id']);
             $existing = $this->repo->get_by_id($organisation_id);
             if (empty($existing['Id'])) {
                 return new WP_Error('not_found', __('Organisation not found', 'my-village-hall'));
             }
 
-            $organisation_type_id = intval($existing['OrganisationTypeId']);
+            $organisation_type_id = \intval($existing['OrganisationTypeId']);
             if ($allow_type_changes && !empty($data['organisation_type_id'])) {
-                $organisation_type_id = intval($data['organisation_type_id']);
+                $organisation_type_id = \intval($data['organisation_type_id']);
             }
 
-            if (!$allow_type_changes && !empty($data['organisation_type_id']) && intval($data['organisation_type_id']) !== intval($existing['OrganisationTypeId'])) {
+            if (!$allow_type_changes && !empty($data['organisation_type_id']) && \intval($data['organisation_type_id']) !== \intval($existing['OrganisationTypeId'])) {
                 return new WP_Error('forbidden', __('Only admin users can change organisation type', 'my-village-hall'));
             }
 
@@ -91,7 +91,7 @@ class OrganisationService {
                 if (sanitize_text_field($data['name']) !== $existing['Name']) {
                     return new WP_Error('forbidden', __('System organisations cannot be renamed', 'my-village-hall'));
                 }
-                if ($organisation_type_id !== intval($existing['OrganisationTypeId'])) {
+                if ($organisation_type_id !== \intval($existing['OrganisationTypeId'])) {
                     return new WP_Error('forbidden', __('System organisations cannot change organisation type', 'my-village-hall'));
                 }
             }
@@ -104,7 +104,7 @@ class OrganisationService {
         $invoice_organisation_bookings = !empty($data['invoice_organisation_bookings']) ? 1 : 0;
         $send_booking_emails_to_organisation = array_key_exists('send_booking_emails_to_organisation', $data)
             ? (!empty($data['send_booking_emails_to_organisation']) ? 1 : 0)
-            : ($is_new ? 0 : intval($existing['SendBookingEmailsToOrganisation'] ?? 0));
+            : ($is_new ? 0 : \intval($existing['SendBookingEmailsToOrganisation'] ?? 0));
         $record = [
             'Name'               => sanitize_text_field($data['name']),
             'OrganisationTypeId' => $organisation_type_id,
@@ -113,8 +113,8 @@ class OrganisationService {
             'WebsiteUrl'         => !empty($data['website_url']) ? esc_url_raw($data['website_url']) : null,
             'InvoiceOrganisationBookings' => $invoice_organisation_bookings,
             'SendBookingEmailsToOrganisation' => $send_booking_emails_to_organisation,
-            'SingleBookingAutoInvoiceRuleId' => !empty($data['single_booking_auto_invoice_rule_id']) ? intval($data['single_booking_auto_invoice_rule_id']) : null,
-            'RecurringBookingAutoInvoiceRuleId' => !empty($data['recurring_booking_auto_invoice_rule_id']) ? intval($data['recurring_booking_auto_invoice_rule_id']) : null,
+            'SingleBookingAutoInvoiceRuleId' => !empty($data['single_booking_auto_invoice_rule_id']) ? \intval($data['single_booking_auto_invoice_rule_id']) : null,
+            'RecurringBookingAutoInvoiceRuleId' => !empty($data['recurring_booking_auto_invoice_rule_id']) ? \intval($data['recurring_booking_auto_invoice_rule_id']) : null,
             'BillingContactName' => $invoice_organisation_bookings && !empty($data['billing_contact_name']) ? sanitize_text_field($data['billing_contact_name']) : null,
             'BillingEmail'       => $invoice_organisation_bookings && !empty($data['billing_email']) ? sanitize_email($data['billing_email']) : null,
             'BillingAddressLine1'=> $invoice_organisation_bookings && !empty($data['billing_address_line1']) ? sanitize_text_field($data['billing_address_line1']) : null,
@@ -122,13 +122,13 @@ class OrganisationService {
             'BillingTownCity'    => $invoice_organisation_bookings && !empty($data['billing_town_city']) ? sanitize_text_field($data['billing_town_city']) : null,
             'BillingPostcode'    => $invoice_organisation_bookings && !empty($data['billing_postcode']) ? sanitize_text_field($data['billing_postcode']) : null,
             'BillingReference'   => $invoice_organisation_bookings && !empty($data['billing_reference']) ? sanitize_text_field($data['billing_reference']) : null,
-            'IsActive'           => $allow_type_changes ? (!empty($data['is_active']) ? 1 : 0) : ($is_new ? 1 : intval($existing['IsActive'] ?? 1)),
+            'IsActive'           => $allow_type_changes ? (!empty($data['is_active']) ? 1 : 0) : ($is_new ? 1 : \intval($existing['IsActive'] ?? 1)),
             'IsDefault'          => $requested_default,
-            'DefaultPublic'      => (!empty($data['default_public']) && intval($data['default_public']) === 1) ? 1 : 0,
+            'DefaultPublic'      => (!empty($data['default_public']) && \intval($data['default_public']) === 1) ? 1 : 0,
         ];
 
         if (!empty($data['organisation_id'])) {
-            $organisation_id = intval($data['organisation_id']);
+            $organisation_id = \intval($data['organisation_id']);
             $updated = $this->repo->update($record, ['Id' => $organisation_id]);
             if (!$updated) {
                 return false;
@@ -360,7 +360,7 @@ class OrganisationService {
         $invoice_organisation_bookings = !empty($data['invoice_organisation_bookings']) ? 1 : 0;
         $send_booking_emails_to_organisation = array_key_exists('send_booking_emails_to_organisation', $data)
             ? (!empty($data['send_booking_emails_to_organisation']) ? 1 : 0)
-            : intval($organisation['SendBookingEmailsToOrganisation'] ?? 0);
+            : \intval($organisation['SendBookingEmailsToOrganisation'] ?? 0);
         $billing_email = sanitize_email($data['billing_email'] ?? '');
         if ($invoice_organisation_bookings && !empty($data['billing_email']) && !is_email($billing_email)) {
             return new WP_Error('validation', __('Billing email must be a valid email address', 'my-village-hall'));
@@ -370,8 +370,8 @@ class OrganisationService {
             'ContactPhone'        => $contact_phone,
             'InvoiceOrganisationBookings' => $invoice_organisation_bookings,
             'SendBookingEmailsToOrganisation' => $send_booking_emails_to_organisation,
-            'SingleBookingAutoInvoiceRuleId' => !empty($data['single_booking_auto_invoice_rule_id']) ? intval($data['single_booking_auto_invoice_rule_id']) : null,
-            'RecurringBookingAutoInvoiceRuleId' => !empty($data['recurring_booking_auto_invoice_rule_id']) ? intval($data['recurring_booking_auto_invoice_rule_id']) : null,
+            'SingleBookingAutoInvoiceRuleId' => !empty($data['single_booking_auto_invoice_rule_id']) ? \intval($data['single_booking_auto_invoice_rule_id']) : null,
+            'RecurringBookingAutoInvoiceRuleId' => !empty($data['recurring_booking_auto_invoice_rule_id']) ? \intval($data['recurring_booking_auto_invoice_rule_id']) : null,
             'BillingContactName'  => $invoice_organisation_bookings && !empty($data['billing_contact_name']) ? sanitize_text_field($data['billing_contact_name']) : null,
             'BillingEmail'        => $invoice_organisation_bookings && !empty($data['billing_email']) ? $billing_email : null,
             'BillingAddressLine1' => $invoice_organisation_bookings && !empty($data['billing_address_line1']) ? sanitize_text_field($data['billing_address_line1']) : null,

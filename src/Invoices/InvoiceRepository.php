@@ -97,7 +97,7 @@ class InvoiceRepository extends RepositoryBase{
             LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
             WHERE i.Id = %d
             GROUP BY i.Id",
-            intval($invoice_id)
+            \intval($invoice_id)
         );
 
         $result = $this->wpdb->get_row($sql, ARRAY_A);
@@ -117,8 +117,8 @@ class InvoiceRepository extends RepositoryBase{
      * @return array|null
      */
     public function get_portal_detail($invoice_id, $customer_id): ?array {
-        $invoice_id = intval($invoice_id);
-        $customer_id = intval($customer_id);
+        $invoice_id = \intval($invoice_id);
+        $customer_id = \intval($customer_id);
 
         $sql = "
             SELECT
@@ -184,7 +184,7 @@ class InvoiceRepository extends RepositoryBase{
             LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
             WHERE ii.InvoiceId = %d
             ORDER BY ii.DisplayOrder ASC, ii.Id ASC",
-            intval($invoice_id)
+            \intval($invoice_id)
         );
 
         $results = $this->wpdb->get_results($sql, ARRAY_A);
@@ -269,7 +269,7 @@ class InvoiceRepository extends RepositoryBase{
      * @return array|null Array of invoice records with organisation metadata
      */
     public function get_for_customer_portal($customer_id, $statuses = [], ?string $start_date = null, ?string $end_date = null): ?array {
-        $customer_id = intval($customer_id);
+        $customer_id = \intval($customer_id);
 
         $where = "(i.CustomerId = %d OR b.OrganisationId IN (
             SELECT om.OrganisationId
@@ -350,7 +350,7 @@ class InvoiceRepository extends RepositoryBase{
             return 1;
         }
 
-        return intval($result) + 1;
+        return \intval($result) + 1;
     }
 
     /**

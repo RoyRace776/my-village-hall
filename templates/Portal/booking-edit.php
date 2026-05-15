@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) exit;
             <div class="myvh-card myvh-account-card">
                 <div class="myvh-account-card-head">
                     <h3><?php echo esc_html($booking['RoomName'] ?? 'Booking'); ?></h3>
-                    <span>Booking reference #<?php echo intval($booking['Id']); ?></span>
+                    <span>Booking reference #<?php echo \intval($booking['Id']); ?></span>
                 </div>
 
                 <form id="myvh-booking-edit-form"
@@ -29,7 +29,7 @@ if (!defined('ABSPATH')) exit;
                       data-message-target="myvh-booking-edit-message"
                       data-reload-page="bookings">
 
-                    <input type="hidden" name="booking_id" value="<?php echo intval($booking['Id']); ?>">
+                    <input type="hidden" name="booking_id" value="<?php echo \intval($booking['Id']); ?>">
 
                     <label class="myvh-account-field" for="myvh-booking-start-date">
                         <span>Date</span>

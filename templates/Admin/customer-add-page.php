@@ -67,7 +67,7 @@ $available_orgs = [];
                                     <select id="myvh-new-customer-auto-invoice-rule" name="single_booking_auto_invoice_rule_id" class="regular-text">
                                         <option value="0"><?php _e('Use default rule', 'my-village-hall'); ?></option>
                                         <?php foreach ($rule_options as $rule_id => $rule_name): ?>
-                                            <option value="<?php echo intval($rule_id); ?>"><?php echo esc_html($rule_name); ?></option>
+                                            <option value="<?php echo \intval($rule_id); ?>"><?php echo esc_html($rule_name); ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </p>

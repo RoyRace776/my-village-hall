@@ -24,9 +24,9 @@ class QuoteBookingAction {
             'start_time' => $start_time,
             'end_date' => $end_date,
             'end_time' => $end_time,
-            'room_id' => intval($request['room_id'] ?? 0),
-            'customer_id' => intval($request['customer_id'] ?? 0),
-            'organisation_id' => intval($request['organisation_id'] ?? 0),
+            'room_id' => \intval($request['room_id'] ?? 0),
+            'customer_id' => \intval($request['customer_id'] ?? 0),
+            'organisation_id' => \intval($request['organisation_id'] ?? 0),
         ];
 
         $viewer_user_id = get_current_user_id();
@@ -160,7 +160,7 @@ class QuoteBookingAction {
                 continue;
             }
 
-            $addon_id = intval($addon['addon_id'] ?? 0);
+            $addon_id = \intval($addon['addon_id'] ?? 0);
             if ($addon_id <= 0) {
                 continue;
             }
@@ -171,7 +171,7 @@ class QuoteBookingAction {
                 continue;
             }
 
-            $quantity = floatval($addon['quantity'] ?? 1);
+            $quantity = \floatval($addon['quantity'] ?? 1);
             if ($quantity <= 0) {
                 continue;
             }
@@ -179,7 +179,7 @@ class QuoteBookingAction {
             $normalized[] = [
                 'addon_id' => $addon_id,
                 'quantity' => $quantity,
-                'unit_price' => floatval($addon['unit_price'] ?? 0),
+                'unit_price' => \floatval($addon['unit_price'] ?? 0),
             ];
         }
 

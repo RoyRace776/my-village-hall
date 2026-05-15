@@ -24,7 +24,7 @@ class RoomRateServiceTest extends UnitTestCase
 
         $this->repo = $this->mock(RoomRateRepository::class);
         $this->customer_repo = $this->mock(CustomerRepository::class);
-        $this->service = new RoomRateService($this->repo, $this->customer_repo);
+        $this->service = new RoomRateService($this->repo);
     }
 
     /** @test */

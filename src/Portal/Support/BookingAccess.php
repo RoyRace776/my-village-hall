@@ -31,7 +31,7 @@ class BookingAccess {
             return $booking;
         }
 
-        $organisation_id = intval($booking['OrganisationId'] ?? 0);
+        $organisation_id = \intval($booking['OrganisationId'] ?? 0);
         if (
             $customer_id > 0
             && $organisation_id > 0

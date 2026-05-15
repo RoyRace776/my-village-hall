@@ -37,7 +37,7 @@ class PaymentController {
 
         check_admin_referer('myvh_delete_payment');
 
-        $payment_id = intval($_REQUEST['payment_id'] ?? $_REQUEST['id'] ?? 0);
+        $payment_id = \intval($_REQUEST['payment_id'] ?? $_REQUEST['id'] ?? 0);
         $result = $this->service->delete($payment_id);
 
         if (is_wp_error($result)) {
@@ -52,12 +52,12 @@ class PaymentController {
     private function get_admin_redirect_args(): array {
         $args = [];
 
-        $invoice_id = intval($_REQUEST['invoice_id'] ?? 0);
+        $invoice_id = \intval($_REQUEST['invoice_id'] ?? 0);
         if ($invoice_id > 0) {
             $args['invoice_id'] = $invoice_id;
         }
 
-        $redirect_view = intval($_REQUEST['redirect_view'] ?? 0);
+        $redirect_view = \intval($_REQUEST['redirect_view'] ?? 0);
         if ($redirect_view > 0) {
             $args['view'] = $redirect_view;
         }

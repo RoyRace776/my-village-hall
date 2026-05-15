@@ -45,9 +45,9 @@ class RepositoryBase {
             }
         }
         if (!empty($args['limit'])) {
-            $sql .= " LIMIT " . intval($args['limit']);
+            $sql .= " LIMIT " . \intval($args['limit']);
             if (!empty($args['offset'])) {
-                $sql .= " OFFSET " . intval($args['offset']);
+                $sql .= " OFFSET " . \intval($args['offset']);
             }
         }
         return $this->wpdb->get_results($sql, ARRAY_A);
@@ -92,8 +92,8 @@ class RepositoryBase {
                 $sql .= " ORDER BY {$order}";
             }
         }
-        if ($limit) $sql .= " LIMIT " . intval($limit);
-        if ($offset) $sql .= " OFFSET " . intval($offset);
+        if ($limit) $sql .= " LIMIT " . \intval($limit);
+        if ($offset) $sql .= " OFFSET " . \intval($offset);
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 

@@ -85,7 +85,7 @@ class PortalAdminConfigAjaxController {
     public function delete_organisation_type(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $org_type_id = intval($_POST['org_type_id'] ?? 0);
+        $org_type_id = \intval($_POST['org_type_id'] ?? 0);
 
         if ($org_type_id <= 0) {
             AjaxResponse::error(__('Organisation type ID is required', 'my-village-hall'));
@@ -171,7 +171,7 @@ class PortalAdminConfigAjaxController {
     public function delete_room(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $room_id = intval($_POST['room_id'] ?? 0);
+        $room_id = \intval($_POST['room_id'] ?? 0);
 
         if ($room_id <= 0) {
             AjaxResponse::error(__('Room ID is required', 'my-village-hall'));
@@ -193,7 +193,7 @@ class PortalAdminConfigAjaxController {
     public function delete_venue(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $venue_id = intval($_POST['venue_id'] ?? 0);
+        $venue_id = \intval($_POST['venue_id'] ?? 0);
 
         if ($venue_id <= 0) {
             AjaxResponse::error(__('Venue ID is required', 'my-village-hall'));
@@ -246,7 +246,7 @@ class PortalAdminConfigAjaxController {
     public function delete_room_rate(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $rate_id = intval($_POST['rate_id'] ?? 0);
+        $rate_id = \intval($_POST['rate_id'] ?? 0);
 
         if ($rate_id <= 0) {
             AjaxResponse::error(__('Room rate ID is required', 'my-village-hall'));
@@ -295,7 +295,7 @@ class PortalAdminConfigAjaxController {
     public function delete_addon(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $addon_id = intval($_POST['addon_id'] ?? 0);
+        $addon_id = \intval($_POST['addon_id'] ?? 0);
 
         if ($addon_id <= 0) {
             AjaxResponse::error(__('Add-on ID is required', 'my-village-hall'));
@@ -383,12 +383,12 @@ class PortalAdminConfigAjaxController {
             }
 
             $record = [
-                'Id' => intval($row['id'] ?? 0),
+                'Id' => \intval($row['id'] ?? 0),
                 'Name' => $name,
                 'TriggerTiming' => $trigger_timing,
-                'TriggerOffsetDays' => max(0, intval($row['trigger_offset_days'] ?? 0)),
+                'TriggerOffsetDays' => max(0, \intval($row['trigger_offset_days'] ?? 0)),
                 'GroupBy' => $group_by,
-                'DueDateOffsetDays' => max(0, intval($row['due_date_offset_days'] ?? 30)),
+                'DueDateOffsetDays' => max(0, \intval($row['due_date_offset_days'] ?? 30)),
                 'IsActive' => !empty($row['is_active']) ? 1 : 0,
             ];
 
@@ -398,7 +398,7 @@ class PortalAdminConfigAjaxController {
             }
 
             if ($record['IsActive'] === 1) {
-                $active_rule_ids[] = intval($saved_rule_id);
+                $active_rule_ids[] = \intval($saved_rule_id);
             }
         }
 
@@ -409,11 +409,11 @@ class PortalAdminConfigAjaxController {
             $settings = [];
         }
 
-        $requested_default_rule_id = intval($_POST['default_rule_id'] ?? 0);
+        $requested_default_rule_id = \intval($_POST['default_rule_id'] ?? 0);
         if ($requested_default_rule_id > 0 && $this->single_booking_rule_repository->is_active_rule($requested_default_rule_id)) {
             $settings['single_default_rule_id'] = $requested_default_rule_id;
         } else {
-            $settings['single_default_rule_id'] = intval($this->single_booking_rule_repository->get_first_active_rule_id() ?? 0);
+            $settings['single_default_rule_id'] = \intval($this->single_booking_rule_repository->get_first_active_rule_id() ?? 0);
         }
 
         update_option('myvh_invoicing_settings', $settings);
@@ -459,13 +459,13 @@ class PortalAdminConfigAjaxController {
             }
 
             $record = [
-                'Id' => intval($row['id'] ?? 0),
+                'Id' => \intval($row['id'] ?? 0),
                 'Name' => $name,
                 'TriggerTiming' => $trigger_timing,
                 'TriggerDirection' => $trigger_direction,
-                'TriggerOffsetDays' => max(0, intval($row['trigger_period_count'] ?? 0)),
+                'TriggerOffsetDays' => max(0, \intval($row['trigger_period_count'] ?? 0)),
                 'GroupBy' => $group_by,
-                'DueDateOffsetDays' => max(0, intval($row['due_date_offset_days'] ?? 30)),
+                'DueDateOffsetDays' => max(0, \intval($row['due_date_offset_days'] ?? 30)),
                 'IsActive' => !empty($row['is_active']) ? 1 : 0,
             ];
 
@@ -475,7 +475,7 @@ class PortalAdminConfigAjaxController {
             }
 
             if ($record['IsActive'] === 1) {
-                $active_rule_ids[] = intval($saved_rule_id);
+                $active_rule_ids[] = \intval($saved_rule_id);
             }
         }
 
@@ -486,11 +486,11 @@ class PortalAdminConfigAjaxController {
             $settings = [];
         }
 
-        $requested_default_rule_id = intval($_POST['default_rule_id'] ?? 0);
+        $requested_default_rule_id = \intval($_POST['default_rule_id'] ?? 0);
         if ($requested_default_rule_id > 0 && $this->recurring_booking_rule_repository->is_active_rule($requested_default_rule_id)) {
             $settings['recurring_default_rule_id'] = $requested_default_rule_id;
         } else {
-            $settings['recurring_default_rule_id'] = intval($this->recurring_booking_rule_repository->get_first_active_rule_id() ?? 0);
+            $settings['recurring_default_rule_id'] = \intval($this->recurring_booking_rule_repository->get_first_active_rule_id() ?? 0);
         }
 
         update_option('myvh_invoicing_settings', $settings);

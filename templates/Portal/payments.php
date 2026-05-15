@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$selected_invoice_id = isset($selected_invoice_id) ? intval($selected_invoice_id) : 0;
+$selected_invoice_id = isset($selected_invoice_id) ? \intval($selected_invoice_id) : 0;
 $payments = isset($payments) && is_array($payments) ? $payments : [];
 $payment_methods = isset($payment_methods) && is_array($payment_methods) ? $payment_methods : [];
 $invoices = isset($invoices) && is_array($invoices) ? $invoices : [];
@@ -54,11 +54,11 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                             <?php foreach ($invoices as $invoice): ?>
                                 <?php
                                 $amount_due = isset($invoice['AmountDue'])
-                                    ? floatval($invoice['AmountDue'])
-                                    : max(0.0, floatval($invoice['TotalAmount'] ?? 0) - floatval($invoice['AmountPaid'] ?? 0));
+                                    ? \floatval($invoice['AmountDue'])
+                                    : max(0.0, \floatval($invoice['TotalAmount'] ?? 0) - \floatval($invoice['AmountPaid'] ?? 0));
                                 ?>
                                 <option
-                                    value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>"
+                                    value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>"
                                     data-amount-due="<?php echo esc_attr(number_format($amount_due, 2, '.', '')); ?>">
                                     <?php echo esc_html(($invoice['InvoiceNumber'] ?? '') . ' - ' . ($invoice['CustomerName'] ?? 'Unknown')); ?>
                                 </option>
@@ -175,8 +175,8 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                         <tbody>
                             <?php foreach ($payments as $payment): ?>
                                 <?php
-                                $payment_id = intval($payment['Id'] ?? 0);
-                                $invoice_id = intval($payment['InvoiceId'] ?? 0);
+                                $payment_id = \intval($payment['Id'] ?? 0);
+                                $invoice_id = \intval($payment['InvoiceId'] ?? 0);
                                 $message_id = 'myvh-payment-delete-message-' . $payment_id;
                                 ?>
                                 <tr>

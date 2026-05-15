@@ -169,8 +169,8 @@ class InstallerTest extends UnitTestCase {
             ->once()
             ->with('wp_myvh_organisation_types', Mockery::on(fn(array $data): bool =>
                 ($data['Name'] ?? '') === 'Person'
-                && intval($data['IsSystem'] ?? 0) === 1
-                && intval($data['IsDefault'] ?? 0) === 0
+                && \intval($data['IsSystem'] ?? 0) === 1
+                && \intval($data['IsDefault'] ?? 0) === 0
             ));
 
         $type_id = Installer::add_personal_organisation_type($this->wpdb);
@@ -192,8 +192,8 @@ class InstallerTest extends UnitTestCase {
             ->once()
             ->with('wp_myvh_organisation_types', Mockery::on(fn(array $data): bool =>
                 ($data['Description'] ?? '') === 'Individual person'
-                && intval($data['IsSystem'] ?? 0) === 1
-                && intval($data['IsDefault'] ?? 0) === 0
+                && \intval($data['IsSystem'] ?? 0) === 1
+                && \intval($data['IsDefault'] ?? 0) === 0
             ), ['Id' => 12]);
 
         $type_id = Installer::add_personal_organisation_type($this->wpdb);
@@ -217,8 +217,8 @@ class InstallerTest extends UnitTestCase {
             ->once()
             ->with('wp_myvh_organisations', Mockery::on(fn(array $data): bool =>
                 ($data['Name'] ?? '') === 'Personal booking'
-                && intval($data['OrganisationTypeId'] ?? 0) === 7
-                && intval($data['IsDefault'] ?? 0) === 1
+                && \intval($data['OrganisationTypeId'] ?? 0) === 7
+                && \intval($data['IsDefault'] ?? 0) === 1
             ));
 
         $org_id = Installer::add_personal_organisation($this->wpdb, 7);
@@ -257,7 +257,7 @@ class InstallerTest extends UnitTestCase {
             ->once()
             ->with('wp_myvh_organisation_types', Mockery::on(fn(array $data): bool =>
                 ($data['Name'] ?? '') === 'Default'
-                && intval($data['IsDefault'] ?? 0) === 1
+                && \intval($data['IsDefault'] ?? 0) === 1
             ));
 
         Installer::add_default_organisation_type($this->wpdb);

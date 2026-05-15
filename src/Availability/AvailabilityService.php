@@ -135,7 +135,7 @@ class AvailabilityService {
         $venue_hours = $this->index_hours_by_day($this->venue_hours_repo->get_by_venue($venue_id));
 
         foreach ($room_hours_by_day as $row) {
-            $day_of_week = intval($row['day_of_week'] ?? -1);
+            $day_of_week = \intval($row['day_of_week'] ?? -1);
             if ($day_of_week < 0 || $day_of_week > 6) {
                 continue;
             }
@@ -180,7 +180,7 @@ class AvailabilityService {
             return new \WP_Error('Availability', __('Unknown room passed to availability service', 'my-village-hall'));
         }
 
-        $day_of_week = intval(date('w', strtotime($date)));
+        $day_of_week = \intval(date('w', strtotime($date)));
         $room_hours = $this->index_hours_by_day($this->room_hours_repo->get_by_room($room_id));
 
         if (isset($room_hours[$day_of_week])) {
@@ -217,7 +217,7 @@ class AvailabilityService {
             return new \WP_Error('Availability', __('Unknown venue passed to availability service', 'my-village-hall'));
         }
 
-        $day_of_week = intval(date('w', strtotime($date)));
+        $day_of_week = \intval(date('w', strtotime($date)));
         $venue_hours = $this->index_hours_by_day($this->venue_hours_repo->get_by_venue($venue_id));
 
         if (isset($venue_hours[$day_of_week])) {
@@ -358,7 +358,7 @@ class AvailabilityService {
         $indexed = [];
 
         foreach ($rows as $row) {
-            $day_of_week = intval($row['DayOfWeek'] ?? -1);
+            $day_of_week = \intval($row['DayOfWeek'] ?? -1);
             if ($day_of_week < 0 || $day_of_week > 6) {
                 continue;
             }

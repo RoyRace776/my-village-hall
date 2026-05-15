@@ -13,7 +13,7 @@ use MYVH\Organisations\OrganisationService;
 
 global $myvh_container;
 
-$edit_id          = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$edit_id          = isset($_GET['edit']) ? \intval($_GET['edit']) : 0;
 $customer_service = $myvh_container->get(CustomerService::class);
 $org_service      = $myvh_container->get(OrganisationService::class);
 $rule_repository  = $myvh_container->get(SingleBookingAutoInvoiceRuleRepository::class);
@@ -101,7 +101,7 @@ if ($edit_customer) {
                                         <a href="<?php echo admin_url('admin.php?page=myvh-customers&edit=' . $customer['Id']); ?>">
                                             <?php _e('Edit', 'my-village-hall'); ?>
                                         </a> |
-                                        <a href="#" class="send-password-reset" data-customer-id="<?php echo intval($customer['Id']); ?>">
+                                        <a href="#" class="send-password-reset" data-customer-id="<?php echo \intval($customer['Id']); ?>">
                                             <?php _e('Send Password Reset', 'my-village-hall'); ?>
                                         </a> |
                                         <a href="<?php echo wp_nonce_url(
@@ -181,7 +181,7 @@ if ($edit_customer) {
                                     <select id="myvh-customer-auto-invoice-rule" name="single_booking_auto_invoice_rule_id" class="regular-text">
                                         <option value="0"><?php _e('Use default rule', 'my-village-hall'); ?></option>
                                         <?php foreach ($rule_options as $rule_id => $rule_name): ?>
-                                            <option value="<?php echo intval($rule_id); ?>" <?php selected(intval($edit_customer['SingleBookingAutoInvoiceRuleId'] ?? 0), intval($rule_id)); ?>>
+                                            <option value="<?php echo \intval($rule_id); ?>" <?php selected(intval($edit_customer['SingleBookingAutoInvoiceRuleId'] ?? 0), \intval($rule_id)); ?>>
                                                 <?php echo esc_html($rule_name); ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -277,7 +277,7 @@ if ($edit_customer) {
                     <?php if (!empty($available_orgs)): ?>
                     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                         <input type="hidden" name="action"      value="myvh_add_org_member">
-                        <input type="hidden" name="user_id"     value="<?php echo intval($edit_customer['Id']); ?>">
+                        <input type="hidden" name="user_id"     value="<?php echo \intval($edit_customer['Id']); ?>">
                         <input type="hidden" name="redirect"    value="customer">
                         <input type="hidden" name="customer_id" value="<?php echo $edit_customer['Id']; ?>">
                         <?php wp_nonce_field('myvh_add_org_member'); ?>

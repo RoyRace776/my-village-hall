@@ -120,8 +120,8 @@ class BookingService {
                 return $validation_result;
             }
 
-            $customer_id = intval($data['customer_id']);
-            $organisation_id = !empty($data['organisation_id']) ? intval($data['organisation_id']) : 0;
+            $customer_id = \intval($data['customer_id']);
+            $organisation_id = !empty($data['organisation_id']) ? \intval($data['organisation_id']) : 0;
 
             $room = $this->room_service->get($data['room_id']);
             $start_date = sanitize_text_field($data['start_date']);
@@ -141,14 +141,14 @@ class BookingService {
                 $chargeable_hours = $data['chargeable_hours'];
             }
 
-            $booking_id = !empty($data['booking_id']) ? intval($data['booking_id']) : 0;
+            $booking_id = !empty($data['booking_id']) ? \intval($data['booking_id']) : 0;
             $public_visibility = $this->resolve_public_visibility($data, $organisation_id, $booking_id);
-            $no_invoice_required = intval($data['no_invoice_required'] ?? 0);
+            $no_invoice_required = \intval($data['no_invoice_required'] ?? 0);
 
             $record = [
                 'CustomerId'        => $customer_id,
                 'OrganisationId'    => $organisation_id > 0 ? $organisation_id : null,
-                'RoomId'            => intval($data['room_id']),
+                'RoomId'            => \intval($data['room_id']),
                 'Status'            => sanitize_text_field($data['status'] ?? (myvh_setting('booking.require_approval', true) ? BookingStatus::PENDING->value : BookingStatus::CONFIRMED->value)),
                 'StartDate'         => $start_date,
                 'EndDate'           => $end_date,
@@ -187,7 +187,7 @@ class BookingService {
     }
 
     private function update_booking($data, $record): int|WP_Error {
-        $booking_id = intval($data['booking_id']);
+        $booking_id = \intval($data['booking_id']);
         $current_record = $this->booking_repo->get_by_id($booking_id);
 
         if (!$current_record) {
@@ -196,7 +196,7 @@ class BookingService {
 
         $normalized_data = $this->build_single_update_data($data, $record, $current_record);
         $edit_scope = $this->normalize_edit_scope($normalized_data['edit_scope'] ?? '');
-        $pattern_id = intval($current_record['RecurringPatternId'] ?? 0);
+        $pattern_id = \intval($current_record['RecurringPatternId'] ?? 0);
 
         if ($pattern_id > 0 && $edit_scope !== self::EDIT_SCOPE_THIS_ONLY) {
             return $this->recurring_booking_updater->update_with_scope(
@@ -216,7 +216,7 @@ class BookingService {
 
     private function apply_single_booking_update(int $booking_id, array $data, array $record, array $current_record): int|WP_Error {
         $edit_scope = $this->normalize_edit_scope($data['edit_scope'] ?? '');
-        $pattern_id = intval($current_record['RecurringPatternId'] ?? 0);
+        $pattern_id = \intval($current_record['RecurringPatternId'] ?? 0);
 
         if ($pattern_id > 0 && $edit_scope === self::EDIT_SCOPE_THIS_ONLY) {
             $detach_result = $this->detach_booking_from_pattern($booking_id, $pattern_id);
@@ -279,13 +279,13 @@ class BookingService {
                 '%s %s %010d',
                 (string) ($left['StartDate'] ?? ''),
                 (string) ($left['StartTime'] ?? ''),
-                intval($left['Id'] ?? 0)
+                \intval($left['Id'] ?? 0)
             );
             $right_key = sprintf(
                 '%s %s %010d',
                 (string) ($right['StartDate'] ?? ''),
                 (string) ($right['StartTime'] ?? ''),
-                intval($right['Id'] ?? 0)
+                \intval($right['Id'] ?? 0)
             );
 
             return strcmp($left_key, $right_key);
@@ -309,10 +309,10 @@ class BookingService {
             'OccurrenceCount' => $remaining_count,
         ];
 
-        $is_parent_booking = intval($pattern['ParentBookingId'] ?? 0) === $booking_id;
+        $is_parent_booking = \intval($pattern['ParentBookingId'] ?? 0) === $booking_id;
         if ($is_parent_booking) {
             $new_parent = $remaining_bookings[0];
-            $pattern_update['ParentBookingId'] = intval($new_parent['Id'] ?? 0);
+            $pattern_update['ParentBookingId'] = \intval($new_parent['Id'] ?? 0);
             $pattern_update['StartDate'] = sanitize_text_field($new_parent['StartDate'] ?? '');
         }
 
@@ -326,18 +326,18 @@ class BookingService {
 
     private function build_single_update_data(array $data, array $record, array $current_record): array {
         $normalized = $data;
-        $normalized['booking_id'] = intval($data['booking_id'] ?? $current_record['Id'] ?? 0);
-        $normalized['customer_id'] = intval($data['customer_id'] ?? $current_record['CustomerId'] ?? 0);
-        $normalized['organisation_id'] = intval($data['organisation_id'] ?? $current_record['OrganisationId'] ?? 0);
-        $normalized['room_id'] = intval($data['room_id'] ?? $current_record['RoomId'] ?? 0);
+        $normalized['booking_id'] = \intval($data['booking_id'] ?? $current_record['Id'] ?? 0);
+        $normalized['customer_id'] = \intval($data['customer_id'] ?? $current_record['CustomerId'] ?? 0);
+        $normalized['organisation_id'] = \intval($data['organisation_id'] ?? $current_record['OrganisationId'] ?? 0);
+        $normalized['room_id'] = \intval($data['room_id'] ?? $current_record['RoomId'] ?? 0);
         $normalized['start_date'] = sanitize_text_field($data['start_date'] ?? $current_record['StartDate'] ?? '');
         $normalized['end_date'] = sanitize_text_field($data['end_date'] ?? $current_record['EndDate'] ?? $normalized['start_date']);
         $normalized['start_time'] = sanitize_text_field($data['start_time'] ?? $current_record['StartTime'] ?? '');
         $normalized['end_time'] = sanitize_text_field($data['end_time'] ?? $current_record['EndTime'] ?? '');
         $normalized['status'] = sanitize_text_field((string) ($record['Status'] ?? $data['status'] ?? $current_record['Status'] ?? ''));
         $normalized['description'] = sanitize_textarea_field($data['description'] ?? $record['Description'] ?? $current_record['Description'] ?? '');
-        $normalized['public'] = intval($record['Public'] ?? $data['public'] ?? $current_record['Public'] ?? 0);
-        $normalized['no_invoice_required'] = intval($record['NoInvoiceRequired'] ?? $data['no_invoice_required'] ?? $current_record['NoInvoiceRequired'] ?? 0);
+        $normalized['public'] = \intval($record['Public'] ?? $data['public'] ?? $current_record['Public'] ?? 0);
+        $normalized['no_invoice_required'] = \intval($record['NoInvoiceRequired'] ?? $data['no_invoice_required'] ?? $current_record['NoInvoiceRequired'] ?? 0);
         $normalized['edit_scope'] = $this->normalize_edit_scope($data['edit_scope'] ?? '');
 
         return $normalized;
@@ -397,7 +397,7 @@ class BookingService {
      * @return array<string,mixed>|null
      */
     private function evaluate_deposit_for_record(array $record): ?array {
-        $room_id = intval($record['RoomId'] ?? 0);
+        $room_id = \intval($record['RoomId'] ?? 0);
         $end_date = (string) ($record['EndDate'] ?? '');
         $end_time = (string) ($record['EndTime'] ?? '');
 

@@ -18,7 +18,7 @@ if (!$room) {
     return;
 }
 
-$room_colour = RoomColour::resolve($room['Colour'] ?? '', intval($room['Id'] ?? 0));
+$room_colour = RoomColour::resolve($room['Colour'] ?? '', \intval($room['Id'] ?? 0));
 
 $day_labels = [
     0 => 'Sunday',

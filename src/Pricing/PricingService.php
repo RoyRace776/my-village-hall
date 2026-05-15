@@ -10,11 +10,11 @@ use WP_Error;
 
 class PricingService {
 
-    private $room_rate_service;
-    private $booking_repo;
-    private $customer_repo;
-    private $organisation_repo;
-    private $booking_addon_repo;
+    private RoomRateService $room_rate_service;
+    private BookingRepository $booking_repo;
+    private CustomerRepository $customer_repo;
+    private OrganisationRepository $organisation_repo;
+    private BookingAddonRepository $booking_addon_repo;
 
     public function __construct(RoomRateService $room_rate_service,
                                 BookingRepository $booking_repo,
@@ -28,14 +28,14 @@ class PricingService {
         $this->booking_addon_repo = $booking_addons_repo;
     }
 
-    public function calculate_price($booking_id): float|WP_Error | array{
+    public function calculate_price(int $booking_id): float|WP_Error | array{
 
         $snapshot = $this->get_charge_snapshot($booking_id);
         if (is_wp_error($snapshot)) {
             return $snapshot;
         }
 
-        return floatval($snapshot['TotalAmount']) + $this->calculate_addon_price($booking_id);
+        return \floatval($snapshot['TotalAmount']) + $this->calculate_addon_price($booking_id);
     }
 
     /**
@@ -44,9 +44,9 @@ class PricingService {
      * @param int $booking_id
      * @return array|WP_Error
      */
-    public function get_charge_snapshot($booking_id): array|WP_Error {
+    public function get_charge_snapshot(int $booking_id): array|WP_Error {
 
-        $booking_id = intval($booking_id);
+        $booking_id = \intval($booking_id);
         if ($booking_id <= 0) {
             return new WP_Error('invalid_booking', __('Invalid booking id', 'my-village-hall'));
         }
@@ -76,7 +76,7 @@ class PricingService {
 
         return [
             'BookingId'   => $booking_id,
-            'RoomRateId'  => intval($room_rate['Id']),
+            'RoomRateId'  => \intval($room_rate['Id']),
             'ChargeType'  => sanitize_text_field((string) ($room_rate['ChargeType'] ?? $room_rate['RateType'] ?? 'fixed')),
             'Description' => __('Room charge', 'my-village-hall'),
             'Quantity'    => $quantity,
@@ -94,9 +94,9 @@ class PricingService {
      * @return array|WP_Error
      */
     public function get_charge_snapshot_for_data(array $booking_data): array|WP_Error {
-        $room_id = intval($booking_data['room_id'] ?? $booking_data['RoomId'] ?? 0);
-        $customer_id = intval($booking_data['customer_id'] ?? $booking_data['CustomerId'] ?? 0);
-        $organisation_id = intval($booking_data['organisation_id'] ?? $booking_data['OrganisationId'] ?? 0);
+        $room_id = \intval($booking_data['room_id'] ?? $booking_data['RoomId'] ?? 0);
+        $customer_id = \intval($booking_data['customer_id'] ?? $booking_data['CustomerId'] ?? 0);
+        $organisation_id = \intval($booking_data['organisation_id'] ?? $booking_data['OrganisationId'] ?? 0);
         $start_date = sanitize_text_field((string) ($booking_data['start_date'] ?? $booking_data['StartDate'] ?? ''));
         $start_time = sanitize_text_field((string) ($booking_data['start_time'] ?? $booking_data['StartTime'] ?? ''));
         $end_date = sanitize_text_field((string) ($booking_data['end_date'] ?? $booking_data['EndDate'] ?? ''));
@@ -143,7 +143,7 @@ class PricingService {
 
         return [
             'BookingId'   => 0,
-            'RoomRateId'  => intval($room_rate['Id']),
+            'RoomRateId'  => \intval($room_rate['Id']),
             'ChargeType'  => sanitize_text_field((string) ($room_rate['ChargeType'] ?? $room_rate['RateType'] ?? 'fixed')),
             'Description' => __('Room charge', 'my-village-hall'),
             'Quantity'    => $quantity,
@@ -164,10 +164,10 @@ class PricingService {
      * @param array $room_rate
      * @return array { quantity: float, unit_price: float, total: float }
      */
-    private function calculate_room_price($booking, $room_rate) {
+    private function calculate_room_price(array $booking, array $room_rate): array {
 
         $charge_type = $room_rate['ChargeType'] ?? $room_rate['RateType'] ?? '';
-        $rate        = floatval($room_rate['Rate']);
+        $rate        = \floatval($room_rate['Rate']);
 
         if ($charge_type === 'fixed') {
             return [
@@ -189,7 +189,7 @@ class PricingService {
         ];
     }
 
-    private function calculate_addon_price($booking_id) {
+    private function calculate_addon_price(int $booking_id): float {
 
     // Get the addons. This might be an empty array if there aren't any
     $booking_addons = $this->booking_addon_repo->get_by_booking_id($booking_id);
@@ -198,7 +198,7 @@ class PricingService {
 
     foreach ($booking_addons as $booking_addon) {
         // The addon price is held on the booking addons table
-        $addon_price += $booking_addon['TotalAmount'];
+        $addon_price += \floatval($booking_addon['TotalAmount']);
     }
 
     return $addon_price;

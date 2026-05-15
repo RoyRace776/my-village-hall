@@ -34,7 +34,7 @@ class PortalBillingAjaxController {
     public function view_invoice_pdf(): void {
         PortalAuth::require_user();
 
-        $invoice_id = intval($_GET['invoice_id'] ?? 0);
+        $invoice_id = \intval($_GET['invoice_id'] ?? 0);
         if ($invoice_id <= 0) {
             wp_die(__('Invalid invoice ID', 'my-village-hall'));
         }
@@ -42,7 +42,7 @@ class PortalBillingAjaxController {
         $user_id = get_current_user_id();
         $is_client_admin = $this->client_admin_service->can_administer_blog($user_id, get_current_blog_id());
         $customer = $this->customer_service->get_by_user_id($user_id);
-        $customer_id = intval($customer['Id'] ?? 0);
+        $customer_id = \intval($customer['Id'] ?? 0);
 
         if (!$is_client_admin && $customer_id <= 0) {
             wp_die(__('Permission denied', 'my-village-hall'));
@@ -65,8 +65,8 @@ class PortalBillingAjaxController {
     public function get_uninvoiced_bookings_for_entity(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $customer_id = intval($_GET['customer_id'] ?? $_POST['customer_id'] ?? 0);
-        $organisation_id = intval($_GET['organisation_id'] ?? $_POST['organisation_id'] ?? 0);
+        $customer_id = \intval($_GET['customer_id'] ?? $_POST['customer_id'] ?? 0);
+        $organisation_id = \intval($_GET['organisation_id'] ?? $_POST['organisation_id'] ?? 0);
 
         $args = [
             'orderby' => 'b.StartDate',
@@ -137,7 +137,7 @@ class PortalBillingAjaxController {
             AjaxResponse::error($result->get_error_message());
         }
 
-        $invoice_id = intval($payload['invoice_id'] ?? 0);
+        $invoice_id = \intval($payload['invoice_id'] ?? 0);
         $invoice = $this->invoice_service->get_detail($invoice_id);
 
         AjaxResponse::success([
@@ -152,7 +152,7 @@ class PortalBillingAjaxController {
     public function delete_payment(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $payment_id = intval($_POST['payment_id'] ?? 0);
+        $payment_id = \intval($_POST['payment_id'] ?? 0);
         $result = $this->payment_service->delete($payment_id);
 
         if (is_wp_error($result)) {
@@ -160,7 +160,7 @@ class PortalBillingAjaxController {
         }
 
         $redirect = sanitize_text_field($_POST['redirect_route'] ?? 'payments');
-        $invoice_id = intval($_POST['invoice_id'] ?? 0);
+        $invoice_id = \intval($_POST['invoice_id'] ?? 0);
         $invoice = $invoice_id > 0 ? $this->invoice_service->get_detail($invoice_id) : null;
 
         AjaxResponse::success([
@@ -175,7 +175,7 @@ class PortalBillingAjaxController {
     public function update_invoice_status(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $invoice_id = intval($_POST['invoice_id'] ?? 0);
+        $invoice_id = \intval($_POST['invoice_id'] ?? 0);
         $status = sanitize_text_field($_POST['status'] ?? '');
 
         if ($invoice_id <= 0) {
@@ -200,7 +200,7 @@ class PortalBillingAjaxController {
     public function email_invoice(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $invoice_id = intval($_POST['invoice_id'] ?? 0);
+        $invoice_id = \intval($_POST['invoice_id'] ?? 0);
         if ($invoice_id <= 0) {
             AjaxResponse::error(__('Invalid invoice ID', 'my-village-hall'));
         }
@@ -296,7 +296,7 @@ class PortalBillingAjaxController {
 
     private function build_booking_details(array $invoice): string {
         $bookings = is_array($invoice['BookingsSummary'] ?? null) ? $invoice['BookingsSummary'] : [];
-        $booking_count = intval($invoice['BookingCount'] ?? count($bookings));
+        $booking_count = \intval($invoice['BookingCount'] ?? count($bookings));
         if ($booking_count <= 0) {
             return '';
         }

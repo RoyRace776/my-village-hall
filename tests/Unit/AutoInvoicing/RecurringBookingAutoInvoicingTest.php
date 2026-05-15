@@ -36,7 +36,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
             $this->rule_repository
         ) extends RecurringBookingAutoInvoicing {
             protected function create_recurring_invoices_for_rule(array $bookings, array $rule): array {
-                $rule_id = intval($rule['id'] ?? 0);
+                $rule_id = \intval($rule['id'] ?? 0);
 
                 return $rule_id > 0 ? [$rule_id] : [];
             }

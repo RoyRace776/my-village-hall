@@ -21,7 +21,7 @@ class BookingChargeService
 
     public function recalculate($booking_id): bool|WP_Error
     {
-        $booking_id = intval($booking_id);
+        $booking_id = \intval($booking_id);
         if ($booking_id <= 0) {
             return new WP_Error('validation', __('Invalid booking id for charge recalculation', 'my-village-hall'));
         }

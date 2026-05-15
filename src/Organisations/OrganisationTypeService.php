@@ -37,7 +37,7 @@ class OrganisationTypeService {
                 'Name'        => sanitize_text_field($data['name']),
                 'Description' => sanitize_textarea_field($data['description'] ?? ''),
                 'IsDefault'   => $requested_default,
-            ], ['Id' => intval($data['org_type_id'])]);
+            ], ['Id' => \intval($data['org_type_id'])]);
 
             if (!$updated) {
                 return false;
@@ -46,7 +46,7 @@ class OrganisationTypeService {
             if ($requested_default) {
                 $this->repo->clear_default_except(intval($data['org_type_id']));
             } elseif (!$this->repo->has_default()) {
-                $this->repo->update(['IsDefault' => 1], ['Id' => intval($data['org_type_id'])]);
+                $this->repo->update(['IsDefault' => 1], ['Id' => \intval($data['org_type_id'])]);
             }
 
             return true;
@@ -66,7 +66,7 @@ class OrganisationTypeService {
         if ($requested_default) {
             $this->repo->clear_default_except(intval($created_id));
         } elseif (!$this->repo->has_default()) {
-            $this->repo->update(['IsDefault' => 1], ['Id' => intval($created_id)]);
+            $this->repo->update(['IsDefault' => 1], ['Id' => \intval($created_id)]);
         }
 
         return $created_id;

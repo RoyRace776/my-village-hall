@@ -69,7 +69,7 @@ class BookingAccessControl
         $status = strtolower((string) ($booking['Status'] ?? ''));
         $start_ts = strtotime((string) $booking['StartDate'] . ' ' . (string) $booking['StartTime']);
         $now_ts = current_time('timestamp');
-        $min_notice_hours = max(0, intval(myvh_setting('booking.min_notice_hours', 24)));
+        $min_notice_hours = max(0, \intval(myvh_setting('booking.min_notice_hours', 24)));
         $min_notice_days = (int) ceil($min_notice_hours / 24);
 
         // Pending bookings can always be deleted, regardless of date.
@@ -124,10 +124,10 @@ class BookingAccessControl
 
     public function can_edit($booking): array
     {
-        $booking_id = intval($booking['Id'] ?? 0);
+        $booking_id = \intval($booking['Id'] ?? 0);
         $status = strtolower((string) ($booking['Status'] ?? ''));
-        $current_user_id = intval(get_current_user_id());
-        $current_blog_id = intval(get_current_blog_id());
+        $current_user_id = \intval(get_current_user_id());
+        $current_blog_id = \intval(get_current_blog_id());
         $is_client_admin = $this->client_admin_service->can_administer_blog($current_user_id, $current_blog_id);
 
         if ($booking_id > 0 && $this->booking_repo->has_invoiced_items($booking_id)) {
@@ -159,9 +159,9 @@ class BookingAccessControl
         }
 
         $current_customer = $current_user_id > 0 ? $this->customer_repo->get_by_user_id($current_user_id) : null;
-        $current_customer_id = intval($current_customer['Id'] ?? 0);
-        $booker_customer_id = intval($booking['CustomerId'] ?? 0);
-        $organisation_id = intval($booking['OrganisationId'] ?? 0);
+        $current_customer_id = \intval($current_customer['Id'] ?? 0);
+        $booker_customer_id = \intval($booking['CustomerId'] ?? 0);
+        $organisation_id = \intval($booking['OrganisationId'] ?? 0);
 
         if ($current_customer_id > 0 && $current_customer_id === $booker_customer_id) {
             return [

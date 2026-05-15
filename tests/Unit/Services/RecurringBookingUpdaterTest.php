@@ -124,7 +124,7 @@ class RecurringBookingUpdaterTest extends UnitTestCase {
             200,
             'this_and_future',
             function (int $booking_id, array $scoped_data, array $scoped_record, array $current_record): int {
-                return intval($current_record['RecurringPatternId'] ?? 0);
+                return \intval($current_record['RecurringPatternId'] ?? 0);
             }
         );
 

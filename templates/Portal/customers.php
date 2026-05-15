@@ -7,7 +7,7 @@ use MYVH\Customers\CustomerService;
 
 $customers = (isset($customers) && is_array($customers)) ? $customers : [];
 $action = $_GET['action'] ?? '';
-$edit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$edit_id = isset($_GET['id']) ? \intval($_GET['id']) : 0;
 
 // Add/edit forms are now loaded via hash navigation and AJAX (see portal-app.js router)
 // This file only renders the customer list table and action links

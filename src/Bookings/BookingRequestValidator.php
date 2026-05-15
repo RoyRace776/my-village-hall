@@ -41,7 +41,7 @@ class BookingRequestValidator extends RequestValidatorBase
             return $this->validation_error(__('Bookings must start and end on 15 minute intervals', 'my-village-hall'));
         }
 
-        if (!empty($data['booking_id']) && intval($data['booking_id']) < 0) {
+        if (!empty($data['booking_id']) && \intval($data['booking_id']) < 0) {
             return $this->validation_error(__('Invalid booking id', 'my-village-hall'));
         }
 

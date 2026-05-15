@@ -49,7 +49,7 @@ class AddonController {
 
         check_admin_referer('myvh_delete_addon');
 
-        $id = intval($_GET['id']);
+        $id = \intval($_GET['id']);
         $this->service->delete($id);
 
         wp_redirect(admin_url('admin.php?page=myvh-addons&deleted=1'));

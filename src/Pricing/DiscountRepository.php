@@ -69,10 +69,10 @@ class DiscountRepository extends RepositoryBase {
         $sql .= " ORDER BY `{$orderby}` {$order}";
 
         if ($args['limit'] !== null) {
-            $sql .= " LIMIT " . intval($args['limit']);
+            $sql .= " LIMIT " . \intval($args['limit']);
 
             if ($args['offset'] !== null) {
-                $sql .= " OFFSET " . intval($args['offset']);
+                $sql .= " OFFSET " . \intval($args['offset']);
             }
         }
 

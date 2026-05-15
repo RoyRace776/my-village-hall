@@ -68,7 +68,7 @@ class CalendarAjaxController {
             AjaxResponse::auth_error(__('Not logged in', 'my-village-hall'));
         }
 
-        $booking_id = intval($_GET['booking_id'] ?? $_POST['booking_id'] ?? 0);
+        $booking_id = \intval($_GET['booking_id'] ?? $_POST['booking_id'] ?? 0);
         if (!$booking_id) {
             AjaxResponse::error(__('Missing booking_id', 'my-village-hall'));
         }
@@ -158,7 +158,7 @@ class CalendarAjaxController {
             || $this->client_admin_service->can_administer_blog($user_id, get_current_blog_id());
 
         if ($can_view_any_customer_orgs) {
-            $customer_id = intval($_GET['customer_id'] ?? $_POST['customer_id'] ?? 0);
+            $customer_id = \intval($_GET['customer_id'] ?? $_POST['customer_id'] ?? 0);
 
             if ($customer_id > 0) {
                 $orgs = $this->customer_service->get_organisations_for_customer($customer_id);
@@ -241,10 +241,10 @@ class CalendarAjaxController {
 
         $request = $this->get_request_data();
 
-        $id = intval($request['id'] ?? 0);
+        $id = \intval($request['id'] ?? 0);
         $start = sanitize_text_field($request['start'] ?? '');
         $end   = sanitize_text_field($request['end'] ?? '');
-        $room  = intval($request['room_id'] ?? 0);
+        $room  = \intval($request['room_id'] ?? 0);
 
         if (!$id || !$start || !$end) {
             AjaxResponse::error(__('Missing booking movement data', 'my-village-hall'));
@@ -306,7 +306,7 @@ class CalendarAjaxController {
             $user_id = get_current_user_id();
             $is_client_admin = $this->client_admin_service->can_administer_blog($user_id, get_current_blog_id());
             $customer = $this->customer_service->get_by_user_id($user_id);
-            $booking_id = intval($request['booking_id'] ?? $request['id'] ?? 0);
+            $booking_id = \intval($request['booking_id'] ?? $request['id'] ?? 0);
 
             if ($booking_id <= 0) {
                 AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
@@ -370,7 +370,7 @@ class CalendarAjaxController {
 
     private function filter_booking_for_viewer(array $booking, bool $can_manage_no_invoice_required): array {
         if ($can_manage_no_invoice_required) {
-            $booking['NoInvoiceRequired'] = intval($booking['NoInvoiceRequired'] ?? 0);
+            $booking['NoInvoiceRequired'] = \intval($booking['NoInvoiceRequired'] ?? 0);
             return $booking;
         }
 

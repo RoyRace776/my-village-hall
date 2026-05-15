@@ -69,9 +69,9 @@ class AddonRepository extends RepositoryBase {
         }
 
         if (!empty($args['limit'])) {
-            $sql .= ' LIMIT ' . intval($args['limit']);
+            $sql .= ' LIMIT ' . \intval($args['limit']);
             if (!empty($args['offset'])) {
-                $sql .= ' OFFSET ' . intval($args['offset']);
+                $sql .= ' OFFSET ' . \intval($args['offset']);
             }
         }
 

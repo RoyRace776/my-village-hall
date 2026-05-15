@@ -45,7 +45,7 @@ class RecurringBookingUpdater
             return $this->apply_scoped_updates_to_bookings($bookings, $data, $record, $apply_single_booking_update);
         }
 
-        $selected_index = $this->find_booking_index($bookings, intval($data['booking_id'] ?? 0));
+        $selected_index = $this->find_booking_index($bookings, \intval($data['booking_id'] ?? 0));
         if ($selected_index < 0) {
             return new WP_Error('not_found', __('Booking not found in recurring series', 'my-village-hall'));
         }
@@ -54,7 +54,7 @@ class RecurringBookingUpdater
             return $this->apply_scoped_updates_to_bookings($bookings, $data, $record, $apply_single_booking_update);
         }
 
-        $split_result = $this->recurring_pattern_service->split_pattern_from_booking($pattern_id, intval($data['booking_id'] ?? 0));
+        $split_result = $this->recurring_pattern_service->split_pattern_from_booking($pattern_id, \intval($data['booking_id'] ?? 0));
         if (is_wp_error($split_result)) {
             return $split_result;
         }
@@ -64,7 +64,7 @@ class RecurringBookingUpdater
             $data,
             $record,
             $apply_single_booking_update,
-            intval($split_result['new_pattern_id'] ?? 0)
+            \intval($split_result['new_pattern_id'] ?? 0)
         );
     }
 
@@ -80,7 +80,7 @@ class RecurringBookingUpdater
         }
 
         foreach ($bookings as $booking) {
-            $booking_id = intval($booking['Id'] ?? 0);
+            $booking_id = \intval($booking['Id'] ?? 0);
             if ($booking_id <= 0) {
                 continue;
             }
@@ -99,24 +99,24 @@ class RecurringBookingUpdater
             }
         }
 
-        return intval($base_data['booking_id'] ?? 0);
+        return \intval($base_data['booking_id'] ?? 0);
     }
 
     private function build_series_update_data_for_booking(array $booking, array $base_data, array $base_record): array
     {
         $data = [
-            'booking_id' => intval($booking['Id'] ?? 0),
-            'customer_id' => intval($booking['CustomerId'] ?? 0),
-            'organisation_id' => intval($booking['OrganisationId'] ?? 0),
-            'room_id' => intval($booking['RoomId'] ?? 0),
+            'booking_id' => \intval($booking['Id'] ?? 0),
+            'customer_id' => \intval($booking['CustomerId'] ?? 0),
+            'organisation_id' => \intval($booking['OrganisationId'] ?? 0),
+            'room_id' => \intval($booking['RoomId'] ?? 0),
             'start_date' => sanitize_text_field($booking['StartDate'] ?? ''),
             'end_date' => sanitize_text_field($booking['EndDate'] ?? ($booking['StartDate'] ?? '')),
             'start_time' => sanitize_text_field($booking['StartTime'] ?? ''),
             'end_time' => sanitize_text_field($booking['EndTime'] ?? ''),
             'status' => sanitize_text_field((string) ($base_record['Status'] ?? $booking['Status'] ?? '')),
             'description' => sanitize_textarea_field($base_record['Description'] ?? $booking['Description'] ?? ''),
-            'public' => intval($base_record['Public'] ?? $booking['Public'] ?? 0),
-            'no_invoice_required' => intval($base_record['NoInvoiceRequired'] ?? $booking['NoInvoiceRequired'] ?? 0),
+            'public' => \intval($base_record['Public'] ?? $booking['Public'] ?? 0),
+            'no_invoice_required' => \intval($base_record['NoInvoiceRequired'] ?? $booking['NoInvoiceRequired'] ?? 0),
             'edit_scope' => $this->normalize_edit_scope($base_data['edit_scope'] ?? ''),
         ];
 
@@ -133,7 +133,7 @@ class RecurringBookingUpdater
             'Status' => $base_record['Status'],
             'Description' => $base_record['Description'],
             'Public' => $base_record['Public'],
-            'NoInvoiceRequired' => intval($base_record['NoInvoiceRequired'] ?? 0),
+            'NoInvoiceRequired' => \intval($base_record['NoInvoiceRequired'] ?? 0),
         ];
 
         if ($override_pattern_id > 0) {
@@ -199,13 +199,13 @@ class RecurringBookingUpdater
                 '%s %s %010d',
                 (string) ($left['StartDate'] ?? ''),
                 (string) ($left['StartTime'] ?? ''),
-                intval($left['Id'] ?? 0)
+                \intval($left['Id'] ?? 0)
             );
             $right_key = sprintf(
                 '%s %s %010d',
                 (string) ($right['StartDate'] ?? ''),
                 (string) ($right['StartTime'] ?? ''),
-                intval($right['Id'] ?? 0)
+                \intval($right['Id'] ?? 0)
             );
 
             return strcmp($left_key, $right_key);

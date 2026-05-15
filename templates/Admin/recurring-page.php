@@ -13,8 +13,8 @@ use MYVH\Rooms\RoomService;
 
 global $myvh_container;
 
-$edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
+$edit_id = isset($_GET['edit']) ? \intval($_GET['edit']) : 0;
+$view_id = isset($_GET['view']) ? \intval($_GET['view']) : 0;
 
 // ── EDIT / VIEW a single pattern ─────────────────────────────────────────────
 if ($edit_id || $view_id) {
@@ -145,7 +145,7 @@ if ($edit_id || $view_id) {
                                     <th><?php _e('Every', 'my-village-hall'); ?></th>
                                     <td>
                                         <input type="number" name="recurrence_interval" min="1" max="52" class="small-text"
-                                            value="<?php echo intval($pattern['RecurrenceInterval']); ?>">
+                                            value="<?php echo \intval($pattern['RecurrenceInterval']); ?>">
                                         <span id="rp-interval-label"></span>
                                     </td>
                                 </tr>
@@ -179,7 +179,7 @@ if ($edit_id || $view_id) {
                                         </select>
                                         <span><?php _e('of every', 'my-village-hall'); ?></span>
                                         <input type="number" name="recurrence_interval_md" min="1" max="24" class="small-text"
-                                            value="<?php echo intval($pattern['RecurrenceInterval']); ?>">
+                                            value="<?php echo \intval($pattern['RecurrenceInterval']); ?>">
                                         <span><?php _e('month(s)', 'my-village-hall'); ?></span>
                                         <p class="description" id="rp-preview" style="margin-top:6px;color:#2271b1;font-style:italic;"></p>
                                     </td>
@@ -481,7 +481,7 @@ $patterns = $myvh_container->get(RecurringPatternService::class)->get_active_wit
                 </td>
                 <td><?php echo esc_html(RecurringPatternService::describe($p)); ?></td>
                 <td><small><?php echo esc_html($range); ?></small></td>
-                <td><?php echo intval($p['OccurrenceCount']); ?></td>
+                <td><?php echo \intval($p['OccurrenceCount']); ?></td>
                 <td>
                     <?php if ($p['IsActive']): ?>
                         <span style="color:#46b450;">● <?php _e('Active', 'my-village-hall'); ?></span>

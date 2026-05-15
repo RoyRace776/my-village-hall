@@ -38,7 +38,7 @@ class RoomController {
             }
 
             $redirect = !empty($data['room_id'])
-                ? admin_url('admin.php?page=myvh-rooms&edit=' . intval($data['room_id']))
+                ? admin_url('admin.php?page=myvh-rooms&edit=' . \intval($data['room_id']))
                 : admin_url('admin.php?page=myvh-rooms&add=1');
 
             wp_redirect($redirect);
@@ -56,7 +56,7 @@ class RoomController {
             }
 
             $redirect = !empty($data['room_id'])
-                ? admin_url('admin.php?page=myvh-rooms&edit=' . intval($data['room_id']))
+                ? admin_url('admin.php?page=myvh-rooms&edit=' . \intval($data['room_id']))
                 : admin_url('admin.php?page=myvh-rooms&add=1');
 
             wp_redirect($redirect);
@@ -68,7 +68,7 @@ class RoomController {
             AdminNotices::error(__('Room save failed', 'my-village-hall'));
 
             $redirect = !empty($data['room_id'])
-                ? admin_url('admin.php?page=myvh-rooms&edit=' . intval($data['room_id']))
+                ? admin_url('admin.php?page=myvh-rooms&edit=' . \intval($data['room_id']))
                 : admin_url('admin.php?page=myvh-rooms&add=1');
 
             wp_redirect($redirect);
@@ -85,7 +85,7 @@ class RoomController {
             exit;
         }
 
-        wp_redirect(admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . intval($result) . '&room_created=1'));
+        wp_redirect(admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . \intval($result) . '&room_created=1'));
         exit;
     }
 
@@ -101,7 +101,7 @@ class RoomController {
 
         check_admin_referer('myvh_delete_room');
 
-        $id = intval($_GET['id']);
+        $id = \intval($_GET['id']);
 
         $result = $this->service->delete($id);
 

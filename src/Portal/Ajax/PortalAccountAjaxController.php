@@ -118,7 +118,7 @@ class PortalAccountAjaxController {
     public function send_password_reset_email(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
-        $customer_id = intval($_POST['customer_id'] ?? 0);
+        $customer_id = \intval($_POST['customer_id'] ?? 0);
 
         if ($customer_id <= 0) {
             AjaxResponse::error(__('Customer ID is required', 'my-village-hall'));

@@ -15,8 +15,8 @@ use MYVH\Rooms\RoomService;
 
 
 $status_filter   = isset($_GET['status'])      ? sanitize_text_field($_GET['status'])  : 'all';
-$room_filter     = isset($_GET['room_id'])     ? intval($_GET['room_id'])               : 0;
-$customer_filter = isset($_GET['customer_id']) ? intval($_GET['customer_id'])           : 0;
+$room_filter     = isset($_GET['room_id'])     ? \intval($_GET['room_id'])               : 0;
+$customer_filter = isset($_GET['customer_id']) ? \intval($_GET['customer_id'])           : 0;
 
 $normalize_status = static function ($status): string {
     if ($status instanceof \BackedEnum) {

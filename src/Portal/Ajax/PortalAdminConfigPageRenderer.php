@@ -67,7 +67,7 @@ class PortalAdminConfigPageRenderer {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $venue_id = intval($_GET['id'] ?? 0);
+        $venue_id = \intval($_GET['id'] ?? 0);
         if (!$venue_id) {
             wp_send_json_error('Invalid venue ID', 400);
         }
@@ -90,7 +90,7 @@ class PortalAdminConfigPageRenderer {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $room_id = intval($_GET['id'] ?? 0);
+        $room_id = \intval($_GET['id'] ?? 0);
         if (!$room_id) {
             wp_send_json_error('Invalid room ID', 400);
         }
@@ -134,7 +134,7 @@ class PortalAdminConfigPageRenderer {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $addon_id = intval($_GET['id'] ?? 0);
+        $addon_id = \intval($_GET['id'] ?? 0);
         if (!$addon_id) {
             wp_send_json_error('Invalid add-on ID', 400);
         }
@@ -155,7 +155,7 @@ class PortalAdminConfigPageRenderer {
 
         $rooms = $this->room_service->get_all_with_venues();
         $organisation_types = $this->organisation_type_service->get_all();
-        $selected_room_id = intval($_GET['room_id'] ?? 0);
+        $selected_room_id = \intval($_GET['room_id'] ?? 0);
         include MYVH_PLUGIN_DIR . 'templates/Portal/room-rate-add.php';
     }
 
@@ -164,7 +164,7 @@ class PortalAdminConfigPageRenderer {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $rate_id = intval($_GET['id'] ?? 0);
+        $rate_id = \intval($_GET['id'] ?? 0);
         if (!$rate_id) {
             wp_send_json_error('Invalid rate ID', 400);
         }
@@ -241,7 +241,7 @@ class PortalAdminConfigPageRenderer {
             if (!is_array($invoicing_settings)) {
                 $invoicing_settings = [];
             }
-            $default_rule_id = intval($invoicing_settings['single_default_rule_id'] ?? 0);
+            $default_rule_id = \intval($invoicing_settings['single_default_rule_id'] ?? 0);
         } catch (Throwable $throwable) {
             $load_error = $throwable->getMessage();
         }
@@ -264,7 +264,7 @@ class PortalAdminConfigPageRenderer {
             if (!is_array($invoicing_settings)) {
                 $invoicing_settings = [];
             }
-            $default_rule_id = intval($invoicing_settings['recurring_default_rule_id'] ?? 0);
+            $default_rule_id = \intval($invoicing_settings['recurring_default_rule_id'] ?? 0);
         } catch (Throwable $throwable) {
             $load_error = $throwable->getMessage();
         }
@@ -305,7 +305,7 @@ class PortalAdminConfigPageRenderer {
         }
 
         $audit_enabled = AuditTrail::is_enabled();
-        $page = max(1, intval($_GET['paged'] ?? 1));
+        $page = max(1, \intval($_GET['paged'] ?? 1));
         $result = AuditTrail::query([
             'page' => $page,
             'per_page' => 50,

@@ -40,7 +40,7 @@ abstract class RequestValidatorBase {
      * Require a field to be non-negative (>= 0).
      */
     protected function require_non_negative(array $data, string $key, string $message): bool|\WP_Error {
-        if (!isset($data[$key]) || floatval($data[$key]) < 0) {
+        if (!isset($data[$key]) || \floatval($data[$key]) < 0) {
             return $this->validation_error($message);
         }
         return true;

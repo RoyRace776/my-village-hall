@@ -47,7 +47,7 @@ class RecurringBookingAutoInvoicing {
         }
 
         $active_rules = $this->get_active_rules_by_id();
-        $default_rule_id = intval(myvh_setting('invoicing.recurring_default_rule_id', 0));
+        $default_rule_id = \intval(myvh_setting('invoicing.recurring_default_rule_id', 0));
 
         $organisation_override_bookings = [];
         $remaining_after_organisation = [];
@@ -104,7 +104,7 @@ class RecurringBookingAutoInvoicing {
     protected function resolve_trigger_date_for_rule(array $rule): ?DateTime {
         $timing = (string) ($rule['trigger_timing'] ?? 'start_of_month');
         $direction = (string) ($rule['trigger_direction'] ?? 'in_advance');
-        $period_count = max(0, intval($rule['trigger_period_count'] ?? $rule['trigger_offset_days'] ?? 0));
+        $period_count = max(0, \intval($rule['trigger_period_count'] ?? $rule['trigger_offset_days'] ?? 0));
 
         $now = new DateTime();
         $period_start = null;
@@ -118,7 +118,7 @@ class RecurringBookingAutoInvoicing {
             $period_start = new DateTime($now->format('Y-m-01'));
             $period_unit = 'month';
         } elseif ($timing === 'start_of_quarter') {
-            $month = intval($now->format('m'));
+            $month = \intval($now->format('m'));
             // Determine quarter start month: Q1=01, Q2=04, Q3=07, Q4=10
             $quarter_start_month = 1 + (intdiv($month - 1, 3) * 3);
             $period_start = new DateTime($now->format('Y') . '-' . str_pad((string) $quarter_start_month, 2, '0', STR_PAD_LEFT) . '-01');
@@ -244,14 +244,14 @@ class RecurringBookingAutoInvoicing {
             return [];
         }
 
-        $booking_ids = array_map(fn($b) => intval($b['Id'] ?? 0), $actual_bookings);
+        $booking_ids = array_map(fn($b) => \intval($b['Id'] ?? 0), $actual_bookings);
         $invoice_ids = $this->invoice_generator_service->generate_invoices_from_bookings(
             $booking_ids,
             [
                 'group_by' => $rule['group_by'] ?? 'per_booking',
                 'rule_scope' => 'recurring',
-                'rule_id' => intval($rule['id'] ?? 0),
-                'due_date_offset_days' => intval($rule['due_date_offset_days'] ?? 30),
+                'rule_id' => \intval($rule['id'] ?? 0),
+                'due_date_offset_days' => \intval($rule['due_date_offset_days'] ?? 30),
             ]
         );
 
@@ -287,7 +287,7 @@ class RecurringBookingAutoInvoicing {
         $indexed = [];
 
         foreach ($bookings as $booking) {
-            $booking_id = intval($booking['Id'] ?? 0);
+            $booking_id = \intval($booking['Id'] ?? 0);
             if ($booking_id <= 0) {
                 continue;
             }
@@ -299,7 +299,7 @@ class RecurringBookingAutoInvoicing {
     }
 
     protected function booking_has_non_default_organisation_rule(array $booking, array $active_rules, int $default_rule_id): bool {
-        $rule_id = intval($booking['OrganisationRecurringBookingAutoInvoiceRuleId'] ?? 0);
+        $rule_id = \intval($booking['OrganisationRecurringBookingAutoInvoiceRuleId'] ?? 0);
 
         if ($rule_id <= 0 || !isset($active_rules[$rule_id])) {
             return false;
@@ -309,7 +309,7 @@ class RecurringBookingAutoInvoicing {
     }
 
     protected function booking_has_non_default_customer_rule(array $booking, array $active_rules, int $default_rule_id): bool {
-        $rule_id = intval($booking['CustomerRecurringBookingAutoInvoiceRuleId'] ?? 0);
+        $rule_id = \intval($booking['CustomerRecurringBookingAutoInvoiceRuleId'] ?? 0);
 
         if ($rule_id <= 0 || !isset($active_rules[$rule_id])) {
             return false;
@@ -319,7 +319,7 @@ class RecurringBookingAutoInvoicing {
     }
 
     protected function resolve_organisation_rule_for_booking(array $booking, array $active_rules, int $default_rule_id): array {
-        $rule_id = intval($booking['OrganisationRecurringBookingAutoInvoiceRuleId'] ?? 0);
+        $rule_id = \intval($booking['OrganisationRecurringBookingAutoInvoiceRuleId'] ?? 0);
         if ($rule_id > 0 && isset($active_rules[$rule_id])) {
             return $active_rules[$rule_id];
         }
@@ -328,7 +328,7 @@ class RecurringBookingAutoInvoicing {
     }
 
     protected function resolve_customer_rule_for_booking(array $booking, array $active_rules, int $default_rule_id): array {
-        $rule_id = intval($booking['CustomerRecurringBookingAutoInvoiceRuleId'] ?? 0);
+        $rule_id = \intval($booking['CustomerRecurringBookingAutoInvoiceRuleId'] ?? 0);
         if ($rule_id > 0 && isset($active_rules[$rule_id])) {
             return $active_rules[$rule_id];
         }
@@ -350,10 +350,10 @@ class RecurringBookingAutoInvoicing {
             'enabled' => (bool) myvh_setting('invoicing.recurring_enabled', false),
             'trigger_timing' => $this->normalize_key(myvh_setting('invoicing.recurring_trigger_timing', 'start_of_month')),
             'trigger_direction' => $this->normalize_key(myvh_setting('invoicing.recurring_trigger_direction', 'in_advance')),
-            'trigger_period_count' => max(0, intval(myvh_setting('invoicing.recurring_trigger_period_count', myvh_setting('invoicing.recurring_trigger_offset_days', 0)))),
-            'trigger_offset_days' => max(0, intval(myvh_setting('invoicing.recurring_trigger_offset_days', 0))),
+            'trigger_period_count' => max(0, \intval(myvh_setting('invoicing.recurring_trigger_period_count', myvh_setting('invoicing.recurring_trigger_offset_days', 0)))),
+            'trigger_offset_days' => max(0, \intval(myvh_setting('invoicing.recurring_trigger_offset_days', 0))),
             'group_by' => $this->normalize_key(myvh_setting('invoicing.recurring_group_by', 'per_booking')),
-            'due_date_offset_days' => max(0, intval(myvh_setting('invoicing.recurring_due_date_offset_days', 30))),
+            'due_date_offset_days' => max(0, \intval(myvh_setting('invoicing.recurring_due_date_offset_days', 30))),
         ];
     }
 
@@ -368,14 +368,14 @@ class RecurringBookingAutoInvoicing {
 
     protected function map_rule_record(array $rule): array {
         return [
-            'id' => intval($rule['Id'] ?? 0),
+            'id' => \intval($rule['Id'] ?? 0),
             'enabled' => !empty($rule['IsActive']),
             'trigger_timing' => $this->normalize_key($rule['TriggerTiming'] ?? 'start_of_month'),
             'trigger_direction' => $this->normalize_key($rule['TriggerDirection'] ?? 'in_advance'),
-            'trigger_period_count' => max(0, intval($rule['TriggerOffsetDays'] ?? 0)),
-            'trigger_offset_days' => max(0, intval($rule['TriggerOffsetDays'] ?? 0)),
+            'trigger_period_count' => max(0, \intval($rule['TriggerOffsetDays'] ?? 0)),
+            'trigger_offset_days' => max(0, \intval($rule['TriggerOffsetDays'] ?? 0)),
             'group_by' => $this->normalize_key($rule['GroupBy'] ?? 'per_booking'),
-            'due_date_offset_days' => max(0, intval($rule['DueDateOffsetDays'] ?? 30)),
+            'due_date_offset_days' => max(0, \intval($rule['DueDateOffsetDays'] ?? 30)),
         ];
     }
 

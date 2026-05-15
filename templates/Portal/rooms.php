@@ -36,7 +36,7 @@ $rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
                 </thead>
                 <tbody>
                 <?php foreach ($rooms as $item): ?>
-                    <?php $room_colour = RoomColour::resolve($item['Colour'] ?? '', intval($item['Id'] ?? 0)); ?>
+                    <?php $room_colour = RoomColour::resolve($item['Colour'] ?? '', \intval($item['Id'] ?? 0)); ?>
                     <tr>
                         <td style="padding-right:24px;">
                             <strong><?php echo esc_html($item['Name'] ?? ''); ?></strong>

@@ -64,7 +64,7 @@ class PasswordResetHandler {
      */
     public function handle_reset_confirm() {
         if (empty($_GET['myvh_reset']) || empty($_GET['uid']) || empty($_GET['token'])) return;
-        $user_id = intval($_GET['uid']);
+        $user_id = \intval($_GET['uid']);
         // Only keep alphanumeric chars — sanitize_text_field strips %XX sequences
         // which can corrupt tokens if the raw value contained a literal '%'.
         $token = preg_replace('/[^a-zA-Z0-9]/', '', (string) $_GET['token']);

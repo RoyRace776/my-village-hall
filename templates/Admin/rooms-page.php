@@ -16,7 +16,7 @@ use MYVH\Rooms\RoomHoursRepository;
 use MYVH\Venues\VenueService;
 use MYVH\Availability\AvailabilityService;
 
-$edit_id   = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$edit_id   = isset($_GET['edit']) ? \intval($_GET['edit']) : 0;
 $room_service  = $myvh_container->get(RoomService::class);
 $room_deposit_repository = $myvh_container->get(RoomDepositRepository::class);
 $room_hours_repository = $myvh_container->get(RoomHoursRepository::class);
@@ -35,14 +35,14 @@ if (!is_array($form_data)) {
 }
 
 $form_name = $form_data['name'] ?? ($edit_room['Name'] ?? '');
-$form_room_colour = $form_data['room_colour'] ?? RoomColour::resolve($edit_room['Colour'] ?? '', intval($edit_room['Id'] ?? 0));
-$form_venue_id = isset($form_data['venue_id']) ? intval($form_data['venue_id']) : intval($edit_room['VenueId'] ?? 0);
+$form_room_colour = $form_data['room_colour'] ?? RoomColour::resolve($edit_room['Colour'] ?? '', \intval($edit_room['Id'] ?? 0));
+$form_venue_id = isset($form_data['venue_id']) ? \intval($form_data['venue_id']) : \intval($edit_room['VenueId'] ?? 0);
 $form_capacity = $form_data['capacity'] ?? ($edit_room['Capacity'] ?? '');
 $form_description = $form_data['description'] ?? ($edit_room['Description'] ?? '');
 $form_opening_time = $form_data['opening_time'] ?? ($edit_room['OpeningTime'] ?? '09:00');
 $form_closing_time = $form_data['closing_time'] ?? ($edit_room['ClosingTime'] ?? '17:00');
-$form_allow_multi_day = isset($form_data['allow-multi-day-bookings']) ? 1 : intval($edit_room['AllowMultiDayBookings'] ?? 0);
-$form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : intval($edit_room['CalcClosedHours'] ?? 0);
+$form_allow_multi_day = isset($form_data['allow-multi-day-bookings']) ? 1 : \intval($edit_room['AllowMultiDayBookings'] ?? 0);
+$form_calc_closed_hours = isset($form_data['calc-closed-hours']) ? 1 : \intval($edit_room['CalcClosedHours'] ?? 0);
 
 $deposit_config = $edit_id > 0
     ? $room_deposit_repository->get($edit_id)
@@ -67,8 +67,8 @@ $form_deposit_end_after = isset($form_data['deposit_end_after'])
     : (string) ($deposit_config['end_after'] ?? '');
 
 $form_deposit_amount = isset($form_data['deposit_amount'])
-    ? max(0, floatval($form_data['deposit_amount']))
-    : floatval($deposit_config['amount'] ?? 0);
+    ? max(0, \floatval($form_data['deposit_amount']))
+    : \floatval($deposit_config['amount'] ?? 0);
 
 $form_deposit_action = isset($form_data['deposit_action'])
     ? sanitize_key((string) $form_data['deposit_action'])
@@ -192,7 +192,7 @@ for ($day = 0; $day <= 6; $day++) {
                                     </td>
                                     <td><?php echo esc_html($room['VenueName']); ?></td>
                                     <td>
-                                        <span style="display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid #c3c4c7;background:<?php echo esc_attr(RoomColour::resolve($room['Colour'] ?? '', intval($room['Id'] ?? 0))); ?>;"></span>
+                                        <span style="display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid #c3c4c7;background:<?php echo esc_attr(RoomColour::resolve($room['Colour'] ?? '', \intval($room['Id'] ?? 0))); ?>;"></span>
                                     </td>
                                     <td>
                                         <?php if ($room['Capacity']): ?>
@@ -213,7 +213,7 @@ for ($day = 0; $day <= 6; $day++) {
                                         <a href="<?php echo admin_url('admin.php?page=myvh-rooms&edit=' . $room['Id']); ?>">
                                             <?php _e('Edit', 'my-village-hall'); ?>
                                         </a> |
-                                        <a href="<?php echo admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . intval($room['Id'])); ?>">
+                                        <a href="<?php echo admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . \intval($room['Id'])); ?>">
                                             <?php _e('Manage Rates', 'my-village-hall'); ?>
                                         </a> |
                                         <a href="<?php echo wp_nonce_url(
@@ -271,7 +271,7 @@ for ($day = 0; $day <= 6; $day++) {
                                     <option value=""><?php _e('Select Venue', 'my-village-hall'); ?></option>
                                     <?php foreach ($venues as $venue): ?>
                                         <option value="<?php echo $venue['Id']; ?>"
-                                            <?php selected($form_venue_id, intval($venue['Id'])); ?>>
+                                            <?php selected($form_venue_id, \intval($venue['Id'])); ?>>
                                             <?php echo esc_html($venue['Name']); ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -464,7 +464,7 @@ for ($day = 0; $day <= 6; $day++) {
             <div class="myvh-card" style="margin-top: 20px;">
                 <h3><?php _e('Room Information', 'my-village-hall'); ?></h3>
                 <p>
-                    <a class="button" href="<?php echo admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . intval($edit_room['Id'])); ?>">
+                    <a class="button" href="<?php echo admin_url('admin.php?page=myvh-room-rates&add=1&room_id=' . \intval($edit_room['Id'])); ?>">
                         <?php _e('Manage Rates for This Room', 'my-village-hall'); ?>
                     </a>
                 </p>

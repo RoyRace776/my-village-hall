@@ -103,14 +103,14 @@ class InvoiceGeneratorService {
         $rule_repository = $this->get_rule_repository_for_scope($rule_scope);
 
         // Resolve group_by and due_date_offset_days from the rules table when a rule_id is provided.
-        $rule_id = max(0, intval($options['rule_id'] ?? 0));
+        $rule_id = max(0, \intval($options['rule_id'] ?? 0));
         if ($rule_id > 0 && $rule_repository !== null) {
             $rule_record = $rule_repository->get_all_rules();
             foreach ($rule_record as $candidate) {
                 if (intval($candidate['Id']) === $rule_id) {
                     $options['group_by'] = (string) ($candidate['GroupBy'] ?? $options['group_by']);
                     if ($options['due_date_offset_days'] === null) {
-                        $options['due_date_offset_days'] = max(0, intval($candidate['DueDateOffsetDays'] ?? 30));
+                        $options['due_date_offset_days'] = max(0, \intval($candidate['DueDateOffsetDays'] ?? 30));
                     }
                     break;
                 }
@@ -124,7 +124,7 @@ class InvoiceGeneratorService {
             if ($default_rule_id > 0) {
                 foreach ($rule_repository->get_active_rules() as $candidate) {
                     if (intval($candidate['Id']) === $default_rule_id) {
-                        $fallback_due_days = max(0, intval($candidate['DueDateOffsetDays'] ?? 30));
+                        $fallback_due_days = max(0, \intval($candidate['DueDateOffsetDays'] ?? 30));
                         break;
                     }
                 }
@@ -224,10 +224,10 @@ class InvoiceGeneratorService {
         }
 
         if ($rule_scope === 'recurring') {
-            return intval($settings['recurring_default_rule_id'] ?? 0);
+            return \intval($settings['recurring_default_rule_id'] ?? 0);
         }
 
-        return intval($settings['single_default_rule_id'] ?? 0);
+        return \intval($settings['single_default_rule_id'] ?? 0);
     }
 
     /**
@@ -245,7 +245,7 @@ class InvoiceGeneratorService {
                 // Group by customer ID
                 $by_customer = [];
                 foreach ($bookings as $booking) {
-                    $customer_id = intval($booking['CustomerId']);
+                    $customer_id = \intval($booking['CustomerId']);
                     if (!isset($by_customer[$customer_id])) {
                         $by_customer[$customer_id] = [];
                     }
@@ -258,7 +258,7 @@ class InvoiceGeneratorService {
                 // Group by organisation ID
                 $by_org = [];
                 foreach ($bookings as $booking) {
-                    $org_id = intval($booking['OrganisationId'] ?? 0);
+                    $org_id = \intval($booking['OrganisationId'] ?? 0);
                     if (!isset($by_org[$org_id])) {
                         $by_org[$org_id] = [];
                     }
@@ -293,7 +293,7 @@ class InvoiceGeneratorService {
 
         // Use customer from first booking in group
         $first_booking = reset($bookings);
-        $customer_id = intval($first_booking['CustomerId']);
+        $customer_id = \intval($first_booking['CustomerId']);
 
         // Calculate totals from all bookings in group
         $subtotal = 0;
@@ -302,14 +302,14 @@ class InvoiceGeneratorService {
         $display_order = 0;
 
         foreach ($bookings as $booking) {
-            $booking_id = intval($booking['Id']);
+            $booking_id = \intval($booking['Id']);
 
             // Get room charge for this booking
             $charge = $this->booking_charge_repo->get_by_booking_id($booking_id);
             if ($charge) {
                 $charge = reset($charge);  // Get first (should be only one)
-                $subtotal += floatval($charge['TotalAmount'] ?? 0);
-                $tax_amount += floatval($charge['TaxAmount'] ?? 0);
+                $subtotal += \floatval($charge['TotalAmount'] ?? 0);
+                $tax_amount += \floatval($charge['TaxAmount'] ?? 0);
 
                 $invoice_items[] = [
                     'BookingId' => $booking_id,
@@ -327,7 +327,7 @@ class InvoiceGeneratorService {
             $addons = $this->booking_addon_repo->get_by_booking_id($booking_id);
             if (!empty($addons)) {
                 foreach ($addons as $addon) {
-                    $subtotal += floatval($addon['TotalAmount'] ?? 0);
+                    $subtotal += \floatval($addon['TotalAmount'] ?? 0);
 
                     $description = trim((string) ($addon['Description'] ?? ''));
                     if ($description === '') {
@@ -368,7 +368,7 @@ class InvoiceGeneratorService {
 
         $due_date_offset = apply_filters(
             'myvh_invoice_due_date_offset',
-            max(0, intval($options['due_date_offset_days'] ?? 30))
+            max(0, \intval($options['due_date_offset_days'] ?? 30))
         );
 
         $billing_snapshot = $this->build_billing_snapshot($first_booking, $options);
@@ -428,7 +428,7 @@ class InvoiceGeneratorService {
      * @return array<string,mixed>|null
      */
     private function build_deposit_invoice_item(array $booking, int $booking_id, int $display_order): ?array {
-        $room_id = intval($booking['RoomId'] ?? 0);
+        $room_id = \intval($booking['RoomId'] ?? 0);
         $end_date = (string) ($booking['EndDate'] ?? '');
         $end_time = (string) ($booking['EndTime'] ?? '');
 
@@ -471,8 +471,8 @@ class InvoiceGeneratorService {
 
     private function build_billing_snapshot($booking, $options): array {
         $group_by = sanitize_key($options['group_by'] ?? 'per_booking');
-        $customer_id = intval($booking['CustomerId'] ?? 0);
-        $organisation_id = intval($booking['OrganisationId'] ?? 0);
+        $customer_id = \intval($booking['CustomerId'] ?? 0);
+        $organisation_id = \intval($booking['OrganisationId'] ?? 0);
 
         $customer = $customer_id > 0 ? $this->customer_repo->get_by_id($customer_id) : null;
 

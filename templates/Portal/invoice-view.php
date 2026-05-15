@@ -11,10 +11,10 @@ $available_statuses = $available_statuses ?? [];
 $has_payments = !empty($invoice_payments);
 $invoice_status = (string) ($invoice['Status'] ?? 'draft');
 $invoice_status_label = ucwords(str_replace('-', ' ', $invoice_status));
-$invoice_total = floatval($invoice['TotalAmount'] ?? 0);
-$invoice_paid = floatval($invoice['AmountPaid'] ?? 0);
-$invoice_due = floatval($invoice['AmountDue'] ?? 0);
-$invoice_booking_count = intval($invoice['BookingCount'] ?? count($invoice_bookings));
+$invoice_total = \floatval($invoice['TotalAmount'] ?? 0);
+$invoice_paid = \floatval($invoice['AmountPaid'] ?? 0);
+$invoice_due = \floatval($invoice['AmountDue'] ?? 0);
+$invoice_booking_count = \intval($invoice['BookingCount'] ?? count($invoice_bookings));
 $invoice_payment_count = count($invoice_payments);
 $invoice_customer_name = !empty($invoice['CustomerName']) ? (string) $invoice['CustomerName'] : 'Invoice details';
 $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoice['BillingName'] ?: 'Unassigned'));
@@ -24,7 +24,7 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
     <?php
         $portal_pdf_url = add_query_arg([
             'action' => 'myvh_portal_view_invoice_pdf',
-            'invoice_id' => intval($invoice['Id'] ?? 0),
+            'invoice_id' => \intval($invoice['Id'] ?? 0),
             'nonce' => wp_create_nonce('myvh_portal'),
         ], admin_url('admin-ajax.php'));
     ?>
@@ -39,10 +39,10 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
             <?php endif; ?>
             <?php if ($is_client_admin): ?>
                 <?php if (!empty($invoice['Id']) && $invoice_status !== 'draft'): ?>
-                    <button type="button" class="button button-primary myvh-portal-add-button" data-invoice-email="<?php echo intval($invoice['Id']); ?>" aria-label="Resend invoice to customer" title="Resend invoice to customer">Resend Invoice</button>
+                    <button type="button" class="button button-primary myvh-portal-add-button" data-invoice-email="<?php echo \intval($invoice['Id']); ?>" aria-label="Resend invoice to customer" title="Resend invoice to customer">Resend Invoice</button>
                 <?php endif; ?>
                 <?php if ($invoice_status !== 'cancelled'): ?>
-                    <a href="#payments?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>" class="button button-primary myvh-portal-add-button">Payments</a>
+                    <a href="#payments?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>" class="button button-primary myvh-portal-add-button">Payments</a>
                 <?php endif; ?>
             <?php endif; ?>
             <a href="#invoices" class="button button-primary myvh-portal-add-button">Back to Invoices</a>
@@ -153,7 +153,7 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                                 <p>Status is managed by recorded payments for this invoice.</p>
                             <?php else: ?>
                                 <form id="myvh-portal-invoice-status-form">
-                                    <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'])); ?>">
+                                    <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'])); ?>">
                                     <div class="myvh-account-grid">
                                         <div>
                                             <label for="myvh-portal-invoice-status"><strong>Status</strong></label>
@@ -204,7 +204,7 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                                 </thead>
                                 <tbody>
                                     <?php foreach ($invoice_payments as $payment): ?>
-                                        <?php $payment_message_id = 'myvh-portal-payment-delete-message-' . intval($payment['Id'] ?? 0); ?>
+                                        <?php $payment_message_id = 'myvh-portal-payment-delete-message-' . \intval($payment['Id'] ?? 0); ?>
                                         <tr>
                                             <td><?php echo esc_html(date('j M Y', strtotime((string) ($payment['PaymentDate'] ?? 'now')))); ?></td>
                                             <td><?php echo esc_html(ucwords((string) ($payment['PaymentMethod'] ?? 'other'))); ?></td>
@@ -214,9 +214,9 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                                             <?php if ($is_client_admin): ?>
                                                 <td>
                                                     <form class="myvh-inline-form" data-portal-action="myvh_portal_delete_payment" data-message-target="<?php echo esc_attr($payment_message_id); ?>" data-confirm="Delete this payment?">
-                                                        <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) intval($payment['Id'] ?? 0)); ?>">
-                                                        <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>">
-                                                        <input type="hidden" name="redirect_route" value="invoice-view?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>">
+                                                        <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) \intval($payment['Id'] ?? 0)); ?>">
+                                                        <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                                                        <input type="hidden" name="redirect_route" value="invoice-view?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>">
                                                         <button type="submit" class="button">Delete</button>
                                                     </form>
                                                     <p class="myvh-muted" id="<?php echo esc_attr($payment_message_id); ?>"></p>
@@ -241,8 +241,8 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                             <p>This invoice has already been fully paid.</p>
                         <?php else: ?>
                             <form class="myvh-account-form" data-portal-action="myvh_portal_create_payment" data-message-target="myvh-portal-payment-create-message">
-                                <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>">
-                                <input type="hidden" name="redirect_route" value="invoice-view?invoice_id=<?php echo intval($invoice['Id'] ?? 0); ?>">
+                                <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                                <input type="hidden" name="redirect_route" value="invoice-view?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>">
                                 <div class="myvh-account-grid">
                                     <div>
                                         <label for="myvh-portal-payment-date"><strong>Payment Date</strong></label>
@@ -309,7 +309,7 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                                     <?php foreach ($invoice_bookings as $booking): ?>
                                         <tr>
                                             <td>
-                                                <a href="#booking-view?booking_id=<?php echo intval($booking['BookingId']); ?>">#<?php echo intval($booking['BookingId']); ?></a>
+                                                <a href="#booking-view?booking_id=<?php echo \intval($booking['BookingId']); ?>">#<?php echo \intval($booking['BookingId']); ?></a>
                                             </td>
                                             <td>
                                                 <strong><?php echo esc_html($booking['Description'] ?? ''); ?></strong>

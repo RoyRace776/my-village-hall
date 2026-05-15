@@ -25,9 +25,9 @@ class CustomerRepository extends RepositoryBase {
             }
         }
         if (!empty($args['limit'])) {
-            $sql .= " LIMIT " . intval($args['limit']);
+            $sql .= " LIMIT " . \intval($args['limit']);
             if (!empty($args['offset'])) {
-                $sql .= " OFFSET " . intval($args['offset']);
+                $sql .= " OFFSET " . \intval($args['offset']);
             }
         }
         return $this->wpdb->get_results($sql, ARRAY_A);
@@ -103,7 +103,7 @@ class CustomerRepository extends RepositoryBase {
         $sql = $this->wpdb->prepare(
             "SELECT Id from {$this->table_name}
             WHERE WPUserId = %d",
-            intval($wp_user)
+            \intval($wp_user)
         );
 
         return $this->wpdb->get_var($sql);

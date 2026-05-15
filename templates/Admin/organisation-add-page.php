@@ -14,7 +14,7 @@ $rule_options = $rule_repository->get_rule_options();
 $default_type_id = 0;
 foreach ($org_types as $type) {
     if (!empty($type['IsDefault'])) {
-        $default_type_id = intval($type['Id']);
+        $default_type_id = \intval($type['Id']);
         break;
     }
 }
@@ -51,7 +51,7 @@ foreach ($org_types as $type) {
                                 <select name="organisation_type_id" class="regular-text">
                                     <option value=""><?php _e('— Select Type —', 'my-village-hall'); ?></option>
                                     <?php foreach ($org_types as $type): ?>
-                                        <option value="<?php echo $type['Id']; ?>" <?php selected($default_type_id, intval($type['Id'])); ?>><?php echo esc_html($type['Name']); ?></option>
+                                        <option value="<?php echo $type['Id']; ?>" <?php selected($default_type_id, \intval($type['Id'])); ?>><?php echo esc_html($type['Name']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <p class="description">
@@ -97,7 +97,7 @@ foreach ($org_types as $type) {
                                     <select id="myvh-new-org-auto-invoice-rule" name="single_booking_auto_invoice_rule_id" class="regular-text">
                                         <option value="0"><?php _e('Use default rule', 'my-village-hall'); ?></option>
                                         <?php foreach ($rule_options as $rule_id => $rule_name): ?>
-                                            <option value="<?php echo intval($rule_id); ?>"><?php echo esc_html($rule_name); ?></option>
+                                            <option value="<?php echo \intval($rule_id); ?>"><?php echo esc_html($rule_name); ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </p>

@@ -174,7 +174,7 @@ class BookingRepositoryTest extends UnitTestCase
         $rows = $repository->get_by_pattern_id(55);
 
         $this->assertCount(1, $rows);
-        $this->assertSame(11, intval($rows[0]['Id']));
+        $this->assertSame(11, \intval($rows[0]['Id']));
     }
 
     public function test_cancel_future_by_pattern_executes_update_query(): void
@@ -320,7 +320,7 @@ class BookingRepositoryTest extends UnitTestCase
         $rows = $repository->get_conflicts(5, '2026-06-01 09:00:00', '2026-06-01 11:00:00');
 
         $this->assertCount(1, $rows);
-        $this->assertSame(44, intval($rows[0]['Id']));
+        $this->assertSame(44, \intval($rows[0]['Id']));
     }
 
     public function test_get_between_hydrates_booking_rows_with_filters(): void
@@ -388,7 +388,7 @@ class BookingRepositoryTest extends UnitTestCase
         $rows = $repository->get_upcoming_bookings(15);
 
         $this->assertCount(1, $rows);
-        $this->assertSame(101, intval($rows[0]['Id']));
+        $this->assertSame(101, \intval($rows[0]['Id']));
     }
 
     public function test_has_invoiced_items_and_no_invoice_required_flags(): void

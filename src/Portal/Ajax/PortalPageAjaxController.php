@@ -241,7 +241,7 @@ class PortalPageAjaxController {
 
         foreach ($groups as $group) {
             foreach (($group['bookings'] ?? []) as $booking) {
-                $booking_id = intval($booking['Id'] ?? 0);
+                $booking_id = \intval($booking['Id'] ?? 0);
                 if ($booking_id <= 0 || isset($seen_booking_ids[$booking_id])) {
                     continue;
                 }
@@ -357,7 +357,7 @@ class PortalPageAjaxController {
         $group_index_by_key = [];
 
         foreach ($rows as $row) {
-            $pattern_id = intval($row['RecurringPatternId'] ?? 0);
+            $pattern_id = \intval($row['RecurringPatternId'] ?? 0);
             $is_groupable_recurring = $pattern_id > 0;
             if (!$is_groupable_recurring) {
                 $row['IsRecurringGroup'] = 0;
@@ -382,7 +382,7 @@ class PortalPageAjaxController {
             }
 
             $result_index = $group_index_by_key[$group_key];
-            $result[$result_index]['RecurringBookingCount'] = intval($result[$result_index]['RecurringBookingCount'] ?? 1) + 1;
+            $result[$result_index]['RecurringBookingCount'] = \intval($result[$result_index]['RecurringBookingCount'] ?? 1) + 1;
 
             $existing_last_date = (string) ($result[$result_index]['RecurringLastDate'] ?? '');
             $current_date = (string) ($row['StartDate'] ?? '');

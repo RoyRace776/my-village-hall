@@ -90,8 +90,8 @@ class CustomerService {
             'PostCode'       => sanitize_text_field($data['post_code'] ?? ''),
             'AddressLine1'   => sanitize_text_field($data['address_line1'] ?? ''),
             'EmailVerified'  => !empty($data['email_verified']) ? 1 : 0,
-            'SingleBookingAutoInvoiceRuleId' => !empty($data['single_booking_auto_invoice_rule_id']) ? intval($data['single_booking_auto_invoice_rule_id']) : null,
-            'RecurringBookingAutoInvoiceRuleId' => !empty($data['recurring_booking_auto_invoice_rule_id']) ? intval($data['recurring_booking_auto_invoice_rule_id']) : null,
+            'SingleBookingAutoInvoiceRuleId' => !empty($data['single_booking_auto_invoice_rule_id']) ? \intval($data['single_booking_auto_invoice_rule_id']) : null,
+            'RecurringBookingAutoInvoiceRuleId' => !empty($data['recurring_booking_auto_invoice_rule_id']) ? \intval($data['recurring_booking_auto_invoice_rule_id']) : null,
         ];
 
         // Only allow client admins to set AllowAutoConfirm
@@ -101,11 +101,11 @@ class CustomerService {
 
         // Link to WordPress user when provided
         if (!empty($data['user_id'])) {
-            $record['WPUserId'] = intval($data['user_id']);
+            $record['WPUserId'] = \intval($data['user_id']);
         }
 
         if (!empty($data['customer_id'])) {
-            $result = $this->repo->update($record, ['Id' => intval($data['customer_id'])]);
+            $result = $this->repo->update($record, ['Id' => \intval($data['customer_id'])]);
             if ($result === false) {
                 return new \WP_Error('database', __('Failed to update customer', 'my-village-hall'));
             }
@@ -118,7 +118,7 @@ class CustomerService {
                 ]);
             }
 
-            return intval($data['customer_id']);
+            return \intval($data['customer_id']);
         }
 
         $result = $this->create_customer($record);
@@ -193,7 +193,7 @@ class CustomerService {
             return;
         }
 
-        $organisation_id = intval($default_organisation['Id']);
+        $organisation_id = \intval($default_organisation['Id']);
 
         if ($this->organisation_member_repo->exists($organisation_id, $customer_id)) {
             return;

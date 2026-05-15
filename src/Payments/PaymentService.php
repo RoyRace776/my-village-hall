@@ -36,7 +36,7 @@ class PaymentService {
     }
 
     public function create(array $data): int|WP_Error {
-        $invoice_id = intval($data['invoice_id'] ?? 0);
+        $invoice_id = \intval($data['invoice_id'] ?? 0);
         $amount = round((float) ($data['payment_amount'] ?? 0), 2);
         $method = sanitize_key($data['payment_method'] ?? '');
         $payment_date = sanitize_text_field($data['payment_date'] ?? current_time('Y-m-d'));

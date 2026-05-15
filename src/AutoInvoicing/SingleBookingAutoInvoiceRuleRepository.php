@@ -34,7 +34,7 @@ class SingleBookingAutoInvoiceRuleRepository extends RepositoryBase {
             return null;
         }
 
-        return intval($id);
+        return \intval($id);
     }
 
     public function get_rule_options(): array {
@@ -57,16 +57,16 @@ class SingleBookingAutoInvoiceRuleRepository extends RepositoryBase {
             $rule_id
         );
 
-        return intval($this->wpdb->get_var($sql)) > 0;
+        return \intval($this->wpdb->get_var($sql)) > 0;
     }
 
     public function count_rules(): int {
         $sql = "SELECT COUNT(*) FROM {$this->table_name}";
-        return intval($this->wpdb->get_var($sql));
+        return \intval($this->wpdb->get_var($sql));
     }
 
     public function upsert_rule(array $record): int|false {
-        $id = intval($record['Id'] ?? 0);
+        $id = \intval($record['Id'] ?? 0);
         unset($record['Id']);
 
         if ($id > 0) {

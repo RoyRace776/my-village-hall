@@ -48,7 +48,7 @@ class RoomService {
             return new WP_Error('validation', __('Venue is required', 'my-village-hall'));
         }
 
-        $venue_id = intval($data['venue_id']);
+        $venue_id = \intval($data['venue_id']);
         $opening_time = sanitize_text_field($data['opening_time']);
         $closing_time = sanitize_text_field($data['closing_time']);
 
@@ -89,9 +89,9 @@ class RoomService {
 
         $record = [
             'Name'         => sanitize_text_field($data['name']),
-            'Colour'       => RoomColour::resolve($data['room_colour'] ?? ($data['room_color'] ?? ''), intval($data['room_id'] ?? 0)),
+            'Colour'       => RoomColour::resolve($data['room_colour'] ?? ($data['room_color'] ?? ''), \intval($data['room_id'] ?? 0)),
             'VenueId'      => $venue_id,
-            'Capacity'     => intval($data['capacity']),
+            'Capacity'     => \intval($data['capacity']),
             'Description'  => sanitize_textarea_field($data['description']),
             'OpeningTime'  => $opening_time,
             'ClosingTime'  => $closing_time,
@@ -101,7 +101,7 @@ class RoomService {
         ];
 
         if (!empty($data['room_id'])) {
-            $updated = $this->repo->update($record, ['Id' => intval($data['room_id'])]);
+            $updated = $this->repo->update($record, ['Id' => \intval($data['room_id'])]);
             if (!$updated) {
                 $db_error = $this->repo->last_error();
                 $message = __('Room update failed', 'my-village-hall');
@@ -126,7 +126,7 @@ class RoomService {
                 'action' => $data['deposit_action'] ?? 'auto_add',
             ]);
 
-            return intval($data['room_id']);
+            return \intval($data['room_id']);
         }
 
         $created = $this->repo->create($record);

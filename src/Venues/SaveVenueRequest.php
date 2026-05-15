@@ -40,7 +40,7 @@ class SaveVenueRequest extends RequestMapperBase {
                 continue;
             }
 
-            $day_of_week = isset($row['day_of_week']) ? intval($row['day_of_week']) : intval($day);
+            $day_of_week = isset($row['day_of_week']) ? \intval($row['day_of_week']) : \intval($day);
             if ($day_of_week < 0 || $day_of_week > 6) {
                 continue;
             }

@@ -225,10 +225,10 @@ $available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order
                     </thead>
                     <tbody>
                         <?php foreach ($available_addons as $i => $addon): ?>
-                            <tr class="myvh-modal-addon-row" data-room-id="<?php echo esc_attr((string) intval($addon['RoomId'] ?? 0)); ?>">
+                            <tr class="myvh-modal-addon-row" data-room-id="<?php echo esc_attr((string) \intval($addon['RoomId'] ?? 0)); ?>">
                                 <td>
                                     <input type="checkbox" class="myvh-modal-addon-checkbox" value="1">
-                                    <input type="hidden" name="addons[<?php echo $i; ?>][addon_id]" value="<?php echo intval($addon['Id']); ?>">
+                                    <input type="hidden" name="addons[<?php echo $i; ?>][addon_id]" value="<?php echo \intval($addon['Id']); ?>">
                                     <input type="hidden" name="addons[<?php echo $i; ?>][enabled]" class="myvh-modal-addon-enabled" value="0">
                                 </td>
                                 <td>

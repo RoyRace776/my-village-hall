@@ -23,7 +23,7 @@ class OrganisationController {
         $data = SaveOrganisationRequest::from_post(wp_unslash($_POST), true);
         $is_edit = !empty($data['organisation_id']);
         $error_redirect = $is_edit
-            ? admin_url('admin.php?page=myvh-organisations&edit=' . intval($data['organisation_id']))
+            ? admin_url('admin.php?page=myvh-organisations&edit=' . \intval($data['organisation_id']))
             : admin_url('admin.php?page=myvh-organisation-add');
 
         $validation_result = $this->request_validator->validate($data);
@@ -72,14 +72,14 @@ class OrganisationController {
         $data = AddOrgMemberRequest::from_post(wp_unslash($_POST));
         $validation_result = $this->request_validator->validate_add_member($data);
         if (is_wp_error($validation_result)) {
-            wp_redirect(admin_url('admin.php?page=myvh-org-members&organisation_id=' . intval($data['organisation_id']) . '&error=' . urlencode($validation_result->get_error_message())));
+            wp_redirect(admin_url('admin.php?page=myvh-org-members&organisation_id=' . \intval($data['organisation_id']) . '&error=' . urlencode($validation_result->get_error_message())));
             exit;
         }
         $org_id  = $data['organisation_id'];
         $user_id = $data['user_id'];
         $result = $this->service->add_member($org_id, $user_id);
         if ($data['redirect'] === 'customer' && !empty($data['customer_id'])) {
-            $back = admin_url('admin.php?page=myvh-customers&edit=' . intval($data['customer_id']));
+            $back = admin_url('admin.php?page=myvh-customers&edit=' . \intval($data['customer_id']));
             if (is_wp_error($result)) {
                 $back .= '&error=' . urlencode($result->get_error_message());
             } else {
@@ -104,7 +104,7 @@ class OrganisationController {
         $data = RemoveOrgMemberRequest::from_query($_GET);
         $validation_result = $this->request_validator->validate_remove_member($data);
         if (is_wp_error($validation_result)) {
-            wp_redirect(admin_url('admin.php?page=myvh-org-members&organisation_id=' . intval($data['organisation_id']) . '&error=' . urlencode($validation_result->get_error_message())));
+            wp_redirect(admin_url('admin.php?page=myvh-org-members&organisation_id=' . \intval($data['organisation_id']) . '&error=' . urlencode($validation_result->get_error_message())));
             exit;
         }
         $member_id = $data['id'];
@@ -113,14 +113,14 @@ class OrganisationController {
         if (is_wp_error($result)) {
             $error = '&error=' . urlencode($result->get_error_message());
             if ($data['redirect'] === 'customer' && !empty($data['customer_id'])) {
-                wp_redirect(admin_url('admin.php?page=myvh-customers&edit=' . intval($data['customer_id']) . $error));
+                wp_redirect(admin_url('admin.php?page=myvh-customers&edit=' . \intval($data['customer_id']) . $error));
                 exit;
             }
             wp_redirect(admin_url('admin.php?page=myvh-org-members&organisation_id=' . $org_id . $error));
             exit;
         }
         if ($data['redirect'] === 'customer' && !empty($data['customer_id'])) {
-            wp_redirect(admin_url('admin.php?page=myvh-customers&edit=' . intval($data['customer_id']) . '&updated=1'));
+            wp_redirect(admin_url('admin.php?page=myvh-customers&edit=' . \intval($data['customer_id']) . '&updated=1'));
             exit;
         }
         wp_redirect(admin_url('admin.php?page=myvh-org-members&organisation_id=' . $org_id . '&deleted=1'));

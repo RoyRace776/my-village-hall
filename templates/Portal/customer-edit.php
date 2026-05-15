@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) exit;
 
 use MYVH\Customers\CustomerService;
 
-$customer_id = isset($customer_id) ? intval($customer_id) : 0;
+$customer_id = isset($customer_id) ? \intval($customer_id) : 0;
 $customer_service = $GLOBALS['myvh_container']->get(CustomerService::class);
 $customer = $customer_service->get($customer_id);
 

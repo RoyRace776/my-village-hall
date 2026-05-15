@@ -174,7 +174,7 @@ class InvoiceService {
         $bookings = [];
 
         foreach ($items as $item) {
-            $booking_id = intval($item['BookingId'] ?? 0);
+            $booking_id = \intval($item['BookingId'] ?? 0);
             if ($booking_id <= 0) {
                 continue;
             }
@@ -195,7 +195,7 @@ class InvoiceService {
                 ];
             }
 
-            $bookings[$booking_id]['TotalAmount'] += floatval($item['TotalAmount'] ?? 0);
+            $bookings[$booking_id]['TotalAmount'] += \floatval($item['TotalAmount'] ?? 0);
         }
 
         return array_values($bookings);
@@ -219,7 +219,7 @@ class InvoiceService {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
         }
 
-        if (!isset($data['total_amount']) || floatval($data['total_amount']) < 0) {
+        if (!isset($data['total_amount']) || \floatval($data['total_amount']) < 0) {
             return new WP_Error('validation', __('Valid total amount is required', 'my-village-hall'));
         }
 
@@ -229,13 +229,13 @@ class InvoiceService {
             $invoice_number_formatted = $data['invoice_number'];
         }
 
-        $total_amount = floatval($data['total_amount']);
-        $amount_paid = floatval($data['amount_paid'] ?? 0);
+        $total_amount = \floatval($data['total_amount']);
+        $amount_paid = \floatval($data['amount_paid'] ?? 0);
         $requested_status = sanitize_key($data['status'] ?? 'draft');
 
         $record = [
             'InvoiceNumber' => $invoice_number_formatted,
-            'CustomerId' => intval($data['customer_id']),
+            'CustomerId' => \intval($data['customer_id']),
             'BillingName' => !empty($data['billing_name']) ? sanitize_text_field($data['billing_name']) : null,
             'BillingOrganisationName' => !empty($data['billing_organisation_name']) ? sanitize_text_field($data['billing_organisation_name']) : null,
             'BillingEmail' => !empty($data['billing_email']) ? sanitize_email($data['billing_email']) : null,
@@ -246,8 +246,8 @@ class InvoiceService {
             'BillingReference' => !empty($data['billing_reference']) ? sanitize_text_field($data['billing_reference']) : null,
             'InvoiceDate' => !empty($data['invoice_date']) ? sanitize_text_field($data['invoice_date']) : date('Y-m-d'),
             'DueDate' => !empty($data['due_date']) ? sanitize_text_field($data['due_date']) : date('Y-m-d', strtotime('+14 days')),
-            'SubTotal' => floatval($data['sub_total'] ?? 0),
-            'TaxAmount' => floatval($data['tax_amount'] ?? 0),
+            'SubTotal' => \floatval($data['sub_total'] ?? 0),
+            'TaxAmount' => \floatval($data['tax_amount'] ?? 0),
             'TotalAmount' => $total_amount,
             'AmountPaid' => $amount_paid,
             'AmountDue' => max(0.0, $total_amount - $amount_paid),
@@ -260,7 +260,7 @@ class InvoiceService {
         ];
 
         if (!empty($data['invoice_id'])) {
-            $invoice_id = intval($data['invoice_id']);
+            $invoice_id = \intval($data['invoice_id']);
 
             if ($record['Status'] === 'cancelled' && $this->payment_repo->count_by_invoice($invoice_id) > 0) {
                 return new WP_Error('validation', __('Invoices with payments cannot be cancelled.', 'my-village-hall'));

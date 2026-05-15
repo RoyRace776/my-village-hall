@@ -125,7 +125,7 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
         $this->calendar_service->shouldReceive('update_event')
             ->once()
             ->with(\Mockery::on(static function (array $payload): bool {
-                return intval($payload['booking_id'] ?? 0) === 89
+                return \intval($payload['booking_id'] ?? 0) === 89
                     && ($payload['context'] ?? '') === 'portal';
             }))
             ->andReturnUsing(static fn(): array => ['id' => 89]);

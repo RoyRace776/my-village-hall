@@ -65,13 +65,13 @@ class RecurringPatternService {
                 '%s %s %010d',
                 (string) ($left['StartDate'] ?? ''),
                 (string) ($left['StartTime'] ?? ''),
-                intval($left['Id'] ?? 0)
+                \intval($left['Id'] ?? 0)
             );
             $right_key = sprintf(
                 '%s %s %010d',
                 (string) ($right['StartDate'] ?? ''),
                 (string) ($right['StartTime'] ?? ''),
-                intval($right['Id'] ?? 0)
+                \intval($right['Id'] ?? 0)
             );
 
             return strcmp($left_key, $right_key);
@@ -106,9 +106,9 @@ class RecurringPatternService {
         }
 
         $new_pattern_record = [
-            'ParentBookingId' => intval($parent_booking['Id']),
+            'ParentBookingId' => \intval($parent_booking['Id']),
             'RecurrenceType' => sanitize_text_field($pattern['RecurrenceType'] ?? ''),
-            'RecurrenceInterval' => intval($pattern['RecurrenceInterval'] ?? 1),
+            'RecurrenceInterval' => \intval($pattern['RecurrenceInterval'] ?? 1),
             'RecurrenceDay' => sanitize_text_field($pattern['RecurrenceDay'] ?? ''),
             'RecurrenceWeek' => sanitize_text_field($pattern['RecurrenceWeek'] ?? ''),
             'StartDate' => sanitize_text_field($parent_booking['StartDate'] ?? ''),
@@ -126,7 +126,7 @@ class RecurringPatternService {
         foreach ($future_bookings as &$future_booking) {
             $updated = $this->booking_repo->update(
                 ['RecurringPatternId' => $new_pattern_id],
-                ['Id' => intval($future_booking['Id'] ?? 0)]
+                ['Id' => \intval($future_booking['Id'] ?? 0)]
             );
 
             if ($updated === false) {
@@ -156,7 +156,7 @@ class RecurringPatternService {
         }
 
         if (count($previous_bookings) === 1) {
-            $remaining_previous_booking_id = intval($previous_bookings[0]['Id'] ?? 0);
+            $remaining_previous_booking_id = \intval($previous_bookings[0]['Id'] ?? 0);
             if ($remaining_previous_booking_id > 0) {
                 $detached_previous = $this->booking_repo->update(
                     ['RecurringPatternId' => null],
@@ -181,7 +181,7 @@ class RecurringPatternService {
         }
 
         if (count($future_bookings) === 1) {
-            $remaining_future_booking_id = intval($future_bookings[0]['Id'] ?? 0);
+            $remaining_future_booking_id = \intval($future_bookings[0]['Id'] ?? 0);
             if ($remaining_future_booking_id > 0) {
                 $detached_future = $this->booking_repo->update(
                     ['RecurringPatternId' => null],
@@ -255,29 +255,29 @@ class RecurringPatternService {
         }
 
         // TODO: get the 365 number from setting to limit max occurrences to prevent abuse
-        if (!empty($data['max_occurrences']) && intval($data['max_occurrences']) > 365) {
+        if (!empty($data['max_occurrences']) && \intval($data['max_occurrences']) > 365) {
             return new WP_Error('validation', __('Maximum 365 occurrences allowed', 'my-village-hall'));
         }
 
         $record = [
-            'ParentBookingId'       => intval($data['parent_booking_id']),
+            'ParentBookingId'       => \intval($data['parent_booking_id']),
             'RecurrenceType'        => sanitize_text_field($data['recurrence_type']),
-            'RecurrenceInterval'    => intval($data['recurrence_interval'] ?? 1),
+            'RecurrenceInterval'    => \intval($data['recurrence_interval'] ?? 1),
             'RecurrenceDay'         => sanitize_text_field($data['recurrence_day'] ?? ''),
             'RecurrenceWeek'        => sanitize_text_field($data['recurrence_week'] ?? ''),
             'StartDate'             => sanitize_text_field($data['start_date']),
             'EndDate'               => !empty($data['end_date']) ? sanitize_text_field($data['end_date']) : null,
-            'MaxOccurrences'        => !empty($data['max_occurrences']) ? intval($data['max_occurrences']) : null,
+            'MaxOccurrences'        => !empty($data['max_occurrences']) ? \intval($data['max_occurrences']) : null,
             'IsActive'              => !empty($data['is_active']) ? 1 : 0,
         ];
 
         // Create or update the pattern
         if (!empty($data['pattern_id'])) {
-            $result = $this->repo->update($record, ['Id' => intval($data['pattern_id'])]);
+            $result = $this->repo->update($record, ['Id' => \intval($data['pattern_id'])]);
             if ($result === false) {
                 return new WP_Error('database', __('Failed to update pattern', 'my-village-hall'));
             }
-            $pattern_id = intval($data['pattern_id']);
+            $pattern_id = \intval($data['pattern_id']);
             // Delete future bookings so they can be regenerated with the new schedule
             $this->get_booking_repo()->delete_future_by_pattern($pattern_id);
         } else { //This is a new pattern
@@ -288,7 +288,7 @@ class RecurringPatternService {
 
             //Update the parent booking with the pattern id
             $update = [ 'RecurringPatternId' => $pattern_id ];
-            $id = ['Id' => intval($data['parent_booking_id'])];
+            $id = ['Id' => \intval($data['parent_booking_id'])];
             $this->booking_repo->update($update, $id);
         }
 
@@ -427,10 +427,10 @@ class RecurringPatternService {
      */
     private function calculate_all_occurrence_dates($pattern): array {
         $dates    = [];
-        $interval = max(1, intval($pattern['RecurrenceInterval']));
+        $interval = max(1, \intval($pattern['RecurrenceInterval']));
         $type     = $pattern['RecurrenceType'];
 
-        $max_occurrences = !empty($pattern['MaxOccurrences']) ? intval($pattern['MaxOccurrences']) : 365;
+        $max_occurrences = !empty($pattern['MaxOccurrences']) ? \intval($pattern['MaxOccurrences']) : 365;
         $end_date        = !empty($pattern['EndDate']) ? new DateTime($pattern['EndDate']) : null;
         $end_date?->setTime(23, 59, 59);
 
@@ -521,7 +521,7 @@ class RecurringPatternService {
      * @return string
      */
     public static function describe($pattern): string {
-        $interval = intval($pattern['RecurrenceInterval'] ?? 1);
+        $interval = \intval($pattern['RecurrenceInterval'] ?? 1);
         $type     = $pattern['RecurrenceType'] ?? '';
 
         $ordinals  = ['1'=>'1st','2'=>'2nd','3'=>'3rd','4'=>'4th','last'=>'last'];

@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) exit;
             <div class="myvh-card myvh-account-card">
                 <div class="myvh-account-card-head">
                     <h3><?php echo esc_html($booking['RoomName'] ?? 'Booking'); ?></h3>
-                    <span>Booking reference #<?php echo intval($booking['Id']); ?></span>
+                    <span>Booking reference #<?php echo \intval($booking['Id']); ?></span>
                 </div>
 
                 <div class="myvh-account-grid">
@@ -48,9 +48,9 @@ if (!defined('ABSPATH')) exit;
                 </div>
 
                 <div class="myvh-account-actions" style="margin-top:12px;">
-                    <a href="#booking-edit?booking_id=<?php echo intval($booking['Id']); ?>" class="myvh-button myvh-button-primary">Edit Booking</a>
+                    <a href="#booking-edit?booking_id=<?php echo \intval($booking['Id']); ?>" class="myvh-button myvh-button-primary">Edit Booking</a>
                     <?php if ($can_delete): ?>
-                        <a href="#booking-delete?booking_id=<?php echo intval($booking['Id']); ?>" class="myvh-button">Delete Booking</a>
+                        <a href="#booking-delete?booking_id=<?php echo \intval($booking['Id']); ?>" class="myvh-button">Delete Booking</a>
                     <?php else: ?>
                         <span class="myvh-muted"><?php echo esc_html($delete_rules['reason'] ?? 'This booking cannot be deleted.'); ?></span>
                     <?php endif; ?>

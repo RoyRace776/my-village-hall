@@ -354,7 +354,7 @@ class LoginHandler {
             return;
         }
 
-        $user_id = intval($_GET['uid'] ?? 0);
+        $user_id = \intval($_GET['uid'] ?? 0);
         $token = sanitize_text_field(wp_unslash((string) ($_GET['token'] ?? '')));
 
         // Validate that we have a valid user ID and token

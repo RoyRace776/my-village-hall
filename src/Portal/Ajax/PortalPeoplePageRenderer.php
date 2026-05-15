@@ -46,7 +46,7 @@ class PortalPeoplePageRenderer {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $customer_id = intval($_GET['id'] ?? 0);
+        $customer_id = \intval($_GET['id'] ?? 0);
 
         if (!$customer_id) {
             wp_send_json_error('Invalid customer ID', 400);

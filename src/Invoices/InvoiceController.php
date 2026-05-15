@@ -130,7 +130,7 @@ class InvoiceController {
 
         check_admin_referer('myvh_view_invoice_pdf');
 
-        $id = intval($_REQUEST['id'] ?? 0);
+        $id = \intval($_REQUEST['id'] ?? 0);
         $result = $this->service->get_invoice_pdf_url($id);
 
         if (is_wp_error($result)) {
@@ -155,7 +155,7 @@ class InvoiceController {
 
         check_admin_referer('myvh_email_invoice');
 
-        $id = intval($_REQUEST['id'] ?? $_REQUEST['invoice_id'] ?? 0);
+        $id = \intval($_REQUEST['id'] ?? $_REQUEST['invoice_id'] ?? 0);
         if ($id <= 0) {
             $this->redirect_with_message(
                 $this->get_admin_page_slug('myvh-invoices'),
@@ -248,7 +248,7 @@ class InvoiceController {
 
         check_admin_referer('myvh_delete_invoice');
 
-        $id = intval($_REQUEST['id'] ?? 0);
+        $id = \intval($_REQUEST['id'] ?? 0);
         $result = $this->service->delete($id);
 
         if (is_wp_error($result)) {
@@ -268,7 +268,7 @@ class InvoiceController {
 
         check_admin_referer('myvh_update_invoice_status');
 
-        $id = intval($_REQUEST['id'] ?? $_REQUEST['invoice_id'] ?? 0);
+        $id = \intval($_REQUEST['id'] ?? $_REQUEST['invoice_id'] ?? 0);
         $status = sanitize_text_field($_REQUEST['status'] ?? '');
 
         $result = $this->service->update_status($id, $status);
@@ -290,8 +290,8 @@ class InvoiceController {
 
         check_admin_referer('myvh_record_payment');
 
-        $id = intval($_POST['invoice_id'] ?? 0);
-        $amount = floatval($_POST['payment_amount'] ?? 0);
+        $id = \intval($_POST['invoice_id'] ?? 0);
+        $amount = \floatval($_POST['payment_amount'] ?? 0);
 
         $result = $this->service->record_payment($id, $amount);
 
@@ -307,7 +307,7 @@ class InvoiceController {
     private function get_admin_redirect_args(): array {
         $args = [];
 
-        $redirect_view = intval($_REQUEST['redirect_view'] ?? 0);
+        $redirect_view = \intval($_REQUEST['redirect_view'] ?? 0);
         if ($redirect_view > 0) {
             $args['view'] = $redirect_view;
         }
@@ -376,7 +376,7 @@ class InvoiceController {
 
     private function build_booking_details(array $invoice): string {
         $bookings = is_array($invoice['BookingsSummary'] ?? null) ? $invoice['BookingsSummary'] : [];
-        $booking_count = intval($invoice['BookingCount'] ?? count($bookings));
+        $booking_count = \intval($invoice['BookingCount'] ?? count($bookings));
         if ($booking_count <= 0) {
             return '';
         }

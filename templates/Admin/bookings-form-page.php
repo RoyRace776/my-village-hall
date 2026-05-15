@@ -17,8 +17,8 @@ use MYVH\Rooms\RoomService;
 use MYVH\Addons\AddonService;
 use MYVH\Bookings\RecurringPatternService;
 
-$edit_id = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
-$view_id = isset($_GET['view']) ? intval($_GET['view']) : 0;
+$edit_id = isset($_GET['edit']) ? \intval($_GET['edit']) : 0;
+$view_id = isset($_GET['view']) ? \intval($_GET['view']) : 0;
 $booking_id = $edit_id ?: $view_id;
 
 $booking_service           = $myvh_container->get(BookingService::class);
@@ -46,7 +46,7 @@ $available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order
 
 $customer_organisations_map = [];
 foreach ($customers as $customer_row) {
-    $customer_id = intval($customer_row['Id'] ?? 0);
+    $customer_id = \intval($customer_row['Id'] ?? 0);
     if ($customer_id <= 0) {
         continue;
     }
@@ -55,7 +55,7 @@ foreach ($customers as $customer_row) {
 
     $customer_organisations_map[$customer_id] = array_map(static function ($org) {
         return [
-            'Id' => intval($org['Id'] ?? 0),
+            'Id' => \intval($org['Id'] ?? 0),
             'Name' => sanitize_text_field($org['Name'] ?? ''),
         ];
     }, $customer_orgs ?: []);
@@ -81,7 +81,7 @@ if ($booking_id) {
 // Index existing addons by AddonId for easy lookup in the form
 $selected_addon_map = [];
 foreach ($booking_addons as $ba) {
-    $addon_id = intval($ba['AddonId'] ?? $ba['addon_id'] ?? 0);
+    $addon_id = \intval($ba['AddonId'] ?? $ba['addon_id'] ?? 0);
     if ($addon_id <= 0) {
         continue;
     }
@@ -105,9 +105,9 @@ if ($edit_booking) {
     $room = $room_service->get($edit_booking['RoomId']);
 }
 
-$form_customer_id = isset($form_data['customer_id']) ? intval($form_data['customer_id']) : intval($edit_booking['CustomerId'] ?? 0);
-$form_organisation_id = isset($form_data['organisation_id']) ? intval($form_data['organisation_id']) : intval($edit_booking['OrganisationId'] ?? 0);
-$form_room_id = isset($form_data['room_id']) ? intval($form_data['room_id']) : intval($edit_booking['RoomId'] ?? 0);
+$form_customer_id = isset($form_data['customer_id']) ? \intval($form_data['customer_id']) : \intval($edit_booking['CustomerId'] ?? 0);
+$form_organisation_id = isset($form_data['organisation_id']) ? \intval($form_data['organisation_id']) : \intval($edit_booking['OrganisationId'] ?? 0);
+$form_room_id = isset($form_data['room_id']) ? \intval($form_data['room_id']) : \intval($edit_booking['RoomId'] ?? 0);
 $form_start_date = isset($form_data['start_date']) ? sanitize_text_field($form_data['start_date']) : ($edit_booking['StartDate'] ?? date('Y-m-d'));
 $form_end_date = isset($form_data['end_date']) ? sanitize_text_field($form_data['end_date']) : ($edit_booking['EndDate'] ?? '');
 $form_start_time = isset($form_data['start_time']) ? sanitize_text_field($form_data['start_time']) : ($edit_booking['StartTime'] ?? '09:00');
@@ -119,13 +119,13 @@ $form_public = $has_form_data ? !empty($form_data['public']) : !empty($edit_book
 $form_no_invoice_required = $has_form_data ? !empty($form_data['no_invoice_required']) : !empty($edit_booking['NoInvoiceRequired']);
 $form_is_recurring = !empty($form_data['is_recurring']);
 $form_recurrence_type = sanitize_text_field($form_data['recurrence_type'] ?? 'weekly');
-$form_recurrence_interval = max(1, intval($form_data['recurrence_interval'] ?? 1));
-$form_recurrence_interval_md = max(1, intval($form_data['recurrence_interval_md'] ?? 1));
+$form_recurrence_interval = max(1, \intval($form_data['recurrence_interval'] ?? 1));
+$form_recurrence_interval_md = max(1, \intval($form_data['recurrence_interval_md'] ?? 1));
 $form_recurrence_week = sanitize_text_field($form_data['recurrence_week'] ?? '1');
 $form_recurrence_day = sanitize_text_field($form_data['recurrence_day'] ?? strtolower(date('l', strtotime($form_start_date ?: 'today'))));
 $form_recurrence_end_type = sanitize_text_field($form_data['recurrence_end_type'] ?? 'date');
 $form_recurrence_end_date = sanitize_text_field($form_data['recurrence_end_date'] ?? date('Y-m-d', strtotime('+1 year')));
-$form_max_occurrences = max(1, intval($form_data['max_occurrences'] ?? 12));
+$form_max_occurrences = max(1, \intval($form_data['max_occurrences'] ?? 12));
 $form_edit_scope = sanitize_text_field($form_data['edit_scope'] ?? 'this_only');
 
 $selected_customer_organisations = $form_customer_id > 0
@@ -134,7 +134,7 @@ $selected_customer_organisations = $form_customer_id > 0
 
 $room_multiday_map = [];
 foreach ($rooms as $room_row) {
-    $room_id = intval($room_row['Id'] ?? 0);
+    $room_id = \intval($room_row['Id'] ?? 0);
     if ($room_id <= 0) {
         continue;
     }
@@ -145,7 +145,7 @@ foreach ($rooms as $room_row) {
 $selected_room_allows_multiday = !empty($room_multiday_map[$form_room_id]);
 
 $allowed_organisation_ids = array_map(static function ($org) {
-    return intval($org['Id'] ?? 0);
+    return \intval($org['Id'] ?? 0);
 }, $selected_customer_organisations);
 
 if (!in_array($form_organisation_id, $allowed_organisation_ids, true)) {
@@ -153,7 +153,7 @@ if (!in_array($form_organisation_id, $allowed_organisation_ids, true)) {
 }
 
 if ($form_organisation_id === 0 && count($selected_customer_organisations) === 1) {
-    $form_organisation_id = intval($selected_customer_organisations[0]['Id'] ?? 0);
+    $form_organisation_id = \intval($selected_customer_organisations[0]['Id'] ?? 0);
 }
 
 $status_colors = [
@@ -332,22 +332,22 @@ $status_colors = [
                     <?php
                     $room_charge_total = 0.0;
                     foreach (($booking_charge_rows ?? []) as $charge_row) {
-                        $room_charge_total += floatval($charge_row['TotalAmount'] ?? 0);
+                        $room_charge_total += \floatval($charge_row['TotalAmount'] ?? 0);
                     }
 
                     $addons_total = 0.0;
                     foreach (($booking_addons ?? []) as $ba) {
-                        $addons_total += floatval($ba['TotalAmount'] ?? 0);
+                        $addons_total += \floatval($ba['TotalAmount'] ?? 0);
                     }
 
                     $deposit_total = 0.0;
                     foreach (($booking_deposit_items ?? []) as $deposit_item) {
-                        $deposit_total += floatval($deposit_item['TotalAmount'] ?? 0);
+                        $deposit_total += \floatval($deposit_item['TotalAmount'] ?? 0);
                     }
 
                     $show_expected_deposit = false;
                     if ($deposit_total <= 0.0 && is_array($expected_booking_deposit)) {
-                        $expected_amount = floatval($expected_booking_deposit['amount'] ?? 0);
+                        $expected_amount = \floatval($expected_booking_deposit['amount'] ?? 0);
                         if ($expected_amount > 0.0) {
                             $deposit_total = $expected_amount;
                             $show_expected_deposit = true;
@@ -505,8 +505,8 @@ $status_colors = [
                                     <select name="organisation_id" class="regular-text" id="organisation-select" <?php disabled($form_customer_id <= 0); ?>>
                                         <option value=""><?php _e('— None —', 'my-village-hall'); ?></option>
                                         <?php foreach ($selected_customer_organisations as $org): ?>
-                                            <option value="<?php echo intval($org['Id']); ?>"
-                                                <?php selected($form_organisation_id, intval($org['Id'])); ?>>
+                                            <option value="<?php echo \intval($org['Id']); ?>"
+                                                <?php selected($form_organisation_id, \intval($org['Id'])); ?>>
                                                 <?php echo esc_html($org['Name']); ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -796,8 +796,8 @@ $status_colors = [
                             $existing   = $selected_addon_map[$addon['Id']] ?? null;
                             $is_checked = !empty($existing);
                             $charge_type = (string)($addon['ChargeType'] ?? 'fixed');
-                            $quantity   = $charge_type === 'per_hour' ? ($existing ? floatval($existing['Quantity']) : 0) : 1;
-                            $unit_price = $existing ? floatval($existing['UnitPrice']) : floatval($addon['Price']);
+                            $quantity   = $charge_type === 'per_hour' ? ($existing ? \floatval($existing['Quantity']) : 0) : 1;
+                            $unit_price = $existing ? \floatval($existing['UnitPrice']) : \floatval($addon['Price']);
                             $note       = $existing ? esc_attr($existing['Description']) : '';
                         ?>
                         <tr class="myvh-addon-row<?php echo $is_checked ? ' addon-selected' : ''; ?>" data-charge-type="<?php echo esc_attr($charge_type); ?>">
@@ -806,7 +806,7 @@ $status_colors = [
                                     class="myvh-addon-checkbox"
                                     value="1"
                                     <?php checked($is_checked); ?>>
-                                <input type="hidden" name="addons[<?php echo $i; ?>][addon_id]"   value="<?php echo intval($addon['Id']); ?>">
+                                <input type="hidden" name="addons[<?php echo $i; ?>][addon_id]"   value="<?php echo \intval($addon['Id']); ?>">
                                 <input type="hidden" name="addons[<?php echo $i; ?>][enabled]"    class="myvh-addon-enabled" value="<?php echo $is_checked ? '1' : '0'; ?>">
                                 <input type="hidden" name="addons[<?php echo $i; ?>][quantity]" class="myvh-addon-qty" value="<?php echo esc_attr($quantity); ?>">
                             </td>

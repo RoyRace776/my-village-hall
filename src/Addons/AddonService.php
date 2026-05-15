@@ -54,7 +54,7 @@ class AddonService {
             return new \WP_Error('validation', __('Add-on name is required', 'my-village-hall'));
         }
 
-        if (empty($data['price']) || floatval($data['price']) < 0) {
+        if (empty($data['price']) || \floatval($data['price']) < 0) {
             return new \WP_Error('validation', __('Valid price is required', 'my-village-hall'));
         }
 
@@ -65,19 +65,19 @@ class AddonService {
         $record = [
             'Name'         => sanitize_text_field($data['name']),
             'Description'  => sanitize_textarea_field($data['description'] ?? ''),
-            'Price'        => floatval($data['price']),
+            'Price'        => \floatval($data['price']),
             'ChargeType'   => sanitize_text_field($data['charge_type']),
-            'RoomId'       => !empty($data['room_id']) ? intval($data['room_id']) : null,
+            'RoomId'       => !empty($data['room_id']) ? \intval($data['room_id']) : null,
             'IsActive'     => isset($data['is_active']) ? 1 : 0,
-            'DisplayOrder' => intval($data['display_order'] ?? 0),
+            'DisplayOrder' => \intval($data['display_order'] ?? 0),
         ];
 
         if (!empty($data['addon_id'])) {
-            $result = $this->repo->update($record, ['Id' => intval($data['addon_id'])]);
+            $result = $this->repo->update($record, ['Id' => \intval($data['addon_id'])]);
             if ($result === false) {
                 return new \WP_Error('database', __('Failed to update add-on', 'my-village-hall'));
             }
-            return intval($data['addon_id']);
+            return \intval($data['addon_id']);
         }
 
         $result = $this->repo->create($record);
@@ -114,8 +114,8 @@ class AddonService {
         $booking_hours = null;
 
         foreach ($addons as $addon) {
-            $addon_id   = intval($addon['addon_id'] ?? 0);
-            $unit_price = floatval($addon['unit_price'] ?? 0);
+            $addon_id   = \intval($addon['addon_id'] ?? 0);
+            $unit_price = \floatval($addon['unit_price'] ?? 0);
 
             if ($addon_id <= 0) continue;
 

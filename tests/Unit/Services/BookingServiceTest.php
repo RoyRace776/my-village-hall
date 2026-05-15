@@ -354,7 +354,7 @@ class BookingServiceTest extends UnitTestCase {
         $this->booking_repo->shouldReceive('create')
             ->once()
             ->with(Mockery::on(static function (array $record): bool {
-                return intval($record['NoInvoiceRequired'] ?? 0) === 1;
+                return \intval($record['NoInvoiceRequired'] ?? 0) === 1;
             }))
             ->andReturn(42);
 
@@ -558,7 +558,7 @@ class BookingServiceTest extends UnitTestCase {
         $this->booking_repo->shouldReceive('update')
             ->twice()
             ->with(Mockery::on(static function (array $record): bool {
-                return intval($record['NoInvoiceRequired'] ?? 0) === 1;
+                return \intval($record['NoInvoiceRequired'] ?? 0) === 1;
             }), Mockery::any())
             ->andReturn(true);
         $this->addon_service->shouldReceive('save_booking_addons')->twice()->withAnyArgs();

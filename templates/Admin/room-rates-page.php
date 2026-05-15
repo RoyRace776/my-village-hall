@@ -13,7 +13,7 @@ use MYVH\Organisations\OrganisationTypeService;
 
 global $myvh_container;
 
-$edit_id           = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$edit_id           = isset($_GET['edit']) ? \intval($_GET['edit']) : 0;
 $room_rate_service = $myvh_container->get(RoomRateService::class);
 $room_service      = $myvh_container->get(RoomService::class);
 $org_type_service  = $myvh_container->get(OrganisationTypeService::class);
@@ -22,8 +22,8 @@ $rates             = $room_rate_service->get_all();
 $rooms             = $room_service->get_all_with_venues();
 $org_types         = $org_type_service->get_all();
 
-$requested_room_id = isset($_GET['room_id']) ? intval($_GET['room_id']) : 0;
-$selected_room_id = $edit_rate ? intval($edit_rate['RoomId'] ?? 0) : $requested_room_id;
+$requested_room_id = isset($_GET['room_id']) ? \intval($_GET['room_id']) : 0;
+$selected_room_id = $edit_rate ? \intval($edit_rate['RoomId'] ?? 0) : $requested_room_id;
 $selected_room = null;
 
 if ($selected_room_id > 0) {
@@ -243,7 +243,7 @@ if ($selected_room_id > 0) {
                                         endif;
                                     ?>
                                         <option value="<?php echo $room['Id']; ?>"
-                                            <?php selected($selected_room_id, intval($room['Id'])); ?>>
+                                            <?php selected($selected_room_id, \intval($room['Id'])); ?>>
                                             <?php echo esc_html($room['Name']); ?>
                                         </option>
                                     <?php

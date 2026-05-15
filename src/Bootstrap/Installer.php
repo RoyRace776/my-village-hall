@@ -589,7 +589,7 @@ class Installer {
         }
 
         $rules_table = $wpdb->prefix . 'myvh_single_booking_auto_invoice_rules';
-        $rule_count = intval($wpdb->get_var("SELECT COUNT(*) FROM {$rules_table}"));
+        $rule_count = \intval($wpdb->get_var("SELECT COUNT(*) FROM {$rules_table}"));
 
         if ($rule_count <= 0) {
             $trigger_timing = sanitize_key($settings['single_trigger_timing'] ?? 'confirmation');
@@ -607,22 +607,22 @@ class Installer {
                 [
                     'Name' => __('Default single booking rule', 'my-village-hall'),
                     'TriggerTiming' => $trigger_timing,
-                    'TriggerOffsetDays' => max(0, intval($settings['single_trigger_offset_days'] ?? 0)),
+                    'TriggerOffsetDays' => max(0, \intval($settings['single_trigger_offset_days'] ?? 0)),
                     'GroupBy' => $group_by,
-                    'DueDateOffsetDays' => max(0, intval($settings['single_due_date_offset_days'] ?? 30)),
+                    'DueDateOffsetDays' => max(0, \intval($settings['single_due_date_offset_days'] ?? 30)),
                     'SortOrder' => 0,
                     'IsActive' => !empty($settings['single_enabled']) ? 1 : 0,
                 ]
             );
 
             if (!empty($wpdb->insert_id)) {
-                $settings['single_default_rule_id'] = intval($wpdb->insert_id);
+                $settings['single_default_rule_id'] = \intval($wpdb->insert_id);
             }
         }
 
         if (empty($settings['single_default_rule_id'])) {
             $default_rule_id = $wpdb->get_var("SELECT Id FROM {$rules_table} WHERE IsActive = 1 ORDER BY Id ASC LIMIT 1");
-            $settings['single_default_rule_id'] = intval($default_rule_id ?: 0);
+            $settings['single_default_rule_id'] = \intval($default_rule_id ?: 0);
         }
 
         update_option('myvh_invoicing_settings', $settings);
@@ -630,7 +630,7 @@ class Installer {
 
     private static function create_default_recurring_booking_invoice_rules(wpdb $wpdb): void {
         $rules_table = $wpdb->prefix . 'myvh_recurring_booking_auto_invoice_rules';
-        $rule_count = intval($wpdb->get_var("SELECT COUNT(*) FROM {$rules_table}"));
+        $rule_count = \intval($wpdb->get_var("SELECT COUNT(*) FROM {$rules_table}"));
 
         // Only create default rules if table is empty
         if ($rule_count > 0) {
@@ -697,7 +697,7 @@ class Installer {
 
         if (empty($settings['recurring_default_rule_id'])) {
             $default_rule_id = $wpdb->get_var("SELECT Id FROM {$rules_table} WHERE IsActive = 1 ORDER BY Id ASC LIMIT 1");
-            $settings['recurring_default_rule_id'] = intval($default_rule_id ?: 0);
+            $settings['recurring_default_rule_id'] = \intval($default_rule_id ?: 0);
             update_option('myvh_invoicing_settings', $settings);
         }
     }

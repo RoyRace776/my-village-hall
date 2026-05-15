@@ -9,14 +9,14 @@ abstract class RequestMapperBase {
      * Get an integer value from array data.
      */
     protected static function as_int(array $data, string $key, int $default = 0): int {
-        return intval($data[$key] ?? $default);
+        return \intval($data[$key] ?? $default);
     }
 
     /**
      * Get a float value from array data.
      */
     protected static function as_float(array $data, string $key, float $default = 0.0): float {
-        return floatval($data[$key] ?? $default);
+        return \floatval($data[$key] ?? $default);
     }
 
     /**

@@ -50,7 +50,7 @@ class SingleBookingAutoInvoicing {
         }
 
         $active_rules = $this->get_active_rules_by_id();
-        $default_rule_id = intval(myvh_setting('invoicing.single_default_rule_id', 0));
+        $default_rule_id = \intval(myvh_setting('invoicing.single_default_rule_id', 0));
 
         $organisation_override_bookings = [];
         $remaining_after_organisation = [];
@@ -107,14 +107,14 @@ class SingleBookingAutoInvoicing {
             $now = new DateTime();
             $interval = $booking_date->diff($now);
 
-            return $interval->invert === 0 || ($interval->invert === 1 && $interval->days <= intval($rule['trigger_offset_days'] ?? 0));
+            return $interval->invert === 0 || ($interval->invert === 1 && $interval->days <= \intval($rule['trigger_offset_days'] ?? 0));
         }
         if (($rule['trigger_timing'] ?? 'confirmation') === 'days_after_booking_date') {
             $booking_date = new DateTime($booking['StartDate']);
             $now = new DateTime();
             $interval = $booking_date->diff($now);
 
-            return $interval->invert === 0 && $interval->days >= intval($rule['trigger_offset_days'] ?? 0);
+            return $interval->invert === 0 && $interval->days >= \intval($rule['trigger_offset_days'] ?? 0);
         }
 
         return false;
@@ -204,14 +204,14 @@ class SingleBookingAutoInvoicing {
             return [];
         }
 
-        $booking_ids = array_map(fn($b) => intval($b['Id'] ?? 0), $actual_bookings);
+        $booking_ids = array_map(fn($b) => \intval($b['Id'] ?? 0), $actual_bookings);
         $invoice_ids = $this->invoice_generator_service->generate_invoices_from_bookings(
             $booking_ids,
             [
                 'group_by' => $rule['group_by'] ?? 'per_booking',
                 'rule_scope' => 'single',
-                'rule_id' => intval($rule['id'] ?? 0),
-                'due_date_offset_days' => intval($rule['due_date_offset_days'] ?? 30),
+                'rule_id' => \intval($rule['id'] ?? 0),
+                'due_date_offset_days' => \intval($rule['due_date_offset_days'] ?? 30),
             ]
         );
 
@@ -224,7 +224,7 @@ class SingleBookingAutoInvoicing {
     }
 
     protected function booking_has_non_default_organisation_rule(array $booking, array $active_rules, int $default_rule_id): bool {
-        $rule_id = intval($booking['OrganisationSingleBookingAutoInvoiceRuleId'] ?? 0);
+        $rule_id = \intval($booking['OrganisationSingleBookingAutoInvoiceRuleId'] ?? 0);
 
         if ($rule_id <= 0 || !isset($active_rules[$rule_id])) {
             return false;
@@ -234,7 +234,7 @@ class SingleBookingAutoInvoicing {
     }
 
     protected function booking_has_non_default_customer_rule(array $booking, array $active_rules, int $default_rule_id): bool {
-        $rule_id = intval($booking['CustomerSingleBookingAutoInvoiceRuleId'] ?? 0);
+        $rule_id = \intval($booking['CustomerSingleBookingAutoInvoiceRuleId'] ?? 0);
 
         if ($rule_id <= 0 || !isset($active_rules[$rule_id])) {
             return false;
@@ -244,7 +244,7 @@ class SingleBookingAutoInvoicing {
     }
 
     protected function resolve_organisation_rule_for_booking(array $booking, array $active_rules, int $default_rule_id): array {
-        $rule_id = intval($booking['OrganisationSingleBookingAutoInvoiceRuleId'] ?? 0);
+        $rule_id = \intval($booking['OrganisationSingleBookingAutoInvoiceRuleId'] ?? 0);
         if ($rule_id > 0 && isset($active_rules[$rule_id])) {
             return $active_rules[$rule_id];
         }
@@ -253,7 +253,7 @@ class SingleBookingAutoInvoicing {
     }
 
     protected function resolve_customer_rule_for_booking(array $booking, array $active_rules, int $default_rule_id): array {
-        $rule_id = intval($booking['CustomerSingleBookingAutoInvoiceRuleId'] ?? 0);
+        $rule_id = \intval($booking['CustomerSingleBookingAutoInvoiceRuleId'] ?? 0);
         if ($rule_id > 0 && isset($active_rules[$rule_id])) {
             return $active_rules[$rule_id];
         }
@@ -274,9 +274,9 @@ class SingleBookingAutoInvoicing {
             'id' => 0,
             'enabled' => (bool) myvh_setting('invoicing.single_enabled', false),
             'trigger_timing' => $this->normalize_key(myvh_setting('invoicing.single_trigger_timing', 'confirmation')),
-            'trigger_offset_days' => max(0, intval(myvh_setting('invoicing.single_trigger_offset_days', 0))),
+            'trigger_offset_days' => max(0, \intval(myvh_setting('invoicing.single_trigger_offset_days', 0))),
             'group_by' => $this->normalize_key(myvh_setting('invoicing.single_group_by', 'per_booking')),
-            'due_date_offset_days' => max(0, intval(myvh_setting('invoicing.single_due_date_offset_days', 30))),
+            'due_date_offset_days' => max(0, \intval(myvh_setting('invoicing.single_due_date_offset_days', 30))),
         ];
     }
 
@@ -311,7 +311,7 @@ class SingleBookingAutoInvoicing {
         $indexed = [];
 
         foreach ($bookings as $booking) {
-            $booking_id = intval($booking['Id'] ?? 0);
+            $booking_id = \intval($booking['Id'] ?? 0);
             if ($booking_id <= 0) {
                 continue;
             }
@@ -324,12 +324,12 @@ class SingleBookingAutoInvoicing {
 
     protected function map_rule_record(array $rule): array {
         return [
-            'id' => intval($rule['Id'] ?? 0),
+            'id' => \intval($rule['Id'] ?? 0),
             'enabled' => !empty($rule['IsActive']),
             'trigger_timing' => $this->normalize_key($rule['TriggerTiming'] ?? 'confirmation'),
-            'trigger_offset_days' => max(0, intval($rule['TriggerOffsetDays'] ?? 0)),
+            'trigger_offset_days' => max(0, \intval($rule['TriggerOffsetDays'] ?? 0)),
             'group_by' => $this->normalize_key($rule['GroupBy'] ?? 'per_booking'),
-            'due_date_offset_days' => max(0, intval($rule['DueDateOffsetDays'] ?? 30)),
+            'due_date_offset_days' => max(0, \intval($rule['DueDateOffsetDays'] ?? 30)),
         ];
     }
 

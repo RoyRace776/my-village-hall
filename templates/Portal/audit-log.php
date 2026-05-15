@@ -41,7 +41,7 @@ $rows = isset($rows) && is_array($rows) ? $rows : [];
                 <?php else: ?>
                     <?php foreach ($rows as $row): ?>
                         <?php
-                        $actor_user_id = intval($row['ActorUserId'] ?? 0);
+                        $actor_user_id = \intval($row['ActorUserId'] ?? 0);
                         $actor_display = $actor_user_id > 0 ? '#' . $actor_user_id : 'System';
                         $summary = !empty($row['SummaryArray']) ? wp_json_encode($row['SummaryArray']) : '';
                         ?>

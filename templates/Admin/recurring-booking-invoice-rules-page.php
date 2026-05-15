@@ -80,11 +80,11 @@ $rules = $rule_repository->get_all_rules();
                     <?php foreach ($rules as $index => $rule): ?>
                         <tr class="myvh-rule-row">
                             <td>
-                                <input type="hidden" name="rules[<?php echo intval($index); ?>][id]" value="<?php echo intval($rule['Id']); ?>">
-                                <input type="text" name="rules[<?php echo intval($index); ?>][name]" class="regular-text" value="<?php echo esc_attr($rule['Name'] ?? ''); ?>">
+                                <input type="hidden" name="rules[<?php echo \intval($index); ?>][id]" value="<?php echo \intval($rule['Id']); ?>">
+                                <input type="text" name="rules[<?php echo \intval($index); ?>][name]" class="regular-text" value="<?php echo esc_attr($rule['Name'] ?? ''); ?>">
                             </td>
                             <td>
-                                <select name="rules[<?php echo intval($index); ?>][trigger_timing]" style="min-width: 190px;">
+                                <select name="rules[<?php echo \intval($index); ?>][trigger_timing]" style="min-width: 190px;">
                                     <option value="start_of_month" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'start_of_month'); ?>>Start of month</option>
                                     <option value="start_of_quarter" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'start_of_quarter'); ?>>Start of quarter</option>
                                     <option value="start_of_week" <?php selected((string) ($rule['TriggerTiming'] ?? ''), 'start_of_week'); ?>>Start of week</option>
@@ -93,21 +93,21 @@ $rules = $rule_repository->get_all_rules();
                                 </select>
                             </td>
                             <td>
-                                <select name="rules[<?php echo intval($index); ?>][trigger_direction]" style="min-width: 150px;">
+                                <select name="rules[<?php echo \intval($index); ?>][trigger_direction]" style="min-width: 150px;">
                                     <option value="in_advance" <?php selected((string) ($rule['TriggerDirection'] ?? ''), 'in_advance'); ?>>In advance</option>
                                     <option value="in_arrears" <?php selected((string) ($rule['TriggerDirection'] ?? ''), 'in_arrears'); ?>>In arrears</option>
                                 </select>
                             </td>
-                            <td><input type="number" name="rules[<?php echo intval($index); ?>][trigger_period_count]" value="<?php echo intval($rule['TriggerOffsetDays'] ?? 0); ?>" min="0" max="99" class="small-text" style="width: 46px;"></td>
+                            <td><input type="number" name="rules[<?php echo \intval($index); ?>][trigger_period_count]" value="<?php echo \intval($rule['TriggerOffsetDays'] ?? 0); ?>" min="0" max="99" class="small-text" style="width: 46px;"></td>
                             <td>
-                                <select name="rules[<?php echo intval($index); ?>][group_by]" style="min-width: 160px;">
+                                <select name="rules[<?php echo \intval($index); ?>][group_by]" style="min-width: 160px;">
                                     <option value="per_booking" <?php selected((string) ($rule['GroupBy'] ?? ''), 'per_booking'); ?>>One invoice per booking</option>
                                     <option value="by_customer" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_customer'); ?>>Group bookings by customer</option>
                                     <option value="by_organisation" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_organisation'); ?>>Group bookings by organisation</option>
                                 </select>
                             </td>
-                            <td><input type="number" name="rules[<?php echo intval($index); ?>][due_date_offset_days]" value="<?php echo intval($rule['DueDateOffsetDays'] ?? 30); ?>" min="0" class="small-text"></td>
-                            <td><input type="checkbox" name="rules[<?php echo intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
+                            <td><input type="number" name="rules[<?php echo \intval($index); ?>][due_date_offset_days]" value="<?php echo \intval($rule['DueDateOffsetDays'] ?? 30); ?>" min="0" class="small-text"></td>
+                            <td><input type="checkbox" name="rules[<?php echo \intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
                             <td><button type="button" class="button button-link-delete myvh-remove-rule-row"><?php esc_html_e('Remove', 'my-village-hall'); ?></button></td>
                         </tr>
                     <?php endforeach; ?>

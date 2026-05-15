@@ -94,7 +94,7 @@ class RoomVisibilityService {
             }
 
             // Private rooms: only visible if user is admin for that venue
-            $venue_id = !empty($room['VenueId']) ? intval($room['VenueId']) : 0;
+            $venue_id = !empty($room['VenueId']) ? \intval($room['VenueId']) : 0;
             return in_array($venue_id, $admin_venues, true);
         });
     }
@@ -138,7 +138,7 @@ class RoomVisibilityService {
                 ARRAY_A
             );
             return array_map(function ($row) {
-                return intval($row['Id']);
+                return \intval($row['Id']);
             }, $results ?? []);
         }
 

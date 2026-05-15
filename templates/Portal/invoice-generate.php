@@ -19,9 +19,9 @@ $recurring_uninvoiced_bookings = array_values(array_filter(
 
 $recurring_booking_groups = [];
 foreach ($recurring_uninvoiced_bookings as $booking) {
-    $pattern_id = intval($booking['RecurringPatternId'] ?? 0);
+    $pattern_id = \intval($booking['RecurringPatternId'] ?? 0);
     if ($pattern_id <= 0) {
-        $pattern_id = intval($booking['Id'] ?? 0);
+        $pattern_id = \intval($booking['Id'] ?? 0);
     }
 
     if (!isset($recurring_booking_groups[$pattern_id])) {
@@ -40,7 +40,7 @@ foreach ($recurring_booking_groups as &$group) {
         $right_timestamp = strtotime((string) ($right['StartDate'] ?? ''));
 
         if ($left_timestamp === $right_timestamp) {
-            return intval($left['Id'] ?? 0) <=> intval($right['Id'] ?? 0);
+            return \intval($left['Id'] ?? 0) <=> \intval($right['Id'] ?? 0);
         }
 
         if (false === $left_timestamp) {
@@ -64,7 +64,7 @@ usort($recurring_booking_groups, static function (array $left, array $right): in
     $right_timestamp = strtotime((string) (($right['first_booking']['StartDate'] ?? '')));
 
     if ($left_timestamp === $right_timestamp) {
-        return intval($left['pattern_id'] ?? 0) <=> intval($right['pattern_id'] ?? 0);
+        return \intval($left['pattern_id'] ?? 0) <=> \intval($right['pattern_id'] ?? 0);
     }
 
     if (false === $left_timestamp) {
@@ -145,8 +145,8 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
             </div>
 
             <div class="myvh-settings-tabs myvh-invoices-tabs myvh-generate-subtabs" role="tablist" aria-label="Manual invoice booking types">
-                <button type="button" class="myvh-settings-tab myvh-booking-type-tab is-active" role="tab" aria-selected="true" data-booking-type-tab="single">Single Bookings (<?php echo intval(count($single_uninvoiced_bookings)); ?>)</button>
-                <button type="button" class="myvh-settings-tab myvh-booking-type-tab" role="tab" aria-selected="false" data-booking-type-tab="recurring">Recurring Bookings (<?php echo intval(count($recurring_uninvoiced_bookings)); ?>)</button>
+                <button type="button" class="myvh-settings-tab myvh-booking-type-tab is-active" role="tab" aria-selected="true" data-booking-type-tab="single">Single Bookings (<?php echo \intval(count($single_uninvoiced_bookings)); ?>)</button>
+                <button type="button" class="myvh-settings-tab myvh-booking-type-tab" role="tab" aria-selected="false" data-booking-type-tab="recurring">Recurring Bookings (<?php echo \intval(count($recurring_uninvoiced_bookings)); ?>)</button>
             </div>
 
             <?php if (!empty($uninvoiced_bookings)): ?>
@@ -180,9 +180,9 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                                     <?php foreach ($single_uninvoiced_bookings as $booking): ?>
                                         <tr>
                                             <td>
-                                                <input type="checkbox" name="booking_ids[]" value="<?php echo intval($booking['Id']); ?>" class="myvh-uninvoiced-checkbox" data-booking-type="single">
+                                                <input type="checkbox" name="booking_ids[]" value="<?php echo \intval($booking['Id']); ?>" class="myvh-uninvoiced-checkbox" data-booking-type="single">
                                             </td>
-                                            <td>#<?php echo intval($booking['Id']); ?></td>
+                                            <td>#<?php echo \intval($booking['Id']); ?></td>
                                             <td><?php echo esc_html($booking['CustomerName'] ?? 'Unknown'); ?></td>
                                             <td><?php echo esc_html($booking['OrganisationName'] ?? '-'); ?></td>
                                             <td><?php echo esc_html($booking['Description'] ?? '-'); ?></td>
@@ -230,7 +230,7 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                                 </thead>
                                 <tbody>
                                     <?php foreach ($recurring_booking_groups as $group): ?>
-                                        <?php $group_id = intval($group['pattern_id']); ?>
+                                        <?php $group_id = \intval($group['pattern_id']); ?>
                                         <?php $first_booking = $group['first_booking'] ?? []; ?>
                                         <tr class="myvh-recurring-group-row">
                                             <td></td>
@@ -255,10 +255,10 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                                         <?php foreach ($group['bookings'] as $booking): ?>
                                             <tr class="myvh-recurring-group-child" data-recurring-group-child="<?php echo esc_attr((string) $group_id); ?>" hidden>
                                                 <td>
-                                                    <input type="checkbox" name="booking_ids[]" value="<?php echo intval($booking['Id']); ?>" class="myvh-uninvoiced-checkbox" data-booking-type="recurring" disabled>
+                                                    <input type="checkbox" name="booking_ids[]" value="<?php echo \intval($booking['Id']); ?>" class="myvh-uninvoiced-checkbox" data-booking-type="recurring" disabled>
                                                 </td>
-                                                <td>#<?php echo intval($booking['Id']); ?></td>
-                                                <td>#<?php echo intval($booking['RecurringPatternId'] ?? 0); ?></td>
+                                                <td>#<?php echo \intval($booking['Id']); ?></td>
+                                                <td>#<?php echo \intval($booking['RecurringPatternId'] ?? 0); ?></td>
                                                 <td><?php echo esc_html($booking['CustomerName'] ?? 'Unknown'); ?></td>
                                                 <td><?php echo esc_html($booking['OrganisationName'] ?? '-'); ?></td>
                                                 <td><?php echo esc_html($booking['Description'] ?? '-'); ?></td>
@@ -327,8 +327,8 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                             <tr>
                                 <td><strong><?php echo esc_html($customer['CustomerName'] ?? 'Unknown'); ?></strong></td>
                                 <td><?php echo esc_html($customer['CustomerEmail'] ?? '-'); ?></td>
-                                <td><?php echo intval($customer['UninvoicedCount']); ?></td>
-                                <td><button type="button" class="myvh-drilldown-btn myvh-generate-drilldown-btn" data-customer-id="<?php echo intval($customer['CustomerId']); ?>">View Bookings</button></td>
+                                <td><?php echo \intval($customer['UninvoicedCount']); ?></td>
+                                <td><button type="button" class="myvh-drilldown-btn myvh-generate-drilldown-btn" data-customer-id="<?php echo \intval($customer['CustomerId']); ?>">View Bookings</button></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -364,8 +364,8 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                         <?php foreach ($uninvoiced_by_organisation as $org): ?>
                             <tr>
                                 <td><strong><?php echo esc_html($org['OrganisationName'] ?? 'Unknown'); ?></strong></td>
-                                <td><?php echo intval($org['UninvoicedCount']); ?></td>
-                                <td><button type="button" class="myvh-drilldown-btn myvh-generate-drilldown-btn" data-organisation-id="<?php echo intval($org['OrganisationId']); ?>">View Bookings</button></td>
+                                <td><?php echo \intval($org['UninvoicedCount']); ?></td>
+                                <td><button type="button" class="myvh-drilldown-btn myvh-generate-drilldown-btn" data-organisation-id="<?php echo \intval($org['OrganisationId']); ?>">View Bookings</button></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

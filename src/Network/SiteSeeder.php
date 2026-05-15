@@ -146,7 +146,7 @@ class SiteSeeder {
             new RoomRepository($wpdb),
             new RoomHoursRepository($wpdb),
             $this->make_availability_service(),
-            new RoomDepositRepository($wpdb)
+            new RoomDepositRepository()
         );
     }
 
@@ -167,7 +167,6 @@ class SiteSeeder {
         global $wpdb;
         return new RoomRateService(
             new RoomRateRepository($wpdb),
-            new CustomerRepository($wpdb)
         );
     }
 

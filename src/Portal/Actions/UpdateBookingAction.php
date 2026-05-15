@@ -29,7 +29,7 @@ class UpdateBookingAction {
             throw new Exception('Customer profile not found');
         }
 
-        $booking_id = intval($input['booking_id'] ?? 0);
+        $booking_id = \intval($input['booking_id'] ?? 0);
         if ($booking_id <= 0) {
             throw new Exception('Booking ID is required');
         }
@@ -66,8 +66,8 @@ class UpdateBookingAction {
             'status'      => sanitize_text_field($booking['Status'] ?? ''),
             'public'      => !empty($booking['Public']) ? 1 : 0,
             'no_invoice_required' => $is_admin
-                ? intval($input['no_invoice_required'] ?? ($booking['NoInvoiceRequired'] ?? 0))
-                : intval($booking['NoInvoiceRequired'] ?? 0),
+                ? \intval($input['no_invoice_required'] ?? ($booking['NoInvoiceRequired'] ?? 0))
+                : \intval($booking['NoInvoiceRequired'] ?? 0),
         ]);
 
         if (is_wp_error($result)) {

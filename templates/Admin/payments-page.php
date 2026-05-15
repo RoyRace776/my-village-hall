@@ -15,7 +15,7 @@ use MYVH\Payments\PaymentService;
 $invoice_service = $myvh_container->get(InvoiceService::class);
 $payment_service = $myvh_container->get(PaymentService::class);
 
-$selected_invoice_id = isset($_GET['invoice_id']) ? intval($_GET['invoice_id']) : 0;
+$selected_invoice_id = isset($_GET['invoice_id']) ? \intval($_GET['invoice_id']) : 0;
 $payments = $payment_service->get_payments($selected_invoice_id);
 $invoices = $invoice_service->get_with_customers() ?: [];
 $invoices = array_values(array_filter($invoices, static function (array $invoice): bool {
@@ -57,7 +57,7 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                         <select id="myvh-payment-filter-invoice" name="invoice_id" class="regular-text">
                             <option value="0"><?php esc_html_e('All invoices', 'my-village-hall'); ?></option>
                             <?php foreach ($invoices as $invoice): ?>
-                                <option value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>" <?php selected($selected_invoice_id === intval($invoice['Id'] ?? 0)); ?>>
+                                <option value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>" <?php selected($selected_invoice_id === \intval($invoice['Id'] ?? 0)); ?>>
                                     <?php echo esc_html(($invoice['InvoiceNumber'] ?? '') . ' - ' . ($invoice['CustomerName'] ?? __('Unknown', 'my-village-hall'))); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -91,7 +91,7 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                             <select id="myvh-payment-invoice" name="invoice_id" class="regular-text" required>
                                 <option value=""><?php esc_html_e('Select an invoice', 'my-village-hall'); ?></option>
                                 <?php foreach ($invoices as $invoice): ?>
-                                    <option value="<?php echo esc_attr((string) intval($invoice['Id'] ?? 0)); ?>">
+                                    <option value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
                                         <?php echo esc_html(($invoice['InvoiceNumber'] ?? '') . ' - ' . ($invoice['CustomerName'] ?? __('Unknown', 'my-village-hall'))); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -170,7 +170,7 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                             </tr>
                         <?php else: ?>
                             <?php foreach ($payments as $payment): ?>
-                                <?php $invoice_id = intval($payment['InvoiceId'] ?? 0); ?>
+                                <?php $invoice_id = \intval($payment['InvoiceId'] ?? 0); ?>
                                 <tr>
                                     <td><?php echo esc_html(date('j M Y', strtotime((string) ($payment['PaymentDate'] ?? 'now')))); ?></td>
                                     <td>
@@ -186,7 +186,7 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                                     <td>
                                         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('Delete this payment?', 'my-village-hall')); ?>');">
                                             <input type="hidden" name="action" value="myvh_delete_payment">
-                                            <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) intval($payment['Id'] ?? 0)); ?>">
+                                            <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) \intval($payment['Id'] ?? 0)); ?>">
                                             <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) $invoice_id); ?>">
                                             <input type="hidden" name="redirect_page" value="myvh-payments">
                                             <?php wp_nonce_field('myvh_delete_payment'); ?>

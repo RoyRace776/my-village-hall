@@ -91,9 +91,9 @@ class QuoteBookingActionTest extends UnitTestCase {
         $this->pricing_service->shouldReceive('get_charge_snapshot_for_data')
             ->once()
             ->with(\Mockery::on(static function (array $payload): bool {
-                return intval($payload['room_id'] ?? 0) === 4
-                    && intval($payload['customer_id'] ?? 0) === 9
-                    && intval($payload['organisation_id'] ?? 0) === 12
+                return \intval($payload['room_id'] ?? 0) === 4
+                    && \intval($payload['customer_id'] ?? 0) === 9
+                    && \intval($payload['organisation_id'] ?? 0) === 12
                     && ($payload['start_date'] ?? '') === '2026-05-10'
                     && ($payload['start_time'] ?? '') === '09:00:00'
                     && ($payload['end_date'] ?? '') === '2026-05-10'
@@ -136,8 +136,8 @@ class QuoteBookingActionTest extends UnitTestCase {
         $this->pricing_service->shouldReceive('get_charge_snapshot_for_data')
             ->once()
             ->with(\Mockery::on(static function (array $payload): bool {
-                return intval($payload['customer_id'] ?? 0) === 77
-                    && intval($payload['organisation_id'] ?? 0) === 88;
+                return \intval($payload['customer_id'] ?? 0) === 77
+                    && \intval($payload['organisation_id'] ?? 0) === 88;
             }))
             ->andReturnUsing(static fn(): array => [
                 'TotalAmount' => 40.00,

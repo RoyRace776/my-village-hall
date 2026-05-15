@@ -71,7 +71,7 @@ class PortalBillingPageRenderer {
                 }));
             }
         } elseif ($has_customer) {
-            $customer_id = intval($customer['Id']);
+            $customer_id = \intval($customer['Id']);
             $invoices = $this->invoice_service->get_for_portal(
                 $customer_id,
                 !empty($selected_statuses) ? $selected_statuses : [],
@@ -90,7 +90,7 @@ class PortalBillingPageRenderer {
     }
 
     public function get_unpaid_invoice_summary(array $customer, int $limit = 6): array {
-        $customer_id = intval($customer['Id'] ?? 0);
+        $customer_id = \intval($customer['Id'] ?? 0);
         if ($customer_id <= 0) {
             return [];
         }
@@ -102,13 +102,13 @@ class PortalBillingPageRenderer {
     }
 
     public function render_invoice_view(array $customer, bool $is_client_admin): void {
-        $invoice_id = intval($_GET['invoice_id'] ?? 0);
+        $invoice_id = \intval($_GET['invoice_id'] ?? 0);
         $invoice = null;
         $invoice_items = [];
         $available_statuses = $this->invoice_service->get_valid_statuses();
 
         if ($invoice_id > 0) {
-            $customer_id = !empty($customer['Id']) ? intval($customer['Id']) : 0;
+            $customer_id = !empty($customer['Id']) ? \intval($customer['Id']) : 0;
             $invoice = $this->invoice_service->get_detail_for_portal($invoice_id, $customer_id, $is_client_admin);
             $invoice_items = $invoice['Items'] ?? [];
         }
@@ -121,7 +121,7 @@ class PortalBillingPageRenderer {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $selected_invoice_id = intval($_GET['invoice_id'] ?? 0);
+        $selected_invoice_id = \intval($_GET['invoice_id'] ?? 0);
         $payment_date_range = $this->get_payment_date_range();
         $selected_start_date = $payment_date_range['start_date'];
         $selected_end_date = $payment_date_range['end_date'];

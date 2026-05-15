@@ -74,13 +74,13 @@ class BookingValidator
             return new WP_Error('validation', __('Bookings must start and end on 15 minute intervals', 'my-village-hall'));
         }
 
-        $customer_id = intval($data['customer_id']);
-        $organisation_id = !empty($data['organisation_id']) ? intval($data['organisation_id']) : 0;
+        $customer_id = \intval($data['customer_id']);
+        $organisation_id = !empty($data['organisation_id']) ? \intval($data['organisation_id']) : 0;
 
         if ($organisation_id > 0) {
             $customer_organisations = $this->customer_repo->get_organisations_for_customer($customer_id);
             $allowed_organisation_ids = array_map(static function ($org) {
-                return intval($org['Id'] ?? 0);
+                return \intval($org['Id'] ?? 0);
             }, $customer_organisations ?: []);
 
             if (!in_array($organisation_id, $allowed_organisation_ids, true)) {
@@ -141,7 +141,7 @@ class BookingValidator
 
         // Opening hours rule (legacy, can be replaced by room_rules->within_opening_hours if desired)
         $within_opening_hours = $this->availability->booking_within_opening_hours(
-            intval($data['room_id']),
+            \intval($data['room_id']),
             $start_time,
             $end_time,
             $start_date,
@@ -176,12 +176,12 @@ class BookingValidator
             && in_array($requested_status, self::STATUSES_REQUIRING_SPACE_ON_REACTIVATION, true);
 
         $is_available = $this->availability->room_is_available(
-            intval($data['room_id']),
+            \intval($data['room_id']),
             $start_date,
             $start_time,
             $end_time,
             $end_date,
-            !empty($data['booking_id']) ? intval($data['booking_id']) : null
+            !empty($data['booking_id']) ? \intval($data['booking_id']) : null
         );
         if (!$is_available) {
             if ($is_cancelled_reactivation) {

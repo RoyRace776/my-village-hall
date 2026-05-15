@@ -83,7 +83,7 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
         <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Invoice deleted.', 'my-village-hall'); ?></p></div>
     <?php endif; ?>
     <?php if (isset($_GET['generated'])): ?>
-        <div class="notice notice-success is-dismissible"><p><?php echo esc_html(sprintf(__('Generated %d invoice(s).', 'my-village-hall'), intval($_GET['generated']))); ?></p></div>
+        <div class="notice notice-success is-dismissible"><p><?php echo esc_html(sprintf(__('Generated %d invoice(s).', 'my-village-hall'), \intval($_GET['generated']))); ?></p></div>
     <?php endif; ?>
     <?php if (isset($_GET['emailed'])): ?>
         <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Invoice emailed and marked as sent.', 'my-village-hall'); ?></p></div>
@@ -175,7 +175,7 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                     </tr>
                 <?php else: ?>
                     <?php foreach ($invoices as $invoice): ?>
-                        <?php $view_url = admin_url('admin.php?page=myvh-invoices&view=' . intval($invoice['Id'])); ?>
+                        <?php $view_url = admin_url('admin.php?page=myvh-invoices&view=' . \intval($invoice['Id'])); ?>
                         <tr>
                             <td>
                                 <strong><a href="<?php echo esc_url($view_url); ?>"><?php echo esc_html($invoice['InvoiceNumber'] ?? ''); ?></a></strong><br>
@@ -203,18 +203,18 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                             </td>
                             <td>
                                 <a href="<?php echo esc_url($view_url); ?>"><?php esc_html_e('View', 'my-village-hall'); ?></a><br>
-                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_view_invoice_pdf&id=' . intval($invoice['Id']) . '&redirect_page=myvh-invoices'), 'myvh_view_invoice_pdf')); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('View PDF', 'my-village-hall'); ?></a><br>
-                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_email_invoice&id=' . intval($invoice['Id']) . '&redirect_page=myvh-invoices'), 'myvh_email_invoice')); ?>"><?php esc_html_e('Email Invoice', 'my-village-hall'); ?></a><br>
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_view_invoice_pdf&id=' . \intval($invoice['Id']) . '&redirect_page=myvh-invoices'), 'myvh_view_invoice_pdf')); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('View PDF', 'my-village-hall'); ?></a><br>
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_email_invoice&id=' . \intval($invoice['Id']) . '&redirect_page=myvh-invoices'), 'myvh_email_invoice')); ?>"><?php esc_html_e('Email Invoice', 'my-village-hall'); ?></a><br>
                                 <?php if (($invoice['Status'] ?? '') !== 'cancelled'): ?>
-                                <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-payments&invoice_id=' . intval($invoice['Id']))); ?>"><?php esc_html_e('Payments', 'my-village-hall'); ?></a><br>
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=myvh-payments&invoice_id=' . \intval($invoice['Id']))); ?>"><?php esc_html_e('Payments', 'my-village-hall'); ?></a><br>
                                 <?php endif; ?>
                                 <?php if (($invoice['Status'] ?? '') === 'draft'): ?>
-                                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_update_invoice_status&id=' . intval($invoice['Id']) . '&status=sent&redirect_page=myvh-invoices'), 'myvh_update_invoice_status')); ?>">
+                                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_update_invoice_status&id=' . \intval($invoice['Id']) . '&status=sent&redirect_page=myvh-invoices'), 'myvh_update_invoice_status')); ?>">
                                         <?php esc_html_e('Mark Sent', 'my-village-hall'); ?>
                                     </a><br>
                                 <?php endif; ?>
                                 <?php if (($invoice['Status'] ?? '') !== 'cancelled' && (float) ($invoice['AmountPaid'] ?? 0) <= 0): ?>
-                                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_update_invoice_status&id=' . intval($invoice['Id']) . '&status=cancelled&redirect_page=myvh-invoices'), 'myvh_update_invoice_status')); ?>">
+                                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=myvh_update_invoice_status&id=' . \intval($invoice['Id']) . '&status=cancelled&redirect_page=myvh-invoices'), 'myvh_update_invoice_status')); ?>">
                                         <?php esc_html_e('Cancel', 'my-village-hall'); ?>
                                     </a>
                                 <?php elseif ((float) ($invoice['AmountPaid'] ?? 0) > 0): ?>
@@ -232,17 +232,17 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
             function filterInvoicesByStatus() {
                 const checkedStatuses = Array.from(document.querySelectorAll('.myvh-invoice-status-filter:checked')).map(cb => cb.value);
                 const rows = document.querySelectorAll('table.wp-list-table tbody tr');
-                
+
                 rows.forEach(row => {
                     // Skip the "no invoices" row
                     if (row.textContent.includes('No invoices')) {
                         return;
                     }
-                    
+
                     // Get the status from the status cell (7th column)
                     const statusCell = row.querySelector('td:nth-child(7)');
                     if (!statusCell) return;
-                    
+
                     const statusText = statusCell.textContent.trim().toLowerCase();
                     const isVisible = checkedStatuses.some(status => {
                         // Map display statuses to actual statuses
@@ -256,11 +256,11 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                         };
                         return statusText === statusMap[status];
                     });
-                    
+
                     row.style.display = isVisible ? '' : 'none';
                 });
             }
-            
+
             // Add event listeners to checkboxes
             document.querySelectorAll('.myvh-invoice-status-filter').forEach(checkbox => {
                 checkbox.addEventListener('change', filterInvoicesByStatus);

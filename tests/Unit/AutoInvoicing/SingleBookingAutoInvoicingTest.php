@@ -44,7 +44,7 @@ class SingleBookingAutoInvoicingTest extends UnitTestCase
             public array $applied_rule_ids = [];
 
             protected function create_single_invoices_for_rule(array $bookings, array $rule): array {
-                $rule_id = intval($rule['id'] ?? 0);
+                $rule_id = \intval($rule['id'] ?? 0);
                 $this->applied_rule_ids[] = $rule_id;
 
                 return $rule_id > 0 ? [$rule_id] : [];

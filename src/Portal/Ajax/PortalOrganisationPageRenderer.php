@@ -94,7 +94,7 @@ class PortalOrganisationPageRenderer {
             wp_send_json_error('Permission denied', 403);
         }
 
-        $org_type_id = intval($_GET['id'] ?? 0);
+        $org_type_id = \intval($_GET['id'] ?? 0);
         if (!$org_type_id) {
             wp_send_json_error('Invalid organisation type ID', 400);
         }
