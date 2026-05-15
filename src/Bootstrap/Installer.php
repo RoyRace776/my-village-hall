@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '1.4.2';
+    const DB_VERSION = '1.5.0';
 
     /**
      * Entry point: create all tables.
@@ -88,6 +88,10 @@ class Installer {
 
         if (version_compare($from, '1.4.2', '<')) {
             self::upgrade_to_1_4_2($wpdb);
+        }
+
+        if (version_compare($from, '1.5.0', '<')) {
+            self::upgrade_to_1_5_0($wpdb);
         }
     }
 
@@ -152,6 +156,30 @@ class Installer {
 
         // Normalize legacy trigger timings from old rule presets.
         $wpdb->query("UPDATE {$rules_table} SET TriggerTiming = 'start_of_month' WHERE TriggerTiming NOT IN ('start_of_week', 'start_of_month', 'start_of_quarter', 'manual_invoicing', 'treat_as_single_bookings')");
+    }
+
+    private static function upgrade_to_1_5_0(wpdb $wpdb): void {
+        $room_rates_table = $wpdb->prefix . 'myvh_room_rates';
+
+        $has_day_of_week = $wpdb->get_var("SHOW COLUMNS FROM {$room_rates_table} LIKE 'DayOfWeek'");
+        if (empty($has_day_of_week)) {
+            $wpdb->query("ALTER TABLE {$room_rates_table} ADD COLUMN DayOfWeek TINYINT UNSIGNED DEFAULT NULL AFTER OrganisationTypeId");
+        }
+
+        $has_start_time = $wpdb->get_var("SHOW COLUMNS FROM {$room_rates_table} LIKE 'StartTime'");
+        if (empty($has_start_time)) {
+            $wpdb->query("ALTER TABLE {$room_rates_table} ADD COLUMN StartTime TIME DEFAULT NULL AFTER DayOfWeek");
+        }
+
+        $has_end_time = $wpdb->get_var("SHOW COLUMNS FROM {$room_rates_table} LIKE 'EndTime'");
+        if (empty($has_end_time)) {
+            $wpdb->query("ALTER TABLE {$room_rates_table} ADD COLUMN EndTime TIME DEFAULT NULL AFTER StartTime");
+        }
+
+        $has_schedule_index = $wpdb->get_var("SHOW INDEX FROM {$room_rates_table} WHERE Key_name = 'idx_schedule'");
+        if (empty($has_schedule_index)) {
+            $wpdb->query("ALTER TABLE {$room_rates_table} ADD INDEX idx_schedule (DayOfWeek, StartTime, EndTime)");
+        }
     }
 
     // ── Table definitions ─────────────────────────────────────────────────────
@@ -414,6 +442,9 @@ class Installer {
             Id                  INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
             RoomId              INT UNSIGNED   NOT NULL,
             OrganisationTypeId  INT UNSIGNED   DEFAULT NULL,
+            DayOfWeek           TINYINT UNSIGNED DEFAULT NULL,
+            StartTime           TIME           DEFAULT NULL,
+            EndTime             TIME           DEFAULT NULL,
             ChargeType          VARCHAR(12)    NOT NULL,
             Rate                DECIMAL(10,2)  NOT NULL,
             Name                VARCHAR(100)   NOT NULL,
@@ -426,6 +457,7 @@ class Installer {
             Created             TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_room           (RoomId),
             INDEX idx_org_type       (OrganisationTypeId),
+            INDEX idx_schedule       (DayOfWeek, StartTime, EndTime),
             INDEX idx_active         (IsActive),
             INDEX idx_valid_dates    (ValidFrom, ValidTo),
             INDEX idx_priority       (Priority)

@@ -5,6 +5,7 @@ use MYVH\Container\Container;
 use MYVH\Portal\Actions\DeleteBookingAction;
 use MYVH\Portal\Actions\GetBookingAction;
 use MYVH\Portal\Actions\QuoteBookingAction;
+use MYVH\Portal\Actions\TestRoomRateScheduleAction;
 use MYVH\Portal\Actions\UpdateBookingAction;
 use MYVH\Portal\Ajax\PortalAccountAjaxController;
 use MYVH\Portal\Ajax\PortalAdminConfigAjaxController;
@@ -37,6 +38,7 @@ class PortalServiceProvider {
         $container->singleton(PortalShortcode::class);
         $container->singleton(GetBookingAction::class);
         $container->singleton(QuoteBookingAction::class);
+        $container->singleton(TestRoomRateScheduleAction::class);
         $container->singleton(UpdateBookingAction::class);
         $container->singleton(DeleteBookingAction::class);
         $container->singleton(PortalAccountAjaxController::class);

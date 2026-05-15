@@ -1701,6 +1701,47 @@ body .site-main:has(#myvh-portal) {
   outline-offset: 2px;
 }
 
+.myvh-room-rate-add-page .myvh-account-field input[name="start_time"],
+.myvh-room-rate-add-page .myvh-account-field input[name="end_time"],
+.myvh-room-rate-edit-page .myvh-account-field input[name="start_time"],
+.myvh-room-rate-edit-page .myvh-account-field input[name="end_time"],
+.myvh-room-rate-tester-page .myvh-account-field input[name="start_date"],
+.myvh-room-rate-tester-page .myvh-account-field input[name="start_time"],
+.myvh-room-rate-tester-page .myvh-account-field input[name="end_date"],
+.myvh-room-rate-tester-page .myvh-account-field input[name="end_time"],
+.myvh-room-rate-tester-page .myvh-date-time-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+  font-size: .95rem;
+}
+
+.myvh-room-rate-add-page .myvh-account-field input[name="start_time"]::-webkit-datetime-edit,
+.myvh-room-rate-add-page .myvh-account-field input[name="end_time"]::-webkit-datetime-edit,
+.myvh-room-rate-edit-page .myvh-account-field input[name="start_time"]::-webkit-datetime-edit,
+.myvh-room-rate-edit-page .myvh-account-field input[name="end_time"]::-webkit-datetime-edit,
+.myvh-room-rate-tester-page .myvh-account-field input[name="start_date"]::-webkit-datetime-edit,
+.myvh-room-rate-tester-page .myvh-account-field input[name="start_time"]::-webkit-datetime-edit,
+.myvh-room-rate-tester-page .myvh-account-field input[name="end_date"]::-webkit-datetime-edit,
+.myvh-room-rate-tester-page .myvh-account-field input[name="end_time"]::-webkit-datetime-edit {
+  font: inherit;
+}
+
+.myvh-room-rate-add-page .myvh-account-field input[name="start_time"],
+.myvh-room-rate-add-page .myvh-account-field input[name="end_time"],
+.myvh-room-rate-edit-page .myvh-account-field input[name="start_time"],
+.myvh-room-rate-edit-page .myvh-account-field input[name="end_time"],
+.myvh-room-rate-tester-page .myvh-account-field input[name="start_date"],
+.myvh-room-rate-tester-page .myvh-account-field input[name="start_time"],
+.myvh-room-rate-tester-page .myvh-account-field input[name="end_date"],
+.myvh-room-rate-tester-page .myvh-account-field input[name="end_time"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace !important;
+}
+
+.myvh-room-rate-tester-page .myvh-date-time-value {
+  white-space: nowrap;
+}
+
 .myvh-room-toggle {
   display: flex;
   align-items: flex-start;

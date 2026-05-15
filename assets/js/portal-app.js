@@ -314,6 +314,55 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.MyvhFlatpickr?.initWithin(document);
 
+        (function initQuarterHourInputs() {
+            const fields = document.querySelectorAll(
+                '.myvh-room-rate-add-page input[name="start_time"], ' +
+                '.myvh-room-rate-add-page input[name="end_time"], ' +
+                '.myvh-room-rate-edit-page input[name="start_time"], ' +
+                '.myvh-room-rate-edit-page input[name="end_time"], ' +
+                '.myvh-room-rate-tester-page input[name="start_time"], ' +
+                '.myvh-room-rate-tester-page input[name="end_time"]'
+            );
+
+            const isQuarterHour = function(value) {
+                const match = String(value || '').match(/(?:T|^)(\d{2}):(\d{2})(?::(\d{2}))?$/);
+                if (!match) {
+                    return false;
+                }
+
+                const minutes = parseInt(match[2], 10);
+                const seconds = parseInt(match[3] || '0', 10);
+                return minutes % 15 === 0 && seconds === 0;
+            };
+
+            fields.forEach(function(field) {
+                if (!field) {
+                    return;
+                }
+
+                field.setAttribute('step', '900');
+
+                const validate = function() {
+                    const value = String(field.value || '').trim();
+                    if (value === '') {
+                        field.setCustomValidity('');
+                        return;
+                    }
+
+                    if (!isQuarterHour(value)) {
+                        field.setCustomValidity('Please use 15 minute intervals (00, 15, 30, 45).');
+                        return;
+                    }
+
+                    field.setCustomValidity('');
+                };
+
+                field.addEventListener('input', validate);
+                field.addEventListener('change', validate);
+                validate();
+            });
+        })();
+
         // Single booking invoice rules table (portal admin page)
         (function initSingleBookingInvoiceRulesPage() {
             const table = document.getElementById('myvh-single-booking-rules-table');
@@ -1571,6 +1620,71 @@ document.addEventListener("DOMContentLoaded", () => {
         target.style.color = isError ? '#b32d2e' : '#2d5a27';
     }
 
+    function formatMoney(value) {
+        const amount = Number.parseFloat(String(value || 0));
+        if (!Number.isFinite(amount)) {
+            return '£0.00';
+        }
+
+        return '£' + amount.toFixed(2);
+    }
+
+    function renderRoomRateTesterResult(data) {
+        const output = document.getElementById('myvh-room-rate-tester-output');
+        if (!output) {
+            return;
+        }
+
+        const charge = data && data.charge ? data.charge : {};
+        const usedRates = Array.isArray(charge.used_rates) ? charge.used_rates : [];
+        const segments = Array.isArray(charge.segments) ? charge.segments : [];
+
+        const usedRatesMarkup = usedRates.length > 0
+            ? '<ul style="margin:0; padding-left:18px;">' + usedRates.map((usedRate) => {
+                const id = usedRate.room_rate_id || 0;
+                const name = String(usedRate.name || '').trim() || 'Unnamed rate';
+                const scope = String(usedRate.scope || '').trim();
+                const scopeLabel = scope ? ' (' + scope + ')' : '';
+
+                return '<li>' + name + ' [ID ' + id + ']' + scopeLabel + '</li>';
+            }).join('') + '</ul>'
+            : '<p style="margin:0;">No room rate details were returned.</p>';
+
+        const segmentRows = segments.length > 0
+            ? segments.map((segment) => {
+                const segmentName = String(segment.room_rate_name || '').trim() || 'Unnamed rate';
+                const segmentId = segment.room_rate_id || 0;
+                return '' +
+                    '<tr>' +
+                        '<td><span class="myvh-date-time-value">' + (segment.start || '-') + '</span></td>' +
+                        '<td><span class="myvh-date-time-value">' + (segment.end || '-') + '</span></td>' +
+                        '<td>' + segmentName + ' [ID ' + segmentId + ']</td>' +
+                        '<td>' + (segment.scope || '-') + '</td>' +
+                        '<td>' + (segment.charge_type || '-') + '</td>' +
+                        '<td>' + (segment.rate ? formatMoney(segment.rate) : '-') + '</td>' +
+                        '<td>' + (segment.hours || '0') + '</td>' +
+                        '<td>' + formatMoney(segment.subtotal || 0) + '</td>' +
+                    '</tr>';
+            }).join('')
+            : '<tr><td colspan="8">No matching schedule segments were returned.</td></tr>';
+
+        output.innerHTML = '' +
+            '<div class="myvh-card" style="padding:16px; border:1px solid #e0d8cd; background:#fff9f2;">' +
+                '<h3 style="margin-top:0;">Test Result</h3>' +
+                '<p style="margin:0 0 8px;"><strong>Total:</strong> ' + formatMoney(charge.total || 0) + '</p>' +
+                '<p style="margin:0 0 8px;"><strong>Quantity:</strong> ' + (charge.quantity || 0) + ' hour(s)</p>' +
+                '<p style="margin:0 0 8px;"><strong>Unit Price:</strong> ' + formatMoney(charge.unit_price || 0) + '</p>' +
+                '<p style="margin:0 0 12px;"><strong>Validity Date Used:</strong> <span class="myvh-date-time-value">' + (charge.validity_reference_date || '-') + '</span></p>' +
+                '<div style="margin:0 0 12px;"><strong>Room Rate(s) Used:</strong>' + usedRatesMarkup + '</div>' +
+                '<table class="myvh-customer-list-table" style="width:100%;">' +
+                    '<thead><tr><th>Start</th><th>End</th><th>Room Rate</th><th>Scope</th><th>Type</th><th>Rate</th><th>Hours</th><th>Subtotal</th></tr></thead>' +
+                    '<tbody>' + segmentRows + '</tbody>' +
+                '</table>' +
+            '</div>';
+
+        output.style.display = '';
+    }
+
     /**
      * Escape text for safe inline HTML rendering.
      * @param {string} value
@@ -1849,6 +1963,35 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
                 .catch(() => {
                     showMessage(message, 'Unexpected error updating invoice status', true);
+                });
+
+            return;
+        }
+
+        if (form.id === 'myvh-room-rate-tester-form') {
+            e.preventDefault();
+
+            const message = document.getElementById('myvh-room-rate-tester-message');
+            const output = document.getElementById('myvh-room-rate-tester-output');
+            if (output) {
+                output.style.display = 'none';
+                output.innerHTML = '';
+            }
+
+            showMessage(message, 'Testing...', false);
+
+            postPortalForm('myvh_portal_test_room_rate', form)
+                .then(res => {
+                    if (!res.success) {
+                        showMessage(message, res.data, true, 'Test failed');
+                        return;
+                    }
+
+                    showMessage(message, res.message || 'Test complete', false);
+                    renderRoomRateTesterResult(res.data || {});
+                })
+                .catch(() => {
+                    showMessage(message, 'Unexpected error while testing rate schedule', true);
                 });
 
             return;

@@ -145,6 +145,10 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
+.myvh-rate-time-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace !important;
+}
+
 /* Billing sub-section header row inside form-table */
 .myvh-org-billing-fields th[colspan="2"] {
     padding-top: 20px;

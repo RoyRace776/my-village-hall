@@ -89,6 +89,7 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                         <a href="#venues"><span class="myvh-portal-menu-icon dashicons dashicons-location-alt" aria-hidden="true"></span><span>Venues</span></a>
                         <a href="#rooms"><span class="myvh-portal-menu-icon dashicons dashicons-admin-home" aria-hidden="true"></span><span>Rooms</span></a>
                         <a href="#room-rates"><span class="myvh-portal-menu-icon dashicons dashicons-money-alt" aria-hidden="true"></span><span>Room Rates</span></a>
+                        <a href="#room-rate-tester"><span class="myvh-portal-menu-icon dashicons dashicons-calculator" aria-hidden="true"></span><span>Rate Tester</span></a>
                         <a href="#addons"><span class="myvh-portal-menu-icon dashicons dashicons-admin-plugins" aria-hidden="true"></span><span>Add-ons</span></a>
                         <a href="#email-templates"><span class="myvh-portal-menu-icon dashicons dashicons-email-alt" aria-hidden="true"></span><span>Email Templates</span></a>
                         <a href="#settings"><span class="myvh-portal-menu-icon dashicons dashicons-admin-generic" aria-hidden="true"></span><span>Settings</span></a>

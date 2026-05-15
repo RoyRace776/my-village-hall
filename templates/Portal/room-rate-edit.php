@@ -12,6 +12,9 @@ if (!$rate) {
 
 $current_room_id = (int) ($rate['RoomId'] ?? 0);
 $current_org_type_id = (int) ($rate['OrganisationTypeId'] ?? 0);
+$current_day_of_week = isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== '' ? (int) $rate['DayOfWeek'] : null;
+$current_start_time = trim((string) ($rate['StartTime'] ?? ''));
+$current_end_time = trim((string) ($rate['EndTime'] ?? ''));
 ?>
 
 <div class="myvh-dashboard-section myvh-room-rate-edit-page">
@@ -76,6 +79,32 @@ $current_org_type_id = (int) ($rate['OrganisationTypeId'] ?? 0);
                             <option value="<?php echo (int) ($org_type['Id'] ?? 0); ?>" <?php selected($current_org_type_id, (int) ($org_type['Id'] ?? 0)); ?>><?php echo esc_html($org_type['Name'] ?? ''); ?></option>
                         <?php endforeach; ?>
                     </select>
+                </label>
+            </div>
+
+            <div class="myvh-account-grid">
+                <label class="myvh-account-field">
+                    <span>Day of Week</span>
+                    <select name="day_of_week">
+                        <option value="">All days</option>
+                        <option value="0" <?php selected($current_day_of_week, 0); ?>>Sunday</option>
+                        <option value="1" <?php selected($current_day_of_week, 1); ?>>Monday</option>
+                        <option value="2" <?php selected($current_day_of_week, 2); ?>>Tuesday</option>
+                        <option value="3" <?php selected($current_day_of_week, 3); ?>>Wednesday</option>
+                        <option value="4" <?php selected($current_day_of_week, 4); ?>>Thursday</option>
+                        <option value="5" <?php selected($current_day_of_week, 5); ?>>Friday</option>
+                        <option value="6" <?php selected($current_day_of_week, 6); ?>>Saturday</option>
+                    </select>
+                </label>
+
+                <label class="myvh-account-field">
+                    <span>Time Window</span>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" name="start_time" data-myvh-picker="time" data-myvh-minute-increment="15" autocomplete="off" placeholder="HH:MM" value="<?php echo esc_attr($current_start_time !== '' ? substr($current_start_time, 0, 5) : ''); ?>" style="flex:1; min-width:0;">
+                        <span>to</span>
+                        <input type="text" name="end_time" data-myvh-picker="time" data-myvh-minute-increment="15" autocomplete="off" placeholder="HH:MM" value="<?php echo esc_attr($current_end_time !== '' ? substr($current_end_time, 0, 5) : ''); ?>" style="flex:1; min-width:0;">
+                    </div>
+                    <small class="myvh-muted">Leave both blank to apply all day. Overnight windows are not supported.</small>
                 </label>
             </div>
 

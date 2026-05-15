@@ -25,6 +25,17 @@ $org_types         = $org_type_service->get_all();
 $requested_room_id = isset($_GET['room_id']) ? \intval($_GET['room_id']) : 0;
 $selected_room_id = $edit_rate ? \intval($edit_rate['RoomId'] ?? 0) : $requested_room_id;
 $selected_room = null;
+$current_day_of_week = '';
+$current_start_time = '';
+$current_end_time = '';
+
+if ($edit_rate) {
+    $current_day_of_week = isset($edit_rate['DayOfWeek']) && $edit_rate['DayOfWeek'] !== null
+        ? (string) \intval($edit_rate['DayOfWeek'])
+        : '';
+    $current_start_time = isset($edit_rate['StartTime']) && $edit_rate['StartTime'] ? (string) $edit_rate['StartTime'] : '';
+    $current_end_time = isset($edit_rate['EndTime']) && $edit_rate['EndTime'] ? (string) $edit_rate['EndTime'] : '';
+}
 
 if ($selected_room_id > 0) {
     foreach ($rooms as $candidate_room) {
@@ -98,6 +109,7 @@ if ($selected_room_id > 0) {
                             <th><?php _e('Priority', 'my-village-hall'); ?></th>
                             <th><?php _e('Type', 'my-village-hall'); ?></th>
                             <th><?php _e('Org Type', 'my-village-hall'); ?></th>
+                            <th><?php _e('Schedule', 'my-village-hall'); ?></th>
                             <th><?php _e('Status', 'my-village-hall'); ?></th>
                             <th><?php _e('Actions', 'my-village-hall'); ?></th>
                         </tr>
@@ -105,7 +117,7 @@ if ($selected_room_id > 0) {
                     <tbody>
                         <?php if (empty($rates)): ?>
                             <tr>
-                                <td colspan="8"><?php _e('No rates found. Add a rate to get started.', 'my-village-hall'); ?></td>
+                                <td colspan="9"><?php _e('No rates found. Add a rate to get started.', 'my-village-hall'); ?></td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($rates as $rate): ?>
@@ -148,6 +160,40 @@ if ($selected_room_id > 0) {
                                         ?>
                                     </td>
                                     <td><?php echo esc_html($org_type_name); ?></td>
+                                    <td>
+                                        <?php
+                                        $day_labels = [
+                                            '0' => __('Sun', 'my-village-hall'),
+                                            '1' => __('Mon', 'my-village-hall'),
+                                            '2' => __('Tue', 'my-village-hall'),
+                                            '3' => __('Wed', 'my-village-hall'),
+                                            '4' => __('Thu', 'my-village-hall'),
+                                            '5' => __('Fri', 'my-village-hall'),
+                                            '6' => __('Sat', 'my-village-hall'),
+                                        ];
+
+                                        $schedule_day = isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== null
+                                            ? (string) intval($rate['DayOfWeek'])
+                                            : '';
+                                        $schedule_start = isset($rate['StartTime']) && $rate['StartTime'] ? substr((string) $rate['StartTime'], 0, 5) : '';
+                                        $schedule_end = isset($rate['EndTime']) && $rate['EndTime'] ? substr((string) $rate['EndTime'], 0, 5) : '';
+
+                                        if ($schedule_day === '' && $schedule_start === '' && $schedule_end === '') {
+                                            echo '<small>' . esc_html__('All days, all day', 'my-village-hall') . '</small>';
+                                        } else {
+                                            $parts = [];
+                                            $parts[] = $schedule_day !== '' && isset($day_labels[$schedule_day])
+                                                ? $day_labels[$schedule_day]
+                                                : __('All days', 'my-village-hall');
+
+                                            if ($schedule_start !== '' && $schedule_end !== '') {
+                                                $parts[] = $schedule_start . ' - ' . $schedule_end;
+                                            }
+
+                                            echo '<small>' . esc_html(implode(', ', $parts)) . '</small>';
+                                        }
+                                        ?>
+                                    </td>
                                     <td>
                                         <?php if ($rate['IsActive']): ?>
                                             <span style="color: #46b450;">●</span> <?php _e('Active', 'my-village-hall'); ?>
@@ -293,6 +339,35 @@ if ($selected_room_id > 0) {
                                     <?php endforeach; ?>
                                 </select>
                                 <p class="description"><?php _e('Leave blank to apply to all organisation types.', 'my-village-hall'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Day', 'my-village-hall'); ?></th>
+                            <td>
+                                <select name="day_of_week" class="regular-text">
+                                    <option value=""><?php _e('All days', 'my-village-hall'); ?></option>
+                                    <option value="0" <?php selected($current_day_of_week, '0'); ?>><?php _e('Sunday', 'my-village-hall'); ?></option>
+                                    <option value="1" <?php selected($current_day_of_week, '1'); ?>><?php _e('Monday', 'my-village-hall'); ?></option>
+                                    <option value="2" <?php selected($current_day_of_week, '2'); ?>><?php _e('Tuesday', 'my-village-hall'); ?></option>
+                                    <option value="3" <?php selected($current_day_of_week, '3'); ?>><?php _e('Wednesday', 'my-village-hall'); ?></option>
+                                    <option value="4" <?php selected($current_day_of_week, '4'); ?>><?php _e('Thursday', 'my-village-hall'); ?></option>
+                                    <option value="5" <?php selected($current_day_of_week, '5'); ?>><?php _e('Friday', 'my-village-hall'); ?></option>
+                                    <option value="6" <?php selected($current_day_of_week, '6'); ?>><?php _e('Saturday', 'my-village-hall'); ?></option>
+                                </select>
+                                <p class="description"><?php _e('Leave as all days to apply this rate every day.', 'my-village-hall'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><?php _e('Time Window', 'my-village-hall'); ?></th>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:8px; max-width:420px;">
+                                    <input type="text" name="start_time" class="regular-text myvh-rate-time-input" data-myvh-picker="time" data-myvh-minute-increment="15" autocomplete="off" placeholder="HH:MM" value="<?php echo esc_attr($current_start_time !== '' ? substr($current_start_time, 0, 5) : ''); ?>">
+                                    <span><?php _e('to', 'my-village-hall'); ?></span>
+                                    <input type="text" name="end_time" class="regular-text myvh-rate-time-input" data-myvh-picker="time" data-myvh-minute-increment="15" autocomplete="off" placeholder="HH:MM" value="<?php echo esc_attr($current_end_time !== '' ? substr($current_end_time, 0, 5) : ''); ?>">
+                                </div>
+                                <p class="description"><?php _e('Leave both blank to apply all day. Times must be in 15-minute steps.', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
 

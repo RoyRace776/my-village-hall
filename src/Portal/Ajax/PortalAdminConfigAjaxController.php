@@ -7,6 +7,7 @@ use MYVH\Addons\SaveAddonRequest;
 use MYVH\AutoInvoicing\RecurringBookingAutoInvoiceRuleRepository;
 use MYVH\AutoInvoicing\SingleBookingAutoInvoiceRuleRepository;
 use MYVH\Organisations\OrganisationTypeService;
+use MYVH\Portal\Actions\TestRoomRateScheduleAction;
 use MYVH\Organisations\SaveOrganisationTypeRequest;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\PortalAuth;
@@ -35,6 +36,7 @@ class PortalAdminConfigAjaxController {
         private RoomRequestValidator $room_request_validator,
         private RoomRateService $room_rate_service,
         private RoomRateRequestValidator $room_rate_request_validator,
+        private TestRoomRateScheduleAction $test_room_rate_schedule_action,
         private VenueService $venue_service,
         private VenueRequestValidator $venue_request_validator,
         private AddonService $addon_service,
@@ -50,6 +52,7 @@ class PortalAdminConfigAjaxController {
         add_action('wp_ajax_myvh_portal_delete_venue', [$this, 'delete_venue']);
         add_action('wp_ajax_myvh_portal_save_room_rate', [$this, 'save_room_rate']);
         add_action('wp_ajax_myvh_portal_delete_room_rate', [$this, 'delete_room_rate']);
+        add_action('wp_ajax_myvh_portal_test_room_rate', [$this, 'test_room_rate']);
         add_action('wp_ajax_myvh_portal_save_addon', [$this, 'save_addon']);
         add_action('wp_ajax_myvh_portal_delete_addon', [$this, 'delete_addon']);
         add_action('wp_ajax_myvh_portal_save_client_settings', [$this, 'save_client_settings']);
@@ -61,6 +64,7 @@ class PortalAdminConfigAjaxController {
         PortalAuth::require_client_admin($this->client_admin_service);
 
         $payload = SaveOrganisationTypeRequest::from_post(wp_unslash($_POST));
+        $saved = null;
 
         try {
             $saved = $this->organisation_type_service->save($payload);
@@ -109,6 +113,7 @@ class PortalAdminConfigAjaxController {
 
         $payload = SaveRoomRequest::from_post(wp_unslash($_POST));
         $validation = $this->room_request_validator->validate($payload);
+        $saved = null;
 
         if (is_wp_error($validation)) {
             AjaxResponse::validation_error(['room' => $validation->get_error_message()]);
@@ -142,6 +147,7 @@ class PortalAdminConfigAjaxController {
 
         $payload = SaveVenueRequest::from_post(wp_unslash($_POST));
         $validation = $this->venue_request_validator->validate($payload);
+        $saved = null;
 
         if (is_wp_error($validation)) {
             AjaxResponse::validation_error(['venue' => $validation->get_error_message()]);
@@ -217,6 +223,7 @@ class PortalAdminConfigAjaxController {
 
         $payload = SaveRoomRateRequest::from_post(wp_unslash($_POST));
         $validation = $this->room_rate_request_validator->validate($payload);
+        $saved = null;
 
         if (is_wp_error($validation)) {
             AjaxResponse::validation_error(['rate' => $validation->get_error_message()]);
@@ -261,11 +268,31 @@ class PortalAdminConfigAjaxController {
         AjaxResponse::success([], __('Room rate deleted', 'my-village-hall'));
     }
 
+    public function test_room_rate(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $payload = wp_unslash($_POST);
+        $result = null;
+
+        try {
+            $result = $this->test_room_rate_schedule_action->execute($payload);
+        } catch (Throwable $throwable) {
+            AjaxResponse::server_error($throwable->getMessage());
+        }
+
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        AjaxResponse::success($result, __('Test completed', 'my-village-hall'));
+    }
+
     public function save_addon(): void {
         PortalAuth::require_client_admin($this->client_admin_service);
 
         $payload = SaveAddonRequest::from_post(wp_unslash($_POST));
         $validation = $this->addon_request_validator->validate($payload);
+        $saved = null;
 
         if (is_wp_error($validation)) {
             AjaxResponse::validation_error(['addon' => $validation->get_error_message()]);

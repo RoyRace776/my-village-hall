@@ -94,6 +94,32 @@ if (!$selected_room) {
                     </label>
                 </div>
 
+                <div class="myvh-account-grid">
+                    <label class="myvh-account-field">
+                        <span>Day of Week</span>
+                        <select name="day_of_week">
+                            <option value="">All days</option>
+                            <option value="0">Sunday</option>
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                        </select>
+                    </label>
+
+                    <label class="myvh-account-field">
+                        <span>Time Window</span>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                                <input type="text" name="start_time" data-myvh-picker="time" data-myvh-minute-increment="15" autocomplete="off" placeholder="HH:MM" style="flex:1; min-width:0;">
+                            <span>to</span>
+                                <input type="text" name="end_time" data-myvh-picker="time" data-myvh-minute-increment="15" autocomplete="off" placeholder="HH:MM" style="flex:1; min-width:0;">
+                        </div>
+                        <small class="myvh-muted">Leave both blank to apply all day. Overnight windows are not supported.</small>
+                    </label>
+                </div>
+
                 <label class="myvh-account-field">
                     <span>Description</span>
                     <textarea name="description" rows="3"></textarea>

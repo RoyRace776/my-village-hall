@@ -20,6 +20,16 @@ $charge_type_labels = [
     'per_day' => 'Per Day',
     'fixed' => 'Fixed',
 ];
+
+$day_labels = [
+    0 => 'Sun',
+    1 => 'Mon',
+    2 => 'Tue',
+    3 => 'Wed',
+    4 => 'Thu',
+    5 => 'Fri',
+    6 => 'Sat',
+];
 ?>
 
 <div class="myvh-dashboard-section myvh-room-rates-page">
@@ -28,10 +38,15 @@ $charge_type_labels = [
             <h2>Room Rates</h2>
             <p>Manage room pricing for this client site.</p>
         </div>
-        <a href="#room-rate-add" class="myvh-portal-add-btn">
-            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
-            <span>Add Room Rate</span>
-        </a>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+            <a href="#room-rate-tester" class="myvh-portal-add-btn">
+                <span>Test Rate Schedule</span>
+            </a>
+            <a href="#room-rate-add" class="myvh-portal-add-btn">
+                <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                <span>Add Room Rate</span>
+            </a>
+        </div>
     </div>
 
     <div class="myvh-card myvh-account-card">
@@ -55,6 +70,7 @@ $charge_type_labels = [
                         <th style="padding-right:24px;">Rate Name</th>
                         <th style="padding-right:24px;">Room</th>
                         <th style="padding-right:24px;">Amount</th>
+                        <th style="padding-right:24px;">Schedule</th>
                         <th style="padding-right:24px;">Priority</th>
                         <th style="padding-right:24px;">Type</th>
                         <th style="padding-right:24px;">Organisation Type</th>
@@ -68,6 +84,13 @@ $charge_type_labels = [
                     $rate_id = (int) ($rate['Id'] ?? 0);
                     $room_id = (int) ($rate['RoomId'] ?? 0);
                     $org_type_id = (int) ($rate['OrganisationTypeId'] ?? 0);
+                    $day_of_week = isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== '' ? (int) $rate['DayOfWeek'] : null;
+                    $window_start = trim((string) ($rate['StartTime'] ?? ''));
+                    $window_end = trim((string) ($rate['EndTime'] ?? ''));
+                    $day_label = $day_of_week !== null ? ($day_labels[$day_of_week] ?? 'Unknown day') : 'All days';
+                    $window_label = ($window_start !== '' && $window_end !== '')
+                        ? (substr($window_start, 0, 5) . ' - ' . substr($window_end, 0, 5))
+                        : 'All times';
                     $delete_message_id = 'myvh-room-rate-message-' . $rate_id;
                     ?>
                     <tr>
@@ -79,6 +102,7 @@ $charge_type_labels = [
                         </td>
                         <td style="padding-right:24px;"><?php echo esc_html($room_names[$room_id] ?? 'Unknown room'); ?></td>
                         <td style="padding-right:24px;">£<?php echo number_format((float) ($rate['Rate'] ?? 0), 2); ?></td>
+                        <td style="padding-right:24px;"><?php echo esc_html($day_label . ', ' . $window_label); ?></td>
                         <td style="padding-right:24px;"><?php echo esc_html((string) ($rate['Priority'] ?? '0')); ?></td>
                         <td style="padding-right:24px;"><?php echo esc_html($charge_type_labels[$rate['ChargeType'] ?? ''] ?? ($rate['ChargeType'] ?? '')); ?></td>
                         <td style="padding-right:24px;"><?php echo esc_html($org_type_id > 0 ? ($org_type_names[$org_type_id] ?? 'Unknown type') : 'All Types'); ?></td>

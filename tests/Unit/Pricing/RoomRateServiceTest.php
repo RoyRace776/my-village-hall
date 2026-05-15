@@ -65,6 +65,51 @@ class RoomRateServiceTest extends UnitTestCase
     }
 
     /** @test */
+    public function save_rejects_fixed_rate_with_schedule_fields(): void
+    {
+        $result = $this->service->save([
+            'room_id' => 1,
+            'name' => 'Fixed Morning Rate',
+            'charge_type' => 'fixed',
+            'rate' => 25,
+            'minimum_hours' => 1,
+            'day_of_week' => '1',
+            'start_time' => '09:00',
+            'end_time' => '12:00',
+        ]);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('Fixed rates cannot be limited to a day/time schedule', $result->get_error_message());
+    }
+
+    /** @test */
+    public function save_persists_schedule_fields_for_hourly_rate(): void
+    {
+        $this->repo->shouldReceive('create')
+            ->once()
+            ->withArgs(static function (array $record): bool {
+                return $record['DayOfWeek'] === 3
+                    && $record['StartTime'] === '09:00:00'
+                    && $record['EndTime'] === '17:00:00'
+                    && $record['ChargeType'] === 'per_hour';
+            })
+            ->andReturn(88);
+
+        $result = $this->service->save([
+            'room_id' => 1,
+            'name' => 'Wednesday Daytime',
+            'charge_type' => 'per_hour',
+            'rate' => 18,
+            'minimum_hours' => 1,
+            'day_of_week' => '3',
+            'start_time' => '09:00',
+            'end_time' => '17:00',
+        ]);
+
+        $this->assertSame(88, $result);
+    }
+
+    /** @test */
     public function get_all_orders_by_priority_descending(): void
     {
         $this->repo->shouldReceive('get_all')

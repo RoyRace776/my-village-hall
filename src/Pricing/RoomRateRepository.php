@@ -65,4 +65,44 @@ class RoomRateRepository extends RepositoryBase{
 
         return $this->wpdb->get_row( $sql, ARRAY_A );
     }
+
+    /**
+     * Return active rates for a room and scope ordered by priority.
+     *
+     * @param int $room_id
+     * @param int|null $org_type_id
+     * @param string|null $validity_date Y-m-d reference date for ValidFrom/ValidTo filtering.
+     * @return array<int, array<string, mixed>>
+     */
+    public function get_active_rates_for_scope(int $room_id, ?int $org_type_id = null, ?string $validity_date = null): array {
+        $params = [
+            $room_id,
+        ];
+
+        $where_org = 'AND OrganisationTypeId IS NULL';
+        if ($org_type_id !== null && $org_type_id > 0) {
+            $where_org = 'AND OrganisationTypeId = %d';
+            $params[] = $org_type_id;
+        }
+
+        $where_validity = '';
+        if (!empty($validity_date)) {
+            $where_validity = 'AND (ValidFrom IS NULL OR ValidFrom <= %s)
+                 AND (ValidTo IS NULL OR ValidTo >= %s)';
+            $params[] = $validity_date;
+            $params[] = $validity_date;
+        }
+
+        $sql = $this->wpdb->prepare(
+            "SELECT * FROM {$this->table_name}
+             WHERE RoomId = %d
+             {$where_org}
+             AND IsActive = 1
+             {$where_validity}
+             ORDER BY Priority DESC, Id DESC",
+            ...$params
+        );
+
+        return $this->wpdb->get_results($sql, ARRAY_A) ?: [];
+    }
 }

@@ -2,6 +2,80 @@ jQuery(document).ready(function($) {
 
     window.MyvhFlatpickr?.initWithin(document);
 
+    (function initRoomRateTimeValidation() {
+        const query = new URLSearchParams(window.location.search || '');
+        if (query.get('page') !== 'myvh-room-rates') {
+            return;
+        }
+
+        const form = document.querySelector('form[action*="admin-post.php"] input[name="action"][value="myvh_save_rate"]')?.closest('form');
+        if (!form) {
+            return;
+        }
+
+        const fields = form.querySelectorAll('input[name="start_time"], input[name="end_time"]');
+        if (!fields.length) {
+            return;
+        }
+
+        const isQuarterHour = function(value) {
+            return value === '' || /^(?:[01]\d|2[0-3]):(?:00|15|30|45)$/.test(value);
+        };
+
+        const toMinutes = function(value) {
+            const parts = value.split(':');
+            return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+        };
+
+        const validate = function() {
+            const start = form.querySelector('input[name="start_time"]');
+            const end = form.querySelector('input[name="end_time"]');
+            const startValue = (start?.value || '').trim();
+            const endValue = (end?.value || '').trim();
+
+            fields.forEach(function(field) {
+                field.setCustomValidity('');
+            });
+
+            if (!isQuarterHour(startValue) || !isQuarterHour(endValue)) {
+                fields.forEach(function(field) {
+                    field.setCustomValidity('Times must use 15-minute intervals (00, 15, 30, 45).');
+                });
+                return false;
+            }
+
+            if ((startValue === '') !== (endValue === '')) {
+                fields.forEach(function(field) {
+                    field.setCustomValidity('Provide both start and end times, or leave both blank.');
+                });
+                return false;
+            }
+
+            if (startValue !== '' && endValue !== '' && toMinutes(endValue) <= toMinutes(startValue)) {
+                fields.forEach(function(field) {
+                    field.setCustomValidity('End time must be after start time.');
+                });
+                return false;
+            }
+
+            return true;
+        };
+
+        fields.forEach(function(field) {
+            field.addEventListener('input', validate);
+            field.addEventListener('change', validate);
+        });
+
+        form.addEventListener('submit', function(event) {
+            if (validate()) {
+                return;
+            }
+
+            event.preventDefault();
+            fields[0].reportValidity();
+        });
+    })();
+
     // Settings page fallback dirty tracking (runs from shared admin bundle).
     (function initSettingsDirtyTracking() {
         const form = document.querySelector('.myvh-settings-form');

@@ -197,7 +197,16 @@ class BookingValidator
             );
         }
 
-        $room_rate = $this->room_rate_service->get_booking_rate(intval($data['room_id']), $customer, $organisation);
+        $room_rate = $this->room_rate_service->get_booking_rate(
+            intval($data['room_id']),
+            $customer,
+            $organisation,
+            $start_date,
+            $start_time,
+            $end_date,
+            $end_time,
+            $start_date
+        );
         if (!$room_rate) {
             return new WP_Error(
                 'validation',

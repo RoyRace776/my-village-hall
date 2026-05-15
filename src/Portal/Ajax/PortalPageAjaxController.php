@@ -123,6 +123,10 @@ class PortalPageAjaxController {
                 $this->admin_config_page_renderer->render_room_rates($is_client_admin);
                 break;
 
+            case 'room-rate-tester':
+                $this->admin_config_page_renderer->render_room_rate_tester($is_client_admin);
+                break;
+
             case 'addons':
                 $this->admin_config_page_renderer->render_addons($is_client_admin);
                 break;

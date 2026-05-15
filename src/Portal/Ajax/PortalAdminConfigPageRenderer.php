@@ -111,6 +111,16 @@ class PortalAdminConfigPageRenderer {
         include MYVH_PLUGIN_DIR . 'templates/Portal/room-rates.php';
     }
 
+    public function render_room_rate_tester(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
+        $rooms = $this->room_service->get_all_with_venues();
+        $organisation_types = $this->organisation_type_service->get_all();
+        include MYVH_PLUGIN_DIR . 'templates/Portal/room-rate-tester.php';
+    }
+
     public function render_addons(bool $is_client_admin): void {
         if (!$is_client_admin) {
             wp_send_json_error('Permission denied', 403);
