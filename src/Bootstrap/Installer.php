@@ -934,7 +934,7 @@ class Installer {
 
         // Now add in the customer organisation link if it doesn't already exist (this is needed for the system customer to be able to be linked to bookings and for the personal organisation to be set as the default for the system customer).
         $customer_id = $wpdb->get_var(
-            $wpdb->prepare("SELECT Id FROM {$customers_table} WHERE IsSystem = 1 LIMIT 1")
+            "SELECT Id FROM {$customers_table} WHERE IsSystem = 1 LIMIT 1"
         );
 
         if ( $customer_id ) {

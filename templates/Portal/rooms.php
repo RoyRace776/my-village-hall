@@ -11,8 +11,8 @@ $rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
             <h2>Rooms</h2>
             <p>Manage room details and room colours for this client site.</p>
         </div>
-        <a href="#room-add" class="button button-primary myvh-portal-add-button">
-            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+        <a href="#room-add" class="myvh-portal-add-btn myvh-portal-nav-btn">
+            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
             <span>Add Room</span>
         </a>
     </div>

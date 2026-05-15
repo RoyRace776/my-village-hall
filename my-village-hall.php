@@ -65,6 +65,8 @@ use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 use YahnisElsts\PluginUpdateChecker\v5p6\Vcs\GitHubApi;
 use YahnisElsts\PluginUpdateChecker\v5p6\Vcs\PluginUpdateChecker;
 
+use function PHPUnit\Framework\isNull;
+
 /** @var PluginUpdateChecker $updateChecker */
 $updateChecker = PucFactory::buildUpdateChecker(
     'https://github.com/RoyRace776/my-village-hall',
@@ -316,6 +318,9 @@ class MyVillageHall {
 
         if ( $records = $repo->get_by_site_id( $site_id ) ) {
             foreach ( $records as $record ) {
+                if ( isNull($record->id ) ) {
+                    continue;
+                }
                 $repo->delete( $record->id );
             }
         }

@@ -10,8 +10,8 @@ $organisation_types = isset($organisation_types) && is_array($organisation_types
             <h2>Organisation Types</h2>
             <p>Select a type to edit, or add a new organisation type.</p>
         </div>
-        <a href="#organisation-type-add" class="button button-primary myvh-portal-add-button">
-            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+        <a href="#organisation-type-add" class="myvh-portal-add-btn myvh-portal-nav-btn">
+            <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
             <span>Add Organisation Type</span>
         </a>
     </div>
@@ -25,8 +25,8 @@ $organisation_types = isset($organisation_types) && is_array($organisation_types
         <?php if (empty($organisation_types)): ?>
             <p>No organisation types found for this site.</p>
             <p>
-                <a href="#organisation-type-add" class="button button-primary myvh-portal-add-button">
-                    <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+                <a href="#organisation-type-add" class="myvh-portal-add-btn myvh-portal-nav-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
                     <span>Create First Organisation Type</span>
                 </a>
             </p>

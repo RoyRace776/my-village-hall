@@ -41,18 +41,14 @@ if (!isset($is_client_admin)) $is_client_admin = false;
                 <input id="myvh-customer-create-address" type="text" name="address_line1">
             </label>
 
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="email_verified" value="1">
-                    Mark email as verified
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="email_verified" value="1">
+                <span class="myvh-room-toggle-copy">Mark email as verified</span>
             </label>
             <?php if (!empty($is_client_admin)): ?>
-            <label class="myvh-account-field">
-                <span>
-                    <input type="checkbox" name="allow_auto_confirm" value="1">
-                    Allow Auto Confirm
-                </span>
+            <label class="myvh-account-field myvh-room-toggle">
+                <input type="checkbox" name="allow_auto_confirm" value="1">
+                <span class="myvh-room-toggle-copy">Allow Auto Confirm</span>
             </label>
             <label class="myvh-account-field">
                 <span>Single booking auto-invoice rule</span>

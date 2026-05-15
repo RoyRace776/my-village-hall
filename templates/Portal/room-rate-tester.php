@@ -3,6 +3,7 @@ if (!defined('ABSPATH')) exit;
 
 $rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
 $organisation_types = isset($organisation_types) && is_array($organisation_types) ? $organisation_types : [];
+$today = date('Y-m-d');
 ?>
 
 <div class="myvh-dashboard-section myvh-room-rate-tester-page">
@@ -53,7 +54,7 @@ $organisation_types = isset($organisation_types) && is_array($organisation_types
                 <div class="myvh-account-grid">
                     <label class="myvh-account-field">
                         <span>Start Date</span>
-                        <input type="text" name="start_date" data-myvh-picker="date" autocomplete="off" required>
+                        <input type="text" name="start_date" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr($today); ?>" required>
                     </label>
 
                     <label class="myvh-account-field">
@@ -65,7 +66,7 @@ $organisation_types = isset($organisation_types) && is_array($organisation_types
                 <div class="myvh-account-grid">
                     <label class="myvh-account-field">
                         <span>End Date</span>
-                        <input type="text" name="end_date" data-myvh-picker="date" autocomplete="off" required>
+                        <input type="text" name="end_date" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr($today); ?>" required>
                     </label>
 
                     <label class="myvh-account-field">
