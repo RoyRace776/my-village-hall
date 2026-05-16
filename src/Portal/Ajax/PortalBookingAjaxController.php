@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Portal\Ajax;
 
+use MYVH\Availability\AvailabilityService;
 use MYVH\Bookings\BookingService;
 use MYVH\Calendar\CalendarService;
 use MYVH\Portal\Actions\GetBookingAction;
@@ -21,7 +22,8 @@ class PortalBookingAjaxController {
         private DeleteBookingAction $delete_action,
         private CalendarService $calendar_service,
         private BookingService $booking_service,
-        private ClientAdminService $client_admin_service
+        private ClientAdminService $client_admin_service,
+        private AvailabilityService $availability_service
     ) {}
 
     public function register(): void {
@@ -31,10 +33,16 @@ class PortalBookingAjaxController {
         add_action('wp_ajax_myvh_portal_delete_booking', [$this, 'delete']);
         add_action('wp_ajax_myvh_portal_create_booking', [$this, 'create_for_modal']);
         add_action('wp_ajax_myvh_portal_update_booking_modal', [$this, 'update_for_modal']);
+        add_action('wp_ajax_myvh_portal_next_booking_slot', [$this, 'next_slot']);
     }
 
     public function get(): void {
         PortalAuth::require_user();
+
+        $booking_id = 0;
+        $booking = [];
+        $edit_rules = [];
+        $delete_rules = [];
 
         try {
             $booking_id = \intval($_POST['booking_id'] ?? $_GET['booking_id'] ?? 0);
@@ -43,6 +51,7 @@ class PortalBookingAjaxController {
             $delete_rules = $this->booking_service->can_delete($booking);
         } catch (Exception $e) {
             AjaxResponse::error($e->getMessage());
+            return;
         }
 
         AjaxResponse::success([
@@ -88,15 +97,18 @@ class PortalBookingAjaxController {
         PortalAuth::require_user();
 
         $request = wp_unslash($_POST);
+        $result = [];
 
         try {
             $result = $this->calendar_service->create_event($request, 'portal', get_current_user_id());
 
             if (is_wp_error($result)) {
                 AjaxResponse::error($result->get_error_message());
+                return;
             }
         } catch (Exception $e) {
             AjaxResponse::error($e->getMessage());
+            return;
         }
 
         AjaxResponse::success($result);
@@ -106,15 +118,18 @@ class PortalBookingAjaxController {
         PortalAuth::require_user();
 
         $request = wp_unslash($_POST);
+        $result = [];
 
         try {
             $result = $this->quote_action->execute($request);
 
             if (is_wp_error($result)) {
                 AjaxResponse::error($result->get_error_message());
+                return;
             }
         } catch (Exception $e) {
             AjaxResponse::error($e->getMessage());
+            return;
         }
 
         AjaxResponse::success($result);
@@ -126,9 +141,11 @@ class PortalBookingAjaxController {
         $request = wp_unslash($_POST);
         $request['context'] = 'portal';
         $booking_id = \intval($request['booking_id'] ?? $request['id'] ?? 0);
+        $result = [];
 
         if ($booking_id <= 0) {
             AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
+            return;
         }
 
         try {
@@ -147,6 +164,31 @@ class PortalBookingAjaxController {
         } catch (Exception $e) {
             $status = $e->getCode();
             AjaxResponse::error($e->getMessage(), $status >= 400 ? $status : 400);
+            return;
+        }
+
+        AjaxResponse::success($result);
+    }
+
+    public function next_slot(): void {
+        PortalAuth::require_user();
+
+        $request = wp_unslash(array_merge($_GET, $_POST));
+
+        $room_id = \intval($request['room_id'] ?? 0);
+        $date = sanitize_text_field($request['date'] ?? wp_date('Y-m-d'));
+        $length_minutes = \intval($request['length_minutes'] ?? 60);
+
+        if ($room_id <= 0) {
+            AjaxResponse::error(__('Room is required', 'my-village-hall'));
+            return;
+        }
+
+        $result = $this->availability_service->next_available_slot($room_id, $date, $length_minutes);
+
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+            return;
         }
 
         AjaxResponse::success($result);

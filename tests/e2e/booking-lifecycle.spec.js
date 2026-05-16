@@ -44,6 +44,30 @@ function formatFlatpickrAltDate(date) {
   return `${day}/${month}/${year}`;
 }
 
+async function fetchNextBookingSlot(page, roomId, lengthMinutes = 60) {
+  const payload = await page.evaluate(async ({ selectedRoomId, requestedLengthMinutes }) => {
+    const formData = new FormData();
+    formData.append('action', 'myvh_portal_next_booking_slot');
+    formData.append('nonce', window.myvhPortal.nonce);
+    formData.append('room_id', String(selectedRoomId));
+    formData.append('length_minutes', String(requestedLengthMinutes));
+
+    const response = await fetch(window.myvhPortal.ajax_url, {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin',
+    });
+
+    return response.json();
+  }, { selectedRoomId: roomId, requestedLengthMinutes: lengthMinutes });
+
+  if (!payload || !payload.success) {
+    throw new Error(payload?.message || 'Unable to fetch next booking slot.');
+  }
+
+  return payload.data;
+}
+
 async function setBookingDateOrTime(container, selector, value, altValue = null) {
   const sourceInput = container.locator(selector).first();
   const altInput = container.locator(`${selector} + input.flatpickr-alt-input`).first();
@@ -76,6 +100,7 @@ async function createBooking(page, description) {
   const roomSelect = form.locator('select[name="room_id"]');
   await waitForSelectOptions(roomSelect);
   await selectFirstNonEmptyOption(roomSelect);
+  const selectedRoomId = Number(await roomSelect.inputValue());
 
   const customerSelect = form.locator('select[name="customer_id"]');
   await waitForSelectOptions(customerSelect);
@@ -86,18 +111,18 @@ async function createBooking(page, description) {
   await waitForSelectOptions(organisationSelect);
   await selectFirstNonEmptyOption(organisationSelect);
 
-  // Keep bookings in the future so delete rules are less likely to block cleanup.
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const dateText = formatIsoDate(tomorrow);
-  const altDateText = formatFlatpickrAltDate(tomorrow);
+  const slot = await fetchNextBookingSlot(page, selectedRoomId, 60);
+
+  const slotDate = new Date(`${slot.start_date}T00:00:00`);
+  const dateText = formatIsoDate(slotDate);
+  const altDateText = formatFlatpickrAltDate(slotDate);
 
   await setBookingDateOrTime(form, '#myvh-modal-start-date', dateText, altDateText);
-  await setBookingDateOrTime(form, '#myvh-modal-start-time', '10:00');
-  await setBookingDateOrTime(form, '#myvh-modal-end-time', '11:00');
+  await setBookingDateOrTime(form, '#myvh-modal-start-time', slot.start_time);
+  await setBookingDateOrTime(form, '#myvh-modal-end-time', slot.end_time);
 
-  await expect(form.locator('input[name="start"]')).toHaveValue(`${dateText} 10:00`);
-  await expect(form.locator('input[name="end"]')).toHaveValue(`${dateText} 11:00`);
+  await expect(form.locator('input[name="start"]')).toHaveValue(`${dateText} ${slot.start_time}`);
+  await expect(form.locator('input[name="end"]')).toHaveValue(`${dateText} ${slot.end_time}`);
 
   await form.locator('input[name="text"]').fill(description);
 

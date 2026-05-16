@@ -266,6 +266,155 @@ class AvailabilityService {
         return true;
     }
 
+    public function next_available_slot(int $room_id, ?string $date = null, int $length_minutes = 60) {
+        if ($room_id <= 0) {
+            return new \WP_Error('validation', __('Room is required', 'my-village-hall'));
+        }
+
+        $room = $this->room_repo->get_by_id($room_id);
+        if (!$room) {
+            return new \WP_Error('validation', __('Room is required', 'my-village-hall'));
+        }
+
+        $base_date = trim((string) ($date ?: wp_date('Y-m-d')));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $base_date)) {
+            return new \WP_Error('validation', __('Date must be in YYYY-MM-DD format', 'my-village-hall'));
+        }
+
+        $length = max(15, (int) $length_minutes);
+        $step = 15;
+
+        if (($length % $step) !== 0) {
+            $length = (int) (ceil($length / $step) * $step);
+        }
+
+        $base_ts = strtotime($base_date . ' 00:00:00');
+        if ($base_ts === false) {
+            return new \WP_Error('validation', __('Date must be in YYYY-MM-DD format', 'my-village-hall'));
+        }
+
+        for ($day_offset = 0; $day_offset < 7; $day_offset++) {
+            $target_date = wp_date('Y-m-d', strtotime('+' . $day_offset . ' day', $base_ts));
+
+            $effective = $this->get_effective_room_hours_for_date($room_id, $target_date);
+            if (is_wp_error($effective)) {
+                return $effective;
+            }
+
+            if (!empty($effective['is_closed'])) {
+                continue;
+            }
+
+            $open_seconds = $this->time_to_seconds($effective['opening_time'] ?? '');
+            $close_seconds = $this->time_to_seconds($effective['closing_time'] ?? '');
+
+            if ($open_seconds === null || $close_seconds === null || $close_seconds <= $open_seconds) {
+                continue;
+            }
+
+            $last_start_seconds = $close_seconds - ($length * 60);
+            if ($last_start_seconds < $open_seconds) {
+                continue;
+            }
+
+            for ($start_seconds = $open_seconds; $start_seconds <= $last_start_seconds; $start_seconds += ($step * 60)) {
+                $end_seconds = $start_seconds + ($length * 60);
+
+                $start_time = gmdate('H:i:s', $start_seconds);
+                $end_time = gmdate('H:i:s', $end_seconds);
+
+                $is_available = $this->room_is_available(
+                    $room_id,
+                    $target_date,
+                    $start_time,
+                    $end_time,
+                    $target_date,
+                    null
+                );
+
+                if (!$is_available) {
+                    continue;
+                }
+
+                $has_buffer_space = $this->slot_has_buffer_space(
+                    $room_id,
+                    $target_date,
+                    $start_time,
+                    $end_time,
+                    $effective
+                );
+
+                if (!$has_buffer_space) {
+                    continue;
+                }
+
+                return [
+                    'room_id' => $room_id,
+                    'date' => $target_date,
+                    'length_minutes' => $length,
+                    'start_date' => $target_date,
+                    'end_date' => $target_date,
+                    'start_time' => substr($start_time, 0, 5),
+                    'end_time' => substr($end_time, 0, 5),
+                    'start' => $target_date . ' ' . substr($start_time, 0, 5),
+                    'end' => $target_date . ' ' . substr($end_time, 0, 5),
+                ];
+            }
+        }
+
+        return new \WP_Error(
+            'validation',
+            __('No available slot found in the next 7 days for the requested duration', 'my-village-hall')
+        );
+    }
+
+    private function slot_has_buffer_space(
+        int $room_id,
+        string $date,
+        string $start_time,
+        string $end_time,
+        array $effective_hours
+    ): bool {
+        $setup_minutes = (int) myvh_setting('booking.set_up_minutes', 0);
+        $tidy_minutes = (int) myvh_setting('booking.tidy_up_minutes', 0);
+
+        if ($setup_minutes <= 0 && $tidy_minutes <= 0) {
+            return true;
+        }
+
+        $opening = date('H:i:s', strtotime('1970-01-01 ' . (string) ($effective_hours['opening_time'] ?? '00:00:00')));
+        $closing = date('H:i:s', strtotime('1970-01-01 ' . (string) ($effective_hours['closing_time'] ?? '23:59:59')));
+
+        if ($start_time === $opening) {
+            $setup_minutes = 0;
+        }
+
+        if ($end_time === $closing) {
+            $tidy_minutes = 0;
+        }
+
+        if ($setup_minutes <= 0 && $tidy_minutes <= 0) {
+            return true;
+        }
+
+        $start_ts = strtotime($date . ' ' . $start_time);
+        $end_ts = strtotime($date . ' ' . $end_time);
+
+        if ($start_ts === false || $end_ts === false || $end_ts <= $start_ts) {
+            return false;
+        }
+
+        $window_start = date('Y-m-d H:i:s', $start_ts - ($setup_minutes * 60));
+        $window_end = date('Y-m-d H:i:s', $end_ts + ($tidy_minutes * 60));
+
+        return !$this->booking_repo->has_conflict_in_buffer_window(
+            $room_id,
+            $window_start,
+            $window_end,
+            null
+        );
+    }
+
     public function get_calendar_visible_hours(): array {
         $defaults = [
             'start' => 8,

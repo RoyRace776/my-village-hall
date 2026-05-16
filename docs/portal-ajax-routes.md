@@ -43,6 +43,7 @@ This inventory lists active portal-facing AJAX actions, their current backend ow
 | myvh_portal_update_booking_modal | PortalBookingAjaxController::update_for_modal | assets/js/booking-modal-create.js | myvh_portal | Portal modal edit path (phase 2). |
 | myvh_portal_delete_booking | PortalBookingAjaxController::delete | assets/js/calendar-portal.js, templates/Portal/booking-delete.php | myvh_portal | Calendar portal booking delete now uses MyvhPortalAjax helper. |
 | myvh_portal_get_booking | PortalBookingAjaxController::get | assets/js/booking-modal-create.js, assets/js/booking-modal-view.js | myvh_portal | Portal modal booking load path (phase 2). |
+| myvh_portal_next_booking_slot | PortalBookingAjaxController::next_slot | tests/e2e/booking-lifecycle.spec.js | myvh_portal | Returns the next available room slot using AvailabilityService (7-day search, buffer-aware). |
 | myvh_calendar_get_booking | CalendarAjaxController::get_booking | calendar/admin flows | myvh_calendar | Portal modal flows migrated in phase 2. |
 | myvh_create_event | CalendarAjaxController::create_event | admin/calendar contexts | myvh_calendar | Retained for non-portal calendar flows. |
 | myvh_update_event | CalendarAjaxController::update_event | admin/calendar contexts | myvh_calendar | Retained for non-portal calendar flows. |

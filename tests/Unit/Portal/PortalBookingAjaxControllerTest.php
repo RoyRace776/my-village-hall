@@ -3,6 +3,7 @@
 namespace MYVH\Tests\Unit\Portal;
 
 use Brain\Monkey\Functions;
+use MYVH\Availability\AvailabilityService;
 use MYVH\Bookings\BookingService;
 use MYVH\Calendar\CalendarService;
 use MYVH\Portal\Actions\DeleteBookingAction;
@@ -21,6 +22,7 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
     private $calendar_service;
     private $booking_service;
     private $client_admin_service;
+    private $availability_service;
     private PortalBookingAjaxController $controller;
 
     protected function setUp(): void {
@@ -33,6 +35,7 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
         $this->calendar_service = $this->mock(CalendarService::class);
         $this->booking_service = $this->mock(BookingService::class);
         $this->client_admin_service = $this->mock(ClientAdminService::class);
+        $this->availability_service = $this->mock(AvailabilityService::class);
 
         $this->controller = new PortalBookingAjaxController(
             $this->get_action,
@@ -41,14 +44,17 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
             $this->delete_action,
             $this->calendar_service,
             $this->booking_service,
-            $this->client_admin_service
+            $this->client_admin_service,
+            $this->availability_service
         );
 
         Functions\stubs([
             'is_user_logged_in' => true,
             'check_ajax_referer' => true,
             'wp_unslash' => static fn($value) => $value,
-            'is_wp_error' => false,
+            'sanitize_text_field' => static fn($value) => is_scalar($value) ? (string) $value : '',
+            'wp_date' => static fn($format) => $format === 'Y-m-d' ? '2026-06-01' : date($format),
+            'is_wp_error' => static fn($value) => $value instanceof \WP_Error,
         ]);
 
         Functions\when('wp_send_json')->alias(function ($data = null, $status_code = null) {
@@ -171,6 +177,82 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
 
         $this->assertTrue($response->success);
         $this->assertSame($summary, $response->data);
+    }
+
+    /** @test */
+    public function next_slot_returns_slot_data_from_availability_service(): void {
+        $_POST = [
+            'room_id' => '14',
+            'date' => '2026-06-03',
+            'length_minutes' => '90',
+            'nonce' => 'example',
+        ];
+
+        $slot = [
+            'room_id' => 14,
+            'date' => '2026-06-03',
+            'length_minutes' => 90,
+            'start_date' => '2026-06-03',
+            'end_date' => '2026-06-03',
+            'start_time' => '10:00',
+            'end_time' => '11:30',
+            'start' => '2026-06-03 10:00',
+            'end' => '2026-06-03 11:30',
+        ];
+
+        $this->availability_service->shouldReceive('next_available_slot')
+            ->once()
+            ->with(14, '2026-06-03', 90)
+            ->andReturnUsing(static fn(): array => $slot);
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->next_slot();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame($slot, $response->data);
+    }
+
+    /** @test */
+    public function next_slot_returns_error_when_room_id_is_missing(): void {
+        $_POST = [
+            'date' => '2026-06-03',
+            'length_minutes' => '60',
+            'nonce' => 'example',
+        ];
+
+        $this->availability_service->shouldReceive('next_available_slot')->never();
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->next_slot();
+        });
+
+        $this->assertFalse($response->success);
+        $this->assertSame(400, $response->statusCode);
+        $this->assertSame('Room is required', $response->data);
+    }
+
+    /** @test */
+    public function next_slot_returns_error_when_service_finds_no_slot(): void {
+        $_POST = [
+            'room_id' => '14',
+            'date' => '2026-06-03',
+            'length_minutes' => '60',
+            'nonce' => 'example',
+        ];
+
+        $this->availability_service->shouldReceive('next_available_slot')
+            ->once()
+            ->with(14, '2026-06-03', 60)
+            ->andReturn(new \WP_Error('validation', 'No available slot found in the next 7 days for the requested duration'));
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->next_slot();
+        });
+
+        $this->assertFalse($response->success);
+        $this->assertSame(400, $response->statusCode);
+        $this->assertSame('No available slot found in the next 7 days for the requested duration', $response->data);
     }
 
     private function capture_json_response(callable $callback): PortalBookingJsonResponseException {
