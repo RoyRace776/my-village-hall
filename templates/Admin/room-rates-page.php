@@ -25,17 +25,25 @@ $org_types         = $org_type_service->get_all();
 $requested_room_id = isset($_GET['room_id']) ? \intval($_GET['room_id']) : 0;
 $selected_room_id = $edit_rate ? \intval($edit_rate['RoomId'] ?? 0) : $requested_room_id;
 $selected_room = null;
-$current_day_of_week = '';
+$current_days_of_week = [];
 $current_start_time = '';
 $current_end_time = '';
 
 if ($edit_rate) {
-    $current_day_of_week = isset($edit_rate['DayOfWeek']) && $edit_rate['DayOfWeek'] !== null
-        ? (string) \intval($edit_rate['DayOfWeek'])
-        : '';
+    $current_days_of_week = isset($edit_rate['DaysOfWeek']) && is_array($edit_rate['DaysOfWeek'])
+        ? array_values(array_filter(array_map('intval', $edit_rate['DaysOfWeek']), static fn(int $day): bool => $day >= 0 && $day <= 6))
+        : [];
+    if (empty($current_days_of_week) && isset($edit_rate['DayOfWeek']) && $edit_rate['DayOfWeek'] !== null && $edit_rate['DayOfWeek'] !== '') {
+        $legacy_day = \intval($edit_rate['DayOfWeek']);
+        if ($legacy_day >= 0 && $legacy_day <= 6) {
+            $current_days_of_week = [$legacy_day];
+        }
+    }
     $current_start_time = isset($edit_rate['StartTime']) && $edit_rate['StartTime'] ? (string) $edit_rate['StartTime'] : '';
     $current_end_time = isset($edit_rate['EndTime']) && $edit_rate['EndTime'] ? (string) $edit_rate['EndTime'] : '';
 }
+
+$current_days_lookup = array_fill_keys($current_days_of_week, true);
 
 if ($selected_room_id > 0) {
     foreach ($rooms as $candidate_room) {
@@ -172,19 +180,34 @@ if ($selected_room_id > 0) {
                                             '6' => __('Sat', 'my-village-hall'),
                                         ];
 
-                                        $schedule_day = isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== null
-                                            ? (string) intval($rate['DayOfWeek'])
-                                            : '';
+                                        $schedule_days = isset($rate['DaysOfWeek']) && is_array($rate['DaysOfWeek'])
+                                            ? array_values(array_filter(array_map('intval', $rate['DaysOfWeek']), static fn(int $day): bool => $day >= 0 && $day <= 6))
+                                            : [];
+                                        if (empty($schedule_days) && isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== null && $rate['DayOfWeek'] !== '') {
+                                            $legacy_schedule_day = intval($rate['DayOfWeek']);
+                                            if ($legacy_schedule_day >= 0 && $legacy_schedule_day <= 6) {
+                                                $schedule_days = [$legacy_schedule_day];
+                                            }
+                                        }
                                         $schedule_start = isset($rate['StartTime']) && $rate['StartTime'] ? substr((string) $rate['StartTime'], 0, 5) : '';
                                         $schedule_end = isset($rate['EndTime']) && $rate['EndTime'] ? substr((string) $rate['EndTime'], 0, 5) : '';
 
-                                        if ($schedule_day === '' && $schedule_start === '' && $schedule_end === '') {
+                                        if (empty($schedule_days) && $schedule_start === '' && $schedule_end === '') {
                                             echo '<small>' . esc_html__('All days, all day', 'my-village-hall') . '</small>';
                                         } else {
                                             $parts = [];
-                                            $parts[] = $schedule_day !== '' && isset($day_labels[$schedule_day])
-                                                ? $day_labels[$schedule_day]
-                                                : __('All days', 'my-village-hall');
+                                            if (empty($schedule_days)) {
+                                                $parts[] = __('All days', 'my-village-hall');
+                                            } else {
+                                                $mapped_days = [];
+                                                foreach ($schedule_days as $schedule_day) {
+                                                    $key = (string) $schedule_day;
+                                                    if (isset($day_labels[$key])) {
+                                                        $mapped_days[] = $day_labels[$key];
+                                                    }
+                                                }
+                                                $parts[] = empty($mapped_days) ? __('All days', 'my-village-hall') : implode(', ', $mapped_days);
+                                            }
 
                                             if ($schedule_start !== '' && $schedule_end !== '') {
                                                 $parts[] = $schedule_start . ' - ' . $schedule_end;
@@ -343,19 +366,18 @@ if ($selected_room_id > 0) {
                         </tr>
 
                         <tr>
-                            <th><?php _e('Day', 'my-village-hall'); ?></th>
+                            <th><?php _e('Days', 'my-village-hall'); ?></th>
                             <td>
-                                <select name="day_of_week" class="regular-text">
-                                    <option value=""><?php _e('All days', 'my-village-hall'); ?></option>
-                                    <option value="0" <?php selected($current_day_of_week, '0'); ?>><?php _e('Sunday', 'my-village-hall'); ?></option>
-                                    <option value="1" <?php selected($current_day_of_week, '1'); ?>><?php _e('Monday', 'my-village-hall'); ?></option>
-                                    <option value="2" <?php selected($current_day_of_week, '2'); ?>><?php _e('Tuesday', 'my-village-hall'); ?></option>
-                                    <option value="3" <?php selected($current_day_of_week, '3'); ?>><?php _e('Wednesday', 'my-village-hall'); ?></option>
-                                    <option value="4" <?php selected($current_day_of_week, '4'); ?>><?php _e('Thursday', 'my-village-hall'); ?></option>
-                                    <option value="5" <?php selected($current_day_of_week, '5'); ?>><?php _e('Friday', 'my-village-hall'); ?></option>
-                                    <option value="6" <?php selected($current_day_of_week, '6'); ?>><?php _e('Saturday', 'my-village-hall'); ?></option>
-                                </select>
-                                <p class="description"><?php _e('Leave as all days to apply this rate every day.', 'my-village-hall'); ?></p>
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="0" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[0])); ?>> <span style="min-width:90px;"><?php _e('Sunday', 'my-village-hall'); ?></span></label>
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="1" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[1])); ?>> <span style="min-width:90px;"><?php _e('Monday', 'my-village-hall'); ?></span></label>
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="2" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[2])); ?>> <span style="min-width:90px;"><?php _e('Tuesday', 'my-village-hall'); ?></span></label>
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="3" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[3])); ?>> <span style="min-width:90px;"><?php _e('Wednesday', 'my-village-hall'); ?></span></label>
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="4" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[4])); ?>> <span style="min-width:90px;"><?php _e('Thursday', 'my-village-hall'); ?></span></label>
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="5" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[5])); ?>> <span style="min-width:90px;"><?php _e('Friday', 'my-village-hall'); ?></span></label>
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="6" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[6])); ?>> <span style="min-width:90px;"><?php _e('Saturday', 'my-village-hall'); ?></span></label>
+                                </div>
+                                <p class="description"><?php _e('Leave all unchecked to apply this rate every day.', 'my-village-hall'); ?></p>
                             </td>
                         </tr>
 

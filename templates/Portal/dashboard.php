@@ -56,6 +56,7 @@ $member_organisations = array_values(array_filter(
   }
 ));
 $dashboard_unpaid_invoices = array_values($dashboard_unpaid_invoices ?? []);
+$is_overnight_invoicing_enabled = (bool) myvh_setting('invoicing.run_overnight', false);
 
 $today = date('Y-m-d');
 $window_start = date('Y-m-d', strtotime('-1 month'));
@@ -401,7 +402,7 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
       <div class="myvh-card myvh-account-card myvh-portal-dashboard-side-card">
         <div class="myvh-account-card-head">
           <div>
-            <h3>Bookings Awaiting Invoicing</h3>
+            <h3>Bookings Awaiting Invoicing<?php echo $is_overnight_invoicing_enabled ? ' (automation turned on)' : ''; ?></h3>
             <span>Not invoiced yet or linked only to draft invoices</span>
           </div>
         </div>

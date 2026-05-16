@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '1.5.0';
+    const DB_VERSION = '1.6.0';
 
     /**
      * Entry point: create all tables.
@@ -92,6 +92,10 @@ class Installer {
 
         if (version_compare($from, '1.5.0', '<')) {
             self::upgrade_to_1_5_0($wpdb);
+        }
+
+        if (version_compare($from, '1.6.0', '<')) {
+            self::upgrade_to_1_6_0($wpdb);
         }
     }
 
@@ -182,6 +186,24 @@ class Installer {
         }
     }
 
+    private static function upgrade_to_1_6_0(wpdb $wpdb): void {
+        $collate = $wpdb->get_charset_collate();
+        self::create_room_rate_days_table($wpdb, $collate);
+
+        $room_rates_table = $wpdb->prefix . 'myvh_room_rates';
+        $room_rate_days_table = $wpdb->prefix . 'myvh_room_rate_days';
+        $has_day_of_week = $wpdb->get_var("SHOW COLUMNS FROM {$room_rates_table} LIKE 'DayOfWeek'");
+
+        if (!empty($has_day_of_week)) {
+            $wpdb->query(
+                "INSERT IGNORE INTO {$room_rate_days_table} (RoomRateId, DayOfWeek)
+                 SELECT Id, DayOfWeek
+                 FROM {$room_rates_table}
+                 WHERE DayOfWeek IS NOT NULL"
+            );
+        }
+    }
+
     // ── Table definitions ─────────────────────────────────────────────────────
 
     /**
@@ -203,6 +225,7 @@ class Installer {
         self::create_bookings_table( $wpdb, $collate );
         self::create_recurring_patterns_table( $wpdb, $collate );
         self::create_room_rates_table( $wpdb, $collate );
+        self::create_room_rate_days_table( $wpdb, $collate );
         self::create_addons_table( $wpdb, $collate );
         self::create_booking_charges_table( $wpdb, $collate );
         self::create_booking_addons_table( $wpdb, $collate );
@@ -461,6 +484,17 @@ class Installer {
             INDEX idx_active         (IsActive),
             INDEX idx_valid_dates    (ValidFrom, ValidTo),
             INDEX idx_priority       (Priority)
+        ) {$collate};" );
+    }
+
+    private static function create_room_rate_days_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
+        dbDelta( "CREATE TABLE {$p}myvh_room_rate_days (
+            Id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            RoomRateId  INT UNSIGNED NOT NULL,
+            DayOfWeek   TINYINT UNSIGNED NOT NULL,
+            UNIQUE KEY uq_rate_day (RoomRateId, DayOfWeek),
+            INDEX idx_day (DayOfWeek)
         ) {$collate};" );
     }
 

@@ -1249,6 +1249,11 @@ window.BookingModalCreate = (function() {
             ? ''
             : '<option value="">Select...</option>';
 
+        const systemOrganisation = organisations.find((item) => {
+            const isSystem = item?.is_system ?? item?.IsSystem;
+            return isSystem === true || isSystem === 1 || String(isSystem) === '1';
+        });
+
         organisations.forEach(item => {
             const opt = document.createElement("option");
             opt.value = item.id || item.Id;
@@ -1262,6 +1267,8 @@ window.BookingModalCreate = (function() {
 
         if (preferredOrgId && organisations.some(item => String(item.id || item.Id) === String(preferredOrgId))) {
             organisationSelect.value = String(preferredOrgId);
+        } else if (systemOrganisation) {
+            organisationSelect.value = String(systemOrganisation.id || systemOrganisation.Id);
         } else if (organisations.length >= 1 && requireOrganisation) {
             organisationSelect.value = String(organisations[0].id || organisations[0].Id);
         } else if (organisations.length === 1) {
@@ -1352,7 +1359,7 @@ window.BookingModalCreate = (function() {
         .then(res => {
 
             if (!res.success) {
-                portalAlert(resolveErrorMessage(res.data, "Failed to save booking"));
+                portalAlert(resolveErrorMessage(res.message || res.data, "Failed to save booking"));
                 return;
             }
 

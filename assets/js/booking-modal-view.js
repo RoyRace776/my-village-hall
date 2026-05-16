@@ -834,6 +834,10 @@ window.BookingModalView = (function() {
         return Promise.resolve(config.loadOrganisations ? config.loadOrganisations(customerId) : [])
             .then(data => {
                 const organisations = Array.isArray(data) ? data : [];
+                const systemOrganisation = organisations.find((item) => {
+                    const isSystem = item?.is_system ?? item?.IsSystem;
+                    return isSystem === true || isSystem === 1 || String(isSystem) === '1';
+                });
                 organisationSelect.innerHTML = requireOrganisation
                     ? ''
                     : '<option value="">Select...</option>';
@@ -851,6 +855,8 @@ window.BookingModalView = (function() {
 
                 if (preferredOrgId && organisations.some(item => String(item.id || item.Id) === String(preferredOrgId))) {
                     organisationSelect.value = String(preferredOrgId);
+                } else if (systemOrganisation) {
+                    organisationSelect.value = String(systemOrganisation.id || systemOrganisation.Id);
                 } else if (organisations.length >= 1 && requireOrganisation) {
                     organisationSelect.value = String(organisations[0].id || organisations[0].Id);
                 } else if (organisations.length === 1) {

@@ -658,6 +658,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Organization billing toggles and invoices page logic
         initRoomColourPreviews();
         initOrganisationBillingToggles();
+        initRoomRatesPage();
         initInvoicesPage();
         initPaymentsPage();
 
@@ -665,6 +666,129 @@ document.addEventListener("DOMContentLoaded", () => {
             window.MyvhPortalEmail.initEmailTemplatesPage();
             window.MyvhPortalEmail.initEmailTemplateEditPage();
         }
+    }
+
+    /**
+     * Initialize room rates page filters.
+     */
+    function initRoomRatesPage() {
+        const ratesPage = document.querySelector('.myvh-room-rates-page');
+        if (!ratesPage || ratesPage.dataset.filtersInit === '1') {
+            return;
+        }
+
+        const roomFilter = ratesPage.querySelector('#myvh-room-rates-filter-room');
+        const orgTypeFilter = ratesPage.querySelector('#myvh-room-rates-filter-org-type');
+        const clearButton = ratesPage.querySelector('[data-room-rates-clear-filters]');
+        const summary = ratesPage.querySelector('#myvh-room-rates-filter-summary');
+        const noResults = ratesPage.querySelector('#myvh-room-rates-no-results');
+        const rows = Array.from(ratesPage.querySelectorAll('#myvh-room-rates-table tbody .myvh-room-rate-row'));
+
+        if (!roomFilter || !orgTypeFilter || !rows.length) {
+            ratesPage.dataset.filtersInit = '1';
+            return;
+        }
+
+        const hasOptionValue = function(selectElement, targetValue) {
+            return Array.from(selectElement.options).some(function(option) {
+                return String(option.value) === String(targetValue);
+            });
+        };
+
+        const currentRoute = getHashRoute(window.location.hash || '#room-rates');
+        const currentRoutePage = routeAliases[currentRoute.page] || currentRoute.page;
+        if (currentRoutePage === 'room-rates') {
+            const hashRoomId = String(currentRoute.params.room_id || '');
+            const hashOrgTypeId = String(currentRoute.params.org_type_id || '');
+
+            if (hashRoomId !== '' && hasOptionValue(roomFilter, hashRoomId)) {
+                roomFilter.value = hashRoomId;
+            }
+
+            if (hashOrgTypeId !== '' && hasOptionValue(orgTypeFilter, hashOrgTypeId)) {
+                orgTypeFilter.value = hashOrgTypeId;
+            }
+        }
+
+        const syncFiltersToHash = function() {
+            const query = new URLSearchParams();
+            const selectedRoom = String(roomFilter.value || '');
+            const selectedOrgType = String(orgTypeFilter.value || '');
+
+            if (selectedRoom !== '') {
+                query.set('room_id', selectedRoom);
+            }
+
+            if (selectedOrgType !== '') {
+                query.set('org_type_id', selectedOrgType);
+            }
+
+            const nextHash = query.toString() ? ('#room-rates?' + query.toString()) : '#room-rates';
+            if (window.location.hash === nextHash) {
+                return;
+            }
+
+            if (window.history && typeof window.history.replaceState === 'function') {
+                window.history.replaceState(null, '', nextHash);
+                return;
+            }
+
+            window.location.hash = nextHash;
+        };
+
+        const applyFilters = function() {
+            const selectedRoom = String(roomFilter.value || '');
+            const selectedOrgType = String(orgTypeFilter.value || '');
+            const totalCount = rows.length;
+            let visibleCount = 0;
+
+            rows.forEach(function(row) {
+                const rowRoomId = String(row.getAttribute('data-room-id') || '');
+                const rowOrgTypeId = String(row.getAttribute('data-org-type-id') || '0');
+
+                const roomMatch = selectedRoom === '' || rowRoomId === selectedRoom;
+                const orgTypeMatch = selectedOrgType === ''
+                    || (selectedOrgType === '0' && rowOrgTypeId === '0')
+                    || (selectedOrgType !== '0' && rowOrgTypeId === selectedOrgType);
+
+                const showRow = roomMatch && orgTypeMatch;
+                row.style.display = showRow ? '' : 'none';
+
+                if (showRow) {
+                    visibleCount += 1;
+                }
+            });
+
+            if (summary) {
+                summary.textContent = visibleCount + ' of ' + totalCount + ' rates shown';
+            }
+
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 ? '' : 'none';
+            }
+        };
+
+        roomFilter.addEventListener('change', function() {
+            applyFilters();
+            syncFiltersToHash();
+        });
+
+        orgTypeFilter.addEventListener('change', function() {
+            applyFilters();
+            syncFiltersToHash();
+        });
+
+        if (clearButton) {
+            clearButton.addEventListener('click', function() {
+                roomFilter.value = '';
+                orgTypeFilter.value = '';
+                applyFilters();
+                syncFiltersToHash();
+            });
+        }
+
+        applyFilters();
+        ratesPage.dataset.filtersInit = '1';
     }
 
     /**
@@ -1876,6 +2000,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const currentPage = routeAliases[currentRoute.page] || currentRoute.page;
 
         if (currentPage === 'calendar') {
+            return;
+        }
+
+        // If on a legacy booking action route (e.g. #new-booking), navigate to the
+        // resolved page instead of re-running router() which would re-trigger the
+        // booking modal action again.
+        const legacyAction = getLegacyBookingAction(currentRoute.page, currentRoute.params);
+        if (legacyAction) {
+            navigateToHash(legacyAction.page);
             return;
         }
 

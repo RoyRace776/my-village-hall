@@ -326,6 +326,28 @@ describe('BookingModalCreate', () => {
     expect(document.getElementById('myvh-modal-quote-booking-total').textContent).toBe('£32.00');
   });
 
+  test('defaults organisation selection to the system organisation when no preferred org is provided', async () => {
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'nonce-1',
+      loadRooms: () => Promise.resolve([{ Id: '14', Name: 'Main Hall' }]),
+      loadCustomers: () => Promise.resolve([{ Id: '7', Name: 'Alex Smith' }]),
+      loadOrganisations: () => Promise.resolve([
+        { Id: '11', Name: 'Community Group', IsSystem: 0 },
+        { Id: '12', Name: 'System Organisation', IsSystem: 1 },
+        { Id: '13', Name: 'Sports Club', IsSystem: 0 }
+      ])
+    });
+
+    window.BookingModalCreate.open({ customer_id: '7' });
+
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    expect(document.querySelector('[name="organisation_id"]').value).toBe('12');
+  });
+
   test('filters add-ons to the selected room and clears incompatible selections', () => {
     document.querySelector('[name="room_id"]').innerHTML = '<option value="">Select...</option><option value="14">Main Hall</option><option value="99">Committee Room</option>';
 

@@ -125,6 +125,19 @@ class CachedRoomRateRepository extends RoomRateRepository
         return $result;
     }
 
+    public function get_active_rates_for_scope(int $room_id, ?int $org_type_id = null, ?string $validity_date = null): array
+    {
+        return $this->repository->get_active_rates_for_scope($room_id, $org_type_id, $validity_date);
+    }
+
+    public function replace_days_for_rate(int $rate_id, array $days): bool
+    {
+        $result = $this->repository->replace_days_for_rate($rate_id, $days);
+        $this->incrementCacheVersion();
+
+        return $result;
+    }
+
     public function begin(): void
     {
         $this->repository->begin();

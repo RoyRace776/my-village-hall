@@ -96,17 +96,17 @@ if (!$selected_room) {
 
                 <div class="myvh-account-grid">
                     <label class="myvh-account-field">
-                        <span>Day of Week</span>
-                        <select name="day_of_week">
-                            <option value="">All days</option>
-                            <option value="0">Sunday</option>
-                            <option value="1">Monday</option>
-                            <option value="2">Tuesday</option>
-                            <option value="3">Wednesday</option>
-                            <option value="4">Thursday</option>
-                            <option value="5">Friday</option>
-                            <option value="6">Saturday</option>
-                        </select>
+                        <span>Days of Week</span>
+                        <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="0" style="flex-shrink:0; width:16px; height:16px;"> <span style="min-width:90px;">Sunday</span></label>
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="1" style="flex-shrink:0; width:16px; height:16px;"> <span style="min-width:90px;">Monday</span></label>
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="2" style="flex-shrink:0; width:16px; height:16px;"> <span style="min-width:90px;">Tuesday</span></label>
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="3" style="flex-shrink:0; width:16px; height:16px;"> <span style="min-width:90px;">Wednesday</span></label>
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="4" style="flex-shrink:0; width:16px; height:16px;"> <span style="min-width:90px;">Thursday</span></label>
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="5" style="flex-shrink:0; width:16px; height:16px;"> <span style="min-width:90px;">Friday</span></label>
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="6" style="flex-shrink:0; width:16px; height:16px;"> <span style="min-width:90px;">Saturday</span></label>
+                        </div>
+                        <small class="myvh-muted">Leave all unchecked to apply this rate every day.</small>
                     </label>
 
                     <label class="myvh-account-field">

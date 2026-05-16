@@ -12,7 +12,16 @@ if (!$rate) {
 
 $current_room_id = (int) ($rate['RoomId'] ?? 0);
 $current_org_type_id = (int) ($rate['OrganisationTypeId'] ?? 0);
-$current_day_of_week = isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== '' ? (int) $rate['DayOfWeek'] : null;
+$current_days_of_week = isset($rate['DaysOfWeek']) && is_array($rate['DaysOfWeek'])
+    ? array_values(array_filter(array_map('intval', $rate['DaysOfWeek']), static fn(int $day): bool => $day >= 0 && $day <= 6))
+    : [];
+if (empty($current_days_of_week) && isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== '' && $rate['DayOfWeek'] !== null) {
+    $legacy_day = (int) $rate['DayOfWeek'];
+    if ($legacy_day >= 0 && $legacy_day <= 6) {
+        $current_days_of_week = [$legacy_day];
+    }
+}
+$current_days_lookup = array_fill_keys($current_days_of_week, true);
 $current_start_time = trim((string) ($rate['StartTime'] ?? ''));
 $current_end_time = trim((string) ($rate['EndTime'] ?? ''));
 ?>
@@ -84,17 +93,17 @@ $current_end_time = trim((string) ($rate['EndTime'] ?? ''));
 
             <div class="myvh-account-grid">
                 <label class="myvh-account-field">
-                    <span>Day of Week</span>
-                    <select name="day_of_week">
-                        <option value="">All days</option>
-                        <option value="0" <?php selected($current_day_of_week, 0); ?>>Sunday</option>
-                        <option value="1" <?php selected($current_day_of_week, 1); ?>>Monday</option>
-                        <option value="2" <?php selected($current_day_of_week, 2); ?>>Tuesday</option>
-                        <option value="3" <?php selected($current_day_of_week, 3); ?>>Wednesday</option>
-                        <option value="4" <?php selected($current_day_of_week, 4); ?>>Thursday</option>
-                        <option value="5" <?php selected($current_day_of_week, 5); ?>>Friday</option>
-                        <option value="6" <?php selected($current_day_of_week, 6); ?>>Saturday</option>
-                    </select>
+                    <span>Days of Week</span>
+                    <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="0" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[0])); ?>> <span style="min-width:90px;">Sunday</span></label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="1" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[1])); ?>> <span style="min-width:90px;">Monday</span></label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="2" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[2])); ?>> <span style="min-width:90px;">Tuesday</span></label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="3" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[3])); ?>> <span style="min-width:90px;">Wednesday</span></label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="4" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[4])); ?>> <span style="min-width:90px;">Thursday</span></label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="5" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[5])); ?>> <span style="min-width:90px;">Friday</span></label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" name="days_of_week[]" value="6" style="flex-shrink:0; width:16px; height:16px;" <?php checked(isset($current_days_lookup[6])); ?>> <span style="min-width:90px;">Saturday</span></label>
+                    </div>
+                    <small class="myvh-muted">Leave all unchecked to apply this rate every day.</small>
                 </label>
 
                 <label class="myvh-account-field">

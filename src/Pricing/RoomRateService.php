@@ -57,17 +57,16 @@ class RoomRateService {
             return new \WP_Error('validation', __('Minimum hours must be greater than zero', 'my-village-hall'));
         }
 
-        $day_of_week_raw = trim((string) ($data['day_of_week'] ?? ''));
+        $days_of_week = $this->normalize_days_of_week($data);
+        if ($days_of_week === null) {
+            return new \WP_Error('validation', __('Days of week must be between 0 and 6', 'my-village-hall'));
+        }
+
         $start_time_raw = trim((string) ($data['start_time'] ?? ''));
         $end_time_raw = trim((string) ($data['end_time'] ?? ''));
 
-        $day_of_week = $this->normalize_day_of_week($day_of_week_raw);
         $start_time = $this->normalize_time_value($start_time_raw);
         $end_time = $this->normalize_time_value($end_time_raw);
-
-        if ($day_of_week_raw !== '' && $day_of_week === null) {
-            return new \WP_Error('validation', __('Day of week must be between 0 and 6', 'my-village-hall'));
-        }
 
         if ($start_time_raw !== '' && $start_time === null) {
             return new \WP_Error('validation', __('Start time must use HH:MM or HH:MM:SS format', 'my-village-hall'));
@@ -85,7 +84,7 @@ class RoomRateService {
             return new \WP_Error('validation', __('End time must use 15 minute intervals', 'my-village-hall'));
         }
 
-        $has_schedule_fields = $day_of_week !== null || $start_time !== null || $end_time !== null;
+        $has_schedule_fields = !empty($days_of_week) || $start_time !== null || $end_time !== null;
         if ($has_schedule_fields && $charge_type === 'fixed') {
             return new \WP_Error('validation', __('Fixed rates cannot be limited to a day/time schedule', 'my-village-hall'));
         }
@@ -98,10 +97,12 @@ class RoomRateService {
             return new \WP_Error('validation', __('End time must be later than start time', 'my-village-hall'));
         }
 
+        $legacy_day_of_week = count($days_of_week) === 1 ? $days_of_week[0] : null;
+
         $record = [
             'RoomId'             => \intval($data['room_id']),
             'OrganisationTypeId' => !empty($data['organisation_type_id']) ? \intval($data['organisation_type_id']) : null,
-            'DayOfWeek'          => $day_of_week,
+            'DayOfWeek'          => $legacy_day_of_week,
             'StartTime'          => $start_time,
             'EndTime'            => $end_time,
             'ChargeType'         => $charge_type,
@@ -116,12 +117,33 @@ class RoomRateService {
         ];
 
         if (!empty($data['rate_id'])) {
+            $rate_id = \intval($data['rate_id']);
             $result = $this->repo->update($record, ['Id' => \intval($data['rate_id'])]);
-            return is_wp_error($result) ? $result : \intval($data['rate_id']);
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            if (!$result) {
+                return new \WP_Error('database', __('Failed to save rate', 'my-village-hall'));
+            }
+
+            if (!$this->repo->replace_days_for_rate($rate_id, $days_of_week)) {
+                return new \WP_Error('database', __('Failed to save rate days', 'my-village-hall'));
+            }
+
+            return $rate_id;
         }
 
         $id = $this->repo->create($record);
-        return $id ? $id : new \WP_Error('database', __('Failed to save rate', 'my-village-hall'));
+        if (!$id) {
+            return new \WP_Error('database', __('Failed to save rate', 'my-village-hall'));
+        }
+
+        if (!$this->repo->replace_days_for_rate((int) $id, $days_of_week)) {
+            return new \WP_Error('database', __('Failed to save rate days', 'my-village-hall'));
+        }
+
+        return $id;
     }
 
     public function get_booking_rate(
@@ -229,8 +251,10 @@ class RoomRateService {
      * @param array<string, mixed> $rate
      */
     private function rate_matches_slot(array $rate, \DateTimeImmutable $slot_start, \DateTimeImmutable $slot_end): bool {
-        $day_of_week = $this->normalize_day_of_week($rate['DayOfWeek'] ?? null);
-        if ($day_of_week !== null && $day_of_week !== \intval($slot_start->format('w'))) {
+        $day_of_week = intval($slot_start->format('w'));
+        $days_of_week = $this->extract_days_from_rate($rate);
+
+        if (!empty($days_of_week) && !in_array($day_of_week, $days_of_week, true)) {
             return false;
         }
 
@@ -262,6 +286,70 @@ class RoomRateService {
         }
 
         return $day;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<int>|null
+     */
+    private function normalize_days_of_week(array $data): ?array {
+        $raw_days = $data['days_of_week'] ?? null;
+
+        if ($raw_days === null || $raw_days === '') {
+            $legacy_day = trim((string) ($data['day_of_week'] ?? ''));
+            $raw_days = $legacy_day !== '' ? [$legacy_day] : [];
+        }
+
+        if (!is_array($raw_days)) {
+            $raw_days = [$raw_days];
+        }
+
+        $days = [];
+        foreach ($raw_days as $raw_day) {
+            $value = trim((string) $raw_day);
+            if ($value === '') {
+                continue;
+            }
+
+            $day = $this->normalize_day_of_week($value);
+            if ($day === null) {
+                return null;
+            }
+
+            $days[$day] = $day;
+        }
+
+        ksort($days);
+        return array_values($days);
+    }
+
+    /**
+     * @param array<string, mixed> $rate
+     * @return array<int>
+     */
+    private function extract_days_from_rate(array $rate): array {
+        $days = $rate['DaysOfWeek'] ?? [];
+        if (!is_array($days)) {
+            $days = [];
+        }
+
+        $normalized = [];
+        foreach ($days as $raw_day) {
+            $day = $this->normalize_day_of_week($raw_day);
+            if ($day !== null) {
+                $normalized[$day] = $day;
+            }
+        }
+
+        if (empty($normalized)) {
+            $legacy_day = $this->normalize_day_of_week($rate['DayOfWeek'] ?? null);
+            if ($legacy_day !== null) {
+                $normalized[$legacy_day] = $legacy_day;
+            }
+        }
+
+        ksort($normalized);
+        return array_values($normalized);
     }
 
     private function normalize_time_value($value): ?string {

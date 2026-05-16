@@ -6,6 +6,45 @@ if (!defined('ABSPATH')) exit;
 
 class RoomRateRequestValidator extends RequestValidatorBase {
 
+    /**
+     * @return array<int>|null
+     */
+    private function normalize_days_of_week(array $data): ?array {
+        $raw_days = $data['days_of_week'] ?? null;
+
+        if ($raw_days === null || $raw_days === '') {
+            $legacy_day = trim((string) ($data['day_of_week'] ?? ''));
+            $raw_days = $legacy_day !== '' ? [$legacy_day] : [];
+        }
+
+        if (!is_array($raw_days)) {
+            $raw_days = [$raw_days];
+        }
+
+        $days = [];
+        foreach ($raw_days as $raw_day) {
+            $value = trim((string) $raw_day);
+            if ($value === '') {
+                continue;
+            }
+
+            if (!ctype_digit($value)) {
+                return null;
+            }
+
+            $day =
+intval($value);
+            if ($day < 0 || $day > 6) {
+                return null;
+            }
+
+            $days[$day] = $day;
+        }
+
+        ksort($days);
+        return array_values($days);
+    }
+
     public function validate(array $data): bool|\WP_Error {
         $required = $this->require_field($data, 'room_id', __('Room is required', 'my-village-hall'));
         if (is_wp_error($required)) return $required;
@@ -24,16 +63,9 @@ class RoomRateRequestValidator extends RequestValidatorBase {
             return $this->validation_error(__('Minimum hours must be greater than zero', 'my-village-hall'));
         }
 
-        $day_of_week_raw = trim((string) ($data['day_of_week'] ?? ''));
-        if ($day_of_week_raw !== '') {
-            if (!ctype_digit($day_of_week_raw)) {
-                return $this->validation_error(__('Day of week must be between 0 and 6', 'my-village-hall'));
-            }
-
-            $day_of_week = \intval($day_of_week_raw);
-            if ($day_of_week < 0 || $day_of_week > 6) {
-                return $this->validation_error(__('Day of week must be between 0 and 6', 'my-village-hall'));
-            }
+        $days_of_week = $this->normalize_days_of_week($data);
+        if ($days_of_week === null) {
+            return $this->validation_error(__('Days of week must be between 0 and 6', 'my-village-hall'));
         }
 
         $start_time_raw = trim((string) ($data['start_time'] ?? ''));
@@ -66,7 +98,7 @@ class RoomRateRequestValidator extends RequestValidatorBase {
             return $this->validation_error(__('End time must be later than start time', 'my-village-hall'));
         }
 
-        $has_schedule_fields = $day_of_week_raw !== '' || $start_time !== null || $end_time !== null;
+        $has_schedule_fields = !empty($days_of_week) || $start_time !== null || $end_time !== null;
         if ($has_schedule_fields && $charge_type === 'fixed') {
             return $this->validation_error(__('Fixed rates cannot be limited to a day/time schedule', 'my-village-hall'));
         }

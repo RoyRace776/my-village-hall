@@ -52,6 +52,10 @@ class RoomRateServiceTest extends UnitTestCase
                     && $record['Name'] === 'Standard Rate';
             })
             ->andReturn(44);
+                $this->repo->shouldReceive('replace_days_for_rate')
+                    ->once()
+                    ->with(44, [])
+                    ->andReturn(true);
 
         $result = $this->service->save([
             'room_id' => 1,
@@ -94,6 +98,10 @@ class RoomRateServiceTest extends UnitTestCase
                     && $record['ChargeType'] === 'per_hour';
             })
             ->andReturn(88);
+                $this->repo->shouldReceive('replace_days_for_rate')
+                    ->once()
+                    ->with(88, [3])
+                    ->andReturn(true);
 
         $result = $this->service->save([
             'room_id' => 1,
@@ -107,6 +115,37 @@ class RoomRateServiceTest extends UnitTestCase
         ]);
 
         $this->assertSame(88, $result);
+    }
+
+    /** @test */
+    public function save_persists_multiple_days_and_clears_legacy_day_column(): void
+    {
+        $this->repo->shouldReceive('create')
+            ->once()
+            ->withArgs(static function (array $record): bool {
+                return $record['DayOfWeek'] === null
+                    && $record['StartTime'] === '09:00:00'
+                    && $record['EndTime'] === '17:00:00'
+                    && $record['ChargeType'] === 'per_hour';
+            })
+            ->andReturn(99);
+        $this->repo->shouldReceive('replace_days_for_rate')
+            ->once()
+            ->with(99, [1, 2, 3, 4, 5])
+            ->andReturn(true);
+
+        $result = $this->service->save([
+            'room_id' => 1,
+            'name' => 'Weekday Daytime',
+            'charge_type' => 'per_hour',
+            'rate' => 18,
+            'minimum_hours' => 1,
+            'days_of_week' => ['1', '2', '3', '4', '5'],
+            'start_time' => '09:00',
+            'end_time' => '17:00',
+        ]);
+
+        $this->assertSame(99, $result);
     }
 
     /** @test */

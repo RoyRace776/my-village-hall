@@ -36,7 +36,8 @@ $day_labels = [
     <div class="myvh-account-header" style="display:flex; align-items:end; justify-content:space-between; gap:24px;">
         <div>
             <h2>Room Rates</h2>
-            <p>Manage room pricing for this client site.</p>
+            <p>Manage room pricing for this client site. Higher numbers indicate higher priority. When multiple rates are active for a given booking, the rate with the highest priority will be applied.</p>
+            <p>If 2 rates have the same priority, the system will apply the rate that was created first.</p>
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
             <a href="#room-rate-tester" class="myvh-portal-add-btn">
@@ -55,6 +56,38 @@ $day_labels = [
             <span><?php echo count($rates); ?> rate records</span>
         </div>
 
+        <?php if (!empty($rates)): ?>
+            <div class="myvh-room-rates-filters" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin:0 0 14px;">
+                <label class="myvh-account-field" style="margin:0; min-width:220px;">
+                    <span>Filter by room</span>
+                    <select id="myvh-room-rates-filter-room">
+                        <option value="">All rooms</option>
+                        <?php foreach ($rooms as $room): ?>
+                            <?php $filter_room_id = (int) ($room['Id'] ?? 0); ?>
+                            <?php if ($filter_room_id <= 0) { continue; } ?>
+                            <option value="<?php echo esc_attr((string) $filter_room_id); ?>"><?php echo esc_html($room['Name'] ?? ''); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="myvh-account-field" style="margin:0; min-width:220px;">
+                    <span>Filter by organisation type</span>
+                    <select id="myvh-room-rates-filter-org-type">
+                        <option value="">All organisation types</option>
+                        <option value="0">All Types (generic rate)</option>
+                        <?php foreach ($organisation_types as $org_type): ?>
+                            <?php $filter_org_type_id = (int) ($org_type['Id'] ?? 0); ?>
+                            <?php if ($filter_org_type_id <= 0) { continue; } ?>
+                            <option value="<?php echo esc_attr((string) $filter_org_type_id); ?>"><?php echo esc_html($org_type['Name'] ?? ''); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <button type="button" class="button" data-room-rates-clear-filters>Clear filters</button>
+                <span id="myvh-room-rates-filter-summary" class="myvh-muted" aria-live="polite"></span>
+            </div>
+        <?php endif; ?>
+
         <?php if (empty($rates)): ?>
             <p>No room rates found for this site.</p>
             <p>
@@ -64,7 +97,7 @@ $day_labels = [
                 </a>
             </p>
         <?php else: ?>
-            <table class="myvh-customer-list-table">
+            <table class="myvh-customer-list-table" id="myvh-room-rates-table">
                 <thead>
                     <tr>
                         <th style="padding-right:24px;">Rate Name</th>
@@ -84,16 +117,28 @@ $day_labels = [
                     $rate_id = (int) ($rate['Id'] ?? 0);
                     $room_id = (int) ($rate['RoomId'] ?? 0);
                     $org_type_id = (int) ($rate['OrganisationTypeId'] ?? 0);
-                    $day_of_week = isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== '' ? (int) $rate['DayOfWeek'] : null;
+                    $days_of_week = isset($rate['DaysOfWeek']) && is_array($rate['DaysOfWeek'])
+                        ? array_values(array_filter(array_map('intval', $rate['DaysOfWeek']), static fn(int $day): bool => $day >= 0 && $day <= 6))
+                        : [];
+                    if (empty($days_of_week) && isset($rate['DayOfWeek']) && $rate['DayOfWeek'] !== '' && $rate['DayOfWeek'] !== null) {
+                        $legacy_day = (int) $rate['DayOfWeek'];
+                        if ($legacy_day >= 0 && $legacy_day <= 6) {
+                            $days_of_week = [$legacy_day];
+                        }
+                    }
                     $window_start = trim((string) ($rate['StartTime'] ?? ''));
                     $window_end = trim((string) ($rate['EndTime'] ?? ''));
-                    $day_label = $day_of_week !== null ? ($day_labels[$day_of_week] ?? 'Unknown day') : 'All days';
+                    $day_parts = [];
+                    foreach ($days_of_week as $day_of_week) {
+                        $day_parts[] = $day_labels[$day_of_week] ?? 'Unknown day';
+                    }
+                    $day_label = empty($day_parts) ? 'All days' : implode(', ', $day_parts);
                     $window_label = ($window_start !== '' && $window_end !== '')
                         ? (substr($window_start, 0, 5) . ' - ' . substr($window_end, 0, 5))
                         : 'All times';
                     $delete_message_id = 'myvh-room-rate-message-' . $rate_id;
                     ?>
-                    <tr>
+                    <tr class="myvh-room-rate-row" data-room-id="<?php echo esc_attr((string) $room_id); ?>" data-org-type-id="<?php echo esc_attr((string) $org_type_id); ?>">
                         <td style="padding-right:24px;">
                             <strong><?php echo esc_html($rate['Name'] ?? ''); ?></strong>
                             <?php if (!empty($rate['Description'])): ?>
@@ -119,6 +164,7 @@ $day_labels = [
                 <?php endforeach; ?>
                 </tbody>
             </table>
+            <p id="myvh-room-rates-no-results" class="myvh-muted" style="display:none; margin-top:12px;">No rates match the selected filters.</p>
         <?php endif; ?>
     </div>
 </div>

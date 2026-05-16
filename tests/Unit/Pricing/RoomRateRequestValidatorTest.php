@@ -98,4 +98,39 @@ class RoomRateRequestValidatorTest extends UnitTestCase
         $this->assertInstanceOf(WP_Error::class, $result);
         $this->assertSame('Start time must use 15 minute intervals', $result->get_error_message());
     }
+
+    /** @test */
+    public function validate_accepts_multiple_days_of_week(): void
+    {
+        $result = $this->validator->validate([
+            'room_id' => 1,
+            'name' => 'Weekday discount',
+            'charge_type' => 'per_hour',
+            'rate' => 10,
+            'minimum_hours' => 1,
+            'days_of_week' => ['1', '2', '3', '4', '5'],
+            'start_time' => '09:00',
+            'end_time' => '12:00',
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function validate_rejects_invalid_days_of_week(): void
+    {
+        $result = $this->validator->validate([
+            'room_id' => 1,
+            'name' => 'Invalid schedule',
+            'charge_type' => 'per_hour',
+            'rate' => 10,
+            'minimum_hours' => 1,
+            'days_of_week' => ['1', '9'],
+            'start_time' => '09:00',
+            'end_time' => '12:00',
+        ]);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('Days of week must be between 0 and 6', $result->get_error_message());
+    }
 }
