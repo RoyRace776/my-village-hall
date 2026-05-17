@@ -5,6 +5,7 @@
 		}
 	],
 	"settings": {
+		"playwright.configFile": "playwright.config.js",
 		"playwright.env": {},
 		"chat.tools.terminal.autoApprove": {
 			"npx playwright": true,

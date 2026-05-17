@@ -18,8 +18,14 @@ async function deleteCustomerByEmail(page, email) {
     return false;
   }
 
-  page.once('dialog', (dialog) => dialog.accept());
   await rows.first().getByRole('button', { name: /delete customer/i }).click();
+
+  const confirmDialog = page
+    .locator('.myvh-portal-dialog')
+    .filter({ hasText: /delete this customer\? this cannot be undone\./i });
+
+  await expect(confirmDialog).toBeVisible({ timeout: 15000 });
+  await confirmDialog.getByRole('button', { name: /^ok$/i }).click();
 
   await expect(rows).toHaveCount(0, { timeout: 15000 });
   return true;

@@ -85,8 +85,14 @@ test.describe('Portal customer management', () => {
     const row = await getCustomerRow(page, customer.email);
     await expect(row).toBeVisible({ timeout: 15000 });
 
-    page.once('dialog', (dialog) => dialog.accept());
     await row.getByRole('button', { name: /delete customer/i }).click();
+
+    const confirmDialog = page
+      .locator('.myvh-portal-dialog')
+      .filter({ hasText: /delete this customer\? this cannot be undone\./i });
+
+    await expect(confirmDialog).toBeVisible({ timeout: 15000 });
+    await confirmDialog.getByRole('button', { name: /^ok$/i }).click();
 
     await expect
       .poll(async () => {

@@ -32,8 +32,8 @@ window.MyvhPortalDialog = (function() {
         let style = document.createElement('style');
         style.id = 'myvh-portal-dialog-styles';
         style.textContent = [
-            '.myvh-portal-dialog-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;}',
-            '.myvh-portal-dialog{width:min(480px,100%);background:#fff;border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.25);overflow:hidden;font-family:inherit;}',
+            '.myvh-portal-dialog-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:auto;}',
+            '.myvh-portal-dialog{width:min(480px,100%);background:#fff;border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.25);overflow:hidden;font-family:inherit;pointer-events:auto;}',
             '.myvh-portal-dialog__head{padding:14px 18px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#111827;}',
             '.myvh-portal-dialog__body{padding:18px;color:#1f2937;line-height:1.5;white-space:pre-wrap;}',
             '.myvh-portal-dialog__actions{padding:12px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid #e5e7eb;}',
@@ -102,7 +102,9 @@ window.MyvhPortalDialog = (function() {
             cancelButton.type = 'button';
             cancelButton.className = 'myvh-portal-dialog__btn';
             cancelButton.textContent = String(options.cancelText || 'Cancel');
-            cancelButton.addEventListener('click', function() {
+            cancelButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
                 closeCurrent(false);
             });
             actions.appendChild(cancelButton);
@@ -112,7 +114,9 @@ window.MyvhPortalDialog = (function() {
         okButton.type = 'button';
         okButton.className = 'myvh-portal-dialog__btn myvh-portal-dialog__btn--primary';
         okButton.textContent = String(options.okText || 'OK');
-        okButton.addEventListener('click', function() {
+        okButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
             closeCurrent(true);
         });
         actions.appendChild(okButton);
