@@ -1976,6 +1976,13 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Booking table action icons are handled by Bookings.bindActions().
+        // Let that handler own edit/view/delete so we do not invoke legacy
+        // booking actions twice from both listeners.
+        if (link.closest('.myvh-booking-actions-inline') && link.classList.contains('myvh-action-icon')) {
+            return;
+        }
+
         const href = link.getAttribute('href') || '';
         if (!href || href === '#') {
             return;
