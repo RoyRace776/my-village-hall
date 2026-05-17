@@ -86,7 +86,7 @@ class BookingValidatorTest extends UnitTestCase {
 
         $this->room_rate_service->shouldReceive('get_booking_rate')
             ->once()
-            ->with(5, ['Id' => 11], [])
+            ->with(5, ['Id' => 11], [], '2026-06-01', '09:00:00', '2026-06-01', '11:00:00', '2026-06-01')
             ->andReturn(null);
 
         $result = $this->validator->validate($this->valid_data());
@@ -101,7 +101,7 @@ class BookingValidatorTest extends UnitTestCase {
 
         $this->room_rate_service->shouldReceive('get_booking_rate')
             ->once()
-            ->with(5, ['Id' => 11], [])
+            ->with(5, ['Id' => 11], [], '2026-06-01', '09:00:00', '2026-06-01', '11:00:00', '2026-06-01')
             ->andReturnUsing(static fn(): array => ['Id' => 90]);
 
         $result = $this->validator->validate($this->valid_data());

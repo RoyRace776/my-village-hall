@@ -16,6 +16,8 @@ class NoticeSettingsTest extends UnitTestCase
         parent::setUp();
         Functions\stubs([
             'is_multisite' => false,
+            'sanitize_key' => static fn($key) => (string) $key,
+            'get_current_user_id' => static fn() => 1,
         ]);
     }
 

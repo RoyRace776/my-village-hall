@@ -21,6 +21,9 @@ class DashboardTemplateTest extends UnitTestCase {
             'esc_html_e' => static function ($value, $domain = null) {
                 echo (string) $value;
             },
+            'esc_attr_e' => static function ($value, $domain = null) {
+                echo (string) $value;
+            },
             'myvh_get_active_notices' => static fn() => [],
             'wp_trim_words' => static function ($text, $num_words = 55, $more = '...') {
                 $text = trim((string) $text);

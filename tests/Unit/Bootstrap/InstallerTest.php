@@ -102,7 +102,7 @@ class InstallerTest extends UnitTestCase {
         $queries = [];
 
         $this->wpdb->shouldReceive('query')
-            ->times(22)
+            ->times(23)
             ->andReturnUsing(function ($sql) use (&$queries) {
                 $queries[] = $sql;
                 return true;
@@ -110,7 +110,7 @@ class InstallerTest extends UnitTestCase {
 
         Installer::drop_tables($this->wpdb);
 
-        $this->assertCount(22, $queries);
+        $this->assertCount(23, $queries);
         $this->assertStringContainsString('DROP TABLE IF EXISTS wp_myvh_bookings', implode("\n", $queries));
         $this->assertStringContainsString('DROP TABLE IF EXISTS wp_myvh_room_hours', implode("\n", $queries));
     }
