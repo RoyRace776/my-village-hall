@@ -9,6 +9,9 @@ class RepositoryBase {
     /** @var string */
     protected $table_name;
 
+    /**
+     * @param \wpdb|null $my_wpdb
+     */
     public function __construct($my_wpdb = null) {
         global $wpdb;
         $this->wpdb = $my_wpdb ?: $wpdb;
@@ -21,6 +24,9 @@ class RepositoryBase {
     public function rollback(): void { $this->wpdb->query('ROLLBACK'); }
 
     // --- CRUD ---
+    /**
+     * @param array<string, mixed> $data
+     */
     public function create($data): int|false {
         $result = $this->wpdb->insert($this->table_name, $data, $this->get_format($data));
         if ($result) {
@@ -30,11 +36,19 @@ class RepositoryBase {
         return $result ? $this->wpdb->insert_id : false;
     }
 
+    /**
+     * @param int|string $id
+     * @return array<string, mixed>|null
+     */
     public function get_by_id($id): ?array {
         $sql = $this->wpdb->prepare("SELECT * FROM {$this->table_name} WHERE Id = %d", $id);
         return $this->wpdb->get_row($sql, ARRAY_A);
     }
 
+    /**
+     * @param array{orderby?: string, order?: string, limit?: int|string, offset?: int|string} $args
+     * @return array<int, array<string, mixed>>
+     */
     public function get_all($args = []): array {
         $sql = "SELECT * FROM {$this->table_name}";
         if (!empty($args['orderby'])) {
@@ -53,12 +67,19 @@ class RepositoryBase {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $where
+     */
     public function update($data, $where): bool {
         $result = $this->wpdb->update($this->table_name, $data, $where, $this->get_format($data));
         $this->audit('update', $data, $where);
         return $result !== false;
     }
 
+    /**
+     * @param int|string $id
+     */
     public function delete_by_id($id): bool {
         $result = $this->wpdb->delete($this->table_name, ['Id' => $id], ['%d']);
         $this->audit('delete', ['Id' => $id]);
@@ -66,11 +87,21 @@ class RepositoryBase {
     }
 
     //Just for compatibility with existing code that calls delete() instead of delete_by_id()
+    /**
+     * @param int|string $id
+     */
     public function delete($id): bool {
         return $this->delete_by_id($id);
     }
 
     // --- Query helpers ---
+    /**
+     * @param array<string, scalar|null> $where
+     * @param string $order
+     * @param int|string|null $limit
+     * @param int|string|null $offset
+     * @return array<int, array<string, mixed>>
+     */
     public function find($where = [], $order = '', $limit = null, $offset = null): array {
         $sql = "SELECT * FROM {$this->table_name}";
         if ($where) {
@@ -124,6 +155,9 @@ class RepositoryBase {
     }
 
     // --- Table name resolution ---
+    /**
+     * @param string|null $table_name
+     */
     protected function resolve_table_name($table_name = null): string {
 
         if ($table_name) {
@@ -138,6 +172,10 @@ class RepositoryBase {
     }
 
     // --- Format helper ---
+    /**
+     * @param array<string, mixed> $data
+     * @return array<int, string>
+     */
     protected function get_format($data): array {
         $formats = [];
         foreach ($data as $v) {
@@ -147,27 +185,50 @@ class RepositoryBase {
     }
 
     // --- Soft delete ---
+    /**
+     * @param int|string $id
+     */
     public function soft_delete_by_id($id): bool {
         return $this->update(['IsDeleted' => 1], ['Id' => $id]);
     }
+    /**
+     * @param int|string $id
+     */
     public function restore_by_id($id): bool {
         return $this->update(['IsDeleted' => 0], ['Id' => $id]);
     }
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function with_deleted(): array {
         $sql = "SELECT * FROM {$this->table_name}";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function only_deleted(): array {
         $sql = "SELECT * FROM {$this->table_name} WHERE IsDeleted = 1";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
     // --- Audit logging (stub) ---
+    /**
+     * @param string $action
+     * @param array<string, mixed> $data
+     * @param array<string, mixed>|null $where
+     */
     protected function audit($action, $data, $where = null): void {
         AuditTrail::record_repository_event($this, (string) $action, (array) $data, is_array($where) ? $where : null);
     }
 
     // --- Pagination ---
+    /**
+     * @param int $page
+     * @param int $per_page
+     * @param array<string, scalar|null> $where
+     * @return array<int, array<string, mixed>>
+     */
     public function paginate($page = 1, $per_page = 20, $where = []): array {
         $offset = ($page - 1) * $per_page;
         return $this->find($where, '', $per_page, $offset);

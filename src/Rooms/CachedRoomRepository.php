@@ -18,6 +18,10 @@ class CachedRoomRepository extends RoomRepository
         $this->table_name = $repository->table_name;
     }
 
+    /**
+     * @param int|string $id
+     * @return array<string, mixed>|null
+     */
     public function get_by_id($id): ?array
     {
         $cache_key = $this->buildCacheKey(['get_by_id', $id]);
@@ -33,6 +37,10 @@ class CachedRoomRepository extends RoomRepository
         return $room;
     }
 
+    /**
+     * @param array{orderby?: string, order?: string, limit?: int|string, offset?: int|string} $args
+     * @return array<int, array<string, mixed>>
+     */
     public function get_all($args = []): array
     {
         $cache_key = $this->buildCacheKey(['get_all', $args]);
@@ -48,6 +56,9 @@ class CachedRoomRepository extends RoomRepository
         return $rooms;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function get_all_with_venues(): array
     {
         $cache_key = $this->buildCacheKey(['get_all_with_venues']);
@@ -63,6 +74,9 @@ class CachedRoomRepository extends RoomRepository
         return $rooms;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function get_public_with_venues(): array
     {
         $cache_key = $this->buildCacheKey(['get_public_with_venues']);
@@ -78,7 +92,12 @@ class CachedRoomRepository extends RoomRepository
         return $rooms;
     }
 
-    public function get_by_venue($venue_id, $public_only = false): array
+    /**
+     * @param int $venue_id
+     * @param bool $public_only
+     * @return array<int, array<string, mixed>>
+     */
+    public function get_by_venue(int $venue_id, bool $public_only = false): array
     {
         $cache_key = $this->buildCacheKey(['get_by_venue', $venue_id, (bool) $public_only]);
         $cached = wp_cache_get($cache_key, self::CACHE_GROUP);
@@ -93,7 +112,11 @@ class CachedRoomRepository extends RoomRepository
         return $rooms;
     }
 
-    public function get_public_room_ids($room_ids = []): array
+    /**
+     * @param array<int, int|string> $room_ids
+     * @return array<int, int|string>
+     */
+    public function get_public_room_ids(array $room_ids = []): array
     {
         $cache_key = $this->buildCacheKey(['get_public_room_ids', $room_ids]);
         $cached = wp_cache_get($cache_key, self::CACHE_GROUP);
@@ -108,6 +131,9 @@ class CachedRoomRepository extends RoomRepository
         return $public_room_ids;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function create($data): int|false
     {
         $result = $this->repository->create($data);
@@ -116,6 +142,10 @@ class CachedRoomRepository extends RoomRepository
         return $result;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $where
+     */
     public function update($data, $where): bool
     {
         $result = $this->repository->update($data, $where);
@@ -124,6 +154,9 @@ class CachedRoomRepository extends RoomRepository
         return $result;
     }
 
+    /**
+     * @param int|string $id
+     */
     public function delete($id): bool
     {
         $result = $this->repository->delete($id);
@@ -132,6 +165,9 @@ class CachedRoomRepository extends RoomRepository
         return $result;
     }
 
+    /**
+     * @param int|string $id
+     */
     public function delete_by_id($id): bool
     {
         $result = $this->repository->delete_by_id($id);
@@ -140,6 +176,9 @@ class CachedRoomRepository extends RoomRepository
         return $result;
     }
 
+    /**
+     * @param int|string $id
+     */
     public function soft_delete_by_id($id): bool
     {
         $result = $this->repository->soft_delete_by_id($id);
@@ -148,6 +187,9 @@ class CachedRoomRepository extends RoomRepository
         return $result;
     }
 
+    /**
+     * @param int|string $id
+     */
     public function restore_by_id($id): bool
     {
         $result = $this->repository->restore_by_id($id);
@@ -176,7 +218,12 @@ class CachedRoomRepository extends RoomRepository
         return $this->repository->last_error();
     }
 
-    public function __call($name, $arguments)
+    /**
+     * @param string $name
+     * @param array<int, mixed> $arguments
+     * @return mixed
+     */
+    public function __call($name, $arguments): mixed
     {
         return $this->repository->{$name}(...$arguments);
     }

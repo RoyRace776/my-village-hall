@@ -37,7 +37,7 @@ class RoomRepository extends RepositoryBase {
     /**
      * Get all public rooms with venue information.
      *
-     * @return array List of public rooms with venue details.
+        * @return array<int, array<string, mixed>> List of public rooms with venue details.
      */
     public function get_public_with_venues(): array {
         $sql = "SELECT r.*, v.Id as VenueId, v.Name as VenueName FROM $this->table_name r\n                JOIN {$this->wpdb->prefix}myvh_venues v ON r.VenueId = v.Id\n                WHERE r.IsPublic = 1\n                ORDER BY v.Name, r.Name";
@@ -54,9 +54,9 @@ class RoomRepository extends RepositoryBase {
      *
      * @param int  $venue_id The venue ID to filter by.
      * @param bool $public_only If true, only return public rooms. If false, return all rooms.
-     * @return array List of rooms for the venue.
+     * @return array<int, array<string, mixed>> List of rooms for the venue.
      */
-    public function get_by_venue($venue_id, $public_only = false): array {
+    public function get_by_venue(int $venue_id, bool $public_only = false): array {
         $sql = "SELECT * FROM $this->table_name WHERE VenueId = %d";
         if ($public_only) {
             $sql .= " AND IsPublic = 1";
@@ -76,10 +76,10 @@ class RoomRepository extends RepositoryBase {
     /**
      * Get room IDs that are public and have active rates (for booking/calendar display).
      *
-     * @param array $room_ids Optional. If provided, filter results to these IDs.
-     * @return array List of public room IDs with active rates.
+     * @param array<int, int|string> $room_ids Optional. If provided, filter results to these IDs.
+     * @return array<int, int|string> List of public room IDs with active rates.
      */
-    public function get_public_room_ids($room_ids = []): array {
+    public function get_public_room_ids(array $room_ids = []): array {
         $sql = "SELECT DISTINCT Id FROM $this->table_name WHERE IsPublic = 1";
 
         if (!empty($room_ids)) {
@@ -91,6 +91,9 @@ class RoomRepository extends RepositoryBase {
         if ($results === null) {
             error_log('MYVH Room Repository Error (get_public_room_ids): ' . $this->wpdb->last_error);
         }
-        return array_map(function($row) { return $row['Id']; }, $results ?? []);
+        return array_map(
+            static fn(array $row) => $row['Id'],
+            $results ?? []
+        );
     }
 }
