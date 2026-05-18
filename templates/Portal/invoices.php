@@ -19,7 +19,7 @@ $selected_invoice_number_match = isset($selected_invoice_number_match) ? (string
 <div class="myvh-dashboard-section myvh-client-settings-page myvh-invoices-page">
     <div class="myvh-account-header">
         <div>
-            <h2><?php echo $is_client_admin_view ? 'Generated Invoices' : 'Your Invoices'; ?></h2>
+            <h2><?php echo $is_client_admin_view ? 'Invoices' : 'Your Invoices'; ?></h2>
             <p><?php echo $is_client_admin_view
                 ? 'Review generated invoices, statuses, and outstanding balances across this site.'
                 : 'Review invoice statuses, balances, and due dates for your account.'; ?></p>

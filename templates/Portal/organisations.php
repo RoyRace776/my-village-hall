@@ -324,11 +324,9 @@ foreach ($organisation_types as $organisation_type) {
                                     <input type="email" name="email" required placeholder="member@example.com">
                                 </label>
 
-                                <label class="myvh-account-field myvh-account-checkbox">
-                                    <span>
-                                        <input type="checkbox" name="is_admin" value="1">
-                                        Add as admin
-                                    </span>
+                                <label class="myvh-toggle-row">
+                                    <input type="checkbox" name="is_admin" value="1">
+                                    <span>Add as admin</span>
                                 </label>
 
                                 <div class="myvh-account-actions">

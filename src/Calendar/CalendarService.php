@@ -465,6 +465,8 @@ class CalendarService {
         $room_name = $room_meta[$room_id]['name'] ?? '';
         $room_colour = $room_meta[$room_id]['colour'] ?? RoomColour::fallback($room_id);
         $description = $booking->description();
+        $recurring_pattern_id = $booking->recurringPatternId();
+        $is_recurring_series = $recurring_pattern_id > 0;
         $is_public = $booking->isPublic();
         $booking_customer_id = $booking->customerId();
         $organisation_id = $booking->organisationId();
@@ -518,6 +520,8 @@ class CalendarService {
                 'roomColour' => $room_colour,
                 'status' => $status,
                 'description' => $safe_description,
+                'isRecurringSeries' => $is_recurring_series,
+                'recurringPatternId' => $recurring_pattern_id,
                 'isPublic' => $is_public,
                 'organisationId' => $organisation_id,
                 'canViewPrivate' => $can_view_private,

@@ -17,6 +17,7 @@ class Booking
     private readonly string $roomName;
     private readonly string $venueName;
     private readonly bool $roomIsPublic;
+    private readonly int $recurringPatternId;
 
     private function __construct(
         int $id,
@@ -31,7 +32,8 @@ class Booking
         bool $isPublic,
         string $roomName,
         string $venueName,
-        bool $roomIsPublic
+        bool $roomIsPublic,
+        int $recurringPatternId = 0
     ) {
         if ($end <= $start) {
             throw new \InvalidArgumentException('Booking end must be after start.');
@@ -50,6 +52,7 @@ class Booking
         $this->roomName = $roomName;
         $this->venueName = $venueName;
         $this->roomIsPublic = $roomIsPublic;
+        $this->recurringPatternId = $recurringPatternId;
     }
 
     /**
@@ -76,7 +79,8 @@ class Booking
             !empty($data['Public']),
             (string) ($data['RoomName'] ?? ''),
             (string) ($data['VenueName'] ?? ''),
-            !empty($data['IsPublic'])
+            !empty($data['IsPublic']),
+            (int) ($data['RecurringPatternId'] ?? 0)
         );
     }
 
@@ -149,6 +153,11 @@ class Booking
         return $this->roomIsPublic;
     }
 
+    public function recurringPatternId(): int
+    {
+        return $this->recurringPatternId;
+    }
+
     // -------------------------
     // Domain logic
     // -------------------------
@@ -216,7 +225,8 @@ class Booking
             $this->isPublic,
             $this->roomName,
             $this->venueName,
-            $this->roomIsPublic
+            $this->roomIsPublic,
+            $this->recurringPatternId
         );
     }
 }

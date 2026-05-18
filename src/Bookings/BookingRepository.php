@@ -744,6 +744,7 @@ class BookingRepository extends RepositoryBase
             'RoomName' => isset($row['RoomName']) ? (string) $row['RoomName'] : '',
             'VenueName' => isset($row['VenueName']) ? (string) $row['VenueName'] : '',
             'IsPublic' => !empty($row['IsPublic']),
+            'RecurringPatternId' => (int) ($row['RecurringPatternId'] ?? 0),
         ]);
     }
 

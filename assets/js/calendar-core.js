@@ -7,6 +7,7 @@ window.CalendarCore = (function () {
     let currentDetail = "Week";
     let currentContainerId = "myvh-calendar";
     const DEFAULT_EVENT_BACKGROUND = "#f7f3ee";
+    const RECURRING_SERIES_ICON = "↻";
     const DEFAULT_STATUS_COLORS = {
         confirmed: "#2271b1",
         pending: "#f0a500",
@@ -175,6 +176,44 @@ window.CalendarCore = (function () {
         return String(raw).toLowerCase() === "true";
     }
 
+    function isRecurringSeriesBooking(tags) {
+        if (!tags) {
+            return false;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(tags, "isRecurringSeries")) {
+            const raw = tags.isRecurringSeries;
+            if (raw === true || raw === 1 || raw === "1") {
+                return true;
+            }
+            if (raw === false || raw === 0 || raw === "0") {
+                return false;
+            }
+
+            if (String(raw).toLowerCase() === "true") {
+                return true;
+            }
+        }
+
+        const patternId = Number(tags.recurringPatternId || 0);
+        return Number.isFinite(patternId) && patternId > 0;
+    }
+
+    function withRecurringSeriesPrefix(value, tags) {
+        const text = String(value || "").trim();
+        if (text === "" || !isRecurringSeriesBooking(tags)) {
+            return text;
+        }
+
+        const escapedIcon = RECURRING_SERIES_ICON.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const prefixedPattern = new RegExp(`^${escapedIcon}\\s+`);
+        if (prefixedPattern.test(text)) {
+            return text;
+        }
+
+        return `${RECURRING_SERIES_ICON} ${text}`;
+    }
+
     /**
      * Build a tooltip string for a calendar event.
      * @param {object} event - The event object
@@ -221,16 +260,18 @@ window.CalendarCore = (function () {
         const descriptionFromTag = tags.description ? String(tags.description).trim() : "";
         const descriptionFromText = event && event.text ? String(event.text).trim() : "";
         const description = descriptionFromTag || descriptionFromText;
-        const privateLabel = tags.privateLabel ? String(tags.privateLabel).trim() : "";
+        const recurringDescription = withRecurringSeriesPrefix(description, tags);
+        const recurringPrivateLabel = withRecurringSeriesPrefix(tags.privateLabel ? String(tags.privateLabel).trim() : "", tags);
+        const recurringDescriptionFromText = withRecurringSeriesPrefix(descriptionFromText, tags);
 
         if (context === "admin") {
-            if (description !== "") {
-                tooltipParts.push(description);
+            if (recurringDescription !== "") {
+                tooltipParts.push(recurringDescription);
             }
         } else if (!isPublicBooking(tags) && !canViewPrivateBooking(tags)) {
-            tooltipParts.push(privateLabel || descriptionFromText || "Private booking");
-        } else if (description !== "") {
-            tooltipParts.push(description);
+            tooltipParts.push(recurringPrivateLabel || recurringDescriptionFromText || "Private booking");
+        } else if (recurringDescription !== "") {
+            tooltipParts.push(recurringDescription);
         }
 
         return tooltipParts.join("\n");
@@ -364,6 +405,7 @@ window.CalendarCore = (function () {
                 }
 
                 events.forEach(e => {
+                    e.text = withRecurringSeriesPrefix(e.text, e && e.tags ? e.tags : {});
                     e.toolTip = buildEventTooltip(e, context);
                 });
                 const calendarEvents = currentDetail === "Month"
@@ -396,6 +438,7 @@ window.CalendarCore = (function () {
                         ? e.resource
                         : (e?.tags?.roomId ?? "");
                     e.resource = String(resourceValue);
+                    e.text = withRecurringSeriesPrefix(e.text, e && e.tags ? e.tags : {});
                     e.toolTip = buildEventTooltip(e, context);
                 });
                 targetScheduler.events.list = applyEventStatusColors(events, statusColors);
