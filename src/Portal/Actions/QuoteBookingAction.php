@@ -101,7 +101,7 @@ class QuoteBookingAction {
         return array_values(array_unique(array_filter($organisation_ids)));
     }
 
-    private function validate_quote_payload(array $data): true|WP_Error {
+    private function validate_quote_payload(array $data): ?WP_Error {
         if (empty($data['room_id'])) {
             return new WP_Error('validation', __('Room is required', 'my-village-hall'));
         }
@@ -124,7 +124,7 @@ class QuoteBookingAction {
             return new WP_Error('validation', __('End time must be later than the start time', 'my-village-hall'));
         }
 
-        return true;
+        return null;
     }
 
     private function split_datetime( mixed $value, mixed $default_date = ''): array {

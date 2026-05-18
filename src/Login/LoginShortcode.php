@@ -18,7 +18,7 @@ class LoginShortcode implements ShortcodeInterface
         wp_enqueue_style(
             'myvh-login',
             MYVH_PLUGIN_URL . 'assets/css/login.css',
-            null,
+            [],
             $login_css_version,
             'all'
         );
