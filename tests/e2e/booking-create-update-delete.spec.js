@@ -4,6 +4,7 @@ const {
   loginAsPortalAdmin,
   openPortalRoute,
 } = require('./helpers/portal-auth');
+const { findNextSlotFromAvailabilityService } = require('./helpers/availability');
 
 async function waitForChoices(selectLocator) {
   await expect
@@ -61,30 +62,6 @@ async function setHiddenAndAltValue(form, selector, value, altValue = null) {
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
   }, value);
-}
-
-async function findNextSlotFromAvailabilityService(page, roomId, lengthMinutes = 60) {
-  const result = await page.evaluate(async ({ selectedRoomId, requestedLength }) => {
-    const payload = new FormData();
-    payload.append('action', 'myvh_portal_next_booking_slot');
-    payload.append('nonce', window.myvhPortal.nonce);
-    payload.append('room_id', String(selectedRoomId));
-    payload.append('length_minutes', String(requestedLength));
-
-    const response = await fetch(window.myvhPortal.ajax_url, {
-      method: 'POST',
-      body: payload,
-      credentials: 'same-origin',
-    });
-
-    return response.json();
-  }, { selectedRoomId: roomId, requestedLength: lengthMinutes });
-
-  if (!result || !result.success || !result.data) {
-    throw new Error(result?.message || 'Failed to fetch next available booking slot.');
-  }
-
-  return result.data;
 }
 
 async function openCreateModal(page) {
@@ -167,9 +144,7 @@ test.describe('Portal booking create-update-delete', () => {
     await expect(updatedRow).toBeVisible({ timeout: 15000 });
 
     await updatedRow.getByRole('link', { name: /delete booking/i }).click();
-    await expect(page.getByRole('heading', { name: /^delete booking$/i })).toBeVisible({ timeout: 15000 });
-
-    await page.locator('.myvh-delete-booking-button').click();
+    await expect(page.getByRole('dialog')).toContainText(/delete this booking\? this action cannot be undone\./i, { timeout: 15000 });
 
     const confirmBackdrop = page
       .locator('.myvh-portal-dialog-backdrop')
@@ -201,7 +176,7 @@ test.describe('Portal booking create-update-delete', () => {
       }
     }, { timeout: 15000 });
 
-    await confirmBackdrop.locator('.myvh-portal-dialog__btn--primary').click({ force: true });
+    await confirmBackdrop.locator('button.myvh-portal-dialog__btn.myvh-portal-dialog__btn--primary').click();
     await expect(confirmBackdrop).toBeHidden({ timeout: 15000 });
     await deleteRequestCompleted;
 

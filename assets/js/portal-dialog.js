@@ -4,6 +4,14 @@ window.MyvhPortalDialog = (function() {
     let styleInjected = false;
     let activeElements = null;
 
+    function removeStaleBackdrops() {
+        document.querySelectorAll('.myvh-portal-dialog-backdrop').forEach(function(node) {
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+        });
+    }
+
     function getSiteName() {
         if (window.myvhPortal && window.myvhPortal.site_name) {
             return String(window.myvhPortal.site_name);
@@ -48,6 +56,9 @@ window.MyvhPortalDialog = (function() {
 
     function closeCurrent(result) {
         if (!activeElements) {
+            removeStaleBackdrops();
+            active = false;
+            processQueue();
             return;
         }
 
@@ -55,10 +66,24 @@ window.MyvhPortalDialog = (function() {
         let backdrop = activeElements.backdrop;
         let onKeydown = activeElements.onKeydown;
 
-        document.removeEventListener('keydown', onKeydown);
+        // Immediately hide the backdrop
+        if (backdrop) {
+            backdrop.style.visibility = 'hidden';
+            backdrop.style.opacity = '0';
+            backdrop.style.setProperty('display', 'none', 'important');
+            backdrop.setAttribute('aria-hidden', 'true');
+        }
+
+        // Remove keyboard listener
+        if (onKeydown) {
+            document.removeEventListener('keydown', onKeydown);
+        }
+
+        // Remove current and any stale dialog backdrops.
         if (backdrop && backdrop.parentNode) {
             backdrop.parentNode.removeChild(backdrop);
         }
+        removeStaleBackdrops();
 
         activeElements = null;
         active = false;
@@ -72,6 +97,7 @@ window.MyvhPortalDialog = (function() {
 
     function renderDialog(item) {
         ensureStyles();
+        removeStaleBackdrops();
 
         let isConfirm = item.type === 'confirm';
         let options = item.options || {};
@@ -143,6 +169,12 @@ window.MyvhPortalDialog = (function() {
             if (event.key === 'Escape') {
                 event.preventDefault();
                 closeCurrent(isConfirm ? false : true);
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                closeCurrent(true);
                 return;
             }
 

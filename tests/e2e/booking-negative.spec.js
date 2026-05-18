@@ -4,6 +4,7 @@ const {
   loginAsPortalAdmin,
   openPortalRoute,
 } = require('./helpers/portal-auth');
+const { findNextSlotFromAvailabilityService } = require('./helpers/availability');
 
 async function waitForSelectOptions(selectLocator) {
   await expect
@@ -28,6 +29,7 @@ async function selectFirstNonEmptyOption(selectLocator) {
   }
 
   await selectLocator.selectOption(optionValue);
+  return optionValue;
 }
 
 async function setHiddenDateValue(container, selector, value) {
@@ -51,7 +53,7 @@ async function createBooking(page, description) {
 
   const roomSelect = form.locator('select[name="room_id"]');
   await waitForSelectOptions(roomSelect);
-  await selectFirstNonEmptyOption(roomSelect);
+  const selectedRoomId = Number(await selectFirstNonEmptyOption(roomSelect));
 
   const customerSelect = form.locator('select[name="customer_id"]');
   await waitForSelectOptions(customerSelect);
@@ -62,12 +64,11 @@ async function createBooking(page, description) {
   await waitForSelectOptions(organisationSelect);
   await selectFirstNonEmptyOption(organisationSelect);
 
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  const dateText = tomorrow.toISOString().slice(0, 10);
+  const slot = await findNextSlotFromAvailabilityService(page, selectedRoomId, 60);
 
-  await setHiddenDateValue(form, '#myvh-modal-start-date', dateText);
-  await setHiddenDateValue(form, '#myvh-modal-start-time', '10:00');
-  await setHiddenDateValue(form, '#myvh-modal-end-time', '11:00');
+  await setHiddenDateValue(form, '#myvh-modal-start-date', slot.start_date);
+  await setHiddenDateValue(form, '#myvh-modal-start-time', slot.start_time);
+  await setHiddenDateValue(form, '#myvh-modal-end-time', slot.end_time);
   await form.locator('input[name="text"]').fill(description);
 
   await form.getByRole('button', { name: /^create booking$/i }).first().click();
@@ -127,7 +128,7 @@ test.describe('Portal booking negative paths', () => {
     await expect(form.getByRole('button', { name: /^create booking$/i }).first()).toBeEnabled();
   });
 
-  test('stays on delete page when delete confirmation is cancelled', async ({ page }) => {
+  test('keeps booking on list when delete confirmation is cancelled', async ({ page }) => {
     test.skip(!hasAdminCreds(), 'Set PW_ADMIN_USERNAME and PW_ADMIN_PASSWORD to run this test.');
 
     await loginAsPortalAdmin(page);
@@ -138,21 +139,62 @@ test.describe('Portal booking negative paths', () => {
 
     await expect(bookingRow).toBeVisible({ timeout: 15000 });
     await bookingRow.getByRole('link', { name: /delete booking/i }).click();
-
-    await expect(page.getByRole('heading', { name: /^delete booking$/i })).toBeVisible({ timeout: 15000 });
-
-    page.once('dialog', (dialog) => dialog.dismiss());
-    await page.locator('.myvh-delete-booking-button').click();
+    const cancelConfirmBackdrop = page
+      .locator('.myvh-portal-dialog-backdrop')
+      .filter({ hasText: /delete this booking\? this action cannot be undone\./i })
+      .last();
+    await expect(cancelConfirmBackdrop).toBeVisible({ timeout: 15000 });
+    // Cancel: click the non-primary button on the active backdrop
+    await cancelConfirmBackdrop
+      .locator('button.myvh-portal-dialog__btn:not(.myvh-portal-dialog__btn--primary)')
+      .click({ force: true });
+    await expect(cancelConfirmBackdrop).toBeHidden({ timeout: 15000 });
 
     await expect
       .poll(() => new URL(page.url()).hash, { timeout: 15000 })
-      .toContain('booking-delete?booking_id=');
+      .toBe('#bookings');
 
-    await expect(page.getByRole('heading', { name: /^delete booking$/i })).toBeVisible();
+    const rowAfterCancel = page
+      .locator('#myvh-bookings-table tbody tr.myvh-bookings-table-row')
+      .filter({ hasText: description })
+      .first();
+    await expect(rowAfterCancel).toBeVisible({ timeout: 15000 });
 
     // Cleanup the created booking to keep the test environment tidy.
-    page.once('dialog', (dialog) => dialog.accept());
-    await page.locator('.myvh-delete-booking-button').click();
+    await rowAfterCancel.getByRole('link', { name: /delete booking/i }).click();
+    const confirmDeleteBackdrop = page
+      .locator('.myvh-portal-dialog-backdrop')
+      .filter({ hasText: /delete this booking\? this action cannot be undone\./i })
+      .last();
+    await expect(confirmDeleteBackdrop).toBeVisible({ timeout: 15000 });
+
+    const deleteRequestCompleted = page.waitForResponse(async (response) => {
+      if (!response.url().includes('admin-ajax.php')) {
+        return false;
+      }
+
+      const request = response.request();
+      if (request.method() !== 'POST') {
+        return false;
+      }
+
+      const body = request.postData() || '';
+      if (!body.includes('myvh_portal_delete_booking')) {
+        return false;
+      }
+
+      try {
+        const payload = await response.json();
+        return !!payload && payload.success === true;
+      } catch (error) {
+        return false;
+      }
+    }, { timeout: 15000 });
+
+    // Confirm: click the primary button
+    await confirmDeleteBackdrop.locator('button.myvh-portal-dialog__btn.myvh-portal-dialog__btn--primary').click();
+    await expect(confirmDeleteBackdrop).toBeHidden({ timeout: 15000 });
+    await deleteRequestCompleted;
 
     await expect
       .poll(() => new URL(page.url()).hash, { timeout: 15000 })
