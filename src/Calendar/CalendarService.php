@@ -42,7 +42,7 @@ class CalendarService {
         $this->deposit_service = $deposit_service;
     }
 
-    public function get_events($start, $end, $context = 'public', $viewer_user_id = 0, $filters = []): array {
+    public function get_events( mixed $start, mixed $end, mixed $context = 'public', mixed $viewer_user_id = 0, mixed $filters = []): array {
         /** @var Booking[] $bookings */
         $bookings = $this->booking_service->get_between($start, $end, $context, $filters);
         $room_meta = $this->get_room_metadata();
@@ -89,7 +89,7 @@ class CalendarService {
         return $events;
     }
 
-    public function get_public_feed_events($start, $end, $viewer_user_id = 0, $filters = [], $default_label = 'Private booking'): array {
+    public function get_public_feed_events( mixed $start, mixed $end, mixed $viewer_user_id = 0, mixed $filters = [], mixed $default_label = 'Private booking'): array {
         $context = $viewer_user_id > 0 ? 'portal' : 'public';
         $status_filters = [
             BookingStatus::CONFIRMED->value,
@@ -148,7 +148,7 @@ class CalendarService {
         return $events;
     }
 
-    public function create_event($request, $context = 'admin', $viewer_user_id = 0): array|WP_Error {
+    public function create_event( mixed $request, mixed $context = 'admin', mixed $viewer_user_id = 0): array|WP_Error {
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
 
@@ -233,7 +233,7 @@ class CalendarService {
         return $response;
     }
 
-    public function quote_event($request, $context = 'admin', $viewer_user_id = 0): array|WP_Error {
+    public function quote_event( mixed $request, mixed $context = 'admin', mixed $viewer_user_id = 0): array|WP_Error {
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
 
@@ -394,7 +394,7 @@ class CalendarService {
      * Returns true if the room is visible to the viewer in the given context.
      * Private rooms are only visible to admins and client admins.
      */
-    private function is_room_visible($room_id, $context, $viewer_scope, array $room_meta): bool {
+    private function is_room_visible( mixed $room_id, mixed $context, mixed $viewer_scope, array $room_meta): bool {
         // Rooms not found in metadata are treated as public (safe default)
         if (!isset($room_meta[$room_id])) {
             return true;
@@ -417,7 +417,7 @@ class CalendarService {
         return false;
     }
 
-    private function resolve_viewer_scope($context, $viewer_user_id) {
+    private function resolve_viewer_scope( mixed $context, mixed $viewer_user_id) {
         $scope = [
             'customer_id' => 0,
             'organisation_ids' => [],
@@ -457,7 +457,7 @@ class CalendarService {
         return $scope;
     }
 
-    private function map_booking_to_event(Booking $booking, $context, $room_meta, $viewer_scope, $default_label) {
+    private function map_booking_to_event(Booking $booking, mixed $context, mixed $room_meta, mixed $viewer_scope, mixed $default_label) {
         $room_id_raw = (string) $booking->roomId();
         $room_id = (int) $room_id_raw;
         $resource_id = $room_id_raw !== '' ? $room_id_raw : (string) $room_id;
@@ -609,7 +609,7 @@ class CalendarService {
         return date('H:i:s', $ts);
     }
 
-    private function get_setting_with_fallback(string $primary_key, string $legacy_key, $default = null) {
+    private function get_setting_with_fallback(string $primary_key, string $legacy_key, mixed $default = null) {
         $primary = myvh_setting($primary_key, null);
         if ($primary !== null && $primary !== '') {
             return $primary;
@@ -722,7 +722,7 @@ class CalendarService {
         return $default_label;
     }
 
-    private function can_view_private_booking($context, $is_public, $booking_customer_id, $organisation_id, $viewer_scope) {
+    private function can_view_private_booking( mixed $context, mixed $is_public, mixed $booking_customer_id, mixed $organisation_id, mixed $viewer_scope) {
         if ($context === 'admin') {
             return true;
         }
@@ -743,7 +743,7 @@ class CalendarService {
             && $booking_customer_id === (int) $viewer_scope['customer_id'];
     }
 
-    private function map_booking_to_public_feed_event(Booking $booking, $room_meta, $viewer_scope, $default_label, $context) {
+    private function map_booking_to_public_feed_event(Booking $booking, mixed $room_meta, mixed $viewer_scope, mixed $default_label, mixed $context) {
         $room_id = $booking->roomId();
         $status = strtolower( sanitize_text_field( $booking->status()->value ) );
         $room_name = $room_meta[$room_id]['name'] ?? $booking->roomName();
@@ -785,7 +785,7 @@ class CalendarService {
         ];
     }
 
-    private function resolve_allowed_organisation_ids($viewer_user_id, $viewer_customer_id) {
+    private function resolve_allowed_organisation_ids( mixed $viewer_user_id, mixed $viewer_customer_id) {
         $organisation_ids = array_map(static function ($org) {
             return (int) ($org['Id'] ?? 0);
         }, (array) $this->customer_service->get_organisations_for_user_id($viewer_user_id));
@@ -870,7 +870,7 @@ class CalendarService {
         return true;
     }
 
-    private function split_datetime($value, $default_date = '') {
+    private function split_datetime( mixed $value, mixed $default_date = '') {
         $raw = trim((string) $value);
 
         if ($raw === '') {

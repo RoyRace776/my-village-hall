@@ -304,7 +304,7 @@ class MyVillageHall {
     }
 
     /** Seeds a newly-cloned site. */
-    public function handle_site_cloned( $blog_id, $context ): void {
+    public function handle_site_cloned( mixed $blog_id, mixed $context ): void {
         ( new SiteSeeder() )->seed( $blog_id, $context );
     }
 

@@ -116,7 +116,7 @@ class InvoiceRepository extends RepositoryBase{
      * @param int $customer_id The customer ID.
      * @return array|null
      */
-    public function get_portal_detail($invoice_id, $customer_id): ?array {
+    public function get_portal_detail( mixed $invoice_id, mixed $customer_id): ?array {
         $invoice_id = \intval($invoice_id);
         $customer_id = \intval($customer_id);
 
@@ -268,7 +268,7 @@ class InvoiceRepository extends RepositoryBase{
      * @param array $statuses Optional array of statuses to filter by
      * @return array|null Array of invoice records with organisation metadata
      */
-    public function get_for_customer_portal($customer_id, $statuses = [], ?string $start_date = null, ?string $end_date = null): ?array {
+    public function get_for_customer_portal( mixed $customer_id, mixed $statuses = [], ?string $start_date = null, ?string $end_date = null): ?array {
         $customer_id = \intval($customer_id);
 
         $where = "(i.CustomerId = %d OR b.OrganisationId IN (

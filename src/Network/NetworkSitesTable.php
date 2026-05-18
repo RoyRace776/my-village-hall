@@ -67,7 +67,7 @@ class NetworkSitesTable extends WP_List_Table {
         return '<a class="button" href="' . esc_url($url) . '">Open Dashboard</a>';
     }
 
-    public function column_default($item, $column_name) {
+    public function column_default( mixed $item, mixed $column_name) {
         return $item[$column_name];
     }
 }

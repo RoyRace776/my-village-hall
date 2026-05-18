@@ -23,7 +23,7 @@ class Container
      * @param string $id Identifier for the binding
      * @param callable|string|null $factory Factory callback or class name
      */
-    public function singleton($id, $factory = null): void
+    public function singleton( mixed $id, mixed $factory = null): void
     {
         $this->bindings[$id] = $factory ?? $id;
     }

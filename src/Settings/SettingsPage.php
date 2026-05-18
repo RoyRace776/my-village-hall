@@ -496,7 +496,7 @@ class SettingsPage {
     /**
      * Render individual field
      */
-    private function render_field($name, $rule, $value) {
+    private function render_field( mixed $name, mixed $rule, mixed $value) {
 
         $type = $rule['type'] ?? 'text';
 

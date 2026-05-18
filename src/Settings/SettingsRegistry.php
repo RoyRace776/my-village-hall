@@ -5,7 +5,7 @@ class SettingsRegistry {
 
     private static $groups = [];
 
-    public static function register($key, $label, $class, array $meta = []): void {
+    public static function register( mixed $key, mixed $label, mixed $class, array $meta = []): void {
 
         self::$groups[$key] = array_merge([
             'label' => $label,

@@ -34,7 +34,7 @@ class RoomVisibilityService {
      * @param int $room_id The room ID to check.
      * @return bool True if the user can view the room, false otherwise.
      */
-    public function can_view_room($user_id = 0, $room_id = 0): bool {
+    public function can_view_room( mixed $user_id = 0, mixed $room_id = 0): bool {
         if ($room_id <= 0) {
             return false;
         }
@@ -71,7 +71,7 @@ class RoomVisibilityService {
      * @param int   $user_id The user ID. If 0, uses current user.
      * @return array Filtered array of rooms the user can view.
      */
-    public function filter_rooms_for_user($rooms = [], $user_id = 0): array {
+    public function filter_rooms_for_user( mixed $rooms = [], mixed $user_id = 0): array {
         if (empty($rooms)) {
             return [];
         }
@@ -107,7 +107,7 @@ class RoomVisibilityService {
      * @param int $venue_id The venue ID.
      * @return bool True if the user is a client admin for the venue.
      */
-    private function is_client_admin_for_venue($user_id, $venue_id): bool {
+    private function is_client_admin_for_venue( mixed $user_id, mixed $venue_id): bool {
         if ($user_id <= 0 || $venue_id <= 0) {
             return false;
         }

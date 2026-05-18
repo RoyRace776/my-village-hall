@@ -48,7 +48,7 @@ class CachedBookingRepository extends BookingRepository
         return $bookings;
     }
 
-    public function get_between($start, $end, $context = null, $filters = []): array
+    public function get_between( mixed $start, mixed $end, mixed $context = null, mixed $filters = []): array
     {
         $cache_key = $this->buildCacheKey([$start, $end, $context, $filters]);
         $cached = wp_cache_get($cache_key, self::CACHE_GROUP);
@@ -101,7 +101,7 @@ class CachedBookingRepository extends BookingRepository
         return $result;
     }
 
-    public function update($data, $where): bool
+    public function update( mixed $data, mixed $where): bool
     {
         $result = $this->repository->update($data, $where);
         $this->incrementCacheVersion();
@@ -166,7 +166,7 @@ class CachedBookingRepository extends BookingRepository
         return $result;
     }
 
-    public function find($where = [], $order = '', $limit = null, $offset = null): array
+    public function find( mixed $where = [], mixed $order = '', mixed $limit = null, mixed $offset = null): array
     {
         return $this->repository->find($where, $order, $limit, $offset);
     }
@@ -197,7 +197,7 @@ class CachedBookingRepository extends BookingRepository
         return $this->repository->only_deleted();
     }
 
-    public function paginate($page = 1, $per_page = 20, $where = []): array
+    public function paginate( mixed $page = 1, mixed $per_page = 20, mixed $where = []): array
     {
         return $this->repository->paginate($page, $per_page, $where);
     }
@@ -207,7 +207,7 @@ class CachedBookingRepository extends BookingRepository
         return $this->repository->get_by_pattern_id($pattern_id);
     }
 
-    public function has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null, $end_date = null): bool
+    public function has_conflict( mixed $room_id, mixed $date, mixed $start_time, mixed $end_time, mixed $exclude_booking_id = null, mixed $end_date = null): bool
     {
         return $this->repository->has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id, $end_date);
     }
@@ -217,12 +217,12 @@ class CachedBookingRepository extends BookingRepository
         return $this->repository->count_by_customer($customer_id);
     }
 
-    public function get_conflicts($room_id, $start, $end): array
+    public function get_conflicts( mixed $room_id, mixed $start, mixed $end): array
     {
         return $this->repository->get_conflicts($room_id, $start, $end);
     }
 
-    public function move_booking($id, $start, $end, $room): int|\WP_Error
+    public function move_booking( mixed $id, mixed $start, mixed $end, mixed $room): int|\WP_Error
     {
         $result = $this->repository->move_booking($id, $start, $end, $room);
         $this->incrementCacheVersion();
@@ -275,7 +275,7 @@ class CachedBookingRepository extends BookingRepository
         return $this->repository->has_conflict_in_buffer_window($room_id, $window_start, $window_end, $exclude_booking_id);
     }
 
-    public function __call($name, $arguments)
+    public function __call( mixed $name, mixed $arguments)
     {
         return $this->repository->{$name}(...$arguments);
     }

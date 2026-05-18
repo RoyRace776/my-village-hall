@@ -4,7 +4,7 @@ if (!function_exists('myvh_setting')) {
 /**
  * Get a plugin setting value.
  */
-function myvh_setting($key, $default = null) {
+function myvh_setting( mixed $key, mixed $default = null) {
 
     $parts = explode('.', $key, 2);
 

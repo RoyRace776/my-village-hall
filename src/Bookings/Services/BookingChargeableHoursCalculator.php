@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
 
 class BookingChargeableHoursCalculator
 {
-    public function calculate($startdate, $start_time, $enddate, $end_time, $room): float
+    public function calculate( mixed $startdate, mixed $start_time, mixed $enddate, mixed $end_time, mixed $room): float
     {
         $start = new DateTime($startdate . ' ' . $start_time);
         $end = new DateTime($enddate . ' ' . $end_time);

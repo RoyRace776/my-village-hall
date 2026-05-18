@@ -99,7 +99,7 @@ class AddonService {
      * @param array $addons     Array of ['addon_id' => int, 'quantity' => float, 'unit_price' => float, 'description' => string]
      * @param bool  $replace    If true, delete all existing addons before saving
      */
-    public function save_booking_addons($booking_id, $addons, $replace = false) {
+    public function save_booking_addons( mixed $booking_id, mixed $addons, mixed $replace = false) {
         $booking_addon_repo = $this->booking_addon_repo;
         $addon_repo = $this->repo;
         if (!$booking_addon_repo) return;

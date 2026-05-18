@@ -209,7 +209,7 @@ class RoomRateRepository extends RepositoryBase{
         return array_values(array_map('intval', $this->wpdb->get_col($sql) ?: []));
     }
 
-    public function get_active_room_rate( $room_id, $org_type_id = null ): ?array {
+    public function get_active_room_rate( mixed $room_id, mixed $org_type_id = null ): ?array {
         if ( $org_type_id ) {
             $sql = $this->wpdb->prepare(
                 "SELECT * FROM {$this->table_name}

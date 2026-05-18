@@ -17,7 +17,7 @@ class CustomerUserSync {
         add_action('user_register', [$this, 'link_or_sync_customer_from_user'], 10, 1);
     }
 
-    public function sync_customer_from_user($user_id, $old_user_data = null): void {
+    public function sync_customer_from_user( mixed $user_id, mixed $old_user_data = null): void {
         if ($this->syncing) {
             return;
         }

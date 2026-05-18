@@ -56,7 +56,7 @@ class BookingController
         return 'myvh_booking_form_' . get_current_user_id();
     }
 
-    private function get_form_redirect_url($data, $error_message): string
+    private function get_form_redirect_url( mixed $data, mixed $error_message): string
     {
         $query_args = [
             'page' => 'my-village-hall',

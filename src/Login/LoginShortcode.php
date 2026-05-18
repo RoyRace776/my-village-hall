@@ -10,7 +10,7 @@ class LoginShortcode implements ShortcodeInterface
         return 'myvh_login';
     }
 
-    public function render($atts = [], $content = null): string
+    public function render( mixed $atts = [], mixed $content = null): string
     {
         $login_css_path = MYVH_PLUGIN_DIR . 'assets/css/login.css';
         $login_css_version = file_exists($login_css_path) ? (string) filemtime($login_css_path) : MYVH_VERSION;

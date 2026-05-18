@@ -22,7 +22,7 @@ class BookingMovementService
         $this->booking_repo = $booking_repo;
     }
 
-    public function move_booking($id, $start, $end, $room): int|WP_Error
+    public function move_booking( mixed $id, mixed $start, mixed $end, mixed $room): int|WP_Error
     {
         $room_id = \intval($room);
 
@@ -87,7 +87,7 @@ class BookingMovementService
         return $result;
     }
 
-    private function split_datetime($value, $default_date = ''): array
+    private function split_datetime( mixed $value, mixed $default_date = ''): array
     {
         $raw = trim((string) $value);
 

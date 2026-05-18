@@ -85,7 +85,7 @@ class BookingQueryService
         ];
     }
 
-    public function get_between($start, $end, $context = null, $filters = []): array
+    public function get_between( mixed $start, mixed $end, mixed $context = null, mixed $filters = []): array
     {
         return $this->booking_repo->get_between($start, $end, $context, $filters);
     }

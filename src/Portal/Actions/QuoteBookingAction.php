@@ -127,7 +127,7 @@ class QuoteBookingAction {
         return true;
     }
 
-    private function split_datetime($value, $default_date = ''): array {
+    private function split_datetime( mixed $value, mixed $default_date = ''): array {
         $raw = trim((string) $value);
 
         if ($raw === '') {

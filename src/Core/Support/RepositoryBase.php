@@ -71,7 +71,7 @@ class RepositoryBase {
      * @param array<string, mixed> $data
      * @param array<string, mixed> $where
      */
-    public function update($data, $where): bool {
+    public function update( mixed $data, mixed $where): bool {
         $result = $this->wpdb->update($this->table_name, $data, $where, $this->get_format($data));
         $this->audit('update', $data, $where);
         return $result !== false;
@@ -102,7 +102,7 @@ class RepositoryBase {
      * @param int|string|null $offset
      * @return array<int, array<string, mixed>>
      */
-    public function find($where = [], $order = '', $limit = null, $offset = null): array {
+    public function find( mixed $where = [], mixed $order = '', mixed $limit = null, mixed $offset = null): array {
         $sql = "SELECT * FROM {$this->table_name}";
         if ($where) {
             $clauses = [];
@@ -218,7 +218,7 @@ class RepositoryBase {
      * @param array<string, mixed> $data
      * @param array<string, mixed>|null $where
      */
-    protected function audit($action, $data, $where = null): void {
+    protected function audit( mixed $action, mixed $data, mixed $where = null): void {
         AuditTrail::record_repository_event($this, (string) $action, (array) $data, is_array($where) ? $where : null);
     }
 
@@ -229,7 +229,7 @@ class RepositoryBase {
      * @param array<string, scalar|null> $where
      * @return array<int, array<string, mixed>>
      */
-    public function paginate($page = 1, $per_page = 20, $where = []): array {
+    public function paginate( mixed $page = 1, mixed $per_page = 20, mixed $where = []): array {
         $offset = ($page - 1) * $per_page;
         return $this->find($where, '', $per_page, $offset);
     }

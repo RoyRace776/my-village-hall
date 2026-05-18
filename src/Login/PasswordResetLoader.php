@@ -20,7 +20,7 @@ class PasswordResetLoader {
         $handler->init();
         $handler->hook_invalidate_on_change();
     }
-    public function render_shortcode($atts = [], $content = null) {
+    public function render_shortcode( mixed $atts = [], mixed $content = null) {
         $shortcode = new PasswordResetShortcode();
         return $shortcode->render($atts, $content);
     }

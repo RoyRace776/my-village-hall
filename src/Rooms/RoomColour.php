@@ -48,7 +48,7 @@ class RoomColour {
         return $palette[$index];
     }
 
-    public static function resolve($colour, $room_id = 0): string {
+    public static function resolve( mixed $colour, mixed $room_id = 0): string {
         $normalised = self::normalise($colour);
 
         if ($normalised !== '') {

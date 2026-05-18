@@ -34,7 +34,7 @@ class BookingAccessControl
         $this->client_admin_service = $client_admin_service;
     }
 
-    public function resolve_public_visibility($data, $organisation_id, $booking_id): int
+    public function resolve_public_visibility( mixed $data, mixed $organisation_id, mixed $booking_id): int
     {
         if (array_key_exists('public', $data)) {
             return !empty($data['public']) ? 1 : 0;

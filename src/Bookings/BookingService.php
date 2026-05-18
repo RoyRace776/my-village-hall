@@ -186,7 +186,7 @@ class BookingService {
         }
     }
 
-    private function update_booking($data, $record): int|WP_Error {
+    private function update_booking( mixed $data, mixed $record): int|WP_Error {
         $booking_id = \intval($data['booking_id']);
         $current_record = $this->booking_repo->get_by_id($booking_id);
 
@@ -353,7 +353,7 @@ class BookingService {
         return self::EDIT_SCOPE_THIS_ONLY;
     }
 
-    private function create_booking($data, $record): int|WP_Error {
+    private function create_booking( mixed $data, mixed $record): int|WP_Error {
         // Before create event already dispatched in save()
         $booking_id = $this->booking_repo->create($record);
         if ($booking_id === false) {
@@ -477,7 +477,7 @@ class BookingService {
         return $this->booking_charge_service->recalculate($booking_id);
     }
 
-    private function resolve_public_visibility($data, $organisation_id, $booking_id): int {
+    private function resolve_public_visibility( mixed $data, mixed $organisation_id, mixed $booking_id): int {
         return $this->booking_access_control->resolve_public_visibility($data, $organisation_id, $booking_id);
     }
 
@@ -493,7 +493,7 @@ class BookingService {
      * @param bool  $replace    If true, delete all existing addons before saving
      */
 
-    public function save_addons($booking_id, $addons, $replace = false): void {
+    public function save_addons( mixed $booking_id, mixed $addons, mixed $replace = false): void {
         // Delegate to AddonService (implement a method if needed)
         if (!$this->addon_service) return;
         $this->addon_service->save_booking_addons($booking_id, $addons, $replace);
@@ -571,7 +571,7 @@ class BookingService {
         return $result;
     }
 
-    public function update_status($id, $status): int|false {
+    public function update_status( mixed $id, mixed $status): int|false {
         return $this->booking_repo->update(
             ['Status' => $status],
             ['Id' => $id]
@@ -600,11 +600,11 @@ class BookingService {
         return $this->booking_query_service->get_booking_list($filters);
     }
 
-    public function get_between($start, $end, $context = null, $filters = []): array {
+    public function get_between( mixed $start, mixed $end, mixed $context = null, mixed $filters = []): array {
         return $this->booking_query_service->get_between($start, $end, $context, $filters);
     }
 
-    public function move_booking($id, $start, $end, $room): int|WP_Error {
+    public function move_booking( mixed $id, mixed $start, mixed $end, mixed $room): int|WP_Error {
         return $this->booking_movement_service->move_booking($id, $start, $end, $room);
     }
 

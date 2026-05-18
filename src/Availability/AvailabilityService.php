@@ -26,11 +26,11 @@ class AvailabilityService {
         $this->venue_hours_repo = $venue_hours_repo;
     }
 
-    public function room_is_available($room_id, $date, $start, $end, $end_date = null, $exclude_booking_id = null) {
+    public function room_is_available( mixed $room_id, mixed $date, mixed $start, mixed $end, mixed $end_date = null, mixed $exclude_booking_id = null) {
         return !$this->booking_repo->has_conflict($room_id, $date, $start, $end, $exclude_booking_id, $end_date);
     }
 
-    public function is_room_open($room_id, $when) {
+    public function is_room_open( mixed $room_id, mixed $when) {
         $room = $this->room_repo->get_by_id($room_id);
         if (!$room) {
             return new \WP_Error('Availability', __('Unknown room passed to availability service', 'my-village-hall'));;
@@ -51,7 +51,7 @@ class AvailabilityService {
         return true;
     }
 
-    public function booking_within_opening_hours($room_id, $start_time, $end_time, $start_date = null, $end_date = null) {
+    public function booking_within_opening_hours( mixed $room_id, mixed $start_time, mixed $end_time, mixed $start_date = null, mixed $end_date = null) {
         $room = $this->room_repo->get_by_id($room_id);
         if (!$room) {
             return new \WP_Error('Availability', __('Unknown room passed to availability service', 'my-village-hall'));
@@ -244,7 +244,7 @@ class AvailabilityService {
         ];
     }
 
-    public function room_opening_hours_allowed($room_open, $room_close, $venue_id) {
+    public function room_opening_hours_allowed( mixed $room_open, mixed $room_close, mixed $venue_id) {
         $venue = $this->venue_repo->get_by_id($venue_id);
         if (!$venue) {
             return new \WP_Error('Availability', __('Unknown venue passed to availability service', 'my-village-hall'));;
@@ -518,7 +518,7 @@ class AvailabilityService {
         return $indexed;
     }
 
-    public function get_time_options($selected = '', $start_hour = 0, $end_hour = 23, $on_hour_only = false): string {
+    public function get_time_options( mixed $selected = '', mixed $start_hour = 0, mixed $end_hour = 23, mixed $on_hour_only = false): string {
         $options = '';
 
         for ($hour = $start_hour; $hour <= $end_hour; $hour++) {

@@ -146,7 +146,7 @@ class InvoiceService {
         return $invoice;
     }
 
-    public function get_detail_for_portal($id, $customer_id, bool $is_client_admin = false): ?array {
+    public function get_detail_for_portal( mixed $id, mixed $customer_id, bool $is_client_admin = false): ?array {
         $invoice = $is_client_admin
             ? $this->repo->get_detail($id)
             : $this->repo->get_portal_detail($id, $customer_id);
@@ -317,11 +317,11 @@ class InvoiceService {
         return (int) $id;
     }
 
-    public function get_for_portal($customer_id, $statuses = [], ?string $start_date = null, ?string $end_date = null): ?array {
+    public function get_for_portal( mixed $customer_id, mixed $statuses = [], ?string $start_date = null, ?string $end_date = null): ?array {
         return $this->repo->get_for_customer_portal($customer_id, $statuses, $start_date, $end_date);
     }
 
-    public function update_status($id, $status): bool|WP_Error {
+    public function update_status( mixed $id, mixed $status): bool|WP_Error {
         $status = sanitize_key($status);
         if (!in_array($status, self::VALID_STATUSES, true)) {
             return new WP_Error('validation', __('Invalid invoice status', 'my-village-hall'));

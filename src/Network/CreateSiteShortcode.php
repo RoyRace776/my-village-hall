@@ -16,7 +16,7 @@ class CreateSiteShortcode implements ShortcodeInterface {
         return self::TAG;
     }
 
-    public function render($atts = [], $content = null): string {
+    public function render( mixed $atts = [], mixed $content = null): string {
         wp_enqueue_style(
             'myvh-network-create-site',
             MYVH_PLUGIN_URL . 'assets/css/network-create-site.css',

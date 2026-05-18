@@ -5,5 +5,5 @@ interface ShortcodeInterface
 {
     public function tag(): string;
 
-    public function render($atts = [], $content = null): string;
+    public function render( mixed $atts = [], mixed $content = null): string;
 }

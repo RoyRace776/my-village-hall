@@ -3,7 +3,7 @@ namespace MYVH\Events;
 
 class EventDispatcher {
 
-    public static function dispatch($event_name, $payload = []): void {
+    public static function dispatch( mixed $event_name, mixed $payload = []): void {
 
         /**
          * Domain events go through here

@@ -56,7 +56,7 @@ class CachedRoomHoursRepository extends RoomHoursRepository
         $this->repository->rollback();
     }
 
-    public function __call($name, $arguments)
+    public function __call( mixed $name, mixed $arguments)
     {
         return $this->repository->{$name}(...$arguments);
     }

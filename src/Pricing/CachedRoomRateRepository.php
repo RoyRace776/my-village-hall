@@ -78,7 +78,7 @@ class CachedRoomRateRepository extends RoomRateRepository
         return $ids;
     }
 
-    public function get_active_room_rate($room_id, $org_type_id = null): ?array
+    public function get_active_room_rate( mixed $room_id, mixed $org_type_id = null): ?array
     {
         $cache_key = $this->buildCacheKey(['get_active_room_rate', $room_id, $org_type_id]);
         $cached = wp_cache_get($cache_key, self::CACHE_GROUP);
@@ -101,7 +101,7 @@ class CachedRoomRateRepository extends RoomRateRepository
         return $result;
     }
 
-    public function update($data, $where): bool
+    public function update( mixed $data, mixed $where): bool
     {
         $result = $this->repository->update($data, $where);
         $this->incrementCacheVersion();
@@ -153,7 +153,7 @@ class CachedRoomRateRepository extends RoomRateRepository
         $this->repository->rollback();
     }
 
-    public function __call($name, $arguments)
+    public function __call( mixed $name, mixed $arguments)
     {
         return $this->repository->{$name}(...$arguments);
     }

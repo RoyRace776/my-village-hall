@@ -14,7 +14,7 @@ class RoomRulesService {
     /**
      * Check if booking is within room opening hours.
      */
-    public function within_opening_hours($room, $start, $end): bool {
+    public function within_opening_hours( mixed $room, mixed $start, mixed $end): bool {
         $room_open  = strtotime($room['OpeningTime']);
         $room_close = strtotime($room['ClosingTime']);
         $start_time = strtotime(date('H:i', strtotime($start)));
@@ -33,7 +33,7 @@ class RoomRulesService {
      * Check if the booking duration is allowed (min/max duration).
      * Assumes $room['MinBookingMinutes'] and $room['MaxBookingMinutes'] (optional).
      */
-    public function is_duration_allowed($room, $start, $end): bool {
+    public function is_duration_allowed( mixed $room, mixed $start, mixed $end): bool {
         $start_ts = strtotime($start);
         $end_ts = strtotime($end);
         $duration = ($end_ts - $start_ts) / 60; // minutes
@@ -50,7 +50,7 @@ class RoomRulesService {
      * Check if the booking is on an allowed day (e.g., not a restricted weekday).
      * Assumes $room['AllowedDays'] is an array of allowed weekday numbers (0=Sunday).
      */
-    public function is_day_allowed($room, $date): bool {
+    public function is_day_allowed( mixed $room, mixed $date): bool {
         if (empty($room['AllowedDays']) || !is_array($room['AllowedDays'])) {
             return true; // No restriction
         }
@@ -72,7 +72,7 @@ class RoomRulesService {
      * @param string   $end               Booking end as 'Y-m-d H:i' string.
      * @param int|null $exclude_booking_id Booking to ignore (for updates).
      */
-    public function has_buffer_time( $room, $start, $end, ?int $exclude_booking_id = null ): bool {
+    public function has_buffer_time( mixed $room, mixed $start, mixed $end, ?int $exclude_booking_id = null ): bool {
         $setup_minutes = (int) myvh_setting( 'booking.set_up_minutes', 0 );
         $tidy_minutes  = (int) myvh_setting( 'booking.tidy_up_minutes', 0 );
 

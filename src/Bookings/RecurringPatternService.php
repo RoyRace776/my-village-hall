@@ -315,7 +315,7 @@ class RecurringPatternService {
      * @param array $pattern Pattern data
      * @return array|WP_Error Results or error
      */
-    public function create_recurring_bookings($pattern_id, $pattern = null): array|WP_Error {
+    public function create_recurring_bookings( mixed $pattern_id, mixed $pattern = null): array|WP_Error {
         $booking_repo = $this->get_booking_repo();
 
         if (!$pattern) {
@@ -470,7 +470,7 @@ class RecurringPatternService {
      * @param int           $interval        months between occurrences
      * @return array
      */
-    private function calculate_monthly_day_dates($pattern, $max_occurrences, $end_date, $interval): array {
+    private function calculate_monthly_day_dates( mixed $pattern, mixed $max_occurrences, mixed $end_date, mixed $interval): array {
         $dates    = [];
         $week_num = $pattern['RecurrenceWeek'];   // '1','2','3','4','last'
         $day_name = strtolower($pattern['RecurrenceDay']); // 'thursday' etc.
@@ -551,7 +551,7 @@ class RecurringPatternService {
      * Check if a booking conflicts with existing bookings.
      * Delegated to the booking repository.
      */
-    private function check_booking_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null, $end_date = null): bool {
+    private function check_booking_conflict( mixed $room_id, mixed $date, mixed $start_time, mixed $end_time, mixed $exclude_booking_id = null, mixed $end_date = null): bool {
         return $this->get_booking_repo()->has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id, $end_date);
     }
 

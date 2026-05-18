@@ -24,7 +24,7 @@ class InvoiceAutoSendListener {
         add_action('myvh_invoice_generated', [$this, 'handle_invoice_generated'], 10, 3);
     }
 
-    public function handle_invoice_generated($invoice_id, $bookings = [], $options = []): void {
+    public function handle_invoice_generated( mixed $invoice_id, mixed $bookings = [], mixed $options = []): void {
         $invoice_id = \intval($invoice_id);
 
         if ($invoice_id <= 0) {

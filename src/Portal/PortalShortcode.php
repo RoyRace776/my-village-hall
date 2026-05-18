@@ -22,7 +22,7 @@ class PortalShortcode implements ShortcodeInterface
         return 'myvh_portal';
     }
 
-    public function render($atts = [], $content = null): string
+    public function render( mixed $atts = [], mixed $content = null): string
     {
         if ( ! is_user_logged_in() ) {
             return do_shortcode( '[myvh_login]' );

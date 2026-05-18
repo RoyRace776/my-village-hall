@@ -211,7 +211,7 @@ class BookingRepository extends RepositoryBase
      * @param string|null $end_date            Optional end date (Y-m-d), defaults to $date.
      * @return bool True if a conflict exists.
      */
-    public function has_conflict($room_id, $date, $start_time, $end_time, $exclude_booking_id = null, $end_date = null): bool {
+    public function has_conflict( mixed $room_id, mixed $date, mixed $start_time, mixed $end_time, mixed $exclude_booking_id = null, mixed $end_date = null): bool {
 
         $start_date = sanitize_text_field($date);
         $resolved_end_date = sanitize_text_field($end_date ?: $start_date);
@@ -311,7 +311,7 @@ class BookingRepository extends RepositoryBase
         );
     }
 
-    public function get_conflicts($room_id, $start, $end): array {
+    public function get_conflicts( mixed $room_id, mixed $start, mixed $end): array {
         $new_start = $this->normalize_datetime($start);
         $new_end = $this->normalize_datetime($end);
 
@@ -335,7 +335,7 @@ class BookingRepository extends RepositoryBase
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function get_between($start, $end, $context = null, $filters = []): array {
+    public function get_between( mixed $start, mixed $end, mixed $context = null, mixed $filters = []): array {
         $defaults = [
             'room_id' => 0,
             'venue_id' => 0,
@@ -407,7 +407,7 @@ class BookingRepository extends RepositoryBase
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    public function move_booking($id, $start, $end, $room): int|WP_Error {
+    public function move_booking( mixed $id, mixed $start, mixed $end, mixed $room): int|WP_Error {
 
         // DayPilot sends full ISO datetimes: "2025-06-14T09:00:00"
         // Split into date and time parts before storing.

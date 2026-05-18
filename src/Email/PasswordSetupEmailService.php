@@ -10,7 +10,7 @@ class PasswordSetupEmailService {
     protected $email_service;
     protected $password_reset_handler;
 
-    public function __construct($email_service = null, $password_reset_handler = null) {
+    public function __construct( mixed $email_service = null, mixed $password_reset_handler = null) {
         $this->email_service = $email_service ?: new EmailService();
         $this->password_reset_handler = $password_reset_handler ?: new PasswordResetHandler();
     }
@@ -22,7 +22,7 @@ class PasswordSetupEmailService {
      * @param int $user_id The WordPress user ID associated with the customer
      * @return bool True if email sent successfully, false otherwise
      */
-    public function send_password_setup_email($customer_id, $user_id) {
+    public function send_password_setup_email( mixed $customer_id, mixed $user_id) {
         if (!$user_id || !get_userdata($user_id)) {
             return false;
         }

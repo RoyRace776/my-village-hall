@@ -146,7 +146,7 @@ class CachedRoomRepository extends RoomRepository
      * @param array<string, mixed> $data
      * @param array<string, mixed> $where
      */
-    public function update($data, $where): bool
+    public function update( mixed $data, mixed $where): bool
     {
         $result = $this->repository->update($data, $where);
         $this->incrementCacheVersion();
@@ -223,7 +223,7 @@ class CachedRoomRepository extends RoomRepository
      * @param array<int, mixed> $arguments
      * @return mixed
      */
-    public function __call($name, $arguments): mixed
+    public function __call( mixed $name, mixed $arguments): mixed
     {
         return $this->repository->{$name}(...$arguments);
     }

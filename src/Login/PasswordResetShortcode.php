@@ -7,7 +7,7 @@ use MYVH\Core\Shortcode\ShortcodeInterface;
  */
 class PasswordResetShortcode implements ShortcodeInterface {
     public function tag(): string { return 'myvh_password_reset'; }
-    public function render($atts = [], $content = null): string {
+    public function render( mixed $atts = [], mixed $content = null): string {
         // If reset link params present, show confirm form; else show request form
         $is_confirm = !empty($_GET['myvh_reset']) && !empty($_GET['uid']) && !empty($_GET['token']);
         ob_start();

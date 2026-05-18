@@ -101,7 +101,7 @@ class PasswordResetHandler {
     /**
      * Validate a password reset token
      */
-    protected function validate_token($user_id, $token) {
+    protected function validate_token( mixed $user_id, mixed $token) {
         $saved = get_transient('myvh_reset_token_' . $user_id);
         return $saved && hash_equals($saved, $token);
     }

@@ -116,7 +116,7 @@ class CachedAddonRepository extends AddonRepository
         return $result;
     }
 
-    public function update($data, $where): bool
+    public function update( mixed $data, mixed $where): bool
     {
         $result = $this->repository->update($data, $where);
         $this->incrementCacheVersion();
@@ -163,7 +163,7 @@ class CachedAddonRepository extends AddonRepository
         $this->repository->rollback();
     }
 
-    public function __call($name, $arguments)
+    public function __call( mixed $name, mixed $arguments)
     {
         return $this->repository->{$name}(...$arguments);
     }

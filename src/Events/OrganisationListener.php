@@ -9,7 +9,7 @@ class OrganisationListener {
     private EmailService $email_service;
     private ClientAdminService $client_admin_service;
 
-    public function __construct($email_service = null, $client_admin_service = null) {
+    public function __construct( mixed $email_service = null, mixed $client_admin_service = null) {
         $this->email_service = $email_service ?: new EmailService();
         $this->client_admin_service = $client_admin_service ?: new ClientAdminService();
     }
