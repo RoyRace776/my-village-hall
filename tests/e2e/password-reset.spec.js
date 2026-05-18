@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 const baseUrl = process.env.PW_BASE_URL;
 const resetRequestUrl =
   process.env.PW_RESET_REQUEST_URL ||
-  (baseUrl ? new URL('/login/?reset=1', baseUrl).toString() : '/login/?reset=1');
+  (baseUrl ? new URL('/test/login/?reset=1', baseUrl).toString() : '/test/login/?reset=1');
 const resetEmail = process.env.PW_RESET_EMAIL || process.env.PW_LOGIN_USERNAME;
 
 test.describe('Password reset request', () => {
