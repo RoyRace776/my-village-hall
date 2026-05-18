@@ -154,9 +154,11 @@ class BookingRepository extends RepositoryBase
      */
     public function get_by_pattern_id_in_period($pattern_id, string $start_date, string $end_date): array {
         $sql = $this->wpdb->prepare(
-            "SELECT b.*, c.Name as CustomerName, r.Name as RoomName
+            "SELECT b.*, c.Name as CustomerName, r.Name as RoomName,
+                    o.InvoiceOrganisationBookings as OrganisationInvoiceOrganisationBookings
              FROM {$this->table_name} b
              LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
+             LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
              LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
              WHERE b.RecurringPatternId = %d
              AND b.StartDate >= %s
@@ -567,6 +569,7 @@ class BookingRepository extends RepositoryBase
                     c.SingleBookingAutoInvoiceRuleId AS CustomerSingleBookingAutoInvoiceRuleId,
                     c.RecurringBookingAutoInvoiceRuleId AS CustomerRecurringBookingAutoInvoiceRuleId,
                     o.Name AS OrganisationName,
+                    o.InvoiceOrganisationBookings AS OrganisationInvoiceOrganisationBookings,
                     o.SingleBookingAutoInvoiceRuleId AS OrganisationSingleBookingAutoInvoiceRuleId,
                     o.RecurringBookingAutoInvoiceRuleId AS OrganisationRecurringBookingAutoInvoiceRuleId,
                     r.Name AS RoomName,

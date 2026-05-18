@@ -31,7 +31,7 @@ class RecurringBookingAutoInvoicing {
     public function process() : int {
         $result = $this->process_with_result();
 
-        return count($result['created_invoice_ids'] ?? []);
+        return \count($result['created_invoice_ids'] ?? []);
     }
 
     /**
@@ -53,6 +53,7 @@ class RecurringBookingAutoInvoicing {
 
         $patterns_to_bookings = $this->group_bookings_by_pattern($bookings);
         $result = $this->empty_process_result();
+        $bookings_by_rule = [];
 
         foreach ($patterns_to_bookings as $pattern_id => $pattern_bookings) {
             if (\intval($pattern_id) <= 0 || empty($pattern_bookings)) {
@@ -60,7 +61,7 @@ class RecurringBookingAutoInvoicing {
             }
 
             $sample_booking = reset($pattern_bookings);
-            if (!is_array($sample_booking) || empty($sample_booking)) {
+            if (!\is_array($sample_booking) || empty($sample_booking)) {
                 continue;
             }
 
@@ -89,9 +90,30 @@ class RecurringBookingAutoInvoicing {
                 continue;
             }
 
+            $rule_bucket_key = $this->build_rule_bucket_key($rule);
+            if (!isset($bookings_by_rule[$rule_bucket_key])) {
+                $bookings_by_rule[$rule_bucket_key] = [
+                    'rule' => $rule,
+                    'bookings' => [],
+                ];
+            }
+
+            $bookings_by_rule[$rule_bucket_key]['bookings'] = array_merge(
+                $bookings_by_rule[$rule_bucket_key]['bookings'],
+                $period_bookings
+            );
+        }
+
+        foreach ($bookings_by_rule as $batch) {
+            $rule = $batch['rule'] ?? [];
+            $batch_bookings = $this->deduplicate_bookings_by_id($batch['bookings'] ?? []);
+            if (empty($batch_bookings) || !\is_array($rule)) {
+                continue;
+            }
+
             $result['created_invoice_ids'] = array_merge(
                 $result['created_invoice_ids'],
-                $this->create_recurring_invoices_for_rule($period_bookings, $rule)
+                $this->create_recurring_invoices_for_rule($batch_bookings, $rule)
             );
         }
 
@@ -137,12 +159,19 @@ class RecurringBookingAutoInvoicing {
             ];
         }
 
-        if ($period_count > 0) {
-            $modifier_sign = $direction === 'in_arrears' ? '+' : '-';
+        // Offset from current period boundary.
+        // In advance is treated as an inclusive count, so 1 means current period,
+        // 2 means one period back, etc.
+        $effective_period_count = $direction === 'in_advance'
+            ? max(0, $period_count - 1)
+            : $period_count;
+        $offset = $direction === 'in_arrears' ? $effective_period_count : -$effective_period_count;
+
+        if ($offset !== 0) {
             if ($period_unit === 'quarter') {
-                $period_start->modify($modifier_sign . ($period_count * 3) . ' months');
+                $period_start->modify($offset * 3 . ' months');
             } else {
-                $period_start->modify($modifier_sign . $period_count . ' ' . $period_unit);
+                $period_start->modify($offset . ' ' . $period_unit);
             }
         }
 
@@ -271,22 +300,58 @@ class RecurringBookingAutoInvoicing {
             return [];
         }
 
-        $booking_ids = array_map(fn($b) => \intval($b['Id'] ?? 0), $actual_bookings);
-        $invoice_ids = $this->invoice_generator_service->generate_invoices_from_bookings(
-            $booking_ids,
-            [
-                'group_by' => $rule['group_by'] ?? 'per_booking',
-                'rule_scope' => 'recurring',
-                'rule_id' => \intval($rule['id'] ?? 0),
-                'due_date_offset_days' => \intval($rule['due_date_offset_days'] ?? 30),
-            ]
-        );
+        $invoice_ids = [];
+        $bookings_by_group = $this->partition_recurring_bookings_by_billing_target($actual_bookings);
 
-        if ($invoice_ids instanceof \WP_Error) {
-            return [];
+        foreach ($bookings_by_group as $group_by => $group_bookings) {
+            $booking_ids = array_values(array_filter(array_map(static fn(array $booking): int => \intval($booking['Id'] ?? 0), $group_bookings)));
+            if (empty($booking_ids)) {
+                continue;
+            }
+
+            $generated = $this->invoice_generator_service->generate_invoices_from_bookings(
+                $booking_ids,
+                [
+                    'group_by' => $group_by,
+                    'rule_scope' => 'recurring',
+                    'rule_id' => \intval($rule['id'] ?? 0),
+                    'due_date_offset_days' => \intval($rule['due_date_offset_days'] ?? 30),
+                ]
+            );
+
+            if ($generated instanceof \WP_Error) {
+                continue;
+            }
+
+            $invoice_ids = array_merge($invoice_ids, $generated);
         }
 
-        return $invoice_ids;
+        return array_values(array_unique(array_map('intval', $invoice_ids)));
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $bookings
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    protected function partition_recurring_bookings_by_billing_target(array $bookings): array {
+        $grouped = [
+            'by_organisation' => [],
+            'by_customer' => [],
+        ];
+
+        foreach ($bookings as $booking) {
+            $organisation_id = \intval($booking['OrganisationId'] ?? 0);
+            $organisation_billing_enabled = !empty($booking['OrganisationInvoiceOrganisationBookings']);
+
+            if ($organisation_id > 0 && $organisation_billing_enabled) {
+                $grouped['by_organisation'][] = $booking;
+                continue;
+            }
+
+            $grouped['by_customer'][] = $booking;
+        }
+
+        return array_filter($grouped, static fn(array $items): bool => !empty($items));
     }
 
     protected function merge_process_results(array $results): array {
@@ -443,6 +508,20 @@ class RecurringBookingAutoInvoicing {
             'group_by' => $this->normalize_key($rule['GroupBy'] ?? 'per_booking'),
             'due_date_offset_days' => max(0, \intval($rule['DueDateOffsetDays'] ?? 30)),
         ];
+    }
+
+    protected function build_rule_bucket_key(array $rule): string {
+        $id = \intval($rule['id'] ?? 0);
+        if ($id > 0) {
+            return 'id:' . $id;
+        }
+
+        $timing = (string) ($rule['trigger_timing'] ?? '');
+        $direction = (string) ($rule['trigger_direction'] ?? '');
+        $period_count = \intval($rule['trigger_period_count'] ?? $rule['trigger_offset_days'] ?? 0);
+        $due_days = \intval($rule['due_date_offset_days'] ?? 30);
+
+        return 'fallback:' . $timing . '|' . $direction . '|' . $period_count . '|' . $due_days;
     }
 
     protected function normalize_key(string $value): string {

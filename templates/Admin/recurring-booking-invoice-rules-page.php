@@ -36,7 +36,6 @@ $rules = $rule_repository->get_all_rules();
                     <th><?php esc_html_e('Trigger', 'my-village-hall'); ?></th>
                     <th><?php esc_html_e('Timing', 'my-village-hall'); ?></th>
                     <th style="width: 74px;"><?php esc_html_e('Period', 'my-village-hall'); ?></th>
-                    <th><?php esc_html_e('Group By', 'my-village-hall'); ?></th>
                     <th><?php esc_html_e('Due Date Offset', 'my-village-hall'); ?></th>
                     <th><?php esc_html_e('Active', 'my-village-hall'); ?></th>
                     <th><?php esc_html_e('Actions', 'my-village-hall'); ?></th>
@@ -65,13 +64,6 @@ $rules = $rule_repository->get_all_rules();
                             </select>
                         </td>
                         <td><input type="number" name="rules[0][trigger_period_count]" value="0" min="0" max="99" class="small-text" style="width: 46px;"></td>
-                        <td>
-                            <select name="rules[0][group_by]" style="min-width: 160px;">
-                                <option value="per_booking">One invoice per booking</option>
-                                <option value="by_customer">Group bookings by customer</option>
-                                <option value="by_organisation">Group bookings by organisation</option>
-                            </select>
-                        </td>
                         <td><input type="number" name="rules[0][due_date_offset_days]" value="30" min="0" class="small-text"></td>
                         <td><input type="checkbox" name="rules[0][is_active]" value="1" checked></td>
                         <td><button type="button" class="button button-link-delete myvh-remove-rule-row"><?php esc_html_e('Remove', 'my-village-hall'); ?></button></td>
@@ -99,13 +91,6 @@ $rules = $rule_repository->get_all_rules();
                                 </select>
                             </td>
                             <td><input type="number" name="rules[<?php echo \intval($index); ?>][trigger_period_count]" value="<?php echo \intval($rule['TriggerOffsetDays'] ?? 0); ?>" min="0" max="99" class="small-text" style="width: 46px;"></td>
-                            <td>
-                                <select name="rules[<?php echo \intval($index); ?>][group_by]" style="min-width: 160px;">
-                                    <option value="per_booking" <?php selected((string) ($rule['GroupBy'] ?? ''), 'per_booking'); ?>>One invoice per booking</option>
-                                    <option value="by_customer" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_customer'); ?>>Group bookings by customer</option>
-                                    <option value="by_organisation" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_organisation'); ?>>Group bookings by organisation</option>
-                                </select>
-                            </td>
                             <td><input type="number" name="rules[<?php echo \intval($index); ?>][due_date_offset_days]" value="<?php echo \intval($rule['DueDateOffsetDays'] ?? 30); ?>" min="0" class="small-text"></td>
                             <td><input type="checkbox" name="rules[<?php echo \intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
                             <td><button type="button" class="button button-link-delete myvh-remove-rule-row"><?php esc_html_e('Remove', 'my-village-hall'); ?></button></td>
@@ -155,11 +140,6 @@ $rules = $rule_repository->get_all_rules();
                 '<option value="in_arrears">In arrears</option>' +
             '</select></td>' +
             '<td><input type="number" name="rules[' + index + '][trigger_period_count]" value="0" min="0" max="99" class="small-text" style="width: 46px;"></td>' +
-            '<td><select name="rules[' + index + '][group_by]" style="min-width: 160px;">' +
-                '<option value="per_booking">One invoice per booking</option>' +
-                '<option value="by_customer">Group bookings by customer</option>' +
-                '<option value="by_organisation">Group bookings by organisation</option>' +
-            '</select></td>' +
             '<td><input type="number" name="rules[' + index + '][due_date_offset_days]" value="30" min="0" class="small-text"></td>' +
             '<td><input type="checkbox" name="rules[' + index + '][is_active]" value="1" checked></td>' +
             '<td><button type="button" class="button button-link-delete myvh-remove-rule-row">Remove</button></td>';

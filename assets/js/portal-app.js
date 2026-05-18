@@ -471,11 +471,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         '<option value="in_arrears">In arrears</option>' +
                     '</select></td>' +
                     '<td><input type="number" name="rules[' + index + '][trigger_period_count]" min="0" max="99" value="0" style="width: 46px;"></td>' +
-                    '<td><select name="rules[' + index + '][group_by]" style="min-width: 160px;">' +
-                        '<option value="per_booking">Per booking</option>' +
-                        '<option value="by_customer">By customer</option>' +
-                        '<option value="by_organisation">By organisation</option>' +
-                    '</select></td>' +
                     '<td><input type="number" name="rules[' + index + '][due_date_offset_days]" min="0" value="30"></td>' +
                     '<td><input type="checkbox" name="rules[' + index + '][is_active]" value="1" checked></td>' +
                     '<td><button type="button" class="button myvh-remove-rule-row">Remove</button></td>';

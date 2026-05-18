@@ -145,8 +145,8 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                     <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="overdue" checked> <?php esc_html_e('Overdue', 'my-village-hall'); ?></label>
                 </div>
                 <div style="margin-top: 8px;">
-                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="paid" checked> <?php esc_html_e('Paid', 'my-village-hall'); ?></label>
-                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="cancelled" checked> <?php esc_html_e('Cancelled', 'my-village-hall'); ?></label>
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="paid"> <?php esc_html_e('Paid', 'my-village-hall'); ?></label>
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="cancelled"> <?php esc_html_e('Cancelled', 'my-village-hall'); ?></label>
                 </div>
             </div>
         </div>
@@ -265,6 +265,9 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
             document.querySelectorAll('.myvh-invoice-status-filter').forEach(checkbox => {
                 checkbox.addEventListener('change', filterInvoicesByStatus);
             });
+
+            // Apply filter on page load
+            filterInvoicesByStatus();
         })();
         </script>
     </div>

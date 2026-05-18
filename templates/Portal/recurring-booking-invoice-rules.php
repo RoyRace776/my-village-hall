@@ -44,7 +44,6 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                             <th>Trigger</th>
                             <th>Timing</th>
                             <th style="width: 74px;">Period</th>
-                            <th>Group By</th>
                             <th>Due Days</th>
                             <th>Active</th>
                             <th></th>
@@ -73,13 +72,6 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                                     </select>
                                 </td>
                                 <td><input type="number" name="rules[0][trigger_period_count]" min="0" max="99" value="0" style="width: 46px;"></td>
-                                <td>
-                                    <select name="rules[0][group_by]" style="min-width: 160px;">
-                                        <option value="per_booking">Per booking</option>
-                                        <option value="by_customer">By customer</option>
-                                        <option value="by_organisation">By organisation</option>
-                                    </select>
-                                </td>
                                 <td><input type="number" name="rules[0][due_date_offset_days]" min="0" value="30"></td>
                                 <td><input type="checkbox" name="rules[0][is_active]" value="1" checked></td>
                                 <td><button type="button" class="button myvh-remove-rule-row">Remove</button></td>
@@ -107,13 +99,6 @@ $load_error = isset($load_error) ? trim((string) $load_error) : '';
                                         </select>
                                     </td>
                                     <td><input type="number" name="rules[<?php echo \intval($index); ?>][trigger_period_count]" min="0" max="99" value="<?php echo \intval($rule['TriggerOffsetDays'] ?? 0); ?>" style="width: 46px;"></td>
-                                    <td>
-                                        <select name="rules[<?php echo \intval($index); ?>][group_by]" style="min-width: 160px;">
-                                            <option value="per_booking" <?php selected((string) ($rule['GroupBy'] ?? ''), 'per_booking'); ?>>Per booking</option>
-                                            <option value="by_customer" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_customer'); ?>>By customer</option>
-                                            <option value="by_organisation" <?php selected((string) ($rule['GroupBy'] ?? ''), 'by_organisation'); ?>>By organisation</option>
-                                        </select>
-                                    </td>
                                     <td><input type="number" name="rules[<?php echo \intval($index); ?>][due_date_offset_days]" min="0" value="<?php echo \intval($rule['DueDateOffsetDays'] ?? 30); ?>"></td>
                                     <td><input type="checkbox" name="rules[<?php echo \intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
                                     <td><button type="button" class="button myvh-remove-rule-row">Remove</button></td>

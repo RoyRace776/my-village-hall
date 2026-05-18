@@ -222,6 +222,11 @@ $fmt_date = static function (?string $date): string {
     <table class="header">
         <tr>
             <td style="width:60%;">
+                <?php if (!empty($SiteLogoDataUri)): ?>
+                <div style="margin-bottom:8pt;">
+                    <img src="<?php echo $SiteLogoDataUri; ?>" alt="" style="max-height:60pt; max-width:180pt;">
+                </div>
+                <?php endif; ?>
                 <div class="invoice-title">INVOICE</div>
                 <div class="invoice-meta">
                     <strong># <?php echo htmlspecialchars($InvoiceNumber ?? '', ENT_QUOTES, 'UTF-8'); ?></strong>

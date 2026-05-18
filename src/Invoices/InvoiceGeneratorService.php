@@ -364,6 +364,13 @@ class InvoiceGeneratorService {
             }
         }
 
+        if (empty($invoice_items)) {
+            return new WP_Error(
+                'no_invoice_items',
+                __('Cannot generate invoice because no invoice line items were found for the selected booking(s).', 'my-village-hall')
+            );
+        }
+
         $total_amount = $subtotal + $tax_amount;
 
         $due_date_offset = apply_filters(
@@ -406,6 +413,7 @@ class InvoiceGeneratorService {
             $result = $this->invoice_item_repo->create($item);
 
             if ($result === false) {
+                $this->invoice_repo->delete((int) $invoice_id);
                 return new WP_Error(
                     'invoice_item_create_failed',
                     __('Failed to create invoice item', 'my-village-hall')

@@ -207,6 +207,56 @@ class InvoiceGeneratorServiceTest extends UnitTestCase {
         $this->assertSame([800], $result);
     }
 
+    /** @test */
+    public function returns_error_and_skips_invoice_save_when_no_line_items_can_be_built(): void {
+        $booking_id = 61;
+
+        $this->booking_service->shouldReceive('booking_requires_no_invoice')->once()->with($booking_id)->andReturn(false);
+        $this->booking_service->shouldReceive('booking_has_invoices')->once()->with($booking_id)->andReturn(false);
+
+        $this->booking_repo->shouldReceive('get_all_with_details')
+            ->once()
+            ->with(['booking_id' => $booking_id])
+            ->andReturnUsing(static fn(): array => [[
+                'Id' => $booking_id,
+                'CustomerId' => 12,
+                'OrganisationId' => 0,
+                'RoomId' => 3,
+                'EndDate' => '2026-05-15',
+                'EndTime' => '10:00:00',
+            ]]);
+
+        $this->booking_charge_repo->shouldReceive('get_by_booking_id')->once()->with($booking_id)->andReturn([]);
+        $this->booking_addon_repo->shouldReceive('get_by_booking_id')->once()->with($booking_id)->andReturn([]);
+        $this->deposit_service->shouldReceive('evaluate')->once()->andReturn(null);
+
+        $this->invoice_service->shouldNotReceive('save');
+        $this->invoice_item_repo->shouldNotReceive('create');
+
+        $result = $this->service->generate_invoices_from_bookings([$booking_id], [
+            'group_by' => 'per_booking',
+        ]);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('no_invoice_items', $result->get_error_code());
+    }
+
+    /** @test */
+    public function deletes_invoice_when_item_creation_fails_after_save(): void {
+        $this->arrange_invoiceable_booking(62, 13, 45.00, 'Rollback Customer');
+
+        $this->invoice_service->shouldReceive('save')->once()->andReturn(9901);
+        $this->invoice_item_repo->shouldReceive('create')->once()->andReturn(false);
+        $this->invoice_repo->shouldReceive('delete')->once()->with(9901)->andReturn(true);
+
+        $result = $this->service->generate_invoices_from_bookings([62], [
+            'group_by' => 'per_booking',
+        ]);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('invoice_item_create_failed', $result->get_error_code());
+    }
+
     private function arrange_invoiceable_booking(int $booking_id, int $customer_id, float $charge_total, string $customer_name, int $organisation_id = 0): void {
         $this->booking_service->shouldReceive('booking_requires_no_invoice')->once()->with($booking_id)->andReturn(false);
         $this->booking_service->shouldReceive('booking_has_invoices')->once()->with($booking_id)->andReturn(false);

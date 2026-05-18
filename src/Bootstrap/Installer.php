@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '1.6.0';
+    const DB_VERSION = '1.7.0';
 
     /**
      * Entry point: create all tables.
@@ -96,6 +96,10 @@ class Installer {
 
         if (version_compare($from, '1.6.0', '<')) {
             self::upgrade_to_1_6_0($wpdb);
+        }
+
+        if (version_compare($from, '1.7.0', '<')) {
+            self::upgrade_to_1_7_0($wpdb);
         }
     }
 
@@ -183,6 +187,33 @@ class Installer {
         $has_schedule_index = $wpdb->get_var("SHOW INDEX FROM {$room_rates_table} WHERE Key_name = 'idx_schedule'");
         if (empty($has_schedule_index)) {
             $wpdb->query("ALTER TABLE {$room_rates_table} ADD INDEX idx_schedule (DayOfWeek, StartTime, EndTime)");
+        }
+    }
+
+    private static function upgrade_to_1_7_0(wpdb $wpdb): void {
+        // Fix recurring booking auto-invoice rules seeded with legacy TriggerTiming='confirmation'.
+        // These were seeded incorrectly; the period-based processor requires start_of_month or
+        // start_of_quarter. Rules still using 'confirmation' fall back to a single-day period
+        // (today), so no bookings are ever matched and no invoices are generated.
+        $table = $wpdb->prefix . 'myvh_recurring_booking_auto_invoice_rules';
+
+        $fix_map = [
+            // [ Name pattern, TriggerTiming, TriggerDirection, TriggerOffsetDays ]
+            ['Monthly in advance',   'start_of_month',   'in_advance', 0],
+            ['Monthly in arrears',   'start_of_month',   'in_advance', 1],
+            ['Quarterly in advance', 'start_of_quarter', 'in_advance', 0],
+            ['Quarterly in arrears', 'start_of_quarter', 'in_advance', 1],
+        ];
+
+        foreach ($fix_map as [$name, $timing, $direction, $offset]) {
+            $wpdb->query(
+                $wpdb->prepare(
+                    "UPDATE {$table}
+                     SET TriggerTiming = %s, TriggerDirection = %s, TriggerOffsetDays = %d
+                     WHERE Name = %s AND TriggerTiming = 'confirmation'",
+                    $timing, $direction, $offset, $name
+                )
+            );
         }
     }
 
@@ -717,7 +748,8 @@ class Installer {
             ],
             [
                 'Name' => __('Monthly in advance', 'my-village-hall'),
-                'TriggerTiming' => 'confirmation',
+                'TriggerTiming' => 'start_of_month',
+                'TriggerDirection' => 'in_advance',
                 'TriggerOffsetDays' => 0,
                 'GroupBy' => 'per_booking',
                 'DueDateOffsetDays' => 0,
@@ -726,8 +758,9 @@ class Installer {
             ],
             [
                 'Name' => __('Monthly in arrears', 'my-village-hall'),
-                'TriggerTiming' => 'confirmation',
-                'TriggerOffsetDays' => 0,
+                'TriggerTiming' => 'start_of_month',
+                'TriggerDirection' => 'in_advance',
+                'TriggerOffsetDays' => 1,
                 'GroupBy' => 'per_booking',
                 'DueDateOffsetDays' => 30,
                 'SortOrder' => 2,
@@ -735,7 +768,8 @@ class Installer {
             ],
             [
                 'Name' => __('Quarterly in advance', 'my-village-hall'),
-                'TriggerTiming' => 'confirmation',
+                'TriggerTiming' => 'start_of_quarter',
+                'TriggerDirection' => 'in_advance',
                 'TriggerOffsetDays' => 0,
                 'GroupBy' => 'per_booking',
                 'DueDateOffsetDays' => 0,
@@ -744,8 +778,9 @@ class Installer {
             ],
             [
                 'Name' => __('Quarterly in arrears', 'my-village-hall'),
-                'TriggerTiming' => 'confirmation',
-                'TriggerOffsetDays' => 0,
+                'TriggerTiming' => 'start_of_quarter',
+                'TriggerDirection' => 'in_advance',
+                'TriggerOffsetDays' => 1,
                 'GroupBy' => 'per_booking',
                 'DueDateOffsetDays' => 30,
                 'SortOrder' => 4,

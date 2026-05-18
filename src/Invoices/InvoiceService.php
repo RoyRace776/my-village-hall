@@ -453,6 +453,35 @@ class InvoiceService {
         return 'sent';
     }
 
+    /**
+     * Return the site logo as a base64-encoded data URI, or an empty string
+     * if no custom logo is set or the file cannot be read.
+     * Dompdf requires images to be embedded when isRemoteEnabled is false.
+     */
+    private function get_site_logo_data_uri(): string {
+        $logo_id = (int) get_theme_mod('custom_logo');
+        if (!$logo_id) {
+            return '';
+        }
+
+        $path = get_attached_file($logo_id);
+        if (!$path || !is_readable($path)) {
+            return '';
+        }
+
+        $mime = mime_content_type($path);
+        if (!$mime || !str_starts_with($mime, 'image/')) {
+            return '';
+        }
+
+        $data = file_get_contents($path); // phpcs:ignore WordPress.WP.AlternativeFunctions
+        if ($data === false) {
+            return '';
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode($data);
+    }
+
     // ── PDF generation ────────────────────────────────────────────────────────
 
     /**
@@ -474,6 +503,9 @@ class InvoiceService {
         if (!$invoice) {
             return new WP_Error('not_found', __('Invoice not found', 'my-village-hall'));
         }
+
+        // 2a. Embed site logo as a base64 data URI (Dompdf has isRemoteEnabled=false).
+        $invoice['SiteLogoDataUri'] = $this->get_site_logo_data_uri();
 
         // 3. Render HTML.
         $html = $this->pdf_renderer->renderHtml($invoice);

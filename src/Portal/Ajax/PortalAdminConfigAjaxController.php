@@ -480,18 +480,13 @@ class PortalAdminConfigAjaxController {
                 $trigger_direction = 'in_advance';
             }
 
-            $group_by = sanitize_key($row['group_by'] ?? 'per_booking');
-            if (!in_array($group_by, ['per_booking', 'by_customer', 'by_organisation'], true)) {
-                $group_by = 'per_booking';
-            }
-
             $record = [
                 'Id' => \intval($row['id'] ?? 0),
                 'Name' => $name,
                 'TriggerTiming' => $trigger_timing,
                 'TriggerDirection' => $trigger_direction,
                 'TriggerOffsetDays' => max(0, \intval($row['trigger_period_count'] ?? 0)),
-                'GroupBy' => $group_by,
+                'GroupBy' => 'by_customer',
                 'DueDateOffsetDays' => max(0, \intval($row['due_date_offset_days'] ?? 30)),
                 'IsActive' => !empty($row['is_active']) ? 1 : 0,
             ];

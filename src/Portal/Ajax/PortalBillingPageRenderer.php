@@ -30,9 +30,9 @@ class PortalBillingPageRenderer {
             : array_values(array_filter($valid_statuses, static fn(string $status): bool => $status !== 'draft'));
         $selected_statuses = array_values(array_intersect($selected_statuses, $available_statuses));
 
-        $default_statuses = $available_statuses;
+        $default_statuses = array_values(array_filter($available_statuses, static fn(string $status): bool => !in_array($status, ['paid', 'cancelled'], true)));
 
-        // If no statuses selected, default to the role-appropriate set
+        // If no statuses selected, default to the role-appropriate set (excluding paid and cancelled)
         if (empty($selected_statuses)) {
             $selected_statuses = $default_statuses;
         }
