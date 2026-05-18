@@ -145,6 +145,51 @@ class SingleBookingAutoInvoicingTest extends UnitTestCase
     }
 
     /** @test */
+    public function process_with_result_batches_bookings_for_same_rule_to_allow_grouping(): void
+    {
+        Functions\when('myvh_setting')
+            ->alias(function (string $key) {
+                if ($key === 'invoicing.single_default_rule_id') return 12;
+                return null;
+            });
+        $this->rule_repository->shouldReceive('get_active_rules')->andReturn([
+            ['Id' => 12, 'IsActive' => 1, 'TriggerTiming' => 'confirmation', 'TriggerOffsetDays' => 0, 'GroupBy' => 'by_customer', 'DueDateOffsetDays' => 30],
+        ]);
+
+        $this->booking_service->shouldReceive('get_uninvoiced_single_bookings')
+            ->andReturn([
+                ['Id' => 101, 'Status' => 'confirmed', 'StartDate' => '2026-06-01'],
+                ['Id' => 102, 'Status' => 'confirmed', 'StartDate' => '2026-06-01'],
+            ]);
+
+        $this->booking_service->shouldReceive('booking_has_invoices')->with(101)->andReturn(false);
+        $this->booking_service->shouldReceive('booking_has_invoices')->with(102)->andReturn(false);
+
+        $this->invoice_generator->shouldReceive('generate_invoices_from_bookings')
+            ->once()
+            ->with([101, 102], [
+                'group_by' => 'by_customer',
+                'rule_scope' => 'single',
+                'rule_id' => 12,
+                'due_date_offset_days' => 30,
+            ])
+            ->andReturnUsing(function () {
+                return [3001];
+            });
+
+        $sut = new SingleBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository,
+            $this->recurring_rule_repository
+        );
+
+        $result = $sut->process_with_result();
+
+        $this->assertSame(['created_invoice_ids' => [3001]], $result);
+    }
+
+    /** @test */
     public function create_single_invoices_for_rule_includes_all_non_invoiced_bookings(): void
     {
         $this->booking_service->shouldReceive('booking_has_invoices')->with(101)->andReturn(false);
@@ -159,7 +204,9 @@ class SingleBookingAutoInvoicingTest extends UnitTestCase
                 'rule_id' => 77,
                 'due_date_offset_days' => 30,
             ])
-            ->andReturn([9001, 9002]);
+            ->andReturnUsing(function () {
+                return [9001, 9002];
+            });
 
         $sut = new SingleBookingAutoInvoicing(
             $this->invoice_generator,

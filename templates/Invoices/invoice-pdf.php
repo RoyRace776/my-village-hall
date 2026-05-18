@@ -142,6 +142,12 @@ $fmt_date = static function (?string $date): string {
         vertical-align: top;
     }
 
+    .item-subline {
+        margin-top: 2pt;
+        font-size: 8.5pt;
+        color: #666;
+    }
+
     .items-table td.num {
         text-align: right;
         white-space: nowrap;
@@ -297,7 +303,18 @@ $fmt_date = static function (?string $date): string {
         <tbody>
             <?php foreach ($Items ?? [] as $item): ?>
             <tr>
-                <td><?php echo htmlspecialchars($item['Description'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                <td>
+                    <?php echo htmlspecialchars($item['Description'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                    <?php
+                    $has_booking_date = !empty($item['BookingId']) && !empty($item['StartDate']);
+                    $item_type = strtolower((string) ($item['ItemType'] ?? 'charge'));
+                    ?>
+                    <?php if ($has_booking_date && $item_type !== 'deposit'): ?>
+                        <div class="item-subline">
+                            <?php echo htmlspecialchars('Booking date: ' . $fmt_date((string) $item['StartDate']), ENT_QUOTES, 'UTF-8'); ?>
+                        </div>
+                    <?php endif; ?>
+                </td>
                 <td class="num"><?php echo htmlspecialchars(rtrim(rtrim(number_format((float)($item['Quantity'] ?? 1), 2), '0'), '.'), ENT_QUOTES, 'UTF-8'); ?></td>
                 <td class="num"><?php echo htmlspecialchars($fmt_currency($item['UnitPrice'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></td>
                 <td class="num"><?php echo htmlspecialchars(number_format((float)($item['TaxRate'] ?? 0), 2) . '%', ENT_QUOTES, 'UTF-8'); ?></td>

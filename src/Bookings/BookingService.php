@@ -639,6 +639,26 @@ class BookingService {
     }
 
     /**
+     * Get confirmed bookings for a recurring pattern that fall within a date range.
+     *
+     * Useful for period-based auto-invoicing where you want all bookings in a specific
+     * period (week, month, quarter) to be invoiced together.
+     *
+     * @param int $pattern_id The recurring pattern ID
+     * @param string $start_date Start date in Y-m-d format
+     * @param string $end_date End date in Y-m-d format (inclusive)
+     * @return array Array of confirmed booking records
+     */
+    public function get_bookings_by_recurring_pattern_in_period(int $pattern_id, string $start_date, string $end_date): array {
+        $bookings = $this->booking_repo->get_by_pattern_id_in_period($pattern_id, $start_date, $end_date);
+
+        // Filter to only confirmed bookings
+        return array_values(array_filter($bookings, function (array $booking): bool {
+            return ($booking['Status'] ?? '') === 'confirmed';
+        }));
+    }
+
+    /**
      * Get uninvoiced booking counts by organisation
      *
      * @return array Array of [OrganisationId, OrganisationName, UninvoicedCount]

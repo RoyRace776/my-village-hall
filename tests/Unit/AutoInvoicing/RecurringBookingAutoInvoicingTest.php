@@ -56,9 +56,16 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
         ]);
 
         $this->booking_service->shouldReceive('get_uninvoiced_recurring_bookings')->andReturn([
-            ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-06-01'],
-            ['Id' => 2, 'Status' => 'completed', 'StartDate' => '2026-06-01'],
+            ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 901],
+            ['Id' => 2, 'Status' => 'completed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 901],
         ]);
+
+        $this->booking_service->shouldReceive('get_bookings_by_recurring_pattern_in_period')
+            ->once()
+            ->with(901, Mockery::type('string'), Mockery::type('string'))
+            ->andReturn([
+                ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 901],
+            ]);
 
         $sut = $this->make_sut();
         $result = $sut->process_with_result();
@@ -85,6 +92,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
                 'Id' => 100,
                 'Status' => 'confirmed',
                 'StartDate' => '2026-06-01',
+                'RecurringPatternId' => 910,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 11,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 10,
             ],
@@ -92,6 +100,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
                 'Id' => 101,
                 'Status' => 'confirmed',
                 'StartDate' => '2026-06-01',
+                'RecurringPatternId' => 911,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 0,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 10,
             ],
@@ -99,10 +108,22 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
                 'Id' => 102,
                 'Status' => 'confirmed',
                 'StartDate' => '2026-06-01',
+                'RecurringPatternId' => 912,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 0,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 0,
             ],
         ]);
+
+        $this->booking_service->shouldReceive('get_bookings_by_recurring_pattern_in_period')
+            ->times(3)
+            ->andReturnUsing(function (int $pattern_id) {
+                return [[
+                    'Id' => $pattern_id,
+                    'Status' => 'confirmed',
+                    'StartDate' => '2026-06-01',
+                    'RecurringPatternId' => $pattern_id,
+                ]];
+            });
 
         $sut = $this->make_sut();
         $result = $sut->process_with_result();
@@ -131,6 +152,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
                 'Id' => 200,
                 'Status' => 'confirmed',
                 'StartDate' => '2026-06-01',
+                'RecurringPatternId' => 920,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 11,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 10,
             ],
@@ -138,6 +160,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
                 'Id' => 201,
                 'Status' => 'confirmed',
                 'StartDate' => '2026-06-01',
+                'RecurringPatternId' => 921,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 0,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 10,
             ],
@@ -145,6 +168,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
                 'Id' => 202,
                 'Status' => 'confirmed',
                 'StartDate' => '2026-06-01',
+                'RecurringPatternId' => 922,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 0,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 0,
             ],
@@ -175,10 +199,18 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
                 'Id' => 300,
                 'Status' => 'confirmed',
                 'StartDate' => '2026-06-01',
+                'RecurringPatternId' => 930,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 9,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 9,
             ],
         ]);
+
+        $this->booking_service->shouldReceive('get_bookings_by_recurring_pattern_in_period')
+            ->once()
+            ->with(930, Mockery::type('string'), Mockery::type('string'))
+            ->andReturn([
+                ['Id' => 300, 'Status' => 'confirmed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 930],
+            ]);
 
         $sut = $this->make_sut();
         $result = $sut->process_with_result();
@@ -258,5 +290,248 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
         );
 
         $this->assertSame([], $result);
+    }
+
+    // ── Period Range Calculation Tests ─────────────────────────────────────
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_current_month_for_start_of_month_zero_offset(): void
+    {
+        // May 18, 2026 should return May 1 - May 31
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_month',
+            'trigger_direction' => 'in_advance',
+            'trigger_period_count' => 0,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2026-05-01', $result['start_date']);
+        $this->assertSame('2026-05-31', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_previous_month_for_in_advance_one_month(): void
+    {
+        // May 18, 2026 with 1 month in advance should return April 1 - April 30
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_month',
+            'trigger_direction' => 'in_advance',
+            'trigger_period_count' => 1,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2026-04-01', $result['start_date']);
+        $this->assertSame('2026-04-30', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_next_month_for_in_arrears_one_month(): void
+    {
+        // May 18, 2026 with 1 month in arrears should return June 1 - June 30
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_month',
+            'trigger_direction' => 'in_arrears',
+            'trigger_period_count' => 1,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2026-06-01', $result['start_date']);
+        $this->assertSame('2026-06-30', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_current_week_for_start_of_week_zero_offset(): void
+    {
+        // May 18, 2026 (Sunday) should return Monday May 18 - Sunday May 24
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_week',
+            'trigger_direction' => 'in_advance',
+            'trigger_period_count' => 0,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        // May 18, 2026 is a Sunday, so Monday this week is May 18
+        $this->assertSame('2026-05-18', $result['start_date']);
+        $this->assertSame('2026-05-24', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_previous_week_for_in_advance_one_week(): void
+    {
+        // May 18, 2026 with 1 week in advance should return previous week
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_week',
+            'trigger_direction' => 'in_advance',
+            'trigger_period_count' => 1,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2026-05-11', $result['start_date']);
+        $this->assertSame('2026-05-17', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_next_week_for_in_arrears_one_week(): void
+    {
+        // May 18, 2026 with 1 week in arrears should return next week
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_week',
+            'trigger_direction' => 'in_arrears',
+            'trigger_period_count' => 1,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2026-05-25', $result['start_date']);
+        $this->assertSame('2026-05-31', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_current_quarter_for_start_of_quarter_zero_offset(): void
+    {
+        // May 18, 2026 is in Q2 (April-June), should return April 1 - June 30
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_quarter',
+            'trigger_direction' => 'in_advance',
+            'trigger_period_count' => 0,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2026-04-01', $result['start_date']);
+        $this->assertSame('2026-06-30', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_previous_quarter_for_in_advance_one_quarter(): void
+    {
+        // May 18, 2026 (Q2) with 1 quarter in advance should return Q1 (Jan-Mar)
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_quarter',
+            'trigger_direction' => 'in_advance',
+            'trigger_period_count' => 1,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2026-01-01', $result['start_date']);
+        $this->assertSame('2026-03-31', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_next_quarter_for_in_arrears_one_quarter(): void
+    {
+        // May 18, 2026 (Q2) with 1 quarter in arrears should return Q3 (Jul-Sep)
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_quarter',
+            'trigger_direction' => 'in_arrears',
+            'trigger_period_count' => 1,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2026-07-01', $result['start_date']);
+        $this->assertSame('2026-09-30', $result['end_date']);
+    }
+
+    /** @test */
+    public function calculate_invoicing_period_range_returns_two_quarters_back_for_in_advance_two_quarters(): void
+    {
+        // May 18, 2026 (Q2) with 2 quarters in advance should return Q4 of previous year
+        $sut = new RecurringBookingAutoInvoicing(
+            $this->invoice_generator,
+            $this->booking_service,
+            $this->rule_repository
+        );
+
+        $rule = [
+            'trigger_timing' => 'start_of_quarter',
+            'trigger_direction' => 'in_advance',
+            'trigger_period_count' => 2,
+        ];
+
+        $method = new \ReflectionMethod(RecurringBookingAutoInvoicing::class, 'calculate_invoicing_period_range');
+        $method->setAccessible(true);
+        $result = $method->invoke($sut, $rule);
+
+        $this->assertSame('2025-10-01', $result['start_date']);
+        $this->assertSame('2025-12-31', $result['end_date']);
     }
 }

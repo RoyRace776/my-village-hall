@@ -63,7 +63,7 @@ class InvoiceRepository extends RepositoryBase{
                 LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
                 {$where_clause}
                 GROUP BY i.Id
-                ORDER BY i.InvoiceDate DESC";
+                ORDER BY i.Updated DESC, i.Id DESC";
 
             $prepared_sql = !empty($prepare_args) ? $this->wpdb->prepare($sql, ...$prepare_args) : $sql;
             $results = $this->wpdb->get_results($prepared_sql, ARRAY_A);
@@ -205,7 +205,7 @@ class InvoiceRepository extends RepositoryBase{
      */
     public function get_by_customer($customer_id): ?array {
         $sql = $this->wpdb->prepare(
-            "SELECT * FROM $this->table_name WHERE CustomerId = %d ORDER BY InvoiceDate DESC",
+            "SELECT * FROM $this->table_name WHERE CustomerId = %d ORDER BY Updated DESC, Id DESC",
             $customer_id
         );
 
@@ -226,7 +226,7 @@ class InvoiceRepository extends RepositoryBase{
      */
     public function get_by_booking($booking_id): ?array {
         $sql = $this->wpdb->prepare(
-            "SELECT * FROM $this->table_name WHERE BookingId = %d ORDER BY InvoiceDate DESC",
+            "SELECT * FROM $this->table_name WHERE BookingId = %d ORDER BY Updated DESC, Id DESC",
             $booking_id
         );
 
@@ -247,7 +247,7 @@ class InvoiceRepository extends RepositoryBase{
      */
     public function get_by_status($status): ?array {
         $sql = $this->wpdb->prepare(
-            "SELECT * FROM $this->table_name WHERE Status = %s ORDER BY InvoiceDate DESC",
+            "SELECT * FROM $this->table_name WHERE Status = %s ORDER BY Updated DESC, Id DESC",
             $status
         );
 
@@ -311,7 +311,7 @@ class InvoiceRepository extends RepositoryBase{
             LEFT JOIN {$this->wpdb->prefix}myvh_organisations o ON b.OrganisationId = o.Id
             WHERE $where
             GROUP BY i.Id
-            ORDER BY i.InvoiceDate DESC
+            ORDER BY i.Updated DESC, i.Id DESC
         ";
 
         array_unshift($prepare_args, $customer_id);

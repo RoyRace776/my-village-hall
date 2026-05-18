@@ -127,60 +127,81 @@ class SingleBookingAutoInvoicing {
     }
 
     protected function apply_single_rule_for_organisation_bookings(array $bookings, array $active_rules, int $default_rule_id): array {
-        $result = $this->empty_process_result();
-
-        foreach ($bookings as $booking) {
-            $rule = $this->resolve_organisation_rule_for_booking($booking, $active_rules, $default_rule_id);
-
-            if (empty($rule['enabled']) || !$this->is_trigger_condition_met($booking, $rule)) {
-                continue;
+        return $this->create_invoices_for_resolved_rule_groups(
+            $bookings,
+            function (array $booking) use ($active_rules, $default_rule_id): array {
+                return $this->resolve_organisation_rule_for_booking($booking, $active_rules, $default_rule_id);
             }
-
-            $result['created_invoice_ids'] = array_merge(
-                $result['created_invoice_ids'],
-                $this->create_single_invoices_for_rule([$booking], $rule)
-            );
-        }
-
-        return $result;
+        );
     }
 
     protected function apply_single_rule_for_customer_bookings(array $bookings, array $active_rules, int $default_rule_id): array {
+        return $this->create_invoices_for_resolved_rule_groups(
+            $bookings,
+            function (array $booking) use ($active_rules, $default_rule_id): array {
+                return $this->resolve_customer_rule_for_booking($booking, $active_rules, $default_rule_id);
+            }
+        );
+    }
+
+    protected function apply_single_default_rule(array $bookings, array $active_rules, int $default_rule_id): array {
+        return $this->create_invoices_for_resolved_rule_groups(
+            $bookings,
+            function () use ($active_rules, $default_rule_id): array {
+                return $this->resolve_default_rule($active_rules, $default_rule_id);
+            }
+        );
+    }
+
+    /**
+     * @param array<int, array> $bookings
+     * @param callable $rule_resolver
+     * @return array{created_invoice_ids: array<int>}
+     */
+    protected function create_invoices_for_resolved_rule_groups(array $bookings, callable $rule_resolver): array {
         $result = $this->empty_process_result();
+        $bookings_by_rule = [];
 
         foreach ($bookings as $booking) {
-            $rule = $this->resolve_customer_rule_for_booking($booking, $active_rules, $default_rule_id);
+            $rule = $rule_resolver($booking);
 
             if (empty($rule['enabled']) || !$this->is_trigger_condition_met($booking, $rule)) {
                 continue;
             }
 
+            $rule_bucket_key = $this->build_rule_bucket_key($rule);
+            if (!isset($bookings_by_rule[$rule_bucket_key])) {
+                $bookings_by_rule[$rule_bucket_key] = [
+                    'rule' => $rule,
+                    'bookings' => [],
+                ];
+            }
+
+            $bookings_by_rule[$rule_bucket_key]['bookings'][] = $booking;
+        }
+
+        foreach ($bookings_by_rule as $group) {
             $result['created_invoice_ids'] = array_merge(
                 $result['created_invoice_ids'],
-                $this->create_single_invoices_for_rule([$booking], $rule)
+                $this->create_single_invoices_for_rule($group['bookings'], $group['rule'])
             );
         }
 
         return $result;
     }
 
-    protected function apply_single_default_rule(array $bookings, array $active_rules, int $default_rule_id): array {
-        $result = $this->empty_process_result();
-
-        foreach ($bookings as $booking) {
-            $rule = $this->resolve_default_rule($active_rules, $default_rule_id);
-
-            if (empty($rule['enabled']) || !$this->is_trigger_condition_met($booking, $rule)) {
-                continue;
-            }
-
-            $result['created_invoice_ids'] = array_merge(
-                $result['created_invoice_ids'],
-                $this->create_single_invoices_for_rule([$booking], $rule)
-            );
-        }
-
-        return $result;
+    /**
+     * @param array<string, mixed> $rule
+     */
+    protected function build_rule_bucket_key(array $rule): string {
+        return implode('|', [
+            (string) \intval($rule['id'] ?? 0),
+            (string) ($rule['group_by'] ?? 'per_booking'),
+            (string) ($rule['trigger_timing'] ?? 'confirmation'),
+            (string) \intval($rule['trigger_offset_days'] ?? 0),
+            (string) \intval($rule['due_date_offset_days'] ?? 30),
+            !empty($rule['enabled']) ? '1' : '0',
+        ]);
     }
 
     /**

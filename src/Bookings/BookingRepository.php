@@ -145,6 +145,31 @@ class BookingRepository extends RepositoryBase
     }
 
     /**
+     * Get bookings for a recurring pattern that fall within a specific date range.
+     *
+     * @param int $pattern_id The recurring pattern ID
+     * @param string $start_date Start date in Y-m-d format
+     * @param string $end_date End date in Y-m-d format (inclusive)
+     * @return array Array of booking records
+     */
+    public function get_by_pattern_id_in_period($pattern_id, string $start_date, string $end_date): array {
+        $sql = $this->wpdb->prepare(
+            "SELECT b.*, c.Name as CustomerName, r.Name as RoomName
+             FROM {$this->table_name} b
+             LEFT JOIN {$this->wpdb->prefix}myvh_customers c ON b.CustomerId = c.Id
+             LEFT JOIN {$this->wpdb->prefix}myvh_rooms r ON b.RoomId = r.Id
+             WHERE b.RecurringPatternId = %d
+             AND b.StartDate >= %s
+             AND b.StartDate <= %s
+             ORDER BY b.StartDate ASC",
+            $pattern_id,
+            $start_date,
+            $end_date
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A) ?? [];
+    }
+
+    /**
      * Cancel all future bookings in a pattern (today and beyond)
      */
     public function cancel_future_by_pattern($pattern_id): int|false {
