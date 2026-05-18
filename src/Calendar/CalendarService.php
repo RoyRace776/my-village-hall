@@ -495,6 +495,17 @@ class CalendarService {
             ];
         }
 
+        $can_edit = false;
+        if ($context !== 'public') {
+            $edit_check = $this->booking_service->can_edit([
+                'Id'             => $booking->id(),
+                'Status'         => $booking->status()->value,
+                'CustomerId'     => $booking->customerId(),
+                'OrganisationId' => $booking->organisationId(),
+            ]);
+            $can_edit = !empty($edit_check['can_edit']);
+        }
+
         $event = [
             'id' => $booking->id(),
             'text' => $display_text,
@@ -514,6 +525,7 @@ class CalendarService {
                 'customerId' => $portal_prefill_tags['customerId'] ?? 0,
                 'customerName' => $portal_prefill_tags['customerName'] ?? '',
                 'organisationName' => $portal_prefill_tags['organisationName'] ?? '',
+                'canEdit' => $can_edit,
             ],
         ];
 

@@ -593,9 +593,15 @@ window.CalendarAdmin = (function() {
 
                 onEventClick: function(args) {
                     const id = args.e.id ? args.e.id() : args.e.data.id;
+                    const eventData = typeof args.e.data === 'function' ? args.e.data() : (args.e.data || {});
+                    const tags = eventData.tags || {};
                     const target = new URL('/wp-admin/admin.php', window.location.origin);
                     target.searchParams.set('page', 'my-village-hall');
-                    target.searchParams.set('view', id);
+                    if (tags.canEdit) {
+                        target.searchParams.set('edit', id);
+                    } else {
+                        target.searchParams.set('view', id);
+                    }
                     target.searchParams.set('return_to', buildCalendarReturnUrl());
                     window.location.href = target.toString();
                 },

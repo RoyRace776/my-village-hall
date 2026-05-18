@@ -237,6 +237,8 @@ class Installer {
         self::create_invoice_items_table( $wpdb, $collate );
         self::create_payments_table( $wpdb, $collate );
         self::create_audit_log_table( $wpdb, $collate );
+
+        //This is special as it's not a site specific table
         self::create_site_provisioning_table( $wpdb, $collate );
     }
 
@@ -1137,6 +1139,7 @@ class Installer {
             'myvh_customers',
             'myvh_recurring_patterns',
             'myvh_room_rates',
+            'myvh_room_rate_days',
             'myvh_booking_charges',
             'myvh_discounts',
             'myvh_booking_discounts',

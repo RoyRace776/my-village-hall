@@ -11,6 +11,15 @@ class NetworkDashboard {
 
     private const CLIENT_ADMINS_PAGE = 'myvh-network-client-admins';
     private const PROVISIONING_SETTINGS_PAGE = 'myvh-network-provisioning-settings';
+    private const PROVISIONING_MAINTENANCE_PAGE = 'myvh-network-provisioning-maintenance';
+
+    public function __construct(
+        private ?SiteProvisioningRepository $provisioning_repo = null
+    ) {
+        if ($this->provisioning_repo === null) {
+            $this->provisioning_repo = new SiteProvisioningRepository();
+        }
+    }
 
     public function init(): void {
         add_action('network_admin_menu', [$this, 'add_menu']);
@@ -46,12 +55,22 @@ class NetworkDashboard {
             self::PROVISIONING_SETTINGS_PAGE,
             [$this, 'render_provisioning_settings_page']
         );
+
+        add_submenu_page(
+            'myvh-network',
+            'Site Provisioning Maintenance',
+            'Site Provisioning',
+            'manage_network_options',
+            self::PROVISIONING_MAINTENANCE_PAGE,
+            [$this, 'render_provisioning_maintenance_page']
+        );
     }
 
     public function render_menu_icons(): void {
         $icon_map = [
             'admin.php?page=' . self::CLIENT_ADMINS_PAGE => 'dashicons-admin-users',
             'admin.php?page=' . self::PROVISIONING_SETTINGS_PAGE => 'dashicons-admin-tools',
+            'admin.php?page=' . self::PROVISIONING_MAINTENANCE_PAGE => 'dashicons-clipboard',
         ];
         $json_map = wp_json_encode($icon_map);
 
@@ -80,11 +99,12 @@ class NetworkDashboard {
             $bookings  = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}myvh_bookings`");
             $customers = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}myvh_customers`");
             $site_name = isset($site->blogname) ? esc_html($site->blogname) : '';
+            $site_url = esc_url(get_home_url($site->blog_id));
             $bookings_count = esc_html((string) \intval($bookings));
             $customers_count = esc_html((string) \intval($customers));
 
             echo "<tr>
-                <td>{$site_name}</td>
+                <td><a href=\"{$site_url}\" target=\"_blank\">{$site_name}</a></td>
                 <td>{$bookings_count}</td>
                 <td>{$customers_count}</td>
                   </tr>";
@@ -100,7 +120,7 @@ class NetworkDashboard {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
-        if (!class_exists('ClientAdminService')) {
+        if (!class_exists(ClientAdminService::class)) {
             echo '<div class="wrap"><h1>Client Administrators</h1>';
             echo '<div class="notice notice-error"><p>Client admin service is not available.</p></div>';
             echo '</div>';
@@ -328,5 +348,195 @@ class NetworkDashboard {
         submit_button('Save Settings');
         echo '</form>';
         echo '</div>';
+    }
+
+    public function render_provisioning_maintenance_page(): void {
+        if (!current_user_can('manage_network_options')) {
+            wp_die('Sorry, you are not allowed to access this page.');
+        }
+
+        // Handle delete action
+        if (
+            $_SERVER['REQUEST_METHOD'] === 'POST' &&
+            !empty($_POST['myvh_action']) &&
+            $_POST['myvh_action'] === 'delete' &&
+            !empty($_POST['myvh_delete_id'])
+        ) {
+            check_admin_referer('myvh_provisioning_maintenance');
+            $delete_id = (int) $_POST['myvh_delete_id'];
+            $this->provisioning_repo->delete($delete_id);
+            wp_redirect(add_query_arg(['page' => self::PROVISIONING_MAINTENANCE_PAGE], network_admin_url('admin.php')));
+            exit;
+        }
+
+        $current_page = (int) ($_GET['paged'] ?? 1);
+        if ($current_page < 1) {
+            $current_page = 1;
+        }
+
+        $per_page = 25;
+        $offset = ($current_page - 1) * $per_page;
+        $total_records = $this->provisioning_repo->count_all();
+        $total_pages = ceil($total_records / $per_page);
+
+        $records = $this->provisioning_repo->get_all($offset, $per_page);
+
+        echo '<div class="wrap">';
+        echo '<h1>Site Provisioning Maintenance</h1>';
+        echo '<p>View and manage all site provisioning requests.</p>';
+
+        if (empty($records)) {
+            echo '<p>No provisioning records found.</p>';
+            echo '</div>';
+            return;
+        }
+
+        echo '<table class="widefat striped">';
+        echo '<thead>';
+        echo '<tr>';
+        echo '<th>Subdomain</th>';
+        echo '<th>Site Name</th>';
+        echo '<th>Admin Email</th>';
+        echo '<th>Status</th>';
+        echo '<th>Blog ID</th>';
+        echo '<th>Created</th>';
+        echo '<th>Updated</th>';
+        echo '<th>Actions</th>';
+        echo '</tr>';
+        echo '</thead>';
+        echo '<tbody>';
+
+        foreach ($records as $record) {
+            $status = esc_html($record['status']);
+            $status_class = $this->get_status_class($record['status']);
+
+            echo '<tr>';
+            echo '<td><code>' . esc_html($record['subdomain']) . '</code></td>';
+            echo '<td>' . esc_html($record['site_name']) . '</td>';
+            echo '<td><a href="mailto:' . esc_attr($record['admin_email']) . '">' . esc_html($record['admin_email']) . '</a></td>';
+            echo '<td><span class="' . esc_attr($status_class) . '">' . $status . '</span></td>';
+            echo '<td>';
+            if ($record['blog_id']) {
+                $site_url = get_site_url($record['blog_id']);
+                echo '<a href="' . esc_url($site_url) . '" target="_blank">' . esc_html((string) $record['blog_id']) . '</a>';
+            } else {
+                echo '—';
+            }
+            echo '</td>';
+            echo '<td>' . esc_html(wp_date('Y-m-d H:i', strtotime($record['created_at']))) . '</td>';
+            echo '<td>' . esc_html(wp_date('Y-m-d H:i', strtotime($record['updated_at']))) . '</td>';
+            echo '<td>';
+
+            // View details button
+            echo '<a href="#" onclick="event.preventDefault(); showProvisioningDetails(' . (int) $record['id'] . ');" class="button button-small">Details</a> ';
+
+            // Delete button
+            echo '<form method="post" style="display:inline;" onsubmit="return confirm(\'Delete this provisioning record? This action cannot be undone.\');">';
+            wp_nonce_field('myvh_provisioning_maintenance');
+            echo '<input type="hidden" name="myvh_action" value="delete">';
+            echo '<input type="hidden" name="myvh_delete_id" value="' . esc_attr((int) $record['id']) . '">';
+            submit_button('Delete', 'small', '', false);
+            echo '</form>';
+
+            echo '</td>';
+            echo '</tr>';
+
+            // Hidden details row
+            echo '<tr id="details-' . (int) $record['id'] . '" style="display:none; background:#f5f5f5;">';
+            echo '<td colspan="8" style="padding:20px;">';
+            echo '<h4>Provisioning Details</h4>';
+            echo '<table style="width:100%; border-collapse:collapse;">';
+
+            $details_fields = [
+                'Token' => $record['token'],
+                'First Name' => $record['admin_first_name'],
+                'Last Name' => $record['admin_last_name'],
+                'User ID' => $record['user_id'] ?: '—',
+                'Logo URL' => $record['logo_url'] ?: '—',
+                'Error' => $record['error'] ?: '—',
+            ];
+
+            foreach ($details_fields as $label => $value) {
+                echo '<tr style="border-bottom:1px solid #ddd;">';
+                echo '<td style="padding:8px; font-weight:bold; width:150px;">' . esc_html($label) . ':</td>';
+                echo '<td style="padding:8px;"><code style="word-break:break-all;">' . esc_html($value) . '</code></td>';
+                echo '</tr>';
+            }
+
+            echo '</table>';
+            echo '</td>';
+            echo '</tr>';
+        }
+
+        echo '</tbody>';
+        echo '</table>';
+
+        // Pagination
+        if ($total_pages > 1) {
+            echo '<div class="tablenav"><div class="tablenav-pages">';
+            echo '<span class="displaying-num">' . sprintf(
+                esc_html('%d-%d of %d'),
+                $offset + 1,
+                min($offset + $per_page, $total_records),
+                $total_records
+            ) . '</span> ';
+
+            // Previous page
+            if ($current_page > 1) {
+                echo '<a class="prev-page" href="' . esc_url(add_query_arg([
+                    'page' => self::PROVISIONING_MAINTENANCE_PAGE,
+                    'paged' => $current_page - 1,
+                ], network_admin_url('admin.php'))) . '"><span aria-hidden="true">‹</span></a> ';
+            }
+
+            // Page numbers
+            for ($i = 1; $i <= $total_pages; $i++) {
+                if ($i === $current_page) {
+                    echo '<span aria-current="page" class="page-numbers current"><span class="screen-reader-text">Current Page, </span>' . (int) $i . '</span> ';
+                } else {
+                    echo '<a class="page-numbers" href="' . esc_url(add_query_arg([
+                        'page' => self::PROVISIONING_MAINTENANCE_PAGE,
+                        'paged' => $i,
+                    ], network_admin_url('admin.php'))) . '">' . (int) $i . '</a> ';
+                }
+            }
+
+            // Next page
+            if ($current_page < $total_pages) {
+                echo '<a class="next-page" href="' . esc_url(add_query_arg([
+                    'page' => self::PROVISIONING_MAINTENANCE_PAGE,
+                    'paged' => $current_page + 1,
+                ], network_admin_url('admin.php'))) . '"><span aria-hidden="true">›</span></a>';
+            }
+
+            echo '</div></div>';
+        }
+
+        echo '</div>';
+
+        // Inline script for details toggle
+        echo '<script>
+        function showProvisioningDetails(id) {
+            const detailsRow = document.getElementById("details-" + id);
+            if (detailsRow) {
+                detailsRow.style.display = detailsRow.style.display === "none" ? "table-row" : "none";
+            }
+        }
+        </script>';
+
+        // Inline styles
+        echo '<style>
+        .myvh-status-pending { color: #f0ad4e; font-weight: bold; }
+        .myvh-status-verified { color: #5cb85c; font-weight: bold; }
+        .myvh-status-cloning { color: #0275d8; font-weight: bold; }
+        .myvh-status-site-cloned { color: #5cb85c; font-weight: bold; }
+        .myvh-status-cancelled { color: #999; font-weight: bold; text-decoration: line-through; }
+        .myvh-status-failed { color: #d9534f; font-weight: bold; }
+        </style>';
+    }
+
+    private function get_status_class(string $status): string {
+        $class = 'myvh-status-' . str_replace(' ', '-', strtolower($status));
+        return $class;
     }
 }

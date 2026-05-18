@@ -67,4 +67,38 @@ class SiteProvisioningRepository {
 
         return $row ?: null;
     }
+
+    public function get_all(int $offset = 0, int $limit = 50): array {
+        global $wpdb;
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+                $limit,
+                $offset
+            ),
+            ARRAY_A
+        );
+
+        return $rows ?: [];
+    }
+
+    public function count_all(): int {
+        global $wpdb;
+
+        $count = $wpdb->get_var("SELECT COUNT(*) FROM {$this->table}");
+
+        return (int) $count;
+    }
+
+    public function get_by_id(int $id): ?array {
+        global $wpdb;
+
+        $row = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $id),
+            ARRAY_A
+        );
+
+        return $row ?: null;
+    }
 }
