@@ -21,8 +21,13 @@ use MYVH\Availability\AvailabilityService;
 use MYVH\Bookings\BookingRepository;
 use MYVH\Organisations\OrganisationRepository;
 use MYVH\Organisations\OrganisationMemberRepository;
+use Psr\Log\NullLogger;
 
 class SiteSeeder {
+
+    private function null_logger(): NullLogger {
+        return new NullLogger();
+    }
 
     public function seed(int $blog_id, array $context = []): void {
 
@@ -136,14 +141,14 @@ class SiteSeeder {
         return new VenueService(
             new VenueRepository($wpdb),
             new VenueHoursRepository($wpdb),
-            new RoomRepository($wpdb)
+            new RoomRepository($wpdb, $this->null_logger())
         );
     }
 
     protected function make_room_service(): RoomService {
         global $wpdb;
         return new RoomService(
-            new RoomRepository($wpdb),
+            new RoomRepository($wpdb, $this->null_logger()),
             new RoomHoursRepository($wpdb),
             $this->make_availability_service(),
             new RoomDepositRepository()
@@ -154,8 +159,8 @@ class SiteSeeder {
     protected function make_availability_service(): AvailabilityService {
         global $wpdb;
         return new AvailabilityService(
-            new BookingRepository($wpdb),
-            new RoomRepository($wpdb),
+            new BookingRepository($wpdb, $this->null_logger()),
+            new RoomRepository($wpdb, $this->null_logger()),
             new RoomHoursRepository($wpdb),
             new VenueRepository($wpdb),
             new VenueHoursRepository($wpdb)
@@ -173,10 +178,10 @@ class SiteSeeder {
     protected function make_customer_service(): CustomerService {
         global $wpdb;
         return new CustomerService(
-            new CustomerRepository($wpdb),
-            new BookingRepository($wpdb),
+            new CustomerRepository($wpdb, $this->null_logger()),
+            new BookingRepository($wpdb, $this->null_logger()),
             new OrganisationRepository($wpdb),
-            new OrganisationMemberRepository($wpdb)
+            new OrganisationMemberRepository($wpdb, $this->null_logger())
         );
     }
 

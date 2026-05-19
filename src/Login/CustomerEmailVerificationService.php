@@ -3,6 +3,8 @@ namespace MYVH\Login;
 
 use MYVH\Customers\CustomerRepository;
 use MYVH\Email\EmailService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class CustomerEmailVerificationService {
     private const TOKEN_PREFIX = 'myvh_email_verify_token_';
@@ -12,15 +14,18 @@ class CustomerEmailVerificationService {
     private EmailService $email_service;
     private CustomerRepository $customer_repository;
     private int $token_ttl;
+    private LoggerInterface $logger;
 
     public function __construct(
         ?EmailService $email_service = null,
         ?CustomerRepository $customer_repository = null,
-        ?int $token_ttl = null
+        ?int $token_ttl = null,
+        ?LoggerInterface $logger = null
     ) {
         $this->email_service = $email_service ?: new EmailService();
-        $this->customer_repository = $customer_repository ?: new CustomerRepository($GLOBALS['wpdb']);
+        $this->customer_repository = $customer_repository ?: new CustomerRepository($GLOBALS['wpdb'], new NullLogger());
         $this->token_ttl = $token_ttl ?? self::DEFAULT_TOKEN_TTL;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function send_verification_email(int $customer_id, int $user_id, string $email, string $name): bool {

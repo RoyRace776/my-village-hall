@@ -7,6 +7,8 @@
 namespace MYVH\Bookings;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
@@ -14,13 +16,16 @@ if (!defined('ABSPATH')) {
 
 class RecurringPatternRepository extends RepositoryBase {
 
+    private LoggerInterface $logger;
+
 
     /**
      * Constructor
      */
-    public function __construct( \wpdb $wpdb ) {
+    public function __construct( \wpdb $wpdb, ?LoggerInterface $logger = null ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_recurring_patterns';
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -48,7 +53,10 @@ class RecurringPatternRepository extends RepositoryBase {
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Recurring_Pattern Repository Error (get_all_active_with_bookings): ' . $this->wpdb->last_error);
+            $this->logger->error('Recurring pattern repository query failed', [
+                'method' => 'get_all_active_with_bookings',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;
@@ -69,7 +77,11 @@ class RecurringPatternRepository extends RepositoryBase {
         $result = $this->wpdb->get_row($sql, ARRAY_A);
 
         if ($result === null && $this->wpdb->last_error) {
-            error_log('MYVH Recurring_Pattern Repository Error (get_by_parent_booking): ' . $this->wpdb->last_error);
+            $this->logger->error('Recurring pattern repository query failed', [
+                'method' => 'get_by_parent_booking',
+                'booking_id' => (int) $booking_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $result;
@@ -95,7 +107,10 @@ class RecurringPatternRepository extends RepositoryBase {
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Recurring_Pattern Repository Error (get_patterns_needing_processing): ' . $this->wpdb->last_error);
+            $this->logger->error('Recurring pattern repository query failed', [
+                'method' => 'get_patterns_needing_processing',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;
@@ -116,7 +131,11 @@ class RecurringPatternRepository extends RepositoryBase {
         $result = $this->wpdb->query($sql);
 
         if ($result === false) {
-            error_log('MYVH Recurring_Pattern Repository Error (increment_occurrence_count): ' . $this->wpdb->last_error);
+            $this->logger->error('Recurring pattern repository update failed', [
+                'method' => 'increment_occurrence_count',
+                'pattern_id' => (int) $id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return false;
         }
 

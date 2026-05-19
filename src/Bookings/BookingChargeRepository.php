@@ -3,6 +3,8 @@
 namespace MYVH\Bookings;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use wpdb;
 
 /**
@@ -12,13 +14,16 @@ use wpdb;
  */
 class BookingChargeRepository extends RepositoryBase
 {
+    private LoggerInterface $logger;
+
     /**
      * Constructor
      */
-    public function __construct(wpdb $wpdb)
+    public function __construct(wpdb $wpdb, ?LoggerInterface $logger = null)
     {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_booking_charges';
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -37,7 +42,11 @@ class BookingChargeRepository extends RepositoryBase
         $result = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($result === null && $this->wpdb->last_error) {
-            error_log('MYVH Booking_Charge Repository Error (get_by_booking_id): ' . $this->wpdb->last_error);
+            $this->logger->error('Booking charge repository query failed', [
+                'method' => 'get_by_booking_id',
+                'booking_id' => (int) $booking_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return [];
         }
 
@@ -59,7 +68,11 @@ class BookingChargeRepository extends RepositoryBase
         );
 
         if ($result === false) {
-            error_log('MYVH Booking_Charge Repository Error (delete_by_booking_id): ' . $this->wpdb->last_error);
+            $this->logger->error('Booking charge repository delete failed', [
+                'method' => 'delete_by_booking_id',
+                'booking_id' => (int) $booking_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return false;
         }
 

@@ -12,6 +12,8 @@ use MYVH\Pricing\PricingService;
 use MYVH\Addons\AddonRepository;
 use MYVH\Customers\CustomerRepository;
 use MYVH\Organisations\OrganisationRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 use WP_Error;
 
@@ -42,6 +44,7 @@ class InvoiceGeneratorService {
     private DepositService $deposit_service;
     private SingleBookingAutoInvoiceRuleRepository $single_rule_repository;
     private RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository;
+    private LoggerInterface $logger;
 
     public function __construct(
         InvoiceService $invoiceService,
@@ -57,7 +60,8 @@ class InvoiceGeneratorService {
         PricingService $pricing_service,
         DepositService $deposit_service,
         SingleBookingAutoInvoiceRuleRepository $single_rule_repository,
-        RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository
+        RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository,
+        ?LoggerInterface $logger = null
     ) {
         $this->invoiceService = $invoiceService;
         $this->invoice_repo = $invoice_repo;
@@ -73,6 +77,7 @@ class InvoiceGeneratorService {
         $this->deposit_service = $deposit_service;
         $this->single_rule_repository = $single_rule_repository;
         $this->recurring_rule_repository = $recurring_rule_repository;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**

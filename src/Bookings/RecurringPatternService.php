@@ -6,6 +6,8 @@ use WP_Error;
 use DateTime;
 use MYVH\Bookings\RecurringPatternRepository;
 use MYVH\Bookings\BookingRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) exit;
 
@@ -14,11 +16,14 @@ class RecurringPatternService {
     private $repo;
     private $booking_repo;
     private $last_booking_results = null;
+    private LoggerInterface $logger;
 
     public function __construct(RecurringPatternRepository $repo,
-                                BookingRepository $booking_repo) {
+                                BookingRepository $booking_repo,
+                                ?LoggerInterface $logger = null) {
         $this->repo = $repo;
         $this->booking_repo = $booking_repo;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_all($args = []): array {

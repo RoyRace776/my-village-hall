@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace MYVH\Invoices;
 
 use MYVH\Container\Container;
+use MYVH\Email\EmailService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class InvoiceServiceProvider
 {
@@ -24,8 +27,15 @@ class InvoiceServiceProvider
         $container->singleton(InvoiceController::class);
         $container->singleton(InvoiceGeneratorService::class);
         $container->singleton(InvoiceAutoSendListener::class, static function ($container) {
+            try {
+                $logger = $container->get(LoggerInterface::class);
+            } catch (\Exception $e) {
+                $logger = new NullLogger();
+            }
             return new InvoiceAutoSendListener(
-                $container->get(InvoiceService::class)
+                $container->get(InvoiceService::class),
+                $container->get(EmailService::class),
+                $logger
             );
         });
     }

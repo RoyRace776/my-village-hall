@@ -2,6 +2,8 @@
 namespace MYVH\Core\Scheduling;
 
 use MYVH\Email\EmailService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -20,13 +22,15 @@ class OvernightBatchRunner {
     private array $jobs;
 
     private EmailService $email_service;
+    private LoggerInterface $logger;
 
     /**
      * @param OvernightJobInterface[] $jobs
      */
-    public function __construct( array $jobs, EmailService $email_service ) {
+    public function __construct( array $jobs, EmailService $email_service, ?LoggerInterface $logger = null ) {
         $this->jobs          = $jobs;
         $this->email_service = $email_service;
+        $this->logger        = $logger ?? new NullLogger();
     }
 
     /**
@@ -75,7 +79,11 @@ class OvernightBatchRunner {
             try {
                 $results[] = $job->run();
             } catch ( \Throwable $e ) {
-                error_log( '[MYVH] Overnight job ' . get_class( $job ) . ' failed: ' . $e->getMessage() );
+                $this->logger->error('Overnight job failed', [
+                    'job_class' => get_class($job),
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
                 $results[] = new OvernightJobResult(
                     job_name: get_class( $job ),
                     count:    0,

@@ -16,6 +16,8 @@ use MYVH\Calendar\CalendarServiceProvider;
 use MYVH\Login\LoginServiceProvider;
 use MYVH\Portal\PortalServiceProvider;
 use MYVH\Network\NetworkServiceProvider;
+use MYVH\Infrastructure\Logging\LoggerFactory;
+use Psr\Log\LoggerInterface;
 
 use wpdb;
 
@@ -49,6 +51,10 @@ $myvh_container = new Container();
 $myvh_container->singleton( wpdb::class, function () {
     global $wpdb;
     return $wpdb;
+} );
+
+$myvh_container->singleton( LoggerInterface::class, static function () {
+    return LoggerFactory::create();
 } );
 
 // ── Register providers with the container ─────────────────────────────────────

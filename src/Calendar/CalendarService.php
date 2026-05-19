@@ -11,6 +11,8 @@ use MYVH\Portal\ClientAdminService;
 use MYVH\Bookings\BookingStatus;
 use MYVH\Deposits\DepositService;
 use MYVH\Pricing\PricingService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 use WP_Error;
 
@@ -23,6 +25,7 @@ class CalendarService {
     private $client_admin_service;
     private $pricing_service;
     private $deposit_service;
+    private LoggerInterface $logger;
 
     public function __construct(
         BookingService $booking_service,
@@ -31,7 +34,8 @@ class CalendarService {
         CustomerService $customer_service,
         ClientAdminService $client_admin_service,
         PricingService $pricing_service,
-        DepositService $deposit_service
+        DepositService $deposit_service,
+        ?LoggerInterface $logger = null
     ) {
         $this->booking_service = $booking_service;
         $this->room_repository = $room_repository;
@@ -40,6 +44,7 @@ class CalendarService {
         $this->client_admin_service = $client_admin_service;
         $this->pricing_service = $pricing_service;
         $this->deposit_service = $deposit_service;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_events( mixed $start, mixed $end, mixed $context = 'public', mixed $viewer_user_id = 0, mixed $filters = []): array {
@@ -499,13 +504,17 @@ class CalendarService {
 
         $can_edit = false;
         if ($context !== 'public') {
-            $edit_check = $this->booking_service->can_edit([
-                'Id'             => $booking->id(),
-                'Status'         => $booking->status()->value,
-                'CustomerId'     => $booking->customerId(),
-                'OrganisationId' => $booking->organisationId(),
-            ]);
-            $can_edit = !empty($edit_check['can_edit']);
+            try {
+                $edit_check = $this->booking_service->can_edit([
+                    'Id'             => $booking->id(),
+                    'Status'         => $booking->status()->value,
+                    'CustomerId'     => $booking->customerId(),
+                    'OrganisationId' => $booking->organisationId(),
+                ]);
+                $can_edit = !empty($edit_check['can_edit']);
+            } catch (\Throwable $e) {
+                $can_edit = false;
+            }
         }
 
         $event = [

@@ -6,6 +6,8 @@ namespace MYVH\Deposits;
 
 use DateTime;
 use MYVH\Rooms\RoomDepositRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,9 +15,11 @@ if (!defined('ABSPATH')) {
 
 class DepositService {
     private RoomDepositRepository $room_deposit_repository;
+    private LoggerInterface $logger;
 
-    public function __construct(RoomDepositRepository $room_deposit_repository) {
+    public function __construct(RoomDepositRepository $room_deposit_repository, ?LoggerInterface $logger = null) {
         $this->room_deposit_repository = $room_deposit_repository;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**

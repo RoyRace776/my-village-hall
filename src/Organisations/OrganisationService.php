@@ -3,6 +3,8 @@ namespace MYVH\Organisations;
 
 use MYVH\Events\EventDispatcher;
 use MYVH\Events\OrganisationEvents;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 
 if (!defined('ABSPATH')) exit;
@@ -12,17 +14,20 @@ class OrganisationService {
     private $member_repo;
     private $request_repo;
     private $type_repo;
+    private LoggerInterface $logger;
 
     public function __construct(
         OrganisationRepository $repo,
         OrganisationMemberRepository $member_repo,
         OrganisationMemberRequestRepository $request_repo,
-        OrganisationTypeRepository $type_repo
+        OrganisationTypeRepository $type_repo,
+        ?LoggerInterface $logger = null
     ) {
         $this->repo = $repo;
         $this->member_repo = $member_repo;
         $this->request_repo = $request_repo;
         $this->type_repo = $type_repo;
+        $this->logger = $logger ?? new NullLogger();
     }
     // ── Organisations ─────────────────────────────
     public function get_all(bool $active_only = false): array {
@@ -277,11 +282,11 @@ class OrganisationService {
                 return $add_result;
             }
         }
-        $updated = $this->request_repo->update($request_id, [
+        $updated = $this->request_repo->update([
             'Status' => 'approved',
             'ReviewedByCustomerId' => $acting_customer_id,
             'ReviewedAt' => current_time('mysql'),
-        ]);
+        ], ['Id' => $request_id]);
         if (!$updated) {
             return new WP_Error('database', __('Failed to approve membership request', 'my-village-hall'));
         }
@@ -296,11 +301,11 @@ class OrganisationService {
         if (!$this->member_repo->is_customer_admin($org_id, $acting_customer_id)) {
             return new WP_Error('forbidden', __('Only organisation admins can reject requests', 'my-village-hall'));
         }
-        $updated = $this->request_repo->update($request_id, [
+        $updated = $this->request_repo->update([
             'Status' => 'rejected',
             'ReviewedByCustomerId' => $acting_customer_id,
             'ReviewedAt' => current_time('mysql'),
-        ]);
+        ], ['Id' => $request_id]);
         if (!$updated) {
             return new WP_Error('database', __('Failed to reject membership request', 'my-village-hall'));
         }

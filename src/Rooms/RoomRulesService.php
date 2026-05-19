@@ -2,13 +2,17 @@
 namespace MYVH\Rooms;
 
 use MYVH\Bookings\BookingRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class RoomRulesService {
 
     private BookingRepository $booking_repo;
+    private LoggerInterface $logger;
 
-    public function __construct( BookingRepository $booking_repo ) {
+    public function __construct( BookingRepository $booking_repo, ?LoggerInterface $logger = null ) {
         $this->booking_repo = $booking_repo;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**

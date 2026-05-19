@@ -3,6 +3,8 @@
 namespace MYVH\Bookings;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 use wpdb;
 
@@ -13,13 +15,16 @@ use wpdb;
  */
 class BookingRepository extends RepositoryBase
 {
+    private LoggerInterface $logger;
+
     /**
      * Constructor
      */
-    public function __construct(wpdb $wpdb)
+    public function __construct(wpdb $wpdb, ?LoggerInterface $logger = null)
     {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_bookings';
+        $this->logger = $logger ?? new NullLogger();
     }
 
     // This is the new get function that returns a Booking object instead of an array.
@@ -125,7 +130,10 @@ class BookingRepository extends RepositoryBase
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Booking Repository Error (get_all_with_details): ' . $this->wpdb->last_error);
+            $this->logger->error('Booking repository query failed', [
+                'method' => 'get_all_with_details',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results ?? [];
@@ -519,7 +527,10 @@ class BookingRepository extends RepositoryBase
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null && $this->wpdb->last_error) {
-            error_log('MYVH Booking Repository Error (get_uninvoiced_bookings): ' . $this->wpdb->last_error);
+            $this->logger->error('Booking repository query failed', [
+                'method' => 'get_uninvoiced_bookings',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results ?: [];
@@ -554,7 +565,10 @@ class BookingRepository extends RepositoryBase
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null && $this->wpdb->last_error) {
-            error_log('MYVH Booking Repository Error (get_uninvoiced_single_bookings): ' . $this->wpdb->last_error);
+            $this->logger->error('Booking repository query failed', [
+                'method' => 'get_uninvoiced_single_bookings',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results ?: [];
@@ -591,7 +605,10 @@ class BookingRepository extends RepositoryBase
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null && $this->wpdb->last_error) {
-            error_log('MYVH Booking Repository Error (get_uninvoiced_recurring_bookings): ' . $this->wpdb->last_error);
+            $this->logger->error('Booking repository query failed', [
+                'method' => 'get_uninvoiced_recurring_bookings',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results ?: [];
@@ -622,7 +639,10 @@ class BookingRepository extends RepositoryBase
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null && $this->wpdb->last_error) {
-            error_log('MYVH Booking Repository Error (count_uninvoiced_by_organisation): ' . $this->wpdb->last_error);
+            $this->logger->error('Booking repository query failed', [
+                'method' => 'count_uninvoiced_by_organisation',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return [];
         }
 
@@ -654,7 +674,10 @@ class BookingRepository extends RepositoryBase
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null && $this->wpdb->last_error) {
-            error_log('MYVH Booking Repository Error (count_uninvoiced_by_customer): ' . $this->wpdb->last_error);
+            $this->logger->error('Booking repository query failed', [
+                'method' => 'count_uninvoiced_by_customer',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return [];
         }
 

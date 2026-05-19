@@ -3,11 +3,20 @@
 namespace MYVH\Bookings\Services;
 
 use MYVH\Bookings\BookingStatus;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) exit;
 
 class BookingListGroupingService
 {
+    private LoggerInterface $logger;
+
+    public function __construct(?LoggerInterface $logger = null)
+    {
+        $this->logger = $logger ?? new NullLogger();
+    }
+
     public function group_bookings(array $bookings): array
     {
         $groups = [];

@@ -2,17 +2,22 @@
 namespace MYVH\Customers;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use wpdb;
 
 if (!defined('ABSPATH')) exit;
 
 class CustomerRepository extends RepositoryBase {
+    private LoggerInterface $logger;
+
     /**
      * Constructor
      */
-    public function __construct(wpdb $wpdb) {
+    public function __construct(wpdb $wpdb, ?LoggerInterface $logger = null) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_customers';
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_all($args = []): array {
@@ -53,7 +58,10 @@ class CustomerRepository extends RepositoryBase {
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Customer Repository Error (get_all_with_organisations): ' . $this->wpdb->last_error);
+            $this->logger->error('Customer repository query failed', [
+                'method' => 'get_all_with_organisations',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;
@@ -124,7 +132,11 @@ class CustomerRepository extends RepositoryBase {
         $result = $this->wpdb->get_row($sql, ARRAY_A);
 
         if ($result === null && $this->wpdb->last_error) {
-            error_log('MYVH Customer Repository Error (get_by_email): ' . $this->wpdb->last_error);
+            $this->logger->error('Customer repository query failed', [
+                'method' => 'get_by_email',
+                'email' => (string) $email,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $result;
@@ -145,7 +157,11 @@ class CustomerRepository extends RepositoryBase {
         $result = $this->wpdb->get_row($sql, ARRAY_A);
 
         if ($result === null && $this->wpdb->last_error) {
-            error_log('MYVH Customer Repository Error (get_by_user_id): ' . $this->wpdb->last_error);
+            $this->logger->error('Customer repository query failed', [
+                'method' => 'get_by_user_id',
+                'user_id' => (int) $user_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $result;
@@ -171,7 +187,10 @@ class CustomerRepository extends RepositoryBase {
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Customer Repository Error (search): ' . $this->wpdb->last_error);
+            $this->logger->error('Customer repository query failed', [
+                'method' => 'search',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;

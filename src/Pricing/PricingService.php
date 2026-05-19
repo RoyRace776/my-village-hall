@@ -6,6 +6,8 @@ use MYVH\Customers\CustomerRepository;
 use MYVH\Organisations\OrganisationRepository;
 use MYVH\Bookings\BookingRepository;
 use MYVH\Bookings\BookingAddonRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 
 class PricingService {
@@ -16,17 +18,20 @@ class PricingService {
     private CustomerRepository $customer_repo;
     private OrganisationRepository $organisation_repo;
     private BookingAddonRepository $booking_addon_repo;
+    private LoggerInterface $logger;
 
     public function __construct(RoomRateService $room_rate_service,
                                 BookingRepository $booking_repo,
                                 CustomerRepository $customer_repo,
                                 OrganisationRepository $organisation_repo,
-                                BookingAddonRepository $booking_addons_repo) {
+                                BookingAddonRepository $booking_addons_repo,
+                                ?LoggerInterface $logger = null) {
         $this->room_rate_service = $room_rate_service;
         $this->booking_repo = $booking_repo;
         $this->customer_repo = $customer_repo;
         $this->organisation_repo = $organisation_repo;
         $this->booking_addon_repo = $booking_addons_repo;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function calculate_price(int $booking_id): float|WP_Error | array{

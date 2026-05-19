@@ -1,6 +1,8 @@
 <?php
 namespace MYVH\Portal;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Site;
 use WP_User;
 
@@ -11,6 +13,11 @@ if (!defined('ABSPATH')) {
 class ClientAdminService {
 
     private const OPTION_NAME = 'myvh_client_admin_assignments';
+    private LoggerInterface $logger;
+
+    public function __construct(?LoggerInterface $logger = null) {
+        $this->logger = $logger ?? new NullLogger();
+    }
 
     public function can_administer_blog(int $user_id = 0, int $blog_id = 0): bool {
         $user_id = $user_id > 0 ? $user_id : get_current_user_id();

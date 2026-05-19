@@ -2,6 +2,8 @@
 
 namespace MYVH\Network;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 
 if (!defined('ABSPATH')) {
@@ -11,12 +13,16 @@ if (!defined('ABSPATH')) {
 class SiteProvisioningService {
 
     private const VERIFY_PREFIX = 'myvh_site_request_';
+    private LoggerInterface $logger;
 
     public function __construct(
         private CreateSiteRequestValidator $validator,
         private WpSiteCloner $cloner,
-        private SiteProvisioningRepository $repo
-    ) {}
+        private SiteProvisioningRepository $repo,
+        ?LoggerInterface $logger = null
+    ) {
+        $this->logger = $logger ?? new NullLogger();
+    }
 
     /**
      * Step 1: Submit request

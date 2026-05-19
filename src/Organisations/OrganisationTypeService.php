@@ -1,14 +1,18 @@
 <?php
 namespace MYVH\Organisations;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 
 if (!defined('ABSPATH')) exit;
 
 class OrganisationTypeService {
     private $repo;
-    public function __construct(OrganisationTypeRepository $repo) {
+    private LoggerInterface $logger;
+    public function __construct(OrganisationTypeRepository $repo, ?LoggerInterface $logger = null) {
         $this->repo = $repo;
+        $this->logger = $logger ?? new NullLogger();
     }
     public function get_all(): array {
         return $this->repo->get_all();

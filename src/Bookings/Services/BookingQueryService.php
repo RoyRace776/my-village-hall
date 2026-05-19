@@ -5,6 +5,8 @@ namespace MYVH\Bookings\Services;
 use MYVH\Bookings\Booking;
 use MYVH\Bookings\BookingRepository;
 use MYVH\Customers\CustomerRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) exit;
 
@@ -13,16 +15,19 @@ class BookingQueryService
     private $booking_repo;
     private $customer_repo;
     private $booking_list_grouping_service;
+    private LoggerInterface $logger;
 
     public function __construct(
         BookingRepository $booking_repo,
         CustomerRepository $customer_repo,
-        BookingListGroupingService $booking_list_grouping_service
+        BookingListGroupingService $booking_list_grouping_service,
+        ?LoggerInterface $logger = null
     )
     {
         $this->booking_repo = $booking_repo;
         $this->customer_repo = $customer_repo;
         $this->booking_list_grouping_service = $booking_list_grouping_service;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_all_with_details($args = []): array

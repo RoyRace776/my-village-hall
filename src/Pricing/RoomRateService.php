@@ -2,15 +2,19 @@
 namespace MYVH\Pricing;
 
 use MYVH\Customers\CustomerRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!\defined('ABSPATH')) exit;
 
 class RoomRateService {
 
     private RoomRateRepository $repo;
+    private LoggerInterface $logger;
 
-    public function __construct(RoomRateRepository $repo) {
+    public function __construct(RoomRateRepository $repo, ?LoggerInterface $logger = null) {
         $this->repo = $repo;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_all(): array {

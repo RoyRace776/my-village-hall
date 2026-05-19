@@ -2,6 +2,8 @@
 namespace MYVH\Pricing;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 /**
  * Repository class for myvh_discounts table
  *
@@ -14,12 +16,15 @@ if (!defined('ABSPATH')) {
 
 class DiscountRepository extends RepositoryBase {
 
+    private LoggerInterface $logger;
+
     /**
      * Constructor
      */
-    public function __construct( \wpdb $wpdb ) {
+    public function __construct( \wpdb $wpdb, ?LoggerInterface $logger = null ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_discounts';
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -36,7 +41,10 @@ class DiscountRepository extends RepositoryBase {
         );
 
         if ($result === false) {
-            error_log('MYVH Discount Repository Error (create): ' . $this->wpdb->last_error);
+            $this->logger->error('Discount repository insert failed', [
+                'method' => 'create',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return false;
         }
 
@@ -79,7 +87,10 @@ class DiscountRepository extends RepositoryBase {
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Discount Repository Error (get_all): ' . $this->wpdb->last_error);
+            $this->logger->error('Discount repository query failed', [
+                'method' => 'get_all',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;

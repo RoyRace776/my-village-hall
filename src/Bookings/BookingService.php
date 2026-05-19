@@ -22,6 +22,8 @@ use MYVH\Events\EventDispatcher;
 use MYVH\Events\BookingEvents;
 use MYVH\Invoices\InvoiceItemRepository;
 use MYVH\Invoices\InvoiceService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 use WP_Error;
 use Exception;
@@ -56,6 +58,7 @@ class BookingService {
     private $invoice_item_repo;
     private $booking_charge_repo;
     private $deposit_service;
+    private LoggerInterface $logger;
     private $last_warnings = [];
 
     public function __construct(
@@ -81,7 +84,8 @@ class BookingService {
         InvoiceService $invoice_service,
         InvoiceItemRepository $invoice_item_repo,
         BookingChargeRepository $booking_charge_repo,
-        DepositService $deposit_service
+        DepositService $deposit_service,
+        ?LoggerInterface $logger = null
     ) {
         $this->room_service = $room_service;
         $this->booking_repo = $booking_repo;
@@ -106,6 +110,7 @@ class BookingService {
         $this->invoice_item_repo = $invoice_item_repo;
         $this->booking_charge_repo = $booking_charge_repo;
         $this->deposit_service = $deposit_service;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function save($data): int|WP_Error {

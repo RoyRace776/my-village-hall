@@ -3,6 +3,8 @@ namespace MYVH\Portal;
 
 use MYVH\Availability\AvailabilityService;
 use MYVH\Customers\CustomerService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -21,6 +23,7 @@ class PortalBootstrapDataService {
     private AvailabilityService $availability_service;
     private CustomerService $customer_service;
     private ClientAdminService $client_admin_service;
+    private LoggerInterface $logger;
 
     /** @var array|null */
     private ?array $cached = null;
@@ -28,11 +31,13 @@ class PortalBootstrapDataService {
     public function __construct(
         AvailabilityService $availability_service,
         CustomerService $customer_service,
-        ClientAdminService $client_admin_service
+        ClientAdminService $client_admin_service,
+        ?LoggerInterface $logger = null
     ) {
         $this->availability_service = $availability_service;
         $this->customer_service     = $customer_service;
         $this->client_admin_service = $client_admin_service;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**

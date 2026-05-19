@@ -5,6 +5,8 @@ namespace MYVH\Bookings\Services;
 use MYVH\Availability\AvailabilityService;
 use MYVH\Bookings\BookingRepository;
 use MYVH\Rooms\RoomService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 
 if (!defined('ABSPATH')) exit;
@@ -14,12 +16,14 @@ class BookingMovementService
     private $room_service;
     private $availability;
     private $booking_repo;
+    private LoggerInterface $logger;
 
-    public function __construct(RoomService $room_service, AvailabilityService $availability, BookingRepository $booking_repo)
+    public function __construct(RoomService $room_service, AvailabilityService $availability, BookingRepository $booking_repo, ?LoggerInterface $logger = null)
     {
         $this->room_service = $room_service;
         $this->availability = $availability;
         $this->booking_repo = $booking_repo;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function move_booking( mixed $id, mixed $start, mixed $end, mixed $room): int|WP_Error

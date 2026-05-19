@@ -2,6 +2,8 @@
 namespace MYVH\Rooms;
 
 use MYVH\Portal\ClientAdminService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -18,13 +20,16 @@ class RoomVisibilityService {
 
     private $client_admin_service;
     private $room_repository;
+    private LoggerInterface $logger;
 
     public function __construct(
         ClientAdminService $client_admin_service,
-        RoomRepository $room_repository
+        RoomRepository $room_repository,
+        ?LoggerInterface $logger = null
     ) {
         $this->client_admin_service = $client_admin_service;
         $this->room_repository = $room_repository;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**

@@ -5,16 +5,20 @@ namespace MYVH\Bookings\Services;
 use MYVH\Addons\AddonService;
 use MYVH\Events\BookingEvents;
 use MYVH\Events\EventDispatcher;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) exit;
 
 class BookingAddonSyncService
 {
     private $addon_service;
+    private LoggerInterface $logger;
 
-    public function __construct(AddonService $addon_service)
+    public function __construct(AddonService $addon_service, ?LoggerInterface $logger = null)
     {
         $this->addon_service = $addon_service;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function sync(int $booking_id, array $addons, bool $replace): void

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace MYVH\Invoices;
 
 use MYVH\Email\EmailService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -14,10 +16,16 @@ class InvoiceAutoSendListener {
 
     private InvoiceService $invoice_service;
     private EmailService $email_service;
+    private LoggerInterface $logger;
 
-    public function __construct(InvoiceService $invoice_service, ?EmailService $email_service = null) {
+    public function __construct(
+        InvoiceService $invoice_service,
+        EmailService $email_service,
+        ?LoggerInterface $logger = null
+    ) {
         $this->invoice_service = $invoice_service;
-        $this->email_service = $email_service ?: new EmailService();
+        $this->email_service = $email_service;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function register(): void {
@@ -37,23 +45,26 @@ class InvoiceAutoSendListener {
 
         $invoice = $this->invoice_service->get_detail($invoice_id);
         if (empty($invoice)) {
-            error_log(sprintf('MYVH Invoice Auto Send: Invoice #%d not found.', $invoice_id));
+            $this->logger->warning('Invoice auto-send skipped because invoice was not found', [
+                'invoice_id' => $invoice_id,
+            ]);
             return;
         }
 
         $recipient = $this->resolve_recipient($invoice);
         if ($recipient === '') {
-            error_log(sprintf('MYVH Invoice Auto Send: No recipient for invoice #%d.', $invoice_id));
+            $this->logger->warning('Invoice auto-send skipped because recipient email is missing', [
+                'invoice_id' => $invoice_id,
+            ]);
             return;
         }
 
         $pdf_path = $this->invoice_service->generate_pdf($invoice_id);
         if (is_wp_error($pdf_path)) {
-            error_log(sprintf(
-                'MYVH Invoice Auto Send: PDF generation failed for invoice #%d: %s',
-                $invoice_id,
-                $pdf_path->get_error_message()
-            ));
+            $this->logger->error('Invoice auto-send failed while generating PDF', [
+                'invoice_id' => $invoice_id,
+                'error' => $pdf_path->get_error_message(),
+            ]);
             return;
         }
 
@@ -67,7 +78,10 @@ class InvoiceAutoSendListener {
         ]);
 
         if (!$send_result) {
-            error_log(sprintf('MYVH Invoice Auto Send: Email send failed for invoice #%d.', $invoice_id));
+            $this->logger->error('Invoice auto-send failed while sending email', [
+                'invoice_id' => $invoice_id,
+                'recipient' => $recipient,
+            ]);
             return;
         }
 
@@ -77,11 +91,10 @@ class InvoiceAutoSendListener {
                 ? $status_result->get_error_message()
                 : 'Unknown error while updating status.';
 
-            error_log(sprintf(
-                'MYVH Invoice Auto Send: Failed to mark invoice #%d as sent: %s',
-                $invoice_id,
-                $message
-            ));
+            $this->logger->error('Invoice auto-send email succeeded but status update failed', [
+                'invoice_id' => $invoice_id,
+                'error' => $message,
+            ]);
         }
     }
 

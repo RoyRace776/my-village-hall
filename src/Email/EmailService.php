@@ -2,6 +2,8 @@
 namespace MYVH\Email;
 
 use MYVH\Settings\EmailTemplateSettings;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Email_Service: Modular, multisite-aware email sending for My Village Hall
@@ -9,10 +11,12 @@ use MYVH\Settings\EmailTemplateSettings;
 class EmailService {
     protected int $site_id;
     protected bool $log_enabled;
+    protected LoggerInterface $logger;
 
-    public function __construct(?int $site_id = null, bool $log_enabled = true) {
+    public function __construct(?int $site_id = null, bool $log_enabled = true, ?LoggerInterface $logger = null) {
         $this->site_id = $site_id ?: get_current_blog_id();
         $this->log_enabled = $log_enabled;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -136,14 +140,16 @@ class EmailService {
     }
 
     /**
-     * Log email send attempts (basic file log for now)
+     * Log email send attempts via the central logger.
      */
     protected function log_email(string $to, string $subject, bool $result, string $template, array $vars): void {
-        $log_dir = WP_CONTENT_DIR . '/uploads/myvh-email-logs/';
-        if (!is_dir($log_dir)) @mkdir($log_dir, 0755, true);
-        $log_file = $log_dir . 'email-log-' . date('Y-m-d') . '.log';
-        $entry = sprintf("[%s] To: %s | Subject: %s | Template: %s | Result: %s\n", date('c'), $to, $subject, $template, $result ? 'SENT' : 'FAILED');
-        file_put_contents($log_file, $entry, FILE_APPEND);
+        $level = $result ? 'info' : 'warning';
+        $this->logger->{$level}('Email send attempted', [
+            'to' => $to,
+            'subject' => $subject,
+            'template' => $template,
+            'result' => $result ? 'sent' : 'failed',
+        ]);
     }
 
     /**

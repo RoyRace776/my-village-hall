@@ -2,6 +2,8 @@
 namespace MYVH\Email;
 
 use MYVH\Login\PasswordResetHandler;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * PasswordSetupEmailService: Helper to send password setup emails for new customers
@@ -9,10 +11,12 @@ use MYVH\Login\PasswordResetHandler;
 class PasswordSetupEmailService {
     protected $email_service;
     protected $password_reset_handler;
+    private LoggerInterface $logger;
 
-    public function __construct( mixed $email_service = null, mixed $password_reset_handler = null) {
+    public function __construct( mixed $email_service = null, mixed $password_reset_handler = null, ?LoggerInterface $logger = null) {
         $this->email_service = $email_service ?: new EmailService();
         $this->password_reset_handler = $password_reset_handler ?: new PasswordResetHandler();
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**

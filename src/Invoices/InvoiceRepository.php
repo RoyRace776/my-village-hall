@@ -2,6 +2,8 @@
 namespace MYVH\Invoices;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use wpdb;
 /**
  * Repository class for myvh_invoices table
@@ -15,12 +17,15 @@ if (!defined('ABSPATH')) {
 
 class InvoiceRepository extends RepositoryBase{
 
+    private LoggerInterface $logger;
+
     /**
      * Constructor
      */
-    public function __construct( wpdb $wpdb ) {
+    public function __construct( wpdb $wpdb, ?LoggerInterface $logger = null ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_invoices';
+        $this->logger = $logger ?? new NullLogger();
     }
 
 
@@ -69,7 +74,10 @@ class InvoiceRepository extends RepositoryBase{
             $results = $this->wpdb->get_results($prepared_sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Invoice Repository Error (get_all_with_customers): ' . $this->wpdb->last_error);
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_all_with_customers',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;
@@ -103,7 +111,11 @@ class InvoiceRepository extends RepositoryBase{
         $result = $this->wpdb->get_row($sql, ARRAY_A);
 
         if ($result === null && !empty($this->wpdb->last_error)) {
-            error_log('MYVH Invoice Repository Error (get_detail): ' . $this->wpdb->last_error);
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_detail',
+                'invoice_id' => (int) $invoice_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $result;
@@ -151,7 +163,12 @@ class InvoiceRepository extends RepositoryBase{
         $result = $this->wpdb->get_row($prepared_sql, ARRAY_A);
 
         if ($result === null && !empty($this->wpdb->last_error)) {
-            error_log('MYVH Invoice Repository Error (get_portal_detail): ' . $this->wpdb->last_error);
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_portal_detail',
+                'invoice_id' => $invoice_id,
+                'customer_id' => $customer_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $result;
@@ -190,7 +207,11 @@ class InvoiceRepository extends RepositoryBase{
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Invoice Repository Error (get_items_for_invoice): ' . $this->wpdb->last_error);
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_items_for_invoice',
+                'invoice_id' => (int) $invoice_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return [];
         }
 
@@ -212,7 +233,11 @@ class InvoiceRepository extends RepositoryBase{
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Invoice Repository Error (get_by_customer): ' . $this->wpdb->last_error);
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_by_customer',
+                'customer_id' => (int) $customer_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;
@@ -233,7 +258,11 @@ class InvoiceRepository extends RepositoryBase{
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Invoice Repository Error (get_by_booking): ' . $this->wpdb->last_error);
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_by_booking',
+                'booking_id' => (int) $booking_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;
@@ -254,7 +283,11 @@ class InvoiceRepository extends RepositoryBase{
         $results = $this->wpdb->get_results($sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Invoice Repository Error (get_by_status): ' . $this->wpdb->last_error);
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_by_status',
+                'status' => (string) $status,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;
@@ -319,7 +352,11 @@ class InvoiceRepository extends RepositoryBase{
         $results = $this->wpdb->get_results($prepared_sql, ARRAY_A);
 
         if ($results === null) {
-            error_log('MYVH Invoice Repository Error (get_for_customer_portal): ' . $this->wpdb->last_error);
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_for_customer_portal',
+                'customer_id' => (int) $customer_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         return $results;
@@ -346,7 +383,11 @@ class InvoiceRepository extends RepositoryBase{
         }
 
         if ( $this->wpdb->last_error ) {
-            error_log( 'MYVH Invoice Repository Error (get_next_invoice_number): ' . $this->wpdb->last_error );
+            $this->logger->error('Invoice repository query failed', [
+                'method' => 'get_next_invoice_number',
+                'prefix' => (string) $prefix,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return 1;
         }
 

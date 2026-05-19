@@ -2,6 +2,8 @@
 namespace MYVH\Rooms;
 
 use MYVH\Availability\AvailabilityService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 use WP_Error;
 
@@ -13,17 +15,20 @@ class RoomService {
     private RoomHoursRepository $room_hours_repository;
     private AvailabilityService $availability;
     private RoomDepositRepository $room_deposit_repository;
+    private LoggerInterface $logger;
 
     public function __construct(
         RoomRepository $repo,
         RoomHoursRepository $room_hours_repository,
         AvailabilityService $availability,
-        RoomDepositRepository $room_deposit_repository
+        RoomDepositRepository $room_deposit_repository,
+        ?LoggerInterface $logger = null
     ) {
         $this->repo = $repo;
         $this->room_hours_repository = $room_hours_repository;
         $this->availability = $availability;
         $this->room_deposit_repository = $room_deposit_repository;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_all(array $args = []): array {

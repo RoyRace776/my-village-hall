@@ -1,17 +1,22 @@
 <?php
 namespace MYVH\Addons;
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 use wpdb;
 
 class AddonRepository extends RepositoryBase {
 
+    private LoggerInterface $logger;
+
     /**
      * Constructor
      */
-    public function __construct( wpdb $wpdb ) {
+    public function __construct( wpdb $wpdb, ?LoggerInterface $logger = null ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_addons';
+        $this->logger = $logger ?? new NullLogger();
     }
 
     // Custom methods preserved
@@ -22,7 +27,10 @@ class AddonRepository extends RepositoryBase {
 
         $results = $this->wpdb->get_results($sql);
         if ($results === null) {
-            error_log('MYVH Addon Repository Error (get_all_with_relations): ' . $this->wpdb->last_error);
+            $this->logger->error('Addon repository query failed', [
+                'method' => 'get_all_with_relations',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
         return $this->rows_to_arrays($results ?: []);
     }
@@ -34,7 +42,11 @@ class AddonRepository extends RepositoryBase {
         );
         $results = $this->wpdb->get_results($sql);
         if ($results === null) {
-            error_log('MYVH Addon Repository Error (get_by_room): ' . $this->wpdb->last_error);
+            $this->logger->error('Addon repository query failed', [
+                'method' => 'get_by_room',
+                'room_id' => (int) $room_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
         return $this->rows_to_arrays($results ?: []);
     }
@@ -47,7 +59,11 @@ class AddonRepository extends RepositoryBase {
 
         $result = $this->wpdb->get_row($sql);
         if ($result === null && !empty($this->wpdb->last_error)) {
-            error_log('MYVH Addon Repository Error (get_active_by_id): ' . $this->wpdb->last_error);
+            $this->logger->error('Addon repository query failed', [
+                'method' => 'get_active_by_id',
+                'addon_id' => $id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
 
         if ($result === null) {
@@ -77,7 +93,10 @@ class AddonRepository extends RepositoryBase {
 
         $results = $this->wpdb->get_results($sql);
         if ($results === null) {
-            error_log('MYVH Addon Repository Error (get_all_active): ' . $this->wpdb->last_error);
+            $this->logger->error('Addon repository query failed', [
+                'method' => 'get_all_active',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return [];
         }
 

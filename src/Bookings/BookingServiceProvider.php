@@ -27,6 +27,8 @@ use MYVH\Deposits\DepositService;
 use MYVH\Rooms\RoomService;
 use MYVH\Addons\AddonRepository;
 use MYVH\Addons\AddonService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 
 class BookingServiceProvider
@@ -35,7 +37,15 @@ class BookingServiceProvider
     {
         $container->singleton(BookingRepository::class, function ($container) {
             $wpdb = $container->get(\wpdb::class);
-            $repository = new BookingRepository($wpdb);
+            try {
+                $logger = $container->get(LoggerInterface::class);
+            } catch (\Exception $e) {
+                $logger = new NullLogger();
+            }
+            $repository = new BookingRepository(
+                $wpdb,
+                $logger
+            );
 
             return new CachedBookingRepository($repository);
         });

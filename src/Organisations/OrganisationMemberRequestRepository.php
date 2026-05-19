@@ -2,14 +2,19 @@
 namespace MYVH\Organisations;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use wpdb;
 
 if (!defined('ABSPATH')) exit;
 
 class OrganisationMemberRequestRepository extends RepositoryBase {
-    public function __construct(wpdb $wpdb) {
+  private LoggerInterface $logger;
+
+    public function __construct(wpdb $wpdb, ?LoggerInterface $logger = null) {
         $this->wpdb  = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_organisation_member_requests';
+      $this->logger = $logger ?? new NullLogger();
     }
     public function get_pending_by_organisation(int $org_id): array {
         $sql = $this->wpdb->prepare(
@@ -69,7 +74,11 @@ class OrganisationMemberRequestRepository extends RepositoryBase {
     public function delete_by_organisation(int $org_id): bool {
         $result = $this->wpdb->delete($this->table_name, [ 'OrganisationId' => $org_id ], [ '%d' ]);
         if ($result === false) {
-            error_log('MYVH OrganisationMemberRequestRepository Error (delete_by_organisation): ' . $this->wpdb->last_error);
+        $this->logger->error('Organisation member request repository delete failed', [
+          'method' => 'delete_by_organisation',
+          'organisation_id' => $org_id,
+          'db_error' => (string) $this->wpdb->last_error,
+        ]);
             return false;
         }
         return true;

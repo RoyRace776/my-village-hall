@@ -3,6 +3,8 @@ namespace MYVH\Addons;
 
 use MYVH\Bookings\BookingAddonRepository;
 use MYVH\Bookings\BookingRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) exit;
 
@@ -11,13 +13,16 @@ class AddonService {
     private $repo;
     private $booking_addon_repo;
     private $booking_repo;
+    private LoggerInterface $logger;
 
     public function __construct(AddonRepository $repo,
                                 BookingAddonRepository $booking_addon_repo,
-                                BookingRepository $booking_repo) {
+                                BookingRepository $booking_repo,
+                                ?LoggerInterface $logger = null) {
         $this->repo = $repo;
         $this->booking_addon_repo = $booking_addon_repo;
         $this->booking_repo = $booking_repo;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_all($args = []): array {

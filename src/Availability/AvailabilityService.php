@@ -5,6 +5,8 @@ use MYVH\Rooms\RoomHoursRepository;
 use MYVH\Rooms\RoomRepository;
 use MYVH\Venues\VenueHoursRepository;
 use MYVH\Venues\VenueRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class AvailabilityService {
 
@@ -13,17 +15,20 @@ class AvailabilityService {
     private $room_hours_repo;
     private $venue_repo;
     private $venue_hours_repo;
+    private LoggerInterface $logger;
 
     public function __construct(BookingRepository $booking_repo,
                                 RoomRepository $room_repo,
                                 RoomHoursRepository $room_hours_repo,
                                 VenueRepository $venue_repo,
-                                VenueHoursRepository $venue_hours_repo) {
+                                VenueHoursRepository $venue_hours_repo,
+                                ?LoggerInterface $logger = null) {
         $this->booking_repo = $booking_repo;
         $this->room_repo = $room_repo;
         $this->room_hours_repo = $room_hours_repo;
         $this->venue_repo = $venue_repo;
         $this->venue_hours_repo = $venue_hours_repo;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function room_is_available( mixed $room_id, mixed $date, mixed $start, mixed $end, mixed $end_date = null, mixed $exclude_booking_id = null) {

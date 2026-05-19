@@ -2,6 +2,8 @@
 namespace MYVH\Rooms;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
@@ -10,13 +12,15 @@ if (!defined('ABSPATH')) {
 class RoomRepository extends RepositoryBase {
 
     private static bool $colour_column_checked = false;
+    private LoggerInterface $logger;
 
     /**
      * Constructor
      */
-    public function __construct( \wpdb $wpdb ) {
+    public function __construct( \wpdb $wpdb, ?LoggerInterface $logger = null ) {
         $this->wpdb = $wpdb;
         $this->table_name = $wpdb->prefix . 'myvh_rooms';
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function last_error(): string {
@@ -29,7 +33,10 @@ class RoomRepository extends RepositoryBase {
 
         $results = $this->wpdb->get_results($sql, ARRAY_A);
         if ($results === null) {
-            error_log('MYVH Room Repository Error (get_all_with_venues): ' . $this->wpdb->last_error);
+            $this->logger->error('Room repository query failed', [
+                'method' => 'get_all_with_venues',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
         return $results;
     }
@@ -44,7 +51,10 @@ class RoomRepository extends RepositoryBase {
 
         $results = $this->wpdb->get_results($sql, ARRAY_A);
         if ($results === null) {
-            error_log('MYVH Room Repository Error (get_public_with_venues): ' . $this->wpdb->last_error);
+            $this->logger->error('Room repository query failed', [
+                'method' => 'get_public_with_venues',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
         return $results;
     }
@@ -68,7 +78,11 @@ class RoomRepository extends RepositoryBase {
             ARRAY_A
         );
         if ($results === null) {
-            error_log('MYVH Room Repository Error (get_by_venue): ' . $this->wpdb->last_error);
+            $this->logger->error('Room repository query failed', [
+                'method' => 'get_by_venue',
+                'venue_id' => $venue_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
         return $results;
     }
@@ -89,7 +103,10 @@ class RoomRepository extends RepositoryBase {
 
         $results = $this->wpdb->get_results($sql, ARRAY_A);
         if ($results === null) {
-            error_log('MYVH Room Repository Error (get_public_room_ids): ' . $this->wpdb->last_error);
+            $this->logger->error('Room repository query failed', [
+                'method' => 'get_public_room_ids',
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
         }
         return array_map(
             static fn(array $row) => $row['Id'],

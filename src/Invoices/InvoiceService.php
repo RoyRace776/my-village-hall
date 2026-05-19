@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace MYVH\Invoices;
 
 use MYVH\Payments\PaymentRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 
 if (!defined('ABSPATH')) exit;
@@ -19,6 +21,7 @@ class InvoiceService {
     private InvoicePdfRenderer $pdf_renderer;
     private PdfGenerator $pdf_generator;
     private InvoiceFileStorage $file_storage;
+    private LoggerInterface $logger;
 
     public function __construct(
         InvoiceRepository $repo,
@@ -26,7 +29,8 @@ class InvoiceService {
         PaymentRepository $payment_repo,
         InvoicePdfRenderer $pdf_renderer,
         PdfGenerator $pdf_generator,
-        InvoiceFileStorage $file_storage
+        InvoiceFileStorage $file_storage,
+        ?LoggerInterface $logger = null
     ) {
         $this->repo          = $repo;
         $this->invoice_item_repo = $invoice_item_repo;
@@ -34,6 +38,7 @@ class InvoiceService {
         $this->pdf_renderer  = $pdf_renderer;
         $this->pdf_generator = $pdf_generator;
         $this->file_storage  = $file_storage;
+        $this->logger        = $logger ?? new NullLogger();
     }
 
     /**
@@ -286,11 +291,17 @@ class InvoiceService {
         $invoice_number = $this->repo->get_next_invoice_number($prefix);
 
         if ($invoice_number > 999000) {
-            error_log('MYVH Invoice Service Warning: Maximum invoice number nearly reached for prefix ' . $prefix);
+            $this->logger->warning('Invoice number is nearing maximum for prefix', [
+                'prefix' => $prefix,
+                'next_number' => $invoice_number,
+            ]);
 
             //TODO: We should ideally have a better strategy for handling this scenario, such as allowing admin to set a new prefix and/or archiving old invoices. For now, we'll just append a '1' to the prefix to allow continued invoicing, but this is not a long-term solution.
             if ($invoice_number === 999999) {
-                error_log('MYVH Invoice Service Error: Maximum invoice number reached for prefix ' . $prefix);
+                $this->logger->error('Maximum invoice number reached for prefix', [
+                    'prefix' => $prefix,
+                    'next_number' => $invoice_number,
+                ]);
                 throw new \RuntimeException('Maximum invoice number reached for prefix ' . $prefix);
             }
         }
@@ -459,6 +470,10 @@ class InvoiceService {
      * Dompdf requires images to be embedded when isRemoteEnabled is false.
      */
     private function get_site_logo_data_uri(): string {
+        if (!function_exists('get_theme_mod')) {
+            return '';
+        }
+
         $logo_id = (int) get_theme_mod('custom_logo');
         if (!$logo_id) {
             return '';

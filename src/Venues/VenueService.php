@@ -2,6 +2,8 @@
 namespace MYVH\Venues;
 
 use MYVH\Rooms\RoomRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 
 if (!defined('ABSPATH')) exit;
@@ -11,11 +13,18 @@ class VenueService {
     private $repo;
     private $venue_hours_repository;
     private $room_repository;
+    private LoggerInterface $logger;
 
-    public function __construct(VenueRepository $repo, VenueHoursRepository $venue_hours_repository, RoomRepository $room_repository) {
+    public function __construct(
+        VenueRepository $repo,
+        VenueHoursRepository $venue_hours_repository,
+        RoomRepository $room_repository,
+        ?LoggerInterface $logger = null
+    ) {
         $this->repo = $repo;
         $this->venue_hours_repository = $venue_hours_repository;
         $this->room_repository = $room_repository;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_all(): array {

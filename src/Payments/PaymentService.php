@@ -2,6 +2,8 @@
 namespace MYVH\Payments;
 
 use MYVH\Invoices\InvoiceService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use WP_Error;
 
 if (!defined('ABSPATH')) {
@@ -13,10 +15,12 @@ class PaymentService {
 
     private PaymentRepository $repo;
     private InvoiceService $invoice_service;
+    private LoggerInterface $logger;
 
-    public function __construct(PaymentRepository $repo, InvoiceService $invoice_service) {
+    public function __construct(PaymentRepository $repo, InvoiceService $invoice_service, ?LoggerInterface $logger = null) {
         $this->repo = $repo;
         $this->invoice_service = $invoice_service;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_valid_methods(): array {

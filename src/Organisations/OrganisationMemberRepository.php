@@ -2,14 +2,19 @@
 namespace MYVH\Organisations;
 
 use MYVH\Core\Support\RepositoryBase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use wpdb;
 
 if (!defined('ABSPATH')) exit;
 
 class OrganisationMemberRepository extends RepositoryBase {
-    public function __construct(wpdb $wpdb) {
+    private LoggerInterface $logger;
+
+    public function __construct(wpdb $wpdb, ?LoggerInterface $logger = null) {
         $this->table_name = $wpdb->prefix . 'myvh_organisation_members';
         $this->wpdb = $wpdb;
+        $this->logger = $logger ?? new NullLogger();
     }
     public function get_by_organisation_and_customer(int $org_id, int $customer_id) {
         $sql = $this->wpdb->prepare(
@@ -91,7 +96,11 @@ class OrganisationMemberRepository extends RepositoryBase {
             [ '%d' ]
         );
         if ($result === false) {
-            error_log('MYVH Organisation_Member Repository Error (update_admin_status): ' . $this->wpdb->last_error);
+            $this->logger->error('Organisation member repository update failed', [
+                'method' => 'update_admin_status',
+                'member_id' => $member_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return false;
         }
         return true;
@@ -99,7 +108,11 @@ class OrganisationMemberRepository extends RepositoryBase {
     public function delete_by_organisation(int $org_id): bool {
         $result = $this->wpdb->delete($this->table_name, [ 'OrganisationId' => $org_id ], [ '%d' ]);
         if ($result === false) {
-            error_log('MYVH Organisation_Member Repository Error (delete_by_organisation): ' . $this->wpdb->last_error);
+            $this->logger->error('Organisation member repository delete failed', [
+                'method' => 'delete_by_organisation',
+                'organisation_id' => $org_id,
+                'db_error' => (string) $this->wpdb->last_error,
+            ]);
             return false;
         }
         return true;

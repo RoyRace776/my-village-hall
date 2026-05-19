@@ -7,6 +7,8 @@ use MYVH\Bookings\BookingRepository;
 use MYVH\Organisations\OrganisationRepository;
 use MYVH\Organisations\OrganisationMemberRepository;
 use MYVH\Customers\CustomerRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 
 if (!defined('ABSPATH')) exit;
@@ -17,15 +19,18 @@ class CustomerService {
     private $booking_repo;
     private $organisation_repo;
     private $organisation_member_repo;
+    private LoggerInterface $logger;
 
     public function __construct(CustomerRepository $repo,
                                 BookingRepository $booking_repo,
                                 OrganisationRepository $organisation_repo,
-                                OrganisationMemberRepository $organisation_member_repo) {
+                                OrganisationMemberRepository $organisation_member_repo,
+                                ?LoggerInterface $logger = null) {
         $this->repo         = $repo;
         $this->booking_repo = $booking_repo;
         $this->organisation_repo = $organisation_repo;
         $this->organisation_member_repo = $organisation_member_repo;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function get_all($args = []): array {
