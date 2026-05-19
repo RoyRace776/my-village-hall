@@ -59,7 +59,40 @@ class BookingServiceProvider
         $container->singleton(RoomRulesService::class);
         $container->singleton(PricingService::class);
 
-        $container->singleton(BookingService::class);
+        $container->singleton(BookingService::class, function ($container) {
+            try {
+                $logger = $container->get(LoggerInterface::class);
+            } catch (\Exception $e) {
+                $logger = new NullLogger();
+            }
+
+            return new BookingService(
+                $container->get(RoomService::class),
+                $container->get(BookingRepository::class),
+                $container->get(BookingAddonRepository::class),
+                $container->get(AddonService::class),
+                $container->get(BookingValidator::class),
+                $container->get(BookingAddonSyncService::class),
+                $container->get(BookingChargeService::class),
+                $container->get(BookingChargeableHoursCalculator::class),
+                $container->get(BookingCreationEventDispatcher::class),
+                $container->get(BookingDeletionService::class),
+                $container->get(BookingLifecycleEventDispatcher::class),
+                $container->get(BookingAccessControl::class),
+                $container->get(BookingMovementService::class),
+                $container->get(BookingQueryService::class),
+                $container->get(BookingStatusTransitionDispatcher::class),
+                $container->get(BookingUpdateEventDispatcher::class),
+                $container->get(RecurringPatternService::class),
+                $container->get(RecurringBookingCreator::class),
+                $container->get(RecurringBookingUpdater::class),
+                $container->get(\MYVH\Invoices\InvoiceService::class),
+                $container->get(\MYVH\Invoices\InvoiceItemRepository::class),
+                $container->get(BookingChargeRepository::class),
+                $container->get(DepositService::class),
+                $logger
+            );
+        });
         $container->singleton(BookingController::class);
         $container->singleton(BookingAutoConfirm::class);
         $container->singleton(BookingAddonSyncService::class);

@@ -35,31 +35,31 @@ class BookingService {
     private const EDIT_SCOPE_ALL_BOOKINGS = 'all_bookings';
     private const EDIT_SCOPE_THIS_AND_FUTURE = 'this_and_future';
 
-    private $room_service;
-    private $booking_repo;
-    private $booking_addon_repo;
-    private $addon_service;
-    private $validator;
-    private $booking_addon_sync_service;
-    private $booking_charge_service;
-    private $booking_chargeable_hours_calculator;
-    private $booking_creation_event_dispatcher;
-    private $booking_deletion_service;
-    private $booking_lifecycle_event_dispatcher;
-    private $booking_access_control;
-    private $booking_movement_service;
-    private $booking_query_service;
-    private $booking_status_transition_dispatcher;
-    private $booking_update_event_dispatcher;
-    private $recurring_pattern_service;
-    private $recurring_booking_creator;
-    private $recurring_booking_updater;
-    private $invoice_service;
-    private $invoice_item_repo;
-    private $booking_charge_repo;
-    private $deposit_service;
+    private RoomService $room_service;
+    private BookingRepository $booking_repo;
+    private BookingAddonRepository $booking_addon_repo;
+    private AddonService $addon_service;
+    private BookingValidator $validator;
+    private BookingAddonSyncService $booking_addon_sync_service;
+    private BookingChargeService $booking_charge_service;
+    private BookingChargeableHoursCalculator $booking_chargeable_hours_calculator;
+    private BookingCreationEventDispatcher $booking_creation_event_dispatcher;
+    private BookingDeletionService $booking_deletion_service;
+    private BookingLifecycleEventDispatcher $booking_lifecycle_event_dispatcher;
+    private BookingAccessControl $booking_access_control;
+    private BookingMovementService $booking_movement_service;
+    private BookingQueryService $booking_query_service;
+    private BookingStatusTransitionDispatcher $booking_status_transition_dispatcher;
+    private BookingUpdateEventDispatcher $booking_update_event_dispatcher;
+    private RecurringPatternService $recurring_pattern_service;
+    private RecurringBookingCreator $recurring_booking_creator;
+    private RecurringBookingUpdater $recurring_booking_updater;
+    private InvoiceService $invoice_service;
+    private InvoiceItemRepository $invoice_item_repo;
+    private BookingChargeRepository $booking_charge_repo;
+    private DepositService $deposit_service;
     private LoggerInterface $logger;
-    private $last_warnings = [];
+    private array $last_warnings = [];
 
     public function __construct(
         RoomService $room_service,
@@ -113,7 +113,8 @@ class BookingService {
         $this->logger = $logger ?? new NullLogger();
     }
 
-    public function save($data): int|WP_Error {
+    public function save(array $data): int|WP_Error {
+        $this->logger->info('Saving booking with data', ['data' => $data]);
         $this->last_warnings = [];
         $this->booking_repo->begin();
         try {
@@ -196,6 +197,7 @@ class BookingService {
         $current_record = $this->booking_repo->get_by_id($booking_id);
 
         if (!$current_record) {
+            $this->logger->warning('Booking not found', ['booking_id' => $booking_id]);
             return new WP_Error('not_found', __('Booking not found', 'my-village-hall'));
         }
 

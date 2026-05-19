@@ -16,7 +16,7 @@ use MYVH\Calendar\CalendarServiceProvider;
 use MYVH\Login\LoginServiceProvider;
 use MYVH\Portal\PortalServiceProvider;
 use MYVH\Network\NetworkServiceProvider;
-use MYVH\Infrastructure\Logging\LoggerFactory;
+use MYVH\Core\Logging\LoggerFactory;
 use Psr\Log\LoggerInterface;
 
 use wpdb;

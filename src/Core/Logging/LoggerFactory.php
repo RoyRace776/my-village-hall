@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MYVH\Infrastructure\Logging;
+namespace MYVH\Core\Logging;
 
 use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\HandlerInterface;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Level;
 use Monolog\Logger;
@@ -25,9 +26,7 @@ class LoggerFactory
             file_put_contents($htaccess_path, "Deny from all\n");
         }
 
-        $level = (\defined('WP_DEBUG') && \constant('WP_DEBUG'))
-            ? Level::Debug
-            : Level::Info;
+        $level = self::resolve_level();
 
         $handler = new RotatingFileHandler($log_dir . '/app.log', 7, $level, true);
         $handler->setFormatter(new LineFormatter('[%datetime%] %level_name%: %message% %context%' . "\n"));
@@ -53,5 +52,41 @@ class LoggerFactory
         });
 
         return $logger;
+    }
+
+    public static function update_level_from_settings(LoggerInterface $logger, ?string $level_name = null): void
+    {
+        if (!$logger instanceof Logger) {
+            return;
+        }
+
+        $level = self::resolve_level($level_name);
+
+        foreach ($logger->getHandlers() as $handler) {
+            if (!$handler instanceof HandlerInterface || !method_exists($handler, 'setLevel')) {
+                continue;
+            }
+
+            $handler->setLevel($level);
+        }
+    }
+
+    private static function resolve_level(?string $level_name = null): Level
+    {
+        if ($level_name === null) {
+            $configured_level = myvh_setting('admin.logger_level', 'info');
+            $level_name = is_string($configured_level) ? $configured_level : null;
+        }
+
+        $normalized = strtolower(trim((string) $level_name));
+        if ($normalized === '') {
+            return Level::Info;
+        }
+
+        try {
+            return Level::fromName($normalized);
+        } catch (\Throwable $e) {
+            return Level::Info;
+        }
     }
 }

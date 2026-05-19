@@ -52,6 +52,23 @@ class AdminSettings extends SettingsBase {
                     'sanitize' => 'boolval',
                     'description' => 'When enabled, caching features will be active.'
                 ],
+
+                'logger_level' => [
+                    'type'     => 'select',
+                    'label'    => 'Logging Level',
+                    'default'  => 'emergency',
+                    'sanitize' => 'sanitize_text_field',
+                    'options'  => [
+                        'debug' => 'Debug',
+                        'info'  => 'Info',
+                        'notice'=> 'Notice',
+                        'warning'=> 'Warning',
+                        'error' => 'Error',
+                        'critical' => 'Critical',
+                        'alert' => 'Alert',
+                        'emergency' => 'Emergency',
+                    ],
+                ],
             ]
 
         ]

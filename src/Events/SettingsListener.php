@@ -1,8 +1,11 @@
 <?php
 namespace MYVH\Events;
 
+use MYVH\Container\Container;
+use MYVH\Core\Logging\LoggerFactory;
 use MYVH\Core\Scheduling\OvernightBatchRunner;
 use MYVH\Core\Scheduling\OvernightJobScheduler;
+use Psr\Log\LoggerInterface;
 
 class SettingsListener {
     public function register(): void {
@@ -15,6 +18,16 @@ class SettingsListener {
     }
 
     public function handle_admin_settings_saved($payload): void {
+        $level_name = null;
+
+        if (is_array($payload)) {
+            $settings = $payload['settings'] ?? null;
+            if (is_array($settings) && isset($settings['logger_level']) && is_scalar($settings['logger_level'])) {
+                $level_name = (string) $settings['logger_level'];
+            }
+        }
+
+        $this->update_logger_level($level_name);
     }
 
     public function handle_booking_settings_saved($payload): void {
@@ -38,5 +51,21 @@ class SettingsListener {
     }
 
     public function handle_notices_settings_saved($payload): void {
+    }
+
+    private function update_logger_level(?string $level_name = null): void {
+        global $myvh_container;
+
+        if (!$myvh_container instanceof Container) {
+            return;
+        }
+
+        try {
+            $logger = $myvh_container->get(LoggerInterface::class);
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        LoggerFactory::update_level_from_settings($logger, $level_name);
     }
 }
