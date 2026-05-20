@@ -257,6 +257,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
             ->once()
             ->with([401], [
                 'group_by' => 'by_customer',
+                'lock_group_by' => true,
                 'rule_scope' => 'recurring',
                 'rule_id' => 55,
                 'due_date_offset_days' => 14,
@@ -299,6 +300,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
             ->once()
             ->with([501], [
                 'group_by' => 'by_customer',
+                'lock_group_by' => true,
                 'rule_scope' => 'recurring',
                 'rule_id' => 12,
                 'due_date_offset_days' => 30,
@@ -337,6 +339,7 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
             ->once()
             ->with([601], [
                 'group_by' => 'by_organisation',
+                'lock_group_by' => true,
                 'rule_scope' => 'recurring',
                 'rule_id' => 88,
                 'due_date_offset_days' => 21,

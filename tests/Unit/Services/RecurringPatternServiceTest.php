@@ -10,6 +10,7 @@ use WP_Error;
 class RecurringPatternServiceTest extends UnitTestCase {
     private $repo;
     private $booking_repo;
+    private $booking_charge_service;
     private $service;
 
     protected function setUp(): void {
@@ -20,10 +21,12 @@ class RecurringPatternServiceTest extends UnitTestCase {
 
         $this->repo = $this->mock(\MYVH\Bookings\RecurringPatternRepository::class);
         $this->booking_repo = $this->mock(\MYVH\Bookings\BookingRepository::class);
+        $this->booking_charge_service = $this->mock(\MYVH\Bookings\Services\BookingChargeService::class);
 
         $this->service = new \MYVH\Bookings\RecurringPatternService(
             $this->repo,
-            $this->booking_repo
+            $this->booking_repo,
+            $this->booking_charge_service
         );
     }
 
@@ -376,6 +379,133 @@ class RecurringPatternServiceTest extends UnitTestCase {
 
         $this->assertInstanceOf(WP_Error::class, $result);
         $this->assertSame('not_found', $result->get_error_code());
+    }
+
+    /** @test */
+    public function create_recurring_bookings_recalculates_charges_for_each_created_child_booking(): void {
+        $pattern_id = 77;
+        $pattern = [
+            'Id' => $pattern_id,
+            'ParentBookingId' => 10,
+            'RecurrenceType' => 'weekly',
+            'RecurrenceInterval' => 1,
+            'StartDate' => '2026-06-01',
+            'EndDate' => null,
+            'MaxOccurrences' => 2,
+        ];
+
+        $parent_booking = [
+            'Id' => 10,
+            'CustomerId' => 2,
+            'RoomId' => 3,
+            'Status' => 'confirmed',
+            'StartDate' => '2026-06-01',
+            'EndDate' => '2026-06-01',
+            'StartTime' => '09:00:00',
+            'EndTime' => '10:00:00',
+            'Public' => 0,
+            'Description' => 'Weekly booking',
+            'OrganisationId' => 0,
+        ];
+
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(10)
+            ->andReturnUsing(static fn() => $parent_booking);
+
+        $this->booking_repo->shouldReceive('has_conflict')
+            ->once()
+            ->with(3, '2026-06-08', '09:00:00', '10:00:00', 10, '2026-06-08')
+            ->andReturn(false);
+
+        $this->booking_repo->shouldReceive('create')
+            ->once()
+            ->with(Mockery::on(static function (array $record): bool {
+                return (int) ($record['RecurringPatternId'] ?? 0) === 77
+                    && ($record['StartDate'] ?? '') === '2026-06-08';
+            }))
+            ->andReturn(101);
+
+        $this->booking_charge_service->shouldReceive('recalculate')
+            ->once()
+            ->with(101)
+            ->andReturn(true);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->with(['OccurrenceCount' => 2], ['Id' => $pattern_id])
+            ->andReturn(true);
+
+        $result = $this->service->create_recurring_bookings($pattern_id, $pattern);
+
+        $this->assertIsArray($result);
+        $this->assertSame(2, (int) ($result['created'] ?? 0));
+        $this->assertSame(0, (int) ($result['skipped'] ?? 0));
+        $this->assertSame([], $result['errors'] ?? []);
+    }
+
+    /** @test */
+    public function create_recurring_bookings_deletes_child_booking_when_charge_creation_fails(): void {
+        $pattern_id = 88;
+        $pattern = [
+            'Id' => $pattern_id,
+            'ParentBookingId' => 10,
+            'RecurrenceType' => 'weekly',
+            'RecurrenceInterval' => 1,
+            'StartDate' => '2026-07-01',
+            'EndDate' => null,
+            'MaxOccurrences' => 2,
+        ];
+
+        $parent_booking = [
+            'Id' => 10,
+            'CustomerId' => 2,
+            'RoomId' => 3,
+            'Status' => 'confirmed',
+            'StartDate' => '2026-07-01',
+            'EndDate' => '2026-07-01',
+            'StartTime' => '09:00:00',
+            'EndTime' => '10:00:00',
+            'Public' => 0,
+            'Description' => 'Weekly booking',
+            'OrganisationId' => 0,
+        ];
+
+        $this->booking_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(10)
+            ->andReturnUsing(static fn() => $parent_booking);
+
+        $this->booking_repo->shouldReceive('has_conflict')
+            ->once()
+            ->with(3, '2026-07-08', '09:00:00', '10:00:00', 10, '2026-07-08')
+            ->andReturn(false);
+
+        $this->booking_repo->shouldReceive('create')
+            ->once()
+            ->andReturn(102);
+
+        $this->booking_charge_service->shouldReceive('recalculate')
+            ->once()
+            ->with(102)
+            ->andReturn(new WP_Error('database', 'charge failed'));
+
+        $this->booking_repo->shouldReceive('delete')
+            ->once()
+            ->with(102)
+            ->andReturn(1);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->with(['OccurrenceCount' => 1], ['Id' => $pattern_id])
+            ->andReturn(true);
+
+        $result = $this->service->create_recurring_bookings($pattern_id, $pattern);
+
+        $this->assertIsArray($result);
+        $this->assertSame(1, (int) ($result['created'] ?? 0));
+        $this->assertSame(1, (int) ($result['skipped'] ?? 0));
+        $this->assertNotEmpty($result['errors'] ?? []);
     }
 
     /** @test */

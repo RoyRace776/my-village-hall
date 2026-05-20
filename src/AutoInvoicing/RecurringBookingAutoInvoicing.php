@@ -49,9 +49,9 @@ class RecurringBookingAutoInvoicing {
      * @return array{created_invoice_ids: array<int>, treat_as_single_bookings: array<int, array>}
      */
     public function process_with_result(): array {
-        $this->logger->info('Starting recurring booking auto-invoicing process.');
+        $this->logger->debug('Starting recurring booking auto-invoicing process.');
         $bookings = $this->get_confirmed_bookings_for_invoicing();
-        $this->logger->info(sprintf('Found %d confirmed recurring bookings eligible for invoicing.', count($bookings)));
+        $this->logger->debug(sprintf('Found %d confirmed recurring bookings eligible for invoicing.', count($bookings)));
         $this->logger->debug(sprintf('Recurring auto-invoicing fetched %d confirmed bookings from booking service.', count($bookings)));
         if (empty($bookings)) {
             $this->logger->debug('Recurring auto-invoicing exiting early because there are no confirmed recurring bookings to process.');
@@ -97,7 +97,7 @@ class RecurringBookingAutoInvoicing {
 
             // Classify bookings based on rule's trigger timing
             if (($rule['trigger_timing'] ?? '') === 'treat_as_single_bookings') {
-                $this->logger->info(sprintf('Group %s will be treated as single bookings.', $group_key));
+                $this->logger->debug(sprintf('Group %s will be treated as single bookings.', $group_key));
                 $this->logger->debug(sprintf(
                     'Group %s moved %d bookings to treat_as_single_bookings bucket.',
                     $group_key,
@@ -111,7 +111,7 @@ class RecurringBookingAutoInvoicing {
             }
 
             if (empty($rule['enabled']) || ($rule['trigger_timing'] ?? '') === 'manual_invoicing') {
-                $this->logger->info(sprintf('Group %s uses manual invoicing; skipping.', $group_key));
+                $this->logger->debug(sprintf('Group %s uses manual invoicing; skipping.', $group_key));
                 $this->logger->debug(sprintf(
                     'Skipping group %s due to rule state (enabled=%s, trigger_timing=%s).',
                     $group_key,
@@ -123,7 +123,7 @@ class RecurringBookingAutoInvoicing {
 
             // Handle period-based invoicing
             $period = $this->calculate_invoicing_period_range($rule);
-            $this->logger->info(sprintf(
+            $this->logger->debug(sprintf(
                 'Processing group %s for period-based invoicing with range %s to %s.',
                 $group_key,
                 $period['start_date'],
@@ -141,7 +141,7 @@ class RecurringBookingAutoInvoicing {
                 $period['end_date']
             ));
             if (empty($period_bookings)) {
-                $this->logger->info(sprintf('No bookings in period for group %s.', $group_key));
+                $this->logger->debug(sprintf('No bookings in period for group %s.', $group_key));
                 continue;
             }
 
@@ -154,7 +154,7 @@ class RecurringBookingAutoInvoicing {
                     continue;
                 }
 
-                $this->logger->info(sprintf(
+                $this->logger->debug(sprintf(
                     'Creating invoice for group %s, recurring pattern %d with %d bookings.',
                     $group_key,
                     $pattern_id,
@@ -413,6 +413,7 @@ class RecurringBookingAutoInvoicing {
                 $booking_ids,
                 [
                     'group_by' => $group_by,
+                    'lock_group_by' => true,
                     'rule_scope' => 'recurring',
                     'rule_id' => \intval($rule['id'] ?? 0),
                     'due_date_offset_days' => \intval($rule['due_date_offset_days'] ?? 30),

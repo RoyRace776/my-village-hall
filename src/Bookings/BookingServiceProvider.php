@@ -97,6 +97,20 @@ class BookingServiceProvider
         $container->singleton(BookingAutoConfirm::class);
         $container->singleton(BookingAddonSyncService::class);
         $container->singleton(BookingChargeService::class);
+        $container->singleton(RecurringPatternService::class, function ($container) {
+            try {
+                $logger = $container->get(LoggerInterface::class);
+            } catch (\Exception $e) {
+                $logger = new NullLogger();
+            }
+
+            return new RecurringPatternService(
+                $container->get(RecurringPatternRepository::class),
+                $container->get(BookingRepository::class),
+                $container->get(BookingChargeService::class),
+                $logger
+            );
+        });
         $container->singleton(BookingChargeableHoursCalculator::class);
         $container->singleton(BookingCreationEventDispatcher::class);
         $container->singleton(BookingDeletionService::class);

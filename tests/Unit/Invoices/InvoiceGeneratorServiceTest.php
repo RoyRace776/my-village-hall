@@ -170,6 +170,114 @@ class InvoiceGeneratorServiceTest extends UnitTestCase {
     }
 
     /** @test */
+    public function recurring_generation_can_lock_group_by_to_prevent_rule_override(): void {
+        $this->arrange_invoiceable_booking(71, 9, 10.00, 'Customer Grouped');
+        $this->arrange_invoiceable_booking(72, 9, 15.50, 'Customer Grouped');
+        $this->arrange_invoiceable_booking(73, 9, 4.50, 'Customer Grouped');
+
+        $this->recurring_rule_repo->shouldReceive('get_all_rules')->once()->andReturn([
+            [
+                'Id' => 999,
+                'GroupBy' => 'per_booking',
+                'DueDateOffsetDays' => 30,
+            ],
+        ]);
+
+        $this->invoice_service->shouldReceive('save')
+            ->once()
+            ->with(\Mockery::on(static function (array $payload): bool {
+                return ($payload['customer_id'] ?? 0) === 9
+                    && ($payload['sub_total'] ?? 0) === 30.0
+                    && ($payload['total_amount'] ?? 0) === 30.0
+                    && ($payload['notes'] ?? '') === 'Generated from 3 booking(s)';
+            }))
+            ->andReturn(900);
+
+        $this->invoice_item_repo->shouldReceive('create')->times(3)->andReturn(true);
+
+        $result = $this->service->generate_invoices_from_bookings([71, 72, 73], [
+            'group_by' => 'by_customer',
+            'lock_group_by' => true,
+            'rule_scope' => 'recurring',
+            'rule_id' => 999,
+        ]);
+
+        $this->assertSame([900], $result);
+    }
+
+    /** @test */
+    public function grouped_invoice_notes_count_only_bookings_that_have_line_items(): void {
+        $this->booking_service->shouldReceive('booking_requires_no_invoice')->once()->with(81)->andReturn(false);
+        $this->booking_service->shouldReceive('booking_has_invoices')->once()->with(81)->andReturn(false);
+        $this->booking_service->shouldReceive('booking_requires_no_invoice')->once()->with(82)->andReturn(false);
+        $this->booking_service->shouldReceive('booking_has_invoices')->once()->with(82)->andReturn(false);
+
+        $this->booking_repo->shouldReceive('get_all_with_details')->once()->with(['booking_id' => 81])->andReturn([
+            [
+                'Id' => 81,
+                'CustomerId' => 15,
+                'OrganisationId' => 0,
+                'RoomId' => 3,
+                'EndDate' => '2026-05-15',
+                'EndTime' => '10:00:00',
+            ],
+        ]);
+        $this->booking_repo->shouldReceive('get_all_with_details')->once()->with(['booking_id' => 82])->andReturn([
+            [
+                'Id' => 82,
+                'CustomerId' => 15,
+                'OrganisationId' => 0,
+                'RoomId' => 3,
+                'EndDate' => '2026-05-15',
+                'EndTime' => '10:00:00',
+            ],
+        ]);
+
+        $this->booking_charge_repo->shouldReceive('get_by_booking_id')->once()->with(81)->andReturn([
+            [
+                'Description' => 'Room charge',
+                'Quantity' => 1,
+                'UnitPrice' => 10.00,
+                'TaxRate' => 0,
+                'TaxAmount' => 0,
+                'TotalAmount' => 10.00,
+            ],
+        ]);
+        $this->booking_charge_repo->shouldReceive('get_by_booking_id')->once()->with(82)->andReturn([]);
+
+        $this->booking_addon_repo->shouldReceive('get_by_booking_id')->once()->with(81)->andReturn([]);
+        $this->booking_addon_repo->shouldReceive('get_by_booking_id')->once()->with(82)->andReturn([]);
+        $this->deposit_service->shouldReceive('evaluate')->times(2)->andReturn(null);
+
+        $this->customer_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(15)
+            ->andReturnUsing(static fn(): array => [
+                'Name' => 'Grouped Customer',
+                'Email' => 'customer@example.test',
+                'AddressLine1' => '10 High St',
+                'PostCode' => 'TE1 2ST',
+            ]);
+
+        $this->invoice_service->shouldReceive('save')
+            ->once()
+            ->with(\Mockery::on(static function (array $payload): bool {
+                return ($payload['notes'] ?? '') === 'Generated from 1 booking(s)'
+                    && ($payload['sub_total'] ?? 0) === 10.0
+                    && ($payload['total_amount'] ?? 0) === 10.0;
+            }))
+            ->andReturn(1001);
+
+        $this->invoice_item_repo->shouldReceive('create')->once()->andReturn(true);
+
+        $result = $this->service->generate_invoices_from_bookings([81, 82], [
+            'group_by' => 'by_customer',
+        ]);
+
+        $this->assertSame([1001], $result);
+    }
+
+    /** @test */
     public function by_organisation_mode_uses_organisation_billing_snapshot_when_enabled(): void {
         $this->arrange_invoiceable_booking(51, 11, 50.00, 'Fallback Customer', 77);
 

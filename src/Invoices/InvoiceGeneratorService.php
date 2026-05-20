@@ -101,6 +101,7 @@ class InvoiceGeneratorService {
             'rule_scope' => 'single',
             'rule_id' => 0,
             'due_date_offset_days' => null,
+            'lock_group_by' => false,
         ];
         $options = wp_parse_args($options, $defaults);
         $rule_scope = $this->normalize_rule_scope($options['rule_scope'] ?? 'single');
@@ -113,7 +114,9 @@ class InvoiceGeneratorService {
             $rule_record = $rule_repository->get_all_rules();
             foreach ($rule_record as $candidate) {
                 if (intval($candidate['Id']) === $rule_id) {
-                    $options['group_by'] = (string) ($candidate['GroupBy'] ?? $options['group_by']);
+                    if (empty($options['lock_group_by'])) {
+                        $options['group_by'] = (string) ($candidate['GroupBy'] ?? $options['group_by']);
+                    }
                     if ($options['due_date_offset_days'] === null) {
                         $options['due_date_offset_days'] = max(0, \intval($candidate['DueDateOffsetDays'] ?? 30));
                     }
@@ -305,6 +308,7 @@ class InvoiceGeneratorService {
         $tax_amount = 0;
         $invoice_items = [];
         $display_order = 0;
+        $bookings_with_items = [];
 
         foreach ($bookings as $booking) {
             $booking_id = \intval($booking['Id']);
@@ -326,6 +330,7 @@ class InvoiceGeneratorService {
                     'TotalAmount' => $charge['TotalAmount'] ?? 0,
                     'DisplayOrder' => $display_order++
                 ];
+                $bookings_with_items[$booking_id] = true;
             }
 
             // Get addons for this booking
@@ -357,6 +362,7 @@ class InvoiceGeneratorService {
                         'TotalAmount' => $addon['TotalAmount'] ?? 0,
                         'DisplayOrder' => $display_order++
                     ];
+                    $bookings_with_items[$booking_id] = true;
                 }
             }
 
@@ -366,6 +372,7 @@ class InvoiceGeneratorService {
                 $subtotal += (float) ($deposit_item['TotalAmount'] ?? 0);
                 $invoice_items[] = $deposit_item;
                 $display_order++;
+                $bookings_with_items[$booking_id] = true;
             }
         }
 
@@ -402,7 +409,7 @@ class InvoiceGeneratorService {
             'status' => 'draft',
             'invoice_date' => date('Y-m-d'),
             'due_date' => date('Y-m-d', strtotime("+{$due_date_offset} days")),
-            'notes' => sprintf(__('Generated from %d booking(s)', 'my-village-hall'), count($bookings))
+            'notes' => sprintf(__('Generated from %d booking(s)', 'my-village-hall'), count($bookings_with_items))
         ];
 
         $invoice_id = $this->invoiceService->save($invoice_data);

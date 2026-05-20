@@ -54,7 +54,7 @@ $myvh_container->singleton( wpdb::class, function () {
 } );
 
 $myvh_container->singleton( LoggerInterface::class, static function () {
-    return LoggerFactory::create();
+    return LoggerFactory::get();
 } );
 
 // ── Register providers with the container ─────────────────────────────────────

@@ -6,6 +6,7 @@ use WP_Error;
 use DateTime;
 use MYVH\Bookings\RecurringPatternRepository;
 use MYVH\Bookings\BookingRepository;
+use MYVH\Bookings\Services\BookingChargeService;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -15,14 +16,17 @@ class RecurringPatternService {
 
     private $repo;
     private $booking_repo;
+    private ?BookingChargeService $booking_charge_service;
     private $last_booking_results = null;
     private LoggerInterface $logger;
 
     public function __construct(RecurringPatternRepository $repo,
                                 BookingRepository $booking_repo,
+                                ?BookingChargeService $booking_charge_service = null,
                                 ?LoggerInterface $logger = null) {
         $this->repo = $repo;
         $this->booking_repo = $booking_repo;
+        $this->booking_charge_service = $booking_charge_service;
         $this->logger = $logger ?? new NullLogger();
     }
 
@@ -398,14 +402,26 @@ class RecurringPatternService {
 
             $new_booking_id = $booking_repo->create($booking_data);
 
-            if ($new_booking_id) {
-                $results['created']++;
-            } else {
+            if (!$new_booking_id) {
                 $results['errors'][] = sprintf(
                     __('Failed to create booking for %s', 'my-village-hall'),
                     $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
                 );
+                continue;
             }
+
+            $charge_result = $this->recalculate_booking_charges((int) $new_booking_id);
+            if (is_wp_error($charge_result)) {
+                $booking_repo->delete((int) $new_booking_id);
+                $results['skipped']++;
+                $results['errors'][] = sprintf(
+                    __('Failed to create booking charges for %s', 'my-village-hall'),
+                    $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
+                );
+                continue;
+            }
+
+            $results['created']++;
         }
 
         // Update occurrence count
@@ -587,5 +603,13 @@ class RecurringPatternService {
      */
     private function get_booking_repo(): BookingRepository {
         return $this->booking_repo;
+    }
+
+    private function recalculate_booking_charges(int $booking_id): bool|WP_Error {
+        if ($this->booking_charge_service === null) {
+            return true;
+        }
+
+        return $this->booking_charge_service->recalculate($booking_id);
     }
 }

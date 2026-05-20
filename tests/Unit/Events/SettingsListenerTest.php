@@ -80,7 +80,7 @@ class SettingsListenerTest extends UnitTestCase
     }
 
     /** @test */
-    public function handle_admin_settings_saved_updates_logger_level_from_payload(): void
+    public function handle_admin_settings_saved_does_not_mutate_existing_container_logger_from_payload(): void
     {
         $handler = new TestHandler(Level::Info);
         $logger = new Logger('myvh-test');
@@ -98,11 +98,33 @@ class SettingsListenerTest extends UnitTestCase
             ],
         ]);
 
-        $this->assertSame(Level::Error, $handler->getLevel());
+        $this->assertSame(Level::Info, $handler->getLevel());
+        $this->assertFalse($handler->hasEmergencyRecords());
     }
 
     /** @test */
-    public function handle_admin_settings_saved_defaults_to_emergency_when_missing(): void
+    public function handle_admin_settings_saved_does_not_mutate_existing_container_logger_from_top_level_payload(): void
+    {
+        $handler = new TestHandler(Level::Info);
+        $logger = new Logger('myvh-test');
+        $logger->pushHandler($handler);
+
+        $container = new Container();
+        $container->singleton(LoggerInterface::class, static fn() => $logger);
+
+        global $myvh_container;
+        $myvh_container = $container;
+
+        (new SettingsListener())->handle_admin_settings_saved([
+            'logger_level' => 'warning',
+        ]);
+
+        $this->assertSame(Level::Info, $handler->getLevel());
+        $this->assertFalse($handler->hasEmergencyRecords());
+    }
+
+    /** @test */
+    public function handle_admin_settings_saved_does_not_mutate_existing_container_logger_when_missing(): void
     {
         $handler = new TestHandler(Level::Info);
         $logger = new Logger('myvh-test');
@@ -118,6 +140,7 @@ class SettingsListenerTest extends UnitTestCase
             'settings' => [],
         ]);
 
-        $this->assertSame(Level::Emergency, $handler->getLevel());
+        $this->assertSame(Level::Info, $handler->getLevel());
+        $this->assertFalse($handler->hasEmergencyRecords());
     }
 }
