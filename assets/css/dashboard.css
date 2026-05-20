@@ -2097,7 +2097,7 @@ body .site-main:has(#myvh-portal) {
   margin: 0 0 0 8px;
 }
 
-.myvh-invoice-view-page .myvh-account-header button.myvh-portal-add-button {
+.myvh-invoice-view-page .myvh-account-header .myvh-portal-add-button {
   min-height: 42px;
   padding: 10px 16px;
   line-height: 1.2;
@@ -2107,6 +2107,43 @@ body .site-main:has(#myvh-portal) {
   justify-self: start;
   align-self: start;
   width: auto;
+}
+
+.myvh-invoice-view-page .myvh-invoice-payment-form {
+  gap: 10px;
+}
+
+.myvh-invoice-view-page .myvh-invoice-payment-grid {
+  gap: 12px 14px;
+}
+
+.myvh-invoice-view-page .myvh-invoice-payment-form .myvh-account-field label {
+  margin: 0;
+  color: var(--ink);
+  font-size: .82rem;
+  letter-spacing: .02em;
+}
+
+.myvh-invoice-view-page .myvh-invoice-payment-form input,
+.myvh-invoice-view-page .myvh-invoice-payment-form select,
+.myvh-invoice-view-page .myvh-invoice-payment-form textarea {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .95rem;
+  line-height: 1.35;
+}
+
+.myvh-invoice-view-page .myvh-invoice-payment-form #myvh-portal-payment-amount,
+.myvh-invoice-view-page .myvh-invoice-payment-form #myvh-portal-payment-date {
+  font-variant-numeric: tabular-nums;
+}
+
+.myvh-invoice-view-page .myvh-invoice-payment-field--comment {
+  grid-column: 1 / -1;
+}
+
+.myvh-invoice-view-page .myvh-invoice-payment-form #myvh-portal-payment-comment {
+  min-height: 88px;
+  resize: vertical;
 }
 
 .myvh-invoice-view-hero {
@@ -2414,6 +2451,87 @@ body .site-main:has(#myvh-portal) {
   min-width: 210px;
 }
 
+/* Compact spacing for the main invoices list page only (exclude view/generate screens). */
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-account-header {
+  gap: 14px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-account-card {
+  padding: 14px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-account-card-head {
+  margin-bottom: 10px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-filter-section {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-filter-form {
+  gap: 10px 12px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-filter-group {
+  gap: 8px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-text-field,
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-select-field,
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-date-field {
+  gap: 4px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-text-field input,
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-select-field select,
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-date-field input {
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-checkbox-label {
+  padding: 6px 10px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-filter-submit {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-filter-actions {
+  gap: 8px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-customer-list-table {
+  border-spacing: 0 4px;
+  font-size: .95rem;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-customer-list-table th,
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-customer-list-table td {
+  padding: .55rem .9rem .55rem .55rem;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoices-table td {
+  line-height: 1.3;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-actions {
+  gap: 6px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-actions .myvh-action-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+}
+
+.myvh-invoices-page:not(.myvh-invoice-view-page):not(.myvh-invoice-generate-page) .myvh-invoice-meta {
+  margin-top: 2px;
+}
+
 .myvh-invoices-page .myvh-badge-org {
   background: #6a5b4d;
 }
@@ -2437,6 +2555,17 @@ body .site-main:has(#myvh-portal) {
   height: 7px;
   border-radius: 50%;
   background: currentColor;
+}
+
+.myvh-invoice-view-page .myvh-invoice-view-hero__header .myvh-status-badge {
+  gap: 12px;
+  padding: 10px 20px;
+  font-size: 24px;
+}
+
+.myvh-invoice-view-page .myvh-invoice-view-hero__header .myvh-status-badge::before {
+  width: 14px;
+  height: 14px;
 }
 
 .myvh-status-draft {
@@ -4090,6 +4219,17 @@ body .site-main:has(#myvh-portal) {
 
   .myvh-invoices-page .myvh-account-header {
     align-items: flex-start;
+  }
+
+  .myvh-invoice-view-page .myvh-invoice-view-hero__header .myvh-status-badge {
+    gap: 8px;
+    padding: 8px 14px;
+    font-size: 18px;
+  }
+
+  .myvh-invoice-view-page .myvh-invoice-view-hero__header .myvh-status-badge::before {
+    width: 10px;
+    height: 10px;
   }
 
   .myvh-invoice-filter-form {

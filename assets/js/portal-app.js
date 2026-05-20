@@ -2080,18 +2080,28 @@ document.addEventListener("DOMContentLoaded", () => {
                         return;
                     }
 
-                    const badge = document.querySelector('[data-invoice-status-badge]');
-                    const statusValue = document.querySelector('[data-current-invoice-status]');
+                    const badges = Array.from(document.querySelectorAll('[data-invoice-status-badge]'));
+                    const statusValues = Array.from(document.querySelectorAll('[data-current-invoice-status]'));
+                    const updatedAtValue = document.querySelector('[data-invoice-updated-at]');
                     const nextStatus = res.data?.status || '';
                     const nextLabel = res.data?.status_label || nextStatus;
+                    const updatedAtLocal = res.data?.updated_at_local || '';
 
-                    if (badge && nextStatus) {
-                        badge.className = 'myvh-status-badge myvh-status-' + nextStatus;
-                        badge.textContent = nextLabel;
+                    if (badges.length && nextStatus) {
+                        badges.forEach(badge => {
+                            badge.className = 'myvh-status-badge myvh-status-' + nextStatus;
+                            badge.textContent = nextLabel;
+                        });
                     }
 
-                    if (statusValue && nextLabel) {
-                        statusValue.textContent = nextLabel;
+                    if (statusValues.length && nextLabel) {
+                        statusValues.forEach(statusValue => {
+                            statusValue.textContent = nextLabel;
+                        });
+                    }
+
+                    if (updatedAtValue && updatedAtLocal) {
+                        updatedAtValue.textContent = updatedAtLocal;
                     }
 
                     showMessage(message, res.data?.message || 'Invoice status updated', false);

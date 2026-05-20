@@ -278,6 +278,29 @@ class InvoiceGeneratorServiceTest extends UnitTestCase {
     }
 
     /** @test */
+    public function uses_invoicing_setting_for_room_charge_description_on_invoice_items(): void {
+        Functions\when('get_option')->alias(static fn($key, $default = []) => $key === 'myvh_invoicing_settings'
+            ? ['room_charge_description' => 'Venue hire']
+            : []);
+
+        $this->arrange_invoiceable_booking(83, 16, 25.00, 'Configured Description Customer');
+
+        $this->invoice_service->shouldReceive('save')->once()->andReturn(1002);
+        $this->invoice_item_repo->shouldReceive('create')
+            ->once()
+            ->with(\Mockery::on(static function (array $item): bool {
+                return ($item['Description'] ?? '') === 'Venue hire';
+            }))
+            ->andReturn(true);
+
+        $result = $this->service->generate_invoices_from_bookings([83], [
+            'group_by' => 'per_booking',
+        ]);
+
+        $this->assertSame([1002], $result);
+    }
+
+    /** @test */
     public function by_organisation_mode_uses_organisation_billing_snapshot_when_enabled(): void {
         $this->arrange_invoiceable_booking(51, 11, 50.00, 'Fallback Customer', 77);
 

@@ -282,6 +282,28 @@ class InvoiceController {
         exit;
     }
 
+    public function settle_deposit(): void {
+
+        if (!current_user_can('manage_myvh')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        check_admin_referer('myvh_settle_invoice_deposit');
+
+        $id = \intval($_REQUEST['id'] ?? $_REQUEST['invoice_id'] ?? 0);
+        $outcome = sanitize_text_field($_REQUEST['deposit_outcome'] ?? '');
+
+        $result = $this->service->settle_deposit($id, $outcome);
+
+        if (is_wp_error($result)) {
+            $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'error', $result->get_error_message(), $this->get_admin_redirect_args());
+            exit;
+        }
+
+        $this->redirect_with_message($this->get_admin_page_slug('myvh-invoices'), 'updated', '1', $this->get_admin_redirect_args());
+        exit;
+    }
+
     public function record_payment(): void {
 
         if (!current_user_can('manage_myvh')) {

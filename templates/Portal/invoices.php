@@ -94,7 +94,7 @@ $selected_invoice_number_match = isset($selected_invoice_number_match) ? (string
                         </div>
                         <div style="display: flex; flex-wrap: wrap; gap: 16px;">
                             <?php foreach ($available_statuses as $status): ?>
-                                <?php if (in_array($status, ['paid', 'cancelled'], true)): ?>
+                                <?php if (in_array($status, ['paid', 'paid-with-deposit', 'cancelled'], true)): ?>
                                     <label class="myvh-checkbox-label">
                                         <input type="checkbox"
                                                name="statuses[]"
@@ -234,7 +234,7 @@ $selected_invoice_number_match = isset($selected_invoice_number_match) ? (string
                                 </td>
                                 <td>
                                     <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice['Status']); ?>">
-                                        <?php echo ucfirst(esc_html($invoice['Status'])); ?>
+                                        <?php echo esc_html((string) ($invoice['StatusLabel'] ?? ucfirst((string) ($invoice['Status'] ?? '')))); ?>
                                     </span>
                                 </td>
                                 <td>

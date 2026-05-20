@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) exit;
 class InvoiceService {
 
     public const VALID_STATUSES = ['draft', 'sent', 'part-paid', 'paid', 'overdue', 'cancelled'];
+    public const VALID_DEPOSIT_OUTCOMES = ['retained', 'refunded'];
 
     private InvoiceRepository $repo;
     private InvoiceItemRepository $invoice_item_repo;
@@ -171,8 +172,111 @@ class InvoiceService {
         return self::VALID_STATUSES;
     }
 
-    public function get_status_label(string $status): string {
-        return ucwords(str_replace('-', ' ', $status));
+    public function get_status_label(string $status, ?array $invoice = null): string {
+        $normalized_status = sanitize_key($status);
+
+        if ($normalized_status === 'paid' && $invoice !== null && $this->has_deposit_items($invoice)) {
+            return 'Paid with deposit';
+        }
+
+        return ucwords(str_replace('-', ' ', $normalized_status));
+    }
+
+    public function settle_deposit(int $invoice_id, string $outcome): bool|WP_Error {
+        $outcome = sanitize_key($outcome);
+        if (!in_array($outcome, self::VALID_DEPOSIT_OUTCOMES, true)) {
+            return new WP_Error('validation', __('Invalid deposit outcome.', 'my-village-hall'));
+        }
+
+        $invoice = $this->get_detail($invoice_id);
+        if (!$invoice) {
+            return new WP_Error('not_found', __('Invoice not found', 'my-village-hall'));
+        }
+
+        if (($invoice['Status'] ?? '') !== 'paid') {
+            return new WP_Error('validation', __('Deposit can only be settled when the invoice is fully paid.', 'my-village-hall'));
+        }
+
+        if (!$this->has_deposit_items($invoice)) {
+            return new WP_Error('validation', __('No unsettled deposit found on this invoice.', 'my-village-hall'));
+        }
+
+        $deposit_total = $this->get_deposit_total($invoice);
+        if ($deposit_total <= 0.0) {
+            return new WP_Error('validation', __('Deposit amount must be greater than zero.', 'my-village-hall'));
+        }
+
+        $next_item_type = $outcome === 'refunded' ? 'deposit-refunded' : 'deposit-retained';
+        $retyped = $this->invoice_item_repo->update_item_type_for_invoice($invoice_id, 'deposit', $next_item_type);
+        if (!$retyped) {
+            return new WP_Error('database', __('Failed to update deposit item status.', 'my-village-hall'));
+        }
+
+        $total_amount = round((float) ($invoice['TotalAmount'] ?? 0), 2);
+        $sub_total = round((float) ($invoice['SubTotal'] ?? 0), 2);
+        $amount_paid = round((float) ($invoice['AmountPaid'] ?? 0), 2);
+
+        if ($outcome === 'refunded') {
+            $refund_created = $this->payment_repo->create([
+                'InvoiceId' => $invoice_id,
+                'PaymentDate' => current_time('Y-m-d'),
+                'Amount' => round($deposit_total * -1, 2),
+                'PaymentMethod' => 'refund',
+                'TransactionReference' => null,
+                'Notes' => __('Deposit refunded', 'my-village-hall'),
+            ]);
+
+            if ($refund_created === false) {
+                return new WP_Error('database', __('Failed to create refund payment.', 'my-village-hall'));
+            }
+
+            $total_amount = max(0.0, round($total_amount - $deposit_total, 2));
+            $sub_total = max(0.0, round($sub_total - $deposit_total, 2));
+            $amount_paid = round($this->payment_repo->get_total_by_invoice($invoice_id), 2);
+        }
+
+        $amount_due = max(0.0, round($total_amount - $amount_paid, 2));
+
+        return $this->repo->update([
+            'SubTotal' => $sub_total,
+            'TotalAmount' => $total_amount,
+            'AmountPaid' => $amount_paid,
+            'AmountDue' => $amount_due,
+            'Status' => 'paid',
+        ], ['Id' => $invoice_id]);
+    }
+
+    public function has_deposit_items(array $invoice): bool {
+        $items = $invoice['Items'] ?? [];
+        if (!is_array($items) || $items === []) {
+            return false;
+        }
+
+        foreach ($items as $item) {
+            if (sanitize_key((string) ($item['ItemType'] ?? '')) === 'deposit') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function get_deposit_total(array $invoice): float {
+        $items = $invoice['Items'] ?? [];
+        if (!is_array($items) || $items === []) {
+            return 0.0;
+        }
+
+        $total = 0.0;
+        foreach ($items as $item) {
+            if (sanitize_key((string) ($item['ItemType'] ?? '')) !== 'deposit') {
+                continue;
+            }
+
+            $total += (float) ($item['TotalAmount'] ?? 0);
+        }
+
+        return round($total, 2);
     }
 
     private function build_booking_summary(array $items): array {

@@ -29,6 +29,7 @@ class PortalBillingAjaxController {
         add_action('wp_ajax_myvh_portal_update_invoice_status', [$this, 'update_invoice_status']);
         add_action('wp_ajax_myvh_portal_create_payment', [$this, 'create_payment']);
         add_action('wp_ajax_myvh_portal_delete_payment', [$this, 'delete_payment']);
+        add_action('wp_ajax_myvh_portal_settle_invoice_deposit', [$this, 'settle_invoice_deposit']);
     }
 
     public function view_invoice_pdf(): void {
@@ -143,7 +144,7 @@ class PortalBillingAjaxController {
         AjaxResponse::success([
             'redirect' => sanitize_text_field($payload['redirect_route'] ?? ('payments?invoice_id=' . $invoice_id)),
             'status' => $invoice['Status'] ?? '',
-            'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? '')),
+            'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? ''), $invoice),
             'amount_paid' => $invoice['AmountPaid'] ?? 0,
             'amount_due' => $invoice['AmountDue'] ?? 0,
         ], __('Payment saved', 'my-village-hall'));
@@ -166,7 +167,7 @@ class PortalBillingAjaxController {
         AjaxResponse::success([
             'redirect' => $redirect,
             'status' => $invoice['Status'] ?? '',
-            'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? '')),
+            'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? ''), $invoice),
             'amount_paid' => $invoice['AmountPaid'] ?? 0,
             'amount_due' => $invoice['AmountDue'] ?? 0,
         ], __('Payment deleted', 'my-village-hall'));
@@ -191,10 +192,51 @@ class PortalBillingAjaxController {
             AjaxResponse::error($result->get_error_message());
         }
 
+        $invoice = $this->invoice_service->get_detail($invoice_id);
+
+        $updated_at_local = '';
+        if (!empty($invoice['Updated'])) {
+            try {
+                $updated_at_local = (new \DateTimeImmutable((string) $invoice['Updated'], new \DateTimeZone('UTC')))
+                    ->setTimezone(wp_timezone())
+                    ->format('j M Y g:i a');
+            } catch (\Exception $e) {
+                $updated_at_local = '';
+            }
+        }
+
         AjaxResponse::success([
-            'status' => $status,
-            'status_label' => $this->invoice_service->get_status_label($status),
+            'status' => $invoice['Status'] ?? $status,
+            'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? $status), $invoice ?: null),
+            'updated_at_local' => $updated_at_local,
         ], __('Invoice status updated', 'my-village-hall'));
+    }
+
+    public function settle_invoice_deposit(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $invoice_id = \intval($_POST['invoice_id'] ?? 0);
+        $outcome = sanitize_text_field($_POST['deposit_outcome'] ?? '');
+
+        if ($invoice_id <= 0) {
+            AjaxResponse::error(__('Invalid invoice', 'my-village-hall'));
+        }
+
+        $result = $this->invoice_service->settle_deposit($invoice_id, $outcome);
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        $invoice = $this->invoice_service->get_detail($invoice_id);
+
+        AjaxResponse::success([
+            'status' => $invoice['Status'] ?? 'paid',
+            'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? 'paid'), $invoice ?: null),
+            'amount_paid' => $invoice['AmountPaid'] ?? 0,
+            'amount_due' => $invoice['AmountDue'] ?? 0,
+        ], $outcome === 'refunded'
+            ? __('Deposit marked as refunded and refund payment recorded', 'my-village-hall')
+            : __('Deposit marked as retained', 'my-village-hall'));
     }
 
     public function email_invoice(): void {

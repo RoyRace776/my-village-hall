@@ -5,19 +5,40 @@ if (!defined('ABSPATH')) {
 
 $invoice = $invoice ?? [];
 $is_client_admin = !empty($is_client_admin);
+$invoice_items = is_array($invoice['Items'] ?? null) ? $invoice['Items'] : [];
 $invoice_bookings = $invoice['BookingsSummary'] ?? [];
 $invoice_payments = $invoice['Payments'] ?? [];
 $available_statuses = $available_statuses ?? [];
 $has_payments = !empty($invoice_payments);
 $invoice_status = (string) ($invoice['Status'] ?? 'draft');
-$invoice_status_label = ucwords(str_replace('-', ' ', $invoice_status));
+$has_invoice_deposit = isset($invoice_service) && $invoice_service->has_deposit_items($invoice);
+$invoice_deposit_total = isset($invoice_service) ? $invoice_service->get_deposit_total($invoice) : 0.0;
+$invoice_status_label = isset($invoice_service)
+    ? $invoice_service->get_status_label($invoice_status, $invoice)
+    : ucwords(str_replace('-', ' ', $invoice_status));
 $invoice_total = \floatval($invoice['TotalAmount'] ?? 0);
 $invoice_paid = \floatval($invoice['AmountPaid'] ?? 0);
 $invoice_due = \floatval($invoice['AmountDue'] ?? 0);
 $invoice_booking_count = \intval($invoice['BookingCount'] ?? count($invoice_bookings));
+$invoice_item_count = count($invoice_items);
 $invoice_payment_count = count($invoice_payments);
 $invoice_customer_name = !empty($invoice['CustomerName']) ? (string) $invoice['CustomerName'] : 'Invoice details';
 $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoice['BillingName'] ?: 'Unassigned'));
+$format_invoice_datetime = static function ($value): string {
+    $raw_value = is_scalar($value) ? trim((string) $value) : '';
+    if ($raw_value === '') {
+        return 'Not available';
+    }
+
+    try {
+        $utc = new \DateTimeImmutable($raw_value, new \DateTimeZone('UTC'));
+        return $utc->setTimezone(wp_timezone())->format('j M Y g:i a');
+    } catch (\Exception $e) {
+        return 'Not available';
+    }
+};
+$invoice_created_at = $format_invoice_datetime($invoice['Created'] ?? '');
+$invoice_updated_at = $format_invoice_datetime($invoice['Updated'] ?? '');
 ?>
 
 <div class="myvh-dashboard-section myvh-client-settings-page myvh-invoices-page myvh-invoice-view-page">
@@ -65,6 +86,10 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                     <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice_status); ?>" data-invoice-status-badge><?php echo esc_html($invoice_status_label); ?></span>
                 </div>
 
+                <?php if ($has_invoice_deposit): ?>
+                    <p><strong>Deposit included:</strong> Yes (<?php echo '£' . esc_html(number_format($invoice_deposit_total, 2)); ?>)</p>
+                <?php endif; ?>
+
                 <div class="myvh-invoice-view-stats">
                     <div class="myvh-invoice-view-stat">
                         <span>Status</span>
@@ -108,6 +133,8 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                         <p><strong>Current status:</strong> <span data-current-invoice-status><?php echo esc_html($invoice_status_label); ?></span></p>
                         <p><strong>Invoice date:</strong> <?php echo esc_html(date('j M Y', strtotime((string) ($invoice['InvoiceDate'] ?? 'now')))); ?></p>
                         <p><strong>Due date:</strong> <?php echo esc_html(date('j M Y', strtotime((string) ($invoice['DueDate'] ?? 'now')))); ?></p>
+                        <p><strong>Created:</strong> <?php echo esc_html($invoice_created_at); ?></p>
+                        <p><strong>Last updated:</strong> <span data-invoice-updated-at><?php echo esc_html($invoice_updated_at); ?></span></p>
                     </div>
 
                     <div class="myvh-account-card">
@@ -141,6 +168,9 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                         <p><strong>Total:</strong> £<?php echo number_format($invoice_total, 2); ?></p>
                         <p><strong>Paid:</strong> £<?php echo number_format($invoice_paid, 2); ?></p>
                         <p><strong>Due:</strong> £<?php echo number_format($invoice_due, 2); ?></p>
+                        <?php if ($has_invoice_deposit): ?>
+                            <p><strong>Deposit(s):</strong> £<?php echo number_format($invoice_deposit_total, 2); ?></p>
+                        <?php endif; ?>
                         <p><strong>Bookings linked:</strong> <?php echo esc_html((string) $invoice_booking_count); ?></p>
                     </div>
 
@@ -173,6 +203,30 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                                 </form>
                             <?php endif; ?>
                         </div>
+
+                        <?php if ($has_invoice_deposit && $invoice_status === 'paid'): ?>
+                            <div class="myvh-account-card myvh-invoice-view-section">
+                                <div class="myvh-account-card-head">
+                                    <h3>Settle Deposit</h3>
+                                </div>
+                                <p>Mark the deposit as retained or refunded. Refunded creates a negative refund payment entry.</p>
+                                <?php $deposit_settle_message_id = 'myvh-portal-deposit-settle-message-' . \intval($invoice['Id'] ?? 0); ?>
+                                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                    <form class="myvh-inline-form" data-portal-action="myvh_portal_settle_invoice_deposit" data-message-target="<?php echo esc_attr($deposit_settle_message_id); ?>" data-confirm="Mark this deposit as retained?" data-reload-page="invoice-view?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>">
+                                        <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                                        <input type="hidden" name="deposit_outcome" value="retained">
+                                        <button type="submit" class="button">Mark Retained</button>
+                                    </form>
+
+                                    <form class="myvh-inline-form" data-portal-action="myvh_portal_settle_invoice_deposit" data-message-target="<?php echo esc_attr($deposit_settle_message_id); ?>" data-confirm="Mark this deposit as refunded? This will create a negative refund payment entry." data-reload-page="invoice-view?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>">
+                                        <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                                        <input type="hidden" name="deposit_outcome" value="refunded">
+                                        <button type="submit" class="button button-secondary">Mark Refunded</button>
+                                    </form>
+                                </div>
+                                <p class="myvh-muted" id="<?php echo esc_attr($deposit_settle_message_id); ?>"></p>
+                            </div>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
 
@@ -217,7 +271,9 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                                                         <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) \intval($payment['Id'] ?? 0)); ?>">
                                                         <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
                                                         <input type="hidden" name="redirect_route" value="invoice-view?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>">
-                                                        <button type="submit" class="button">Delete</button>
+                                                        <button type="submit" class="myvh-action-icon" aria-label="Delete payment" title="Delete payment" style="background:none; border:none; padding:0; margin:0; cursor:pointer;">
+                                                            <span class="dashicons dashicons-trash" aria-hidden="true"></span>
+                                                        </button>
                                                     </form>
                                                     <p class="myvh-muted" id="<?php echo esc_attr($payment_message_id); ?>"></p>
                                                 </td>
@@ -240,19 +296,19 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                         <?php elseif ($invoice_due <= 0): ?>
                             <p>This invoice has already been fully paid.</p>
                         <?php else: ?>
-                            <form class="myvh-account-form" data-portal-action="myvh_portal_create_payment" data-message-target="myvh-portal-payment-create-message">
+                            <form class="myvh-account-form myvh-invoice-payment-form" data-portal-action="myvh_portal_create_payment" data-message-target="myvh-portal-payment-create-message">
                                 <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
                                 <input type="hidden" name="redirect_route" value="invoice-view?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>">
-                                <div class="myvh-account-grid">
-                                    <div>
+                                <div class="myvh-account-grid myvh-invoice-payment-grid">
+                                    <div class="myvh-account-field">
                                         <label for="myvh-portal-payment-date"><strong>Payment Date</strong></label>
                                         <input id="myvh-portal-payment-date" type="text" name="payment_date" data-myvh-picker="date" autocomplete="off" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
                                     </div>
-                                    <div>
+                                    <div class="myvh-account-field">
                                         <label for="myvh-portal-payment-amount"><strong>Amount</strong></label>
                                         <input id="myvh-portal-payment-amount" type="number" name="payment_amount" min="0.01" step="0.01" required>
                                     </div>
-                                    <div>
+                                    <div class="myvh-account-field">
                                         <label for="myvh-portal-payment-method"><strong>Payment Type</strong></label>
                                         <select id="myvh-portal-payment-method" name="payment_method" required>
                                             <option value="">Select a payment type</option>
@@ -263,17 +319,15 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
                                             <option value="other">Other</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div class="myvh-account-field">
                                         <label for="myvh-portal-payment-reference"><strong>Reference</strong></label>
                                         <input id="myvh-portal-payment-reference" type="text" name="payment_reference">
                                     </div>
+                                    <div class="myvh-account-field myvh-invoice-payment-field--comment">
+                                        <label for="myvh-portal-payment-comment"><strong>Comment</strong></label>
+                                        <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="3"></textarea>
+                                    </div>
                                 </div>
-                                <p>
-                                    <label for="myvh-portal-payment-comment"><strong>Comment</strong></label>
-                                </p>
-                                <p>
-                                    <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="4"></textarea>
-                                </p>
                                 <button type="submit" class="button button-primary myvh-portal-add-button">Save Payment</button>
                                 <p class="myvh-muted" id="myvh-portal-payment-create-message"></p>
                             </form>
@@ -283,50 +337,51 @@ $invoice_billing_name = (string) ($invoice['BillingOrganisationName'] ?: ($invoi
 
                 <div class="myvh-account-card myvh-invoice-view-section">
                     <div class="myvh-account-card-head">
-                        <h3>Bookings invoiced</h3>
-                        <span><?php echo esc_html((string) $invoice_booking_count); ?> booking<?php echo $invoice_booking_count === 1 ? '' : 's'; ?></span>
+                        <h3>Invoice line items</h3>
+                        <span><?php echo esc_html((string) $invoice_item_count); ?> line item<?php echo $invoice_item_count === 1 ? '' : 's'; ?></span>
                     </div>
 
-                    <?php if (empty($invoice_bookings)): ?>
+                    <?php if (empty($invoice_items)): ?>
                         <div class="myvh-invoices-empty-state myvh-invoice-view-empty-state">
-                            <p class="myvh-invoices-empty-state__title">No linked bookings found.</p>
-                            <p>This invoice does not currently have any bookings attached to it.</p>
+                            <p class="myvh-invoices-empty-state__title">No invoice line items found.</p>
+                            <p>This invoice does not currently have any line items attached to it.</p>
                         </div>
                     <?php else: ?>
                         <div class="myvh-invoices-table-wrap">
                             <table class="myvh-customer-list-table myvh-invoices-table">
                                 <thead>
                                     <tr>
-                                        <th>Booking</th>
+                                        <th>Booking ID</th>
+                                        <th>Type</th>
                                         <th>Description</th>
-                                        <th>Date</th>
-                                        <th>Room</th>
-                                        <th>Organisation</th>
+                                        <th class="myvh-invoices-table__amount">Qty</th>
+                                        <th class="myvh-invoices-table__amount">Unit Price</th>
                                         <th class="myvh-invoices-table__amount">Line Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($invoice_bookings as $booking): ?>
+                                    <?php foreach ($invoice_items as $item): ?>
+                                        <?php
+                                            $booking_id = \intval($item['BookingId'] ?? 0);
+                                            $quantity = (float) ($item['Quantity'] ?? 0);
+                                            $unit_price = (float) ($item['UnitPrice'] ?? 0);
+                                            $line_total = (float) ($item['TotalAmount'] ?? 0);
+                                        ?>
                                         <tr>
                                             <td>
-                                                <a href="#booking-view?booking_id=<?php echo \intval($booking['BookingId']); ?>">#<?php echo \intval($booking['BookingId']); ?></a>
-                                            </td>
-                                            <td>
-                                                <strong><?php echo esc_html($booking['Description'] ?? ''); ?></strong>
-                                            </td>
-                                            <td>
-                                                <?php if (!empty($booking['StartDate'])): ?>
-                                                    <?php echo esc_html(date('j M Y', strtotime((string) $booking['StartDate']))); ?>
-                                                    <?php if (!empty($booking['StartTime']) && !empty($booking['EndTime'])): ?>
-                                                        <span class="myvh-invoice-meta"><?php echo esc_html(date('H:i', strtotime((string) $booking['StartTime'])) . ' - ' . date('H:i', strtotime((string) $booking['EndTime']))); ?></span>
-                                                    <?php endif; ?>
+                                                <?php if ($booking_id > 0): ?>
+                                                    <a href="#booking-view?booking_id=<?php echo $booking_id; ?>">#<?php echo $booking_id; ?></a>
                                                 <?php else: ?>
                                                     -
                                                 <?php endif; ?>
                                             </td>
-                                            <td><?php echo esc_html($booking['RoomName'] ?? '-'); ?></td>
-                                            <td><?php echo esc_html($booking['OrganisationName'] ?? '-'); ?></td>
-                                            <td class="myvh-amount">£<?php echo number_format(floatval($booking['TotalAmount'] ?? 0), 2); ?></td>
+                                            <td>
+                                                <?php echo esc_html(ucwords(str_replace('-', ' ', (string) ($item['ItemType'] ?? 'charge')))); ?>
+                                            </td>
+                                            <td><?php echo esc_html((string) ($item['Description'] ?? '-')); ?></td>
+                                            <td class="myvh-amount"><?php echo number_format($quantity, 2); ?></td>
+                                            <td class="myvh-amount">£<?php echo number_format($unit_price, 2); ?></td>
+                                            <td class="myvh-amount">£<?php echo number_format($line_total, 2); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>

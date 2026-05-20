@@ -186,6 +186,170 @@ class InvoiceServiceTest extends UnitTestCase {
     }
 
     /** @test */
+    public function get_status_label_returns_paid_with_deposit_when_invoice_has_deposit_items(): void {
+        $invoice = [
+            'Items' => [
+                ['ItemType' => 'charge', 'TotalAmount' => 100],
+                ['ItemType' => 'deposit', 'TotalAmount' => 25],
+            ],
+        ];
+
+        $label = $this->service->get_status_label('paid', $invoice);
+
+        $this->assertSame('Paid with deposit', $label);
+    }
+
+    /** @test */
+    public function get_deposit_total_returns_zero_when_no_deposit_items_exist(): void {
+        $invoice = [
+            'Items' => [
+                ['ItemType' => 'charge', 'TotalAmount' => 100],
+                ['ItemType' => 'addon', 'TotalAmount' => 15],
+            ],
+        ];
+
+        $total = $this->service->get_deposit_total($invoice);
+
+        $this->assertSame(0.0, $total);
+        $this->assertFalse($this->service->has_deposit_items($invoice));
+    }
+
+    /** @test */
+    public function get_deposit_total_sums_all_deposit_items(): void {
+        $invoice = [
+            'Items' => [
+                ['ItemType' => 'deposit', 'TotalAmount' => '20.00'],
+                ['ItemType' => 'deposit', 'TotalAmount' => '5.50'],
+                ['ItemType' => 'charge', 'TotalAmount' => '100.00'],
+            ],
+        ];
+
+        $total = $this->service->get_deposit_total($invoice);
+
+        $this->assertSame(25.5, $total);
+        $this->assertTrue($this->service->has_deposit_items($invoice));
+    }
+
+    /** @test */
+    public function settle_deposit_as_retained_marks_invoice_paid_and_retypes_items(): void {
+        $this->invoice_repo->shouldReceive('get_detail')
+            ->once()
+            ->with(88)
+            ->andReturn([
+                'Id' => 88,
+                'Status' => 'paid',
+                'TotalAmount' => 120,
+                'SubTotal' => 120,
+                'AmountPaid' => 120,
+                'AmountDue' => 0,
+            ]);
+
+        $this->invoice_repo->shouldReceive('get_items_for_invoice')
+            ->once()
+            ->with(88)
+            ->andReturn([
+                ['ItemType' => 'charge', 'TotalAmount' => 100],
+                ['ItemType' => 'deposit', 'TotalAmount' => 20],
+            ]);
+
+        $this->payment_repo->shouldReceive('get_by_invoice')
+            ->once()
+            ->with(88)
+            ->andReturn([]);
+
+        $this->invoice_item_repo->shouldReceive('update_item_type_for_invoice')
+            ->once()
+            ->with(88, 'deposit', 'deposit-retained')
+            ->andReturn(true);
+
+        $this->payment_repo->shouldNotReceive('create');
+        $this->payment_repo->shouldNotReceive('get_total_by_invoice');
+
+        $this->invoice_repo->shouldReceive('update')
+            ->once()
+            ->with(
+                [
+                    'SubTotal' => 120.0,
+                    'TotalAmount' => 120.0,
+                    'AmountPaid' => 120.0,
+                    'AmountDue' => 0.0,
+                    'Status' => 'paid',
+                ],
+                ['Id' => 88]
+            )
+            ->andReturn(true);
+
+        $result = $this->service->settle_deposit(88, 'retained');
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function settle_deposit_as_refunded_creates_negative_refund_and_recalculates_totals(): void {
+        $this->invoice_repo->shouldReceive('get_detail')
+            ->once()
+            ->with(89)
+            ->andReturn([
+                'Id' => 89,
+                'Status' => 'paid',
+                'TotalAmount' => 120,
+                'SubTotal' => 120,
+                'AmountPaid' => 120,
+                'AmountDue' => 0,
+            ]);
+
+        $this->invoice_repo->shouldReceive('get_items_for_invoice')
+            ->once()
+            ->with(89)
+            ->andReturn([
+                ['ItemType' => 'charge', 'TotalAmount' => 100],
+                ['ItemType' => 'deposit', 'TotalAmount' => 20],
+            ]);
+
+        $this->payment_repo->shouldReceive('get_by_invoice')
+            ->once()
+            ->with(89)
+            ->andReturn([]);
+
+        $this->invoice_item_repo->shouldReceive('update_item_type_for_invoice')
+            ->once()
+            ->with(89, 'deposit', 'deposit-refunded')
+            ->andReturn(true);
+
+        $this->payment_repo->shouldReceive('create')
+            ->once()
+            ->withArgs(static function (array $data): bool {
+                return (int) ($data['InvoiceId'] ?? 0) === 89
+                    && (float) ($data['Amount'] ?? 0) === -20.0
+                    && ($data['PaymentMethod'] ?? '') === 'refund';
+            })
+            ->andReturn(501);
+
+        $this->payment_repo->shouldReceive('get_total_by_invoice')
+            ->once()
+            ->with(89)
+            ->andReturn(100.0);
+
+        $this->invoice_repo->shouldReceive('update')
+            ->once()
+            ->with(
+                [
+                    'SubTotal' => 100.0,
+                    'TotalAmount' => 100.0,
+                    'AmountPaid' => 100.0,
+                    'AmountDue' => 0.0,
+                    'Status' => 'paid',
+                ],
+                ['Id' => 89]
+            )
+            ->andReturn(true);
+
+        $result = $this->service->settle_deposit(89, 'refunded');
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
     public function update_status_rejects_cancelling_invoice_with_payments(): void {
         $this->invoice_repo->shouldReceive('get_by_id')
             ->once()

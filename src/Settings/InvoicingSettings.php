@@ -29,8 +29,14 @@ class InvoicingSettings extends SettingsBase {
                     'type' => 'string',
                     'default' => 'INV-',
                     'sanitize' => 'sanitize_text_field',
-                    'description' =>
-                    'Prefix for invoice numbering.'
+                    'description' => 'Prefix for invoice numbering. This will be prepended to the invoice number (e.g. "INV-0001").'
+                ],
+                'room_charge_description' => [
+                    'label' => 'Room charge description',
+                    'type' => 'string',
+                    'default' => 'Room charge',
+                    'sanitize' => 'sanitize_text_field',
+                    'description' => 'Description for room charges on the invoice.'
                 ],
                 'auto_send' => [
                     'label' => 'Automatically send invoices to customers after generation',

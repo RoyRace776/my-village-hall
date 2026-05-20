@@ -60,6 +60,22 @@ $invoices = array_values(array_filter($invoices, static function (array $invoice
     return true;
 }));
 
+$invoices = array_map(static function (array $invoice) use ($invoice_service): array {
+    $status = (string) ($invoice['Status'] ?? 'draft');
+    $invoice['AdminStatusFilterKey'] = str_replace('-', '_', $status);
+    $invoice['AdminStatusLabel'] = $invoice_service->get_status_label($status);
+
+    if ($status === 'paid' && !empty($invoice['Id'])) {
+        $detail = $invoice_service->get_detail((int) $invoice['Id']);
+        if (is_array($detail) && $invoice_service->has_deposit_items($detail)) {
+            $invoice['AdminStatusFilterKey'] = 'paid_with_deposit';
+            $invoice['AdminStatusLabel'] = $invoice_service->get_status_label('paid', $detail);
+        }
+    }
+
+    return $invoice;
+}, $invoices);
+
 $is_filtered = $client_name !== '' || $invoice_number !== '';
 ?>
 
@@ -146,6 +162,7 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                 </div>
                 <div style="margin-top: 8px;">
                     <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="paid"> <?php esc_html_e('Paid', 'my-village-hall'); ?></label>
+                    <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="paid_with_deposit"> <?php esc_html_e('Paid with deposit', 'my-village-hall'); ?></label>
                     <label style="margin-right:12px;"><input type="checkbox" class="myvh-invoice-status-filter" value="cancelled"> <?php esc_html_e('Cancelled', 'my-village-hall'); ?></label>
                 </div>
             </div>
@@ -176,7 +193,7 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                 <?php else: ?>
                     <?php foreach ($invoices as $invoice): ?>
                         <?php $view_url = admin_url('admin.php?page=myvh-invoices&view=' . \intval($invoice['Id'])); ?>
-                        <tr>
+                        <tr data-status-key="<?php echo esc_attr((string) ($invoice['AdminStatusFilterKey'] ?? str_replace('-', '_', (string) ($invoice['Status'] ?? 'draft')))); ?>">
                             <td>
                                 <strong><a href="<?php echo esc_url($view_url); ?>"><?php echo esc_html($invoice['InvoiceNumber'] ?? ''); ?></a></strong><br>
                                 <small><?php echo esc_html(date('j M Y', strtotime((string) ($invoice['InvoiceDate'] ?? 'now')))); ?></small>
@@ -198,7 +215,7 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                             <td><?php echo esc_html(date('j M Y', strtotime((string) ($invoice['DueDate'] ?? 'now')))); ?></td>
                             <td>
                                 <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice['Status'] ?? 'draft'); ?>">
-                                    <?php echo esc_html(ucfirst($invoice['Status'] ?? 'draft')); ?>
+                                    <?php echo esc_html((string) ($invoice['AdminStatusLabel'] ?? ucfirst((string) ($invoice['Status'] ?? 'draft')))); ?>
                                 </span>
                             </td>
                             <td>
@@ -239,23 +256,8 @@ $is_filtered = $client_name !== '' || $invoice_number !== '';
                         return;
                     }
 
-                    // Get the status from the status cell (7th column)
-                    const statusCell = row.querySelector('td:nth-child(7)');
-                    if (!statusCell) return;
-
-                    const statusText = statusCell.textContent.trim().toLowerCase();
-                    const isVisible = checkedStatuses.some(status => {
-                        // Map display statuses to actual statuses
-                        const statusMap = {
-                            'draft': 'draft',
-                            'sent': 'sent',
-                            'part_paid': 'part paid',
-                            'overdue': 'overdue',
-                            'paid': 'paid',
-                            'cancelled': 'cancelled'
-                        };
-                        return statusText === statusMap[status];
-                    });
+                    const rowStatusKey = (row.getAttribute('data-status-key') || '').toLowerCase();
+                    const isVisible = checkedStatuses.some(status => status === rowStatusKey);
 
                     row.style.display = isVisible ? '' : 'none';
                 });

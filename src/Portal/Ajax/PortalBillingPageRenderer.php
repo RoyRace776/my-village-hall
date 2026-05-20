@@ -6,6 +6,8 @@ use MYVH\Invoices\InvoiceService;
 use MYVH\Payments\PaymentService;
 
 class PortalBillingPageRenderer {
+    private const DEPOSIT_PAID_STATUS = 'paid-with-deposit';
+
     public function __construct(
         private BookingService $booking_service,
         private InvoiceService $invoice_service,
@@ -28,6 +30,7 @@ class PortalBillingPageRenderer {
         $available_statuses = $is_client_admin
             ? $valid_statuses
             : array_values(array_filter($valid_statuses, static fn(string $status): bool => $status !== 'draft'));
+        $available_statuses = $this->append_deposit_paid_status($available_statuses);
         $selected_statuses = array_values(array_intersect($selected_statuses, $available_statuses));
 
         $default_statuses = $available_statuses;
@@ -65,19 +68,30 @@ class PortalBillingPageRenderer {
                 return true;
             }));
 
+            $invoices = $this->append_portal_status_metadata($invoices);
+
             if (!empty($selected_statuses)) {
-                $invoices = array_values(array_filter($invoices, function ($invoice) use ($selected_statuses) {
-                    return in_array($invoice['Status'] ?? '', $selected_statuses, true);
+                $invoices = array_values(array_filter($invoices, function (array $invoice) use ($selected_statuses): bool {
+                    return $this->matches_selected_status($invoice, $selected_statuses);
                 }));
             }
         } elseif ($has_customer) {
             $customer_id = \intval($customer['Id']);
+            $query_statuses = $this->map_to_query_statuses($selected_statuses, $valid_statuses);
             $invoices = $this->invoice_service->get_for_portal(
                 $customer_id,
-                !empty($selected_statuses) ? $selected_statuses : [],
+                $query_statuses,
                 $selected_start_date,
                 $selected_end_date
-            );
+            ) ?: [];
+
+            $invoices = $this->append_portal_status_metadata($invoices);
+
+            if (!empty($selected_statuses)) {
+                $invoices = array_values(array_filter($invoices, function (array $invoice) use ($selected_statuses): bool {
+                    return $this->matches_selected_status($invoice, $selected_statuses);
+                }));
+            }
         }
 
         $quick_date_ranges = $this->get_quick_date_ranges();
@@ -105,6 +119,7 @@ class PortalBillingPageRenderer {
         $invoice_id = \intval($_GET['invoice_id'] ?? 0);
         $invoice = null;
         $invoice_items = [];
+        $invoice_service = $this->invoice_service;
         $available_statuses = $this->invoice_service->get_valid_statuses();
 
         if ($invoice_id > 0) {
@@ -277,5 +292,54 @@ class PortalBillingPageRenderer {
         }
 
         return strpos($value, $term) !== false;
+    }
+
+    private function append_deposit_paid_status(array $statuses): array {
+        if (!in_array('paid', $statuses, true)) {
+            return $statuses;
+        }
+
+        if (!in_array(self::DEPOSIT_PAID_STATUS, $statuses, true)) {
+            $statuses[] = self::DEPOSIT_PAID_STATUS;
+        }
+
+        return $statuses;
+    }
+
+    private function map_to_query_statuses(array $selected_statuses, array $valid_statuses): array {
+        $query_statuses = array_values(array_intersect($selected_statuses, $valid_statuses));
+
+        if (in_array(self::DEPOSIT_PAID_STATUS, $selected_statuses, true) && !in_array('paid', $query_statuses, true)) {
+            $query_statuses[] = 'paid';
+        }
+
+        return $query_statuses;
+    }
+
+    private function append_portal_status_metadata(array $invoices): array {
+        $enriched = [];
+
+        foreach ($invoices as $invoice) {
+            $status = (string) ($invoice['Status'] ?? '');
+            $invoice['PortalStatus'] = $status;
+
+            if ($status === 'paid' && !empty($invoice['Id'])) {
+                $detail = $this->invoice_service->get_detail((int) $invoice['Id']);
+                if (is_array($detail) && $this->invoice_service->has_deposit_items($detail)) {
+                    $invoice['PortalStatus'] = self::DEPOSIT_PAID_STATUS;
+                    $invoice['StatusLabel'] = $this->invoice_service->get_status_label($status, $detail);
+                }
+            }
+
+            $enriched[] = $invoice;
+        }
+
+        return $enriched;
+    }
+
+    private function matches_selected_status(array $invoice, array $selected_statuses): bool {
+        $portal_status = (string) ($invoice['PortalStatus'] ?? ($invoice['Status'] ?? ''));
+
+        return in_array($portal_status, $selected_statuses, true);
     }
 }

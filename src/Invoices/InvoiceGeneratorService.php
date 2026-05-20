@@ -299,6 +299,8 @@ class InvoiceGeneratorService {
             return new WP_Error('empty_group', __('Cannot create invoice from empty booking group', 'my-village-hall'));
         }
 
+        $room_charge_description = $this->get_room_charge_description();
+
         // Use customer from first booking in group
         $first_booking = reset($bookings);
         $customer_id = \intval($first_booking['CustomerId']);
@@ -322,7 +324,7 @@ class InvoiceGeneratorService {
 
                 $invoice_items[] = [
                     'BookingId' => $booking_id,
-                    'Description' => $charge['Description'] ?? 'Room charge',
+                    'Description' => $room_charge_description,
                     'Quantity' => $charge['Quantity'] ?? 1,
                     'UnitPrice' => $charge['UnitPrice'] ?? 0,
                     'TaxRate' => $charge['TaxRate'] ?? 0,
@@ -437,6 +439,16 @@ class InvoiceGeneratorService {
         do_action('myvh_invoice_generated', $invoice_id, $bookings, $options);
 
         return $invoice_id;
+    }
+
+    private function get_room_charge_description(): string {
+        $settings = get_option('myvh_invoicing_settings', []);
+        if (!is_array($settings)) {
+            return __('Room charge', 'my-village-hall');
+        }
+
+        $description = trim((string) ($settings['room_charge_description'] ?? ''));
+        return $description !== '' ? $description : __('Room charge', 'my-village-hall');
     }
 
     /**

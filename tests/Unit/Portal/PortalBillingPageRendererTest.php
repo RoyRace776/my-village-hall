@@ -146,6 +146,85 @@ class PortalBillingPageRendererTest extends UnitTestCase {
     }
 
     /** @test */
+    public function render_invoices_supports_paid_with_deposit_status_filter(): void {
+        $_GET = [
+            'start_date' => '2026-03-01',
+            'end_date' => '2026-05-01',
+            'statuses' => 'paid-with-deposit',
+        ];
+
+        $this->invoice_service->shouldReceive('get_valid_statuses')
+            ->once()
+            ->andReturnUsing(static fn() => ['draft', 'sent', 'part-paid', 'paid', 'overdue', 'cancelled']);
+
+        $this->invoice_service->shouldReceive('get_for_portal')
+            ->once()
+            ->with(55, ['paid'], '2026-03-01', '2026-05-01')
+            ->andReturn([
+                [
+                    'Id' => 201,
+                    'InvoiceNumber' => 'INV-DEP-201',
+                    'InvoiceDate' => '2026-04-10',
+                    'DueDate' => '2026-04-20',
+                    'Status' => 'paid',
+                    'TotalAmount' => 125,
+                    'AmountPaid' => 125,
+                    'OrganisationName' => 'Community Group',
+                    'BillingName' => 'Alex Booker',
+                ],
+                [
+                    'Id' => 202,
+                    'InvoiceNumber' => 'INV-PAID-202',
+                    'InvoiceDate' => '2026-04-11',
+                    'DueDate' => '2026-04-21',
+                    'Status' => 'paid',
+                    'TotalAmount' => 100,
+                    'AmountPaid' => 100,
+                    'OrganisationName' => 'Community Group',
+                    'BillingName' => 'Taylor Smith',
+                ],
+            ]);
+
+        $this->invoice_service->shouldReceive('get_detail')
+            ->once()
+            ->with(201)
+            ->andReturn([
+                'Id' => 201,
+                'Items' => [
+                    ['ItemType' => 'deposit', 'TotalAmount' => 25],
+                ],
+            ]);
+
+        $this->invoice_service->shouldReceive('get_detail')
+            ->once()
+            ->with(202)
+            ->andReturn([
+                'Id' => 202,
+                'Items' => [
+                    ['ItemType' => 'charge', 'TotalAmount' => 100],
+                ],
+            ]);
+
+        $this->invoice_service->shouldReceive('has_deposit_items')
+            ->twice()
+            ->andReturnUsing(static fn(array $invoice) => (int) ($invoice['Id'] ?? 0) === 201);
+
+        $this->invoice_service->shouldReceive('get_status_label')
+            ->once()
+            ->andReturn('Paid with deposit');
+
+        $this->invoice_service->shouldNotReceive('get_with_customers');
+
+        ob_start();
+        $this->renderer->render_invoices(['Id' => 55], false, true);
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('INV-DEP-201', $html);
+        $this->assertStringNotContainsString('INV-PAID-202', $html);
+        $this->assertStringContainsString('Paid with deposit', $html);
+    }
+
+    /** @test */
     public function render_invoices_defaults_client_portal_without_draft_status(): void {
         $_GET = [];
 

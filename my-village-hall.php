@@ -379,6 +379,7 @@ class MyVillageHall {
         $this->on_admin_post( 'myvh_email_invoice',         InvoiceController::class, 'email_invoice' );
         $this->on_admin_post( 'myvh_delete_invoice',        InvoiceController::class, 'delete' );
         $this->on_admin_post( 'myvh_update_invoice_status', InvoiceController::class, 'update_status' );
+        $this->on_admin_post( 'myvh_settle_invoice_deposit', InvoiceController::class, 'settle_deposit' );
         $this->on_admin_post( 'myvh_save_single_booking_auto_invoice_rules', SingleBookingAutoInvoiceRuleController::class, 'save' );
         $this->on_admin_post( 'myvh_save_recurring_booking_auto_invoice_rules', RecurringBookingAutoInvoiceRuleController::class, 'save' );
         $this->on_admin_post( 'myvh_record_payment',        PaymentController::class, 'create' );

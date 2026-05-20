@@ -70,6 +70,10 @@ class AdminInvoicesPageTest extends UnitTestCase {
                 ],
             ]);
 
+        $invoice_service->shouldReceive('get_status_label')
+            ->once()
+            ->andReturnUsing(static fn(string $status) => ucwords(str_replace('-', ' ', $status)));
+
         $myvh_container = new class($invoice_service) {
             public function __construct(private $invoice_service) {}
             public function get(string $class) {
@@ -95,5 +99,6 @@ class AdminInvoicesPageTest extends UnitTestCase {
         $this->assertStringContainsString('INV-000123', $html);
         $this->assertStringNotContainsString('INV-000987', $html);
         $this->assertStringContainsString('Showing invoices matching the selected filters.', $html);
+        $this->assertStringContainsString('value="paid_with_deposit"', $html);
     }
 }

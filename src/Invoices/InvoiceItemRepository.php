@@ -108,4 +108,27 @@ class InvoiceItemRepository extends RepositoryBase{
         return is_array($rows) ? $rows : [];
     }
 
+    /**
+     * Update all invoice item rows of a given type for a specific invoice.
+     *
+     * @param int $invoice_id
+     * @param string $from_type
+     * @param string $to_type
+     * @return bool
+     */
+    public function update_item_type_for_invoice(int $invoice_id, string $from_type, string $to_type): bool {
+        $result = $this->wpdb->update(
+            $this->table_name,
+            ['ItemType' => $to_type],
+            [
+                'InvoiceId' => $invoice_id,
+                'ItemType' => $from_type,
+            ],
+            ['%s'],
+            ['%d', '%s']
+        );
+
+        return $result !== false;
+    }
+
 }

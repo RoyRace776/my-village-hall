@@ -21,6 +21,11 @@ $invoice_payments = $invoice['Payments'] ?? [];
 $valid_statuses = $invoice_service->get_valid_statuses();
 $payment_methods = $payment_service->get_valid_methods();
 $has_payments = !empty($invoice_payments);
+$has_invoice_deposit = !empty($invoice) && $invoice_service->has_deposit_items($invoice);
+$invoice_deposit_total = !empty($invoice) ? $invoice_service->get_deposit_total($invoice) : 0.0;
+$invoice_status_label = !empty($invoice)
+    ? $invoice_service->get_status_label((string) ($invoice['Status'] ?? 'draft'), $invoice)
+    : $invoice_service->get_status_label('draft');
 ?>
 
 <div class="wrap">
@@ -58,10 +63,16 @@ $has_payments = !empty($invoice_payments);
                             <th><?php esc_html_e('Status', 'my-village-hall'); ?></th>
                             <td>
                                 <span class="myvh-status-badge myvh-status-<?php echo esc_attr($invoice['Status'] ?? 'draft'); ?>">
-                                    <?php echo esc_html($invoice_service->get_status_label((string) ($invoice['Status'] ?? 'draft'))); ?>
+                                    <?php echo esc_html($invoice_status_label); ?>
                                 </span>
                             </td>
                         </tr>
+                        <?php if ($has_invoice_deposit): ?>
+                            <tr>
+                                <th><?php esc_html_e('Deposit Included', 'my-village-hall'); ?></th>
+                                <td><?php echo esc_html(sprintf(__('Yes (%s)', 'my-village-hall'), '£' . number_format($invoice_deposit_total, 2))); ?></td>
+                            </tr>
+                        <?php endif; ?>
                         <tr>
                             <th><?php esc_html_e('Customer', 'my-village-hall'); ?></th>
                             <td>
@@ -108,6 +119,10 @@ $has_payments = !empty($invoice_payments);
                                     number_format((float) ($invoice['AmountPaid'] ?? 0), 2),
                                     number_format((float) ($invoice['AmountDue'] ?? 0), 2)
                                 ); ?>
+                                <?php if ($has_invoice_deposit): ?>
+                                    <br>
+                                    <?php echo esc_html(sprintf(__('Deposit(s) %s', 'my-village-hall'), number_format($invoice_deposit_total, 2))); ?>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <?php if (!empty($invoice['Notes'])): ?>
@@ -242,6 +257,37 @@ $has_payments = !empty($invoice_payments);
                         </form>
                     <?php endif; ?>
                 </div>
+
+                <?php if ($has_invoice_deposit && (string) ($invoice['Status'] ?? '') === 'paid'): ?>
+                    <div class="myvh-card">
+                        <h2><?php esc_html_e('Settle Deposit', 'my-village-hall'); ?></h2>
+                        <p><?php esc_html_e('Mark the deposit as retained or refunded. Refunded will create a negative payment entry.', 'my-village-hall'); ?></p>
+
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block; margin-right:8px;">
+                            <input type="hidden" name="action" value="myvh_settle_invoice_deposit">
+                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                            <input type="hidden" name="deposit_outcome" value="retained">
+                            <input type="hidden" name="redirect_page" value="myvh-invoices">
+                            <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                            <?php wp_nonce_field('myvh_settle_invoice_deposit'); ?>
+                            <button type="submit" class="button" onclick="return confirm('<?php echo esc_js(__('Mark this deposit as retained?', 'my-village-hall')); ?>');">
+                                <?php esc_html_e('Mark Retained', 'my-village-hall'); ?>
+                            </button>
+                        </form>
+
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block;">
+                            <input type="hidden" name="action" value="myvh_settle_invoice_deposit">
+                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                            <input type="hidden" name="deposit_outcome" value="refunded">
+                            <input type="hidden" name="redirect_page" value="myvh-invoices">
+                            <input type="hidden" name="redirect_view" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                            <?php wp_nonce_field('myvh_settle_invoice_deposit'); ?>
+                            <button type="submit" class="button button-secondary" onclick="return confirm('<?php echo esc_js(__('Mark this deposit as refunded? This will create a negative refund payment entry.', 'my-village-hall')); ?>');">
+                                <?php esc_html_e('Mark Refunded', 'my-village-hall'); ?>
+                            </button>
+                        </form>
+                    </div>
+                <?php endif; ?>
 
                 <div class="myvh-card">
                     <h2><?php esc_html_e('Add Payment', 'my-village-hall'); ?></h2>
