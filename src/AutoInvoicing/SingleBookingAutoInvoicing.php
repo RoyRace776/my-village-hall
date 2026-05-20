@@ -5,6 +5,8 @@ namespace MYVH\AutoInvoicing;
 use MYVH\Invoices\InvoiceGeneratorService;
 use MYVH\Bookings\BookingService;
 use DateTime;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 /**
  * Single Booking Auto-Invoicing
  *
@@ -16,15 +18,18 @@ class SingleBookingAutoInvoicing {
     protected BookingService $booking_service;
     protected SingleBookingAutoInvoiceRuleRepository $rule_repository;
     protected RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository;
+    protected LoggerInterface $logger;
 
     public function __construct(InvoiceGeneratorService $invoice_generator_service,
                                 BookingService $booking_service,
                                 SingleBookingAutoInvoiceRuleRepository $rule_repository,
-                                RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository) {
+                                RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository,
+                                ?LoggerInterface $logger = null) {
         $this->invoice_generator_service = $invoice_generator_service;
         $this->booking_service = $booking_service;
         $this->rule_repository = $rule_repository;
         $this->recurring_rule_repository = $recurring_rule_repository;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**

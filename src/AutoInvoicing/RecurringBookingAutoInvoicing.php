@@ -5,6 +5,8 @@ namespace MYVH\AutoInvoicing;
 use DateTime;
 use MYVH\Bookings\BookingService;
 use MYVH\Invoices\InvoiceGeneratorService;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Recurring Booking Auto-Invoicing
@@ -16,13 +18,16 @@ class RecurringBookingAutoInvoicing {
     protected InvoiceGeneratorService $invoice_generator_service;
     protected BookingService $booking_service;
     protected RecurringBookingAutoInvoiceRuleRepository $rule_repository;
+    protected LoggerInterface $logger;
 
     public function __construct(InvoiceGeneratorService $invoice_generator_service,
                                 BookingService $booking_service,
-                                RecurringBookingAutoInvoiceRuleRepository $rule_repository) {
+                                RecurringBookingAutoInvoiceRuleRepository $rule_repository,
+                                ?LoggerInterface $logger = null) {
         $this->invoice_generator_service = $invoice_generator_service;
         $this->booking_service = $booking_service;
         $this->rule_repository = $rule_repository;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -37,90 +42,152 @@ class RecurringBookingAutoInvoicing {
     /**
      * Process recurring bookings and return a structured result for orchestration.
      *
-     * Uses period-based invoicing by selecting bookings in the rule's period range
-     * for each recurring pattern.
+     * Groups bookings by organisation/customer, resolves rules per group, and applies
+     * period-based invoicing by filtering bookings within the calculated period range
+     * and creating invoices per recurring pattern.
      *
      * @return array{created_invoice_ids: array<int>, treat_as_single_bookings: array<int, array>}
      */
     public function process_with_result(): array {
+        $this->logger->info('Starting recurring booking auto-invoicing process.');
         $bookings = $this->get_confirmed_bookings_for_invoicing();
+        $this->logger->info(sprintf('Found %d confirmed recurring bookings eligible for invoicing.', count($bookings)));
+        $this->logger->debug(sprintf('Recurring auto-invoicing fetched %d confirmed bookings from booking service.', count($bookings)));
         if (empty($bookings)) {
+            $this->logger->debug('Recurring auto-invoicing exiting early because there are no confirmed recurring bookings to process.');
             return $this->empty_process_result();
         }
 
         $active_rules = $this->get_active_rules_by_id();
         $default_rule_id = \intval(myvh_setting('invoicing.recurring_default_rule_id', 0));
+        $this->logger->debug(sprintf(
+            'Loaded %d active recurring auto-invoice rules. Default rule id from settings: %d.',
+            count($active_rules),
+            $default_rule_id
+        ));
 
-        $patterns_to_bookings = $this->group_bookings_by_pattern($bookings);
+        $bookings_by_group = $this->group_bookings_by_organisation_customer($bookings);
+        $this->logger->debug(sprintf(
+            'Grouped confirmed recurring bookings into %d billing targets (%s).',
+            count($bookings_by_group),
+            implode(', ', array_keys($bookings_by_group))
+        ));
         $result = $this->empty_process_result();
-        $bookings_by_rule = [];
 
-        foreach ($patterns_to_bookings as $pattern_id => $pattern_bookings) {
-            if (\intval($pattern_id) <= 0 || empty($pattern_bookings)) {
+        foreach ($bookings_by_group as $group_key => $group_bookings) {
+            if (empty($group_bookings)) {
                 continue;
             }
 
-            $sample_booking = reset($pattern_bookings);
-            if (!\is_array($sample_booking) || empty($sample_booking)) {
+            $sample_booking = reset($group_bookings);
+            if (!\is_array($sample_booking)) {
+                $this->logger->debug(sprintf('Skipping group %s because the sample booking could not be resolved as an array.', $group_key));
                 continue;
             }
 
+            // Resolve rule per organisation/customer group
             $rule = $this->resolve_rule_for_booking($sample_booking, $active_rules, $default_rule_id);
+            $this->logger->debug(sprintf(
+                'Resolved recurring rule %d for group %s (trigger_timing=%s, enabled=%s).',
+                \intval($rule['id'] ?? 0),
+                $group_key,
+                (string) ($rule['trigger_timing'] ?? ''),
+                !empty($rule['enabled']) ? 'true' : 'false'
+            ));
 
+            // Classify bookings based on rule's trigger timing
             if (($rule['trigger_timing'] ?? '') === 'treat_as_single_bookings') {
+                $this->logger->info(sprintf('Group %s will be treated as single bookings.', $group_key));
+                $this->logger->debug(sprintf(
+                    'Group %s moved %d bookings to treat_as_single_bookings bucket.',
+                    $group_key,
+                    count($group_bookings)
+                ));
                 $result['treat_as_single_bookings'] = array_merge(
                     $result['treat_as_single_bookings'],
-                    $pattern_bookings
+                    $group_bookings
                 );
                 continue;
             }
 
             if (empty($rule['enabled']) || ($rule['trigger_timing'] ?? '') === 'manual_invoicing') {
+                $this->logger->info(sprintf('Group %s uses manual invoicing; skipping.', $group_key));
+                $this->logger->debug(sprintf(
+                    'Skipping group %s due to rule state (enabled=%s, trigger_timing=%s).',
+                    $group_key,
+                    !empty($rule['enabled']) ? 'true' : 'false',
+                    (string) ($rule['trigger_timing'] ?? '')
+                ));
                 continue;
             }
 
+            // Handle period-based invoicing
             $period = $this->calculate_invoicing_period_range($rule);
-            $period_bookings = $this->booking_service->get_bookings_by_recurring_pattern_in_period(
-                \intval($pattern_id),
+            $this->logger->info(sprintf(
+                'Processing group %s for period-based invoicing with range %s to %s.',
+                $group_key,
                 $period['start_date'],
                 $period['end_date']
-            );
+            ));
 
+            // Filter group bookings by period (no DB re-query)
+            $period_bookings = $this->filter_bookings_by_period($group_bookings, $period['start_date'], $period['end_date']);
+            $this->logger->debug(sprintf(
+                'Group %s has %d/%d bookings in period %s to %s.',
+                $group_key,
+                count($period_bookings),
+                count($group_bookings),
+                $period['start_date'],
+                $period['end_date']
+            ));
             if (empty($period_bookings)) {
+                $this->logger->info(sprintf('No bookings in period for group %s.', $group_key));
                 continue;
             }
 
-            $rule_bucket_key = $this->build_rule_bucket_key($rule);
-            if (!isset($bookings_by_rule[$rule_bucket_key])) {
-                $bookings_by_rule[$rule_bucket_key] = [
-                    'rule' => $rule,
-                    'bookings' => [],
-                ];
-            }
+            // Group filtered bookings by recurring pattern and create invoices per pattern
+            $patterns_to_bookings = $this->group_bookings_by_pattern($period_bookings);
+            $this->logger->debug(sprintf('Group %s produced %d recurring pattern buckets for invoicing.', $group_key, count($patterns_to_bookings)));
+            foreach ($patterns_to_bookings as $pattern_id => $pattern_bookings) {
+                if (\intval($pattern_id) <= 0 || empty($pattern_bookings)) {
+                    $this->logger->debug(sprintf('Skipping invalid/empty pattern bucket in group %s (pattern_id=%s, booking_count=%d).', $group_key, (string) $pattern_id, count($pattern_bookings)));
+                    continue;
+                }
 
-            $bookings_by_rule[$rule_bucket_key]['bookings'] = array_merge(
-                $bookings_by_rule[$rule_bucket_key]['bookings'],
-                $period_bookings
-            );
+                $this->logger->info(sprintf(
+                    'Creating invoice for group %s, recurring pattern %d with %d bookings.',
+                    $group_key,
+                    $pattern_id,
+                    count($pattern_bookings)
+                ));
+
+                $created_invoice_ids = $this->create_recurring_invoices_for_rule($pattern_bookings, $rule);
+                $this->logger->debug(sprintf(
+                    'Pattern %d in group %s created %d invoices (%s).',
+                    $pattern_id,
+                    $group_key,
+                    count($created_invoice_ids),
+                    empty($created_invoice_ids) ? 'none' : implode(', ', array_map('strval', $created_invoice_ids))
+                ));
+                $result['created_invoice_ids'] = array_merge(
+                    $result['created_invoice_ids'],
+                    $created_invoice_ids
+                );
+            }
         }
 
-        foreach ($bookings_by_rule as $batch) {
-            $rule = $batch['rule'] ?? [];
-            $batch_bookings = $this->deduplicate_bookings_by_id($batch['bookings'] ?? []);
-            if (empty($batch_bookings) || !\is_array($rule)) {
-                continue;
-            }
-
-            $result['created_invoice_ids'] = array_merge(
-                $result['created_invoice_ids'],
-                $this->create_recurring_invoices_for_rule($batch_bookings, $rule)
-            );
-        }
-
-        return [
+        $final_result = [
             'created_invoice_ids' => array_values(array_unique(array_map('intval', $result['created_invoice_ids']))),
             'treat_as_single_bookings' => $this->deduplicate_bookings_by_id($result['treat_as_single_bookings']),
         ];
+
+        $this->logger->debug(sprintf(
+            'Recurring auto-invoicing finished with %d created invoices and %d bookings marked as treat_as_single_bookings.',
+            count($final_result['created_invoice_ids']),
+            count($final_result['treat_as_single_bookings'])
+        ));
+
+        return $final_result;
     }
 
     /**
@@ -133,6 +200,13 @@ class RecurringBookingAutoInvoicing {
         $timing = (string) ($rule['trigger_timing'] ?? 'start_of_month');
         $direction = (string) ($rule['trigger_direction'] ?? 'in_advance');
         $period_count = max(0, \intval($rule['trigger_period_count'] ?? $rule['trigger_offset_days'] ?? 0));
+        $this->logger->debug(sprintf(
+            'Calculating recurring invoicing period range (rule_id=%d, timing=%s, direction=%s, period_count=%d).',
+            \intval($rule['id'] ?? 0),
+            $timing,
+            $direction,
+            $period_count
+        ));
 
         $now = new DateTime();
         $period_start = null;
@@ -153,6 +227,7 @@ class RecurringBookingAutoInvoicing {
         }
 
         if (!$period_start instanceof DateTime || $period_unit === '') {
+            $this->logger->debug(sprintf('Unable to calculate recurring period boundary for timing=%s. Falling back to current day.', $timing));
             return [
                 'start_date' => $now->format('Y-m-d'),
                 'end_date' => $now->format('Y-m-d'),
@@ -188,10 +263,18 @@ class RecurringBookingAutoInvoicing {
             $period_end = clone $period_start;
         }
 
-        return [
+        $period = [
             'start_date' => $period_start->format('Y-m-d'),
             'end_date' => $period_end->format('Y-m-d'),
         ];
+
+        $this->logger->debug(sprintf(
+            'Calculated recurring invoicing period range: %s to %s.',
+            $period['start_date'],
+            $period['end_date']
+        ));
+
+        return $period;
     }
 
     /**
@@ -265,21 +348,17 @@ class RecurringBookingAutoInvoicing {
     protected function get_confirmed_bookings_for_invoicing(): array {
         $bookings = $this->get_bookings_for_invoicing();
 
-        return array_values(array_filter($bookings, function (array $booking): bool {
+        $confirmed_bookings = array_values(array_filter($bookings, function (array $booking): bool {
             return ($booking['Status'] ?? '') === 'confirmed';
         }));
-    }
 
-    protected function apply_recurring_rule_for_organisation_bookings(array $bookings, array $active_rules, int $default_rule_id): array {
-        return $this->empty_process_result();
-    }
+        $this->logger->debug(sprintf(
+            'Booking filter for recurring auto-invoicing retained %d confirmed bookings from %d uninvoiced recurring bookings.',
+            count($confirmed_bookings),
+            count($bookings)
+        ));
 
-    protected function apply_recurring_rule_for_customer_bookings(array $bookings, array $active_rules, int $default_rule_id): array {
-        return $this->empty_process_result();
-    }
-
-    protected function apply_recurring_default_rule(array $bookings, array $active_rules, int $default_rule_id): array {
-        return $this->empty_process_result();
+        return $confirmed_bookings;
     }
 
     /**
@@ -288,15 +367,28 @@ class RecurringBookingAutoInvoicing {
      * @return array<int>
      */
     protected function create_recurring_invoices_for_rule(array $bookings, array $rule): array {
+        $this->logger->debug(sprintf(
+            'Starting invoice generation for recurring rule %d with %d candidate bookings.',
+            \intval($rule['id'] ?? 0),
+            count($bookings)
+        ));
         $actual_bookings = [];
         foreach ($bookings as $booking) {
             if ($this->booking_service->booking_has_invoices(intval($booking['Id'] ?? 0))) {
+                $this->logger->debug(sprintf('Skipping booking %d because it already has invoices.', \intval($booking['Id'] ?? 0)));
                 continue;
             }
             $actual_bookings[] = $booking;
         }
 
+        $this->logger->debug(sprintf(
+            'Recurring rule %d has %d bookings remaining after removing already-invoiced items.',
+            \intval($rule['id'] ?? 0),
+            count($actual_bookings)
+        ));
+
         if (empty($actual_bookings)) {
+            $this->logger->debug(sprintf('No bookings left for recurring rule %d after de-duplication checks.', \intval($rule['id'] ?? 0)));
             return [];
         }
 
@@ -306,8 +398,16 @@ class RecurringBookingAutoInvoicing {
         foreach ($bookings_by_group as $group_by => $group_bookings) {
             $booking_ids = array_values(array_filter(array_map(static fn(array $booking): int => \intval($booking['Id'] ?? 0), $group_bookings)));
             if (empty($booking_ids)) {
+                $this->logger->debug(sprintf('Skipping billing target %s because it has no valid booking IDs.', $group_by));
                 continue;
             }
+
+            $this->logger->debug(sprintf(
+                'Generating recurring invoices using billing target %s for %d bookings (%s).',
+                $group_by,
+                count($booking_ids),
+                implode(', ', array_map('strval', $booking_ids))
+            ));
 
             $generated = $this->invoice_generator_service->generate_invoices_from_bookings(
                 $booking_ids,
@@ -320,13 +420,34 @@ class RecurringBookingAutoInvoicing {
             );
 
             if ($generated instanceof \WP_Error) {
+                $this->logger->debug(sprintf(
+                    'Invoice generation returned WP_Error for recurring rule %d on billing target %s: %s',
+                    \intval($rule['id'] ?? 0),
+                    $group_by,
+                    $generated->get_error_message()
+                ));
                 continue;
             }
+
+            $this->logger->debug(sprintf(
+                'Invoice generator created %d invoices for billing target %s (%s).',
+                count($generated),
+                $group_by,
+                empty($generated) ? 'none' : implode(', ', array_map('strval', $generated))
+            ));
 
             $invoice_ids = array_merge($invoice_ids, $generated);
         }
 
-        return array_values(array_unique(array_map('intval', $invoice_ids)));
+        $unique_invoice_ids = array_values(array_unique(array_map('intval', $invoice_ids)));
+        $this->logger->debug(sprintf(
+            'Finished recurring invoice generation for rule %d with %d unique invoice IDs (%s).',
+            \intval($rule['id'] ?? 0),
+            count($unique_invoice_ids),
+            empty($unique_invoice_ids) ? 'none' : implode(', ', array_map('strval', $unique_invoice_ids))
+        ));
+
+        return $unique_invoice_ids;
     }
 
     /**
@@ -450,10 +571,12 @@ class RecurringBookingAutoInvoicing {
      */
     protected function group_bookings_by_pattern(array $bookings): array {
         $grouped = [];
+        $skipped_without_pattern = 0;
 
         foreach ($bookings as $booking) {
             $pattern_id = \intval($booking['RecurringPatternId'] ?? 0);
             if ($pattern_id <= 0) {
+                $skipped_without_pattern++;
                 continue;
             }
 
@@ -464,19 +587,105 @@ class RecurringBookingAutoInvoicing {
             $grouped[$pattern_id][] = $booking;
         }
 
+        $this->logger->debug(sprintf(
+            'Grouped %d bookings into %d recurring patterns; skipped %d bookings with invalid pattern id.',
+            count($bookings),
+            count($grouped),
+            $skipped_without_pattern
+        ));
+
         return $grouped;
+    }
+
+    /**
+     * Group bookings by organisation/customer billing target.
+     *
+     * @param array<int, array<string, mixed>> $bookings
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    protected function group_bookings_by_organisation_customer(array $bookings): array {
+        $grouped = [
+            'by_organisation' => [],
+            'by_customer' => [],
+        ];
+
+        foreach ($bookings as $booking) {
+            $organisation_id = \intval($booking['OrganisationId'] ?? 0);
+            $organisation_billing_enabled = !empty($booking['OrganisationInvoiceOrganisationBookings']);
+
+            if ($organisation_id > 0 && $organisation_billing_enabled) {
+                $grouped['by_organisation'][] = $booking;
+                continue;
+            }
+
+            $grouped['by_customer'][] = $booking;
+        }
+
+        // Return only non-empty groups
+        $filtered_groups = array_filter($grouped, static fn(array $items): bool => !empty($items));
+        $this->logger->debug(sprintf(
+            'Booking grouping produced %d organisation bookings and %d customer bookings from %d total bookings.',
+            count($grouped['by_organisation']),
+            count($grouped['by_customer']),
+            count($bookings)
+        ));
+
+        return $filtered_groups;
+    }
+
+    /**
+     * Filter bookings to only those within the specified period range.
+     *
+     * Filters based on booking start date, comparing against the period start and end dates.
+     *
+     * @param array<int, array<string, mixed>> $bookings
+     * @param string $start_date Date in Y-m-d format
+     * @param string $end_date Date in Y-m-d format
+     * @return array<int, array<string, mixed>>
+     */
+    protected function filter_bookings_by_period(array $bookings, string $start_date, string $end_date): array {
+        $filtered = [];
+        $skipped_without_start_date = 0;
+
+        foreach ($bookings as $booking) {
+            $booking_date = (string) ($booking['StartDate'] ?? '');
+            if (empty($booking_date)) {
+                $skipped_without_start_date++;
+                continue;
+            }
+
+            // Compare dates as strings (Y-m-d format)
+            if ($booking_date >= $start_date && $booking_date <= $end_date) {
+                $filtered[] = $booking;
+            }
+        }
+
+        $this->logger->debug(sprintf(
+            'Period filter %s to %s kept %d/%d bookings; skipped %d without start date.',
+            $start_date,
+            $end_date,
+            count($filtered),
+            count($bookings),
+            $skipped_without_start_date
+        ));
+
+        return $filtered;
     }
 
     protected function resolve_default_rule(array $active_rules, int $default_rule_id): array {
         if ($default_rule_id > 0 && isset($active_rules[$default_rule_id])) {
+            $this->logger->debug(sprintf('Using configured default recurring rule id %d.', $default_rule_id));
             return $active_rules[$default_rule_id];
         }
 
         if (!empty($active_rules)) {
-            return reset($active_rules);
+            $fallback_rule = reset($active_rules);
+            $this->logger->debug(sprintf('Configured default recurring rule unavailable. Falling back to first active rule id %d.', \intval($fallback_rule['id'] ?? 0)));
+
+            return $fallback_rule;
         }
 
-        return [
+        $settings_fallback_rule = [
             'id' => 0,
             'enabled' => (bool) myvh_setting('invoicing.recurring_enabled', false),
             'trigger_timing' => $this->normalize_key(myvh_setting('invoicing.recurring_trigger_timing', 'start_of_month')),
@@ -486,6 +695,15 @@ class RecurringBookingAutoInvoicing {
             'group_by' => $this->normalize_key(myvh_setting('invoicing.recurring_group_by', 'per_booking')),
             'due_date_offset_days' => max(0, \intval(myvh_setting('invoicing.recurring_due_date_offset_days', 30))),
         ];
+
+        $this->logger->debug(sprintf(
+            'No active recurring rules found. Using settings-based fallback rule (enabled=%s, trigger_timing=%s, trigger_direction=%s).',
+            !empty($settings_fallback_rule['enabled']) ? 'true' : 'false',
+            (string) $settings_fallback_rule['trigger_timing'],
+            (string) $settings_fallback_rule['trigger_direction']
+        ));
+
+        return $settings_fallback_rule;
     }
 
     protected function get_active_rules_by_id(): array {
@@ -493,6 +711,8 @@ class RecurringBookingAutoInvoicing {
         foreach ($this->rule_repository->get_active_rules() as $rule) {
             $active_rules[intval($rule['Id'])] = $this->map_rule_record($rule);
         }
+
+        $this->logger->debug(sprintf('Mapped %d active recurring auto-invoice rules by id.', count($active_rules)));
 
         return $active_rules;
     }

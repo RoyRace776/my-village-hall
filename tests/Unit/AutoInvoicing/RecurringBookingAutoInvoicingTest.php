@@ -56,16 +56,9 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
         ]);
 
         $this->booking_service->shouldReceive('get_uninvoiced_recurring_bookings')->andReturn([
-            ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 901],
-            ['Id' => 2, 'Status' => 'completed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 901],
+              ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-05-01', 'RecurringPatternId' => 901, 'OrganisationId' => 0, 'OrganisationInvoiceOrganisationBookings' => 0],
+              ['Id' => 2, 'Status' => 'completed', 'StartDate' => '2026-05-01', 'RecurringPatternId' => 901, 'OrganisationId' => 0, 'OrganisationInvoiceOrganisationBookings' => 0],
         ]);
-
-        $this->booking_service->shouldReceive('get_bookings_by_recurring_pattern_in_period')
-            ->once()
-            ->with(901, Mockery::type('string'), Mockery::type('string'))
-            ->andReturn([
-                ['Id' => 1, 'Status' => 'confirmed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 901],
-            ]);
 
         $sut = $this->make_sut();
         $result = $sut->process_with_result();
@@ -86,23 +79,9 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
         ]);
 
         $this->booking_service->shouldReceive('get_uninvoiced_recurring_bookings')->andReturn([
-            ['Id' => 11, 'Status' => 'confirmed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 901],
-            ['Id' => 22, 'Status' => 'confirmed', 'StartDate' => '2026-06-02', 'RecurringPatternId' => 902],
+            ['Id' => 11, 'Status' => 'confirmed', 'StartDate' => '2026-05-01', 'RecurringPatternId' => 901, 'OrganisationId' => 0, 'OrganisationInvoiceOrganisationBookings' => 0],
+            ['Id' => 22, 'Status' => 'confirmed', 'StartDate' => '2026-05-02', 'RecurringPatternId' => 902, 'OrganisationId' => 0, 'OrganisationInvoiceOrganisationBookings' => 0],
         ]);
-
-        $this->booking_service->shouldReceive('get_bookings_by_recurring_pattern_in_period')
-            ->times(2)
-            ->andReturnUsing(function (int $pattern_id): array {
-                if ($pattern_id === 901) {
-                    return [
-                        ['Id' => 11, 'Status' => 'confirmed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 901],
-                    ];
-                }
-
-                return [
-                    ['Id' => 22, 'Status' => 'confirmed', 'StartDate' => '2026-06-02', 'RecurringPatternId' => 902],
-                ];
-            });
 
         $sut = new class(
             $this->invoice_generator,
@@ -115,7 +94,10 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
 
             protected function create_recurring_invoices_for_rule(array $bookings, array $rule): array {
                 $this->create_calls++;
-                $this->captured_booking_ids = array_values(array_map(static fn(array $booking): int => \intval($booking['Id'] ?? 0), $bookings));
+                $this->captured_booking_ids = array_values(array_unique(array_merge(
+                    $this->captured_booking_ids,
+                    array_values(array_map(static fn(array $booking): int => \intval($booking['Id'] ?? 0), $bookings))
+                )));
 
                 return [1200 + $this->create_calls];
             }
@@ -124,9 +106,9 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
         $result = $sut->process_with_result();
 
         sort($sut->captured_booking_ids);
-        $this->assertSame(1, $sut->create_calls);
-        $this->assertSame([11, 22], $sut->captured_booking_ids);
-        $this->assertSame([1201], $result['created_invoice_ids']);
+            $this->assertSame(2, $sut->create_calls);
+            $this->assertSame([11, 22], $sut->captured_booking_ids);
+            $this->assertSame([1201, 1202], $result['created_invoice_ids']);
     }
 
     /** @test */
@@ -147,46 +129,41 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
             [
                 'Id' => 100,
                 'Status' => 'confirmed',
-                'StartDate' => '2026-06-01',
+                'StartDate' => '2026-05-01',
                 'RecurringPatternId' => 910,
+                    'OrganisationId' => 5,
+                    'OrganisationInvoiceOrganisationBookings' => 1,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 11,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 10,
             ],
             [
                 'Id' => 101,
                 'Status' => 'confirmed',
-                'StartDate' => '2026-06-01',
+                'StartDate' => '2026-05-01',
                 'RecurringPatternId' => 911,
+                'OrganisationId' => 0,
+                    'OrganisationInvoiceOrganisationBookings' => 0,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 0,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 10,
             ],
             [
                 'Id' => 102,
                 'Status' => 'confirmed',
-                'StartDate' => '2026-06-01',
+                'StartDate' => '2026-05-03',
                 'RecurringPatternId' => 912,
+                'OrganisationId' => 0,
+                    'OrganisationInvoiceOrganisationBookings' => 0,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 0,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 0,
             ],
         ]);
-
-        $this->booking_service->shouldReceive('get_bookings_by_recurring_pattern_in_period')
-            ->times(3)
-            ->andReturnUsing(function (int $pattern_id) {
-                return [[
-                    'Id' => $pattern_id,
-                    'Status' => 'confirmed',
-                    'StartDate' => '2026-06-01',
-                    'RecurringPatternId' => $pattern_id,
-                ]];
-            });
 
         $sut = $this->make_sut();
         $result = $sut->process_with_result();
 
         sort($result['created_invoice_ids']);
 
-        $this->assertSame([9, 10, 11], $result['created_invoice_ids']);
+        $this->assertSame([10, 11], $result['created_invoice_ids']);
     }
 
     /** @test */
@@ -254,19 +231,14 @@ class RecurringBookingAutoInvoicingTest extends UnitTestCase
             [
                 'Id' => 300,
                 'Status' => 'confirmed',
-                'StartDate' => '2026-06-01',
+                'StartDate' => '2026-05-01',
                 'RecurringPatternId' => 930,
+                'OrganisationId' => 0,
+                'OrganisationInvoiceOrganisationBookings' => 0,
                 'OrganisationRecurringBookingAutoInvoiceRuleId' => 9,
                 'CustomerRecurringBookingAutoInvoiceRuleId' => 9,
             ],
         ]);
-
-        $this->booking_service->shouldReceive('get_bookings_by_recurring_pattern_in_period')
-            ->once()
-            ->with(930, Mockery::type('string'), Mockery::type('string'))
-            ->andReturn([
-                ['Id' => 300, 'Status' => 'confirmed', 'StartDate' => '2026-06-01', 'RecurringPatternId' => 930],
-            ]);
 
         $sut = $this->make_sut();
         $result = $sut->process_with_result();
