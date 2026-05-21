@@ -91,10 +91,18 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
             <h2>Generate Invoices</h2>
             <p>Select uninvoiced bookings and group them into invoices for customers or organisations.</p>
         </div>
-        <a href="#invoices" class="myvh-portal-add-btn myvh-portal-nav-btn">
-            <span class="myvh-portal-add-btn__icon" aria-hidden="true">&larr;</span>
-            <span>View Invoices</span>
-        </a>
+        <div class="myvh-generate-header-actions">
+            <form class="myvh-account-form myvh-generate-header-auto-form"
+                  data-portal-action="myvh_portal_run_auto_invoicing"
+                  data-message-target="myvh-auto-invoicing-portal-message"
+                  data-reload-page="invoice-generate">
+                                <button type="submit" class="myvh-portal-add-btn myvh-portal-nav-btn myvh-generate-header-auto-button">Run Auto-Invoicing</button>
+            </form>
+            <a href="#invoices" class="myvh-portal-add-btn myvh-portal-nav-btn">
+                <span class="myvh-portal-add-btn__icon" aria-hidden="true">&larr;</span>
+                <span>View Invoices</span>
+            </a>
+        </div>
     </div>
 
     <div class="myvh-settings-tabs myvh-invoices-tabs" role="tablist" aria-label="Invoice generation views">
@@ -102,6 +110,7 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
         <button type="button" class="myvh-settings-tab myvh-invoices-tab" role="tab" aria-selected="false" data-invoices-tab="by-customer">By Customer</button>
         <button type="button" class="myvh-settings-tab myvh-invoices-tab" role="tab" aria-selected="false" data-invoices-tab="by-organisation">By Organisation</button>
     </div>
+    <p id="myvh-auto-invoicing-portal-message" class="myvh-form-message myvh-generate-header-message" role="status" aria-live="polite"></p>
 
     <div class="myvh-card myvh-account-card myvh-settings-group myvh-invoices-panel myvh-generate-panel is-active" data-invoices-panel="create">
         <div class="myvh-account-card-head">
@@ -133,14 +142,19 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
             </div>
 
             <div class="myvh-generate-grouping-panel">
-                <label for="myvh-group-by" class="myvh-account-field myvh-generate-grouping-field">
-                    <span>Grouping</span>
-                    <select id="myvh-group-by" name="group_by" class="myvh-input myvh-generate-select">
-                        <option value="per_booking">One invoice per booking</option>
-                        <option value="by_customer">One invoice per customer</option>
-                        <option value="by_organisation">One invoice per organisation</option>
-                    </select>
-                </label>
+                <div class="myvh-generate-grouping-row">
+                    <label for="myvh-group-by" class="myvh-account-field myvh-generate-grouping-field">
+                        <span>Grouping</span>
+                        <select id="myvh-group-by" name="group_by" class="myvh-input myvh-generate-select">
+                            <option value="per_booking">One invoice per booking</option>
+                            <option value="by_customer">One invoice per customer</option>
+                            <option value="by_organisation">One invoice per organisation</option>
+                        </select>
+                    </label>
+                    <?php if (!empty($uninvoiced_bookings)): ?>
+                        <button type="submit" class="button myvh-generate-toolbar-button myvh-generate-create-button">Create Invoice(s)</button>
+                    <?php endif; ?>
+                </div>
                 <p class="myvh-account-hint">Choose how the selected bookings should be bundled into invoices before submission.</p>
             </div>
 
@@ -278,10 +292,6 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
                     <?php endif; ?>
                 </div>
 
-                <div class="myvh-account-actions myvh-generate-submit-row">
-                    <button type="submit" class="button button-primary">Create Invoice(s)</button>
-                    <p class="myvh-account-hint">The selected bookings will be invoiced using the grouping option above.</p>
-                </div>
             <?php else: ?>
                 <div class="myvh-empty-state myvh-invoices-empty-state myvh-generate-empty-state">
                     <p class="myvh-invoices-empty-state__title">No uninvoiced confirmed or completed bookings found.</p>
@@ -292,16 +302,6 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
             <p id="myvh-invoice-create-message" class="myvh-form-message" role="status" aria-live="polite"></p>
         </form>
 
-        <form class="myvh-account-form myvh-generate-form"
-              data-portal-action="myvh_portal_run_auto_invoicing"
-              data-message-target="myvh-auto-invoicing-portal-message"
-              data-reload-page="invoice-generate">
-            <div class="myvh-account-actions myvh-generate-submit-row">
-                <button type="submit" class="button">Run Auto-Invoicing</button>
-                <p class="myvh-account-hint">Use your Auto-Invoicing settings to generate invoices without manually selecting bookings.</p>
-            </div>
-            <p id="myvh-auto-invoicing-portal-message" class="myvh-form-message" role="status" aria-live="polite"></p>
-        </form>
     </div>
 
     <div class="myvh-card myvh-account-card myvh-settings-group myvh-invoices-panel myvh-generate-panel" data-invoices-panel="by-customer" hidden>

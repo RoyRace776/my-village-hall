@@ -2676,6 +2676,26 @@ body .site-main:has(#myvh-portal) {
   margin-bottom: 16px;
 }
 
+.myvh-generate-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.myvh-generate-header-auto-form {
+  margin: 0;
+}
+
+.myvh-generate-header-auto-button {
+  min-height: 42px;
+}
+
+.myvh-generate-header-message {
+  margin: -6px 0 10px;
+  min-height: 20px;
+}
+
 .myvh-generate-panel {
   display: block;
 }
@@ -2724,8 +2744,17 @@ body .site-main:has(#myvh-portal) {
   background: #fcfaf7;
 }
 
+.myvh-generate-grouping-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .myvh-generate-grouping-field {
   max-width: 360px;
+  flex: 0 1 360px;
 }
 
 .myvh-generate-select {
@@ -2733,6 +2762,11 @@ body .site-main:has(#myvh-portal) {
   border: 1px solid #d8ccbc;
   border-radius: 10px;
   background: #fff;
+}
+
+.myvh-generate-create-button {
+  min-height: 42px;
+  white-space: nowrap;
 }
 
 .myvh-generate-subtabs {
@@ -3166,6 +3200,29 @@ body .site-main:has(#myvh-portal) {
 
 .myvh-generate-drilldown-card .myvh-account-card-head {
   margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+  .myvh-generate-header-actions {
+    width: 100%;
+  }
+
+  .myvh-generate-header-auto-form,
+  .myvh-generate-header-auto-button,
+  .myvh-generate-header-actions .myvh-portal-nav-btn {
+    width: 100%;
+  }
+
+  .myvh-generate-grouping-row {
+    align-items: stretch;
+  }
+
+  .myvh-generate-grouping-field,
+  .myvh-generate-create-button {
+    flex: 1 1 100%;
+    max-width: none;
+    width: 100%;
+  }
 }
 
 .myvh-generate-drilldown-empty {
