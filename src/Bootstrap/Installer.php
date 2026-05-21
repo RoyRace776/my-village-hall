@@ -7,7 +7,7 @@
  *
  * Tables are created with WordPress's dbDelta() function, which compares
  * the desired schema against existing tables and applies only the
- * necessary changes — making it safe to re-run on updates.
+ * necessary changes, making it safe to re-run on updates.
  *
  * Table inventory:
  *   Venues & Rooms        myvh_venues, myvh_rooms
@@ -263,7 +263,7 @@ class Installer {
         }
     }
 
-    // ── Table definitions ─────────────────────────────────────────────────────
+    // Table definitions
 
     /**
      * Run dbDelta() for every table in the plugin.
@@ -304,7 +304,8 @@ class Installer {
     private static function create_venues_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_venues (
-            Id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id            INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Name          VARCHAR(100) NOT NULL,
             ShortName     VARCHAR(100),
             PostCode      VARCHAR(100),
@@ -319,7 +320,8 @@ class Installer {
     private static function create_rooms_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_rooms (
-            Id                      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id                      INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             VenueId                 INT UNSIGNED NOT NULL,
             Name                    VARCHAR(100) NOT NULL,
             Colour                  VARCHAR(7),
@@ -341,7 +343,8 @@ class Installer {
     private static function create_venue_hours_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_venue_hours (
-            Id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id            INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             VenueId       INT UNSIGNED NOT NULL,
             DayOfWeek     TINYINT UNSIGNED NOT NULL,
             IsClosed      TINYINT(1) NOT NULL DEFAULT 0,
@@ -355,7 +358,8 @@ class Installer {
     private static function create_room_hours_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_room_hours (
-            Id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id             INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             RoomId         INT UNSIGNED NOT NULL,
             DayOfWeek      TINYINT UNSIGNED NOT NULL,
             UseVenueHours  TINYINT(1) NOT NULL DEFAULT 1,
@@ -370,7 +374,8 @@ class Installer {
     private static function create_organisations_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_organisations (
-            Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id                 INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Name               VARCHAR(100) NOT NULL,
             OrganisationTypeId  INT UNSIGNED NOT NULL,
             ContactEmail       VARCHAR(100),
@@ -409,7 +414,8 @@ class Installer {
     private static function create_organisation_types_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_organisation_types (
-            Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id                 INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Name               VARCHAR(100) NOT NULL,
             Description        VARCHAR(255),
             IsSystem           TINYINT(1) NOT NULL DEFAULT 0,
@@ -424,7 +430,8 @@ class Installer {
     private static function create_organisation_members_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_organisation_members (
-            Id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id                   INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             OrganisationId      INT UNSIGNED NOT NULL,
             CustomerId          INT UNSIGNED NOT NULL,
             IsOrganisationAdmin TINYINT(1) NOT NULL DEFAULT 0,
@@ -437,7 +444,8 @@ class Installer {
     private static function create_organisation_member_requests_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_organisation_member_requests (
-            Id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id                   INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             OrganisationId       INT UNSIGNED NOT NULL,
             CustomerId           INT UNSIGNED NOT NULL,
             Status               VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -453,7 +461,8 @@ class Installer {
     private static function create_customers_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_customers (
-            Id              INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
+            Id              INT UNSIGNED  AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Name            VARCHAR(100) NOT NULL,
             WPUserId        BIGINT UNSIGNED,
             Email           VARCHAR(100) NOT NULL,
@@ -478,7 +487,8 @@ class Installer {
     private static function create_bookings_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_bookings (
-            Id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id                 INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             CustomerId         INT UNSIGNED NOT NULL,
             OrganisationId     INT UNSIGNED NOT NULL,
             RoomId             INT UNSIGNED NOT NULL,
@@ -504,7 +514,8 @@ class Installer {
     private static function create_recurring_patterns_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_recurring_patterns (
-            Id                 INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
+            Id                 INT UNSIGNED  AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             ParentBookingId    INT UNSIGNED  NOT NULL,
             RecurrenceType     VARCHAR(50)   NOT NULL,
             RecurrenceInterval INT UNSIGNED  DEFAULT 1,
@@ -524,7 +535,8 @@ class Installer {
     private static function create_room_rates_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_room_rates (
-            Id                  INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            Id                  INT UNSIGNED   AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             RoomId              INT UNSIGNED   NOT NULL,
             OrganisationTypeId  INT UNSIGNED   DEFAULT NULL,
             DayOfWeek           TINYINT UNSIGNED DEFAULT NULL,
@@ -552,7 +564,8 @@ class Installer {
     private static function create_room_rate_days_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_room_rate_days (
-            Id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id          INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             RoomRateId  INT UNSIGNED NOT NULL,
             DayOfWeek   TINYINT UNSIGNED NOT NULL,
             UNIQUE KEY uq_rate_day (RoomRateId, DayOfWeek),
@@ -563,7 +576,8 @@ class Installer {
     private static function create_addons_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_addons (
-            Id              INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
+            Id              INT UNSIGNED  AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Name            VARCHAR(100)  NOT NULL,
             Description     VARCHAR(255),
             Price           DECIMAL(10,2) NOT NULL,
@@ -585,7 +599,8 @@ class Installer {
     private static function create_booking_charges_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_booking_charges (
-            Id           INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            Id           INT UNSIGNED   AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             BookingId    INT UNSIGNED   NOT NULL,
             RoomRateId   INT UNSIGNED   NOT NULL,
             ChargeType   VARCHAR(12)    NOT NULL,
@@ -604,7 +619,8 @@ class Installer {
     private static function create_booking_addons_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_booking_addons (
-            Id          INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            Id          INT UNSIGNED   AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             BookingId   INT UNSIGNED   NOT NULL,
             AddonId     INT UNSIGNED   NOT NULL,
             Quantity    DECIMAL(10,2)  NOT NULL DEFAULT 1,
@@ -620,7 +636,8 @@ class Installer {
     private static function create_discounts_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_discounts (
-            Id              INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            Id              INT UNSIGNED   AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Code            VARCHAR(50)    NOT NULL,
             Description     VARCHAR(255),
             DiscountType    VARCHAR(20)    NOT NULL,
@@ -647,7 +664,8 @@ class Installer {
     private static function create_booking_discounts_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_booking_discounts (
-            Id             INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            Id             INT UNSIGNED   AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             BookingId      INT UNSIGNED   NOT NULL,
             DiscountId     INT UNSIGNED   DEFAULT NULL,
             DiscountCode   VARCHAR(50),
@@ -665,7 +683,8 @@ class Installer {
         $p = $wpdb->prefix;
 
         dbDelta("CREATE TABLE {$p}myvh_single_booking_auto_invoice_rules (
-            Id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id                INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Name              VARCHAR(120) NOT NULL,
             TriggerTiming     VARCHAR(50) NOT NULL DEFAULT 'confirmation',
             TriggerOffsetDays INT NOT NULL DEFAULT 0,
@@ -682,7 +701,8 @@ class Installer {
         $p = $wpdb->prefix;
 
         dbDelta("CREATE TABLE {$p}myvh_recurring_booking_auto_invoice_rules (
-            Id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id                INT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Name              VARCHAR(120) NOT NULL,
             TriggerTiming     VARCHAR(50) NOT NULL DEFAULT 'start_of_month',
             TriggerDirection  VARCHAR(20) NOT NULL DEFAULT 'in_advance',
@@ -837,7 +857,8 @@ class Installer {
     private static function create_invoices_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_invoices (
-            Id            INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            Id            INT UNSIGNED   AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             InvoiceNumber VARCHAR(50)    NOT NULL,
             CustomerId    INT UNSIGNED   NOT NULL,
             BillingName   VARCHAR(150)   NULL,
@@ -870,7 +891,8 @@ class Installer {
     private static function create_invoice_items_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_invoice_items (
-            Id           INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            Id           INT UNSIGNED   AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             InvoiceId    INT UNSIGNED   NOT NULL,
             BookingId    INT UNSIGNED   DEFAULT NULL,
             ItemType     VARCHAR(50)    NOT NULL DEFAULT 'charge',
@@ -890,7 +912,8 @@ class Installer {
     private static function create_payments_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_payments (
-            Id                   INT UNSIGNED   AUTO_INCREMENT PRIMARY KEY,
+            Id                   INT UNSIGNED   AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             InvoiceId            INT UNSIGNED   NOT NULL,
             PaymentDate          DATE           NOT NULL,
             Amount               DECIMAL(10,2)  NOT NULL,
@@ -906,7 +929,8 @@ class Installer {
     private static function create_audit_log_table( wpdb $wpdb, string $collate ): void {
         $p = $wpdb->prefix;
         dbDelta( "CREATE TABLE {$p}myvh_audit_log (
-            Id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            Id          BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (Id),
             Action      VARCHAR(20)     NOT NULL,
             EntityType  VARCHAR(50)     NOT NULL,
             EntityId    BIGINT UNSIGNED NULL,
@@ -1308,3 +1332,4 @@ class Installer {
     }
 
 }
+
