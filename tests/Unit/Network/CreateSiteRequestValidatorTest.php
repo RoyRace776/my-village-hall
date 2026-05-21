@@ -30,6 +30,7 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
             'admin_first_name' => 'Test',
             'admin_last_name' => 'User',
             'admin_password' => 'password1!',
+            'admin_password_confirm' => 'password1!',
         ]);
 
         Assert::assertInstanceOf(WP_Error::class, $result);
@@ -53,6 +54,7 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
             'admin_first_name' => 'Test',
             'admin_last_name' => 'User',
             'admin_password' => 'Password1!',
+            'admin_password_confirm' => 'Password1!',
         ]);
 
         Assert::assertTrue($result);
@@ -67,9 +69,138 @@ class CreateSiteRequestValidatorTest extends UnitTestCase {
             'admin_first_name' => 'Test',
             'admin_last_name' => 'User',
             'admin_password' => 'Password1!',
+            'admin_password_confirm' => 'Password1!',
         ]);
 
         Assert::assertInstanceOf(WP_Error::class, $result);
         Assert::assertSame('Site path cannot begin or end with a hyphen.', $result->get_error_message());
+    }
+
+    /** @test */
+    public function validate_accepts_valid_setup_payload(): void {
+        Functions\when('is_multisite')->justReturn(true);
+        Functions\when('is_subdomain_install')->justReturn(true);
+        Functions\when('get_network')->justReturn((object) [
+            'domain' => 'example.com',
+            'id' => 1,
+        ]);
+        Functions\when('domain_exists')->justReturn(false);
+
+        $result = $this->validator->validate([
+            'site_name' => 'Test Site',
+            'subdomain' => 'site-five',
+            'admin_email' => 'admin@example.com',
+            'admin_first_name' => 'Test',
+            'admin_last_name' => 'User',
+            'admin_password' => 'Password1!',
+            'admin_password_confirm' => 'Password1!',
+            'setup_payload' => [
+                'venue' => [
+                    'name' => 'Village Hall',
+                    'email' => 'bookings@example.com',
+                ],
+                'rooms' => [
+                    ['key' => 'hall', 'name' => 'Main Hall'],
+                    ['key' => 'room-2', 'name' => 'Meeting Room', 'capacity' => '40'],
+                ],
+                'pricing' => [
+                    ['room_key' => 'hall', 'hourly_rate' => 20],
+                    ['room_key' => 'room-2', 'hourly_rate' => 15.5],
+                ],
+                'addons' => [
+                    ['name' => 'Projector', 'price' => '12.50'],
+                ],
+            ],
+        ]);
+
+        Assert::assertTrue($result);
+    }
+
+    /** @test */
+    public function validate_rejects_setup_payload_without_venue_email(): void {
+        Functions\when('is_multisite')->justReturn(true);
+        Functions\when('is_subdomain_install')->justReturn(true);
+        Functions\when('get_network')->justReturn((object) [
+            'domain' => 'example.com',
+            'id' => 1,
+        ]);
+        Functions\when('domain_exists')->justReturn(false);
+
+        $result = $this->validator->validate([
+            'site_name' => 'Test Site',
+            'subdomain' => 'site-five',
+            'admin_email' => 'admin@example.com',
+            'admin_first_name' => 'Test',
+            'admin_last_name' => 'User',
+            'admin_password' => 'Password1!',
+            'admin_password_confirm' => 'Password1!',
+            'setup_payload' => [
+                'venue' => [
+                    'name' => 'Village Hall',
+                ],
+                'rooms' => [
+                    ['key' => 'hall', 'name' => 'Main Hall'],
+                ],
+                'pricing' => [
+                    ['room_key' => 'hall', 'hourly_rate' => 20],
+                ],
+            ],
+        ]);
+
+        Assert::assertInstanceOf(WP_Error::class, $result);
+        Assert::assertSame('Venue email is required.', $result->get_error_message());
+    }
+
+    /** @test */
+    public function validate_rejects_setup_payload_when_any_room_is_missing_pricing(): void {
+        Functions\when('is_multisite')->justReturn(true);
+        Functions\when('is_subdomain_install')->justReturn(true);
+        Functions\when('get_network')->justReturn((object) [
+            'domain' => 'example.com',
+            'id' => 1,
+        ]);
+        Functions\when('domain_exists')->justReturn(false);
+
+        $result = $this->validator->validate([
+            'site_name' => 'Test Site',
+            'subdomain' => 'site-five',
+            'admin_email' => 'admin@example.com',
+            'admin_first_name' => 'Test',
+            'admin_last_name' => 'User',
+            'admin_password' => 'Password1!',
+            'admin_password_confirm' => 'Password1!',
+            'setup_payload' => [
+                'venue' => [
+                    'name' => 'Village Hall',
+                    'email' => 'bookings@example.com',
+                ],
+                'rooms' => [
+                    ['key' => 'hall', 'name' => 'Main Hall'],
+                    ['key' => 'meeting', 'name' => 'Meeting Room'],
+                ],
+                'pricing' => [
+                    ['room_key' => 'hall', 'hourly_rate' => 20],
+                ],
+            ],
+        ]);
+
+        Assert::assertInstanceOf(WP_Error::class, $result);
+        Assert::assertSame('Hourly pricing is required for every room.', $result->get_error_message());
+    }
+
+    /** @test */
+    public function validate_rejects_when_admin_password_confirmation_does_not_match(): void {
+        $result = $this->validator->validate([
+            'site_name' => 'Test Site',
+            'subdomain' => 'site-five',
+            'admin_email' => 'admin@example.com',
+            'admin_first_name' => 'Test',
+            'admin_last_name' => 'User',
+            'admin_password' => 'Password1!',
+            'admin_password_confirm' => 'Password2!',
+        ]);
+
+        Assert::assertInstanceOf(WP_Error::class, $result);
+        Assert::assertSame('Admin password and confirmation do not match.', $result->get_error_message());
     }
 }

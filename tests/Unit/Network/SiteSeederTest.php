@@ -3,6 +3,7 @@
 namespace MYVH\Tests\Unit\Network;
 
 use Brain\Monkey\Functions;
+use MYVH\Addons\AddonRepository;
 use MYVH\Customers\CustomerService;
 use MYVH\Network\SiteSeeder;
 use MYVH\Portal\ClientAdminService;
@@ -83,6 +84,7 @@ class SiteSeederTest extends UnitTestCase {
             $venue_service,
             $room_service,
             $room_rate_service,
+            \Mockery::mock(AddonRepository::class),
             $client_admin_service,
             $general_settings,
             $notice_settings
@@ -139,6 +141,7 @@ class SiteSeederTest extends UnitTestCase {
             $venue_service,
             $room_service,
             $room_rate_service,
+            \Mockery::mock(AddonRepository::class),
             $client_admin_service,
             $general_settings,
             $notice_settings
@@ -185,6 +188,7 @@ class SiteSeederTest extends UnitTestCase {
             $venue_service,
             $room_service,
             $room_rate_service,
+            \Mockery::mock(AddonRepository::class),
             $client_admin_service,
             $general_settings,
             $notice_settings
@@ -195,6 +199,127 @@ class SiteSeederTest extends UnitTestCase {
         Functions\expect('get_user_by')->once()->with('email', 'admin@example.com')->andReturn(false);
 
         $seeder->seed(22);
+
+        $this->assertSame(1, $seeder->addPersonalOrganisationTypeCalls);
+        $this->assertSame(1, $seeder->addPersonalOrganisationCalls);
+        $this->assertSame(1, $seeder->addDefaultOrganisationTypeCalls);
+        $this->assertSame(1, $seeder->addSystemCustomerCalls);
+    }
+
+    /** @test */
+    public function seed_uses_setup_context_for_venue_rooms_pricing_and_addons(): void {
+        $customer_service = \Mockery::mock(CustomerService::class);
+        $customer_service->shouldReceive('save')->never();
+
+        $venue_service = \Mockery::mock(VenueService::class);
+        $venue_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
+            return $data['name'] === 'Configured Hall'
+                && $data['short_name'] === 'CH'
+                && $data['opening_time'] === '08:00'
+                && $data['closing_time'] === '22:00';
+        }))->andReturn(501);
+
+        $room_service = \Mockery::mock(RoomService::class);
+        $room_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
+            return $data['name'] === 'Main Hall'
+                && $data['venue_id'] === 501
+                && $data['opening_time'] === '08:00'
+                && $data['closing_time'] === '22:00';
+        }))->andReturn(601);
+        $room_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
+            return $data['name'] === 'Committee Room'
+                && $data['venue_id'] === 501
+                && $data['opening_time'] === '09:00'
+                && $data['closing_time'] === '17:00';
+        }))->andReturn(602);
+
+        $room_rate_service = \Mockery::mock(RoomRateService::class);
+        $room_rate_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
+            return $data['room_id'] === 601
+                && (float) $data['rate'] === 20.0
+                && (float) $data['minimum_hours'] === 1.0;
+        }));
+        $room_rate_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
+            return $data['room_id'] === 602
+                && (float) $data['rate'] === 15.5
+                && $data['name'] === 'Evening Rate';
+        }));
+
+        $addon_repository = \Mockery::mock(AddonRepository::class);
+        $addon_repository->shouldReceive('create')->once()->with(\Mockery::on(static function (array $data): bool {
+            return $data['Name'] === 'Projector'
+                && (float) $data['Price'] === 12.5
+                && $data['ChargeType'] === 'fixed'
+                && $data['VenueId'] === 501
+                && $data['RoomId'] === 601;
+        }));
+
+        $client_admin_service = \Mockery::mock(ClientAdminService::class);
+        $client_admin_service->shouldReceive('add_assignment')->never();
+
+        $general_settings = \Mockery::mock(GeneralSettings::class);
+        $general_settings->shouldReceive('save')->once();
+
+        $notice_settings = \Mockery::mock(NoticeSettings::class);
+        $notice_settings->shouldReceive('get')->once()->with('notices')->andReturn([]);
+        $notice_settings->shouldReceive('save')->once();
+
+        $seeder = new TestableSiteSeeder(
+            $customer_service,
+            $venue_service,
+            $room_service,
+            $room_rate_service,
+            $addon_repository,
+            $client_admin_service,
+            $general_settings,
+            $notice_settings
+        );
+
+        Functions\expect('switch_to_blog')->once()->with(44);
+        Functions\expect('restore_current_blog')->once();
+        Functions\expect('get_user_by')->once()->with('email', 'admin@example.com')->andReturn(false);
+
+        $seeder->seed(44, [
+            'setup' => [
+                'venue' => [
+                    'name' => 'Configured Hall',
+                    'short_name' => 'CH',
+                    'opening_time' => '08:00',
+                    'closing_time' => '22:00',
+                ],
+                'rooms' => [
+                    [
+                        'key' => 'main-hall',
+                        'name' => 'Main Hall',
+                    ],
+                    [
+                        'key' => 'committee-room',
+                        'name' => 'Committee Room',
+                        'opening_time' => '09:00',
+                        'closing_time' => '17:00',
+                    ],
+                ],
+                'pricing' => [
+                    [
+                        'room_key' => 'main-hall',
+                        'hourly_rate' => 20,
+                    ],
+                    [
+                        'room_key' => 'committee-room',
+                        'hourly_rate' => 15.5,
+                        'name' => 'Evening Rate',
+                    ],
+                ],
+                'addons' => [
+                    [
+                        'name' => 'Projector',
+                        'price' => 12.5,
+                        'charge_type' => 'fixed',
+                        'room_key' => 'main-hall',
+                    ],
+                ],
+            ],
+        ]);
 
         $this->assertSame(1, $seeder->addPersonalOrganisationTypeCalls);
         $this->assertSame(1, $seeder->addPersonalOrganisationCalls);
@@ -214,6 +339,7 @@ class TestableSiteSeeder extends SiteSeeder {
         private VenueService $venueService,
         private RoomService $roomService,
         private RoomRateService $roomRateService,
+        private AddonRepository $addonRepository,
         private ClientAdminService $clientAdminService,
         private GeneralSettings $generalSettings,
         private NoticeSettings $noticeSettings
@@ -252,6 +378,10 @@ class TestableSiteSeeder extends SiteSeeder {
 
     protected function make_room_rate_service(): RoomRateService {
         return $this->roomRateService;
+    }
+
+    protected function make_addon_repository(): AddonRepository {
+        return $this->addonRepository;
     }
 
     protected function make_client_admin_service(): ClientAdminService {

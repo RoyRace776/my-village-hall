@@ -28,6 +28,8 @@ $network_path = isset($network_path) ? (string) $network_path : '/';
 $is_subdomain = !empty($is_subdomain);
 $captcha_site_key = isset($captcha_site_key) ? (string) $captcha_site_key : '';
 $request_page_url = isset($request_page_url) ? (string) $request_page_url : home_url('/');
+$draft_token = isset($draft_token) ? (string) $draft_token : '';
+$setup_draft = (isset($setup_draft) && is_array($setup_draft)) ? $setup_draft : [];
 
 $site_slug = sanitize_title((string) ($form_values['subdomain'] ?? ''));
 $site_address_display = $site_slug;
@@ -159,21 +161,25 @@ if ($site_slug !== '' && $network_domain !== '') {
 </div>
 <?php else: ?>
 <div class="myvh-site-request-wrap">
-    <form method="post" enctype="multipart/form-data" class="myvh-site-request-form">
+    <form method="post" enctype="multipart/form-data" class="myvh-site-request-form" data-myvh-wizard="1" data-is-subdomain="<?php echo esc_attr($is_subdomain ? '1' : '0'); ?>" data-network-domain="<?php echo esc_attr($network_domain); ?>" data-network-path="<?php echo esc_attr($network_path); ?>">
         <div class="myvh-site-request-hero">
             <div class="myvh-site-request-hero__content">
                 <span class="myvh-site-request-kicker"><?php echo esc_html__('Site setup request', 'my-village-hall'); ?></span>
-                <h2><?php echo esc_html__('Create your new site', 'my-village-hall'); ?></h2>
-                <p><?php echo esc_html__('Complete the details below to request your new site. We will use this information to provision the site and create the first administrator account.', 'my-village-hall'); ?></p>
+                <h2><?php echo esc_html__('Build your booking site', 'my-village-hall'); ?></h2>
+                <p><?php echo esc_html__('Work through six quick steps to configure your venue, rooms, pricing, and administrator details before requesting site creation.', 'my-village-hall'); ?></p>
             </div>
 
             <div class="myvh-site-request-summary" aria-label="<?php echo esc_attr__('What happens next', 'my-village-hall'); ?>">
-                <h3><?php echo esc_html__('What happens next', 'my-village-hall'); ?></h3>
+                <h3><?php echo esc_html__('Wizard progress', 'my-village-hall'); ?></h3>
                 <ul>
-                    <li><?php echo esc_html__('We review the request and prepare your site.', 'my-village-hall'); ?></li>
-                    <li><?php echo esc_html__('Your chosen details are used to configure the site and admin login.', 'my-village-hall'); ?></li>
-                    <li><?php echo esc_html__('You receive confirmation once the site is ready.', 'my-village-hall'); ?></li>
+                    <li><?php echo esc_html__('1. Site details', 'my-village-hall'); ?></li>
+                    <li><?php echo esc_html__('2. Venue details', 'my-village-hall'); ?></li>
+                    <li><?php echo esc_html__('3. Rooms (up to 3)', 'my-village-hall'); ?></li>
+                    <li><?php echo esc_html__('4. Pricing', 'my-village-hall'); ?></li>
+                    <li><?php echo esc_html__('5. Add-ons', 'my-village-hall'); ?></li>
+                    <li><?php echo esc_html__('6. Admin and submit', 'my-village-hall'); ?></li>
                 </ul>
+                <p class="myvh-site-request-summary__step" id="myvh-current-step-label"><?php echo esc_html__('Step 1 of 6', 'my-village-hall'); ?></p>
             </div>
         </div>
 
@@ -187,7 +193,8 @@ if ($site_slug !== '' && $network_domain !== '') {
         <?php endif; ?>
 
         <div class="myvh-site-request-panel">
-            <div class="myvh-site-request-section">
+            <div class="myvh-wizard-step" data-step-index="1" data-step-title="<?php echo esc_attr__('Site details', 'my-village-hall'); ?>">
+                <div class="myvh-site-request-section">
                 <div class="myvh-site-request-section__header">
                     <h3><?php echo esc_html__('Site details', 'my-village-hall'); ?></h3>
                     <p><?php echo esc_html__('These details define how the new site will appear and where it will live on the network.', 'my-village-hall'); ?></p>
@@ -221,30 +228,6 @@ if ($site_slug !== '' && $network_domain !== '') {
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
                             <?php echo esc_html__('This cannot be changed after the site has been created. Choose carefully.', 'my-village-hall'); ?>
                         </span>
-                    </label>
-                    <?php if (!empty($network_domain)): ?>
-                    <script>
-                    (function () {
-                        var input   = document.getElementById('myvh-subdomain-input');
-                        var preview = document.getElementById('myvh-subdomain-preview-value');
-                        var isSubdomain = <?php echo wp_json_encode(isset($is_subdomain) && $is_subdomain); ?>;
-                        var domain  = <?php echo wp_json_encode($network_domain); ?>;
-                        var path    = <?php echo wp_json_encode(isset($network_path) ? $network_path : '/'); ?>;
-                        var placeholder = <?php echo wp_json_encode(__('yoursite', 'my-village-hall')); ?>;
-                        function update() {
-                            var val = input.value.trim() || placeholder;
-                            if (isSubdomain) {
-                                preview.textContent = val + '.' + domain;
-                            } else {
-                                preview.textContent = domain + path + val;
-                            }
-                        }
-                        input.addEventListener('input', update);
-                        update();
-                    })();
-                    </script>
-                    <?php endif; ?>
-
                     <label class="myvh-site-request-field myvh-site-request-field--full">
                         <span class="myvh-site-request-field__label"><?php echo esc_html__('Logo', 'my-village-hall'); ?> <span class="myvh-site-request-badge myvh-site-request-badge--muted"><?php echo esc_html__('Optional', 'my-village-hall'); ?></span></span>
                         <span class="myvh-site-request-field__hint" id="myvh-logo-hint"><?php echo esc_html__('Upload a logo if you want the new site branded from the start. PNG, JPG, GIF, WebP, and SVG files are accepted.', 'my-village-hall'); ?></span>
@@ -252,8 +235,172 @@ if ($site_slug !== '' && $network_domain !== '') {
                     </label>
                 </div>
             </div>
+            </div>
 
-            <div class="myvh-site-request-section">
+            <div class="myvh-wizard-step" data-step-index="2" data-step-title="<?php echo esc_attr__('Venue details', 'my-village-hall'); ?>" hidden>
+                <div class="myvh-site-request-section">
+                    <div class="myvh-site-request-section__header">
+                        <h3><?php echo esc_html__('Venue details', 'my-village-hall'); ?></h3>
+                        <p><?php echo esc_html__('This becomes the primary venue pre-configured on the new site.', 'my-village-hall'); ?></p>
+                    </div>
+
+                    <div class="myvh-site-request-grid">
+                        <label class="myvh-site-request-field">
+                            <span class="myvh-site-request-field__label"><?php echo esc_html__('Venue name', 'my-village-hall'); ?> <span class="myvh-site-request-badge"><?php echo esc_html__('Required', 'my-village-hall'); ?></span></span>
+                            <input type="text" id="myvh-venue-name" data-setup="venue-name" required>
+                        </label>
+
+                        <label class="myvh-site-request-field">
+                            <span class="myvh-site-request-field__label"><?php echo esc_html__('Venue email', 'my-village-hall'); ?> <span class="myvh-site-request-badge"><?php echo esc_html__('Required', 'my-village-hall'); ?></span></span>
+                            <input type="email" id="myvh-venue-email" data-setup="venue-email" required>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="myvh-wizard-step" data-step-index="3" data-step-title="<?php echo esc_attr__('Rooms', 'my-village-hall'); ?>" hidden>
+                <div class="myvh-site-request-section">
+                    <div class="myvh-site-request-section__header">
+                        <h3><?php echo esc_html__('Rooms', 'my-village-hall'); ?></h3>
+                        <p><?php echo esc_html__('Define up to three rooms. At least one room is required.', 'my-village-hall'); ?></p>
+                    </div>
+
+                    <div class="myvh-repeater" id="myvh-room-rows">
+                        <div class="myvh-repeater-row myvh-room-row" data-room-index="1">
+                            <h4><?php echo esc_html__('Room 1', 'my-village-hall'); ?></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Room name', 'my-village-hall'); ?> <span class="myvh-site-request-badge"><?php echo esc_html__('Required', 'my-village-hall'); ?></span></span>
+                                    <input type="text" data-room-field="name" data-room-index="1">
+                                </label>
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Capacity', 'my-village-hall'); ?> <span class="myvh-site-request-badge myvh-site-request-badge--muted"><?php echo esc_html__('Optional', 'my-village-hall'); ?></span></span>
+                                    <input type="number" min="0" step="1" data-room-field="capacity" data-room-index="1">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="myvh-repeater-row myvh-room-row" data-room-index="2">
+                            <h4><?php echo esc_html__('Room 2', 'my-village-hall'); ?></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Room name', 'my-village-hall'); ?></span>
+                                    <input type="text" data-room-field="name" data-room-index="2">
+                                </label>
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Capacity', 'my-village-hall'); ?></span>
+                                    <input type="number" min="0" step="1" data-room-field="capacity" data-room-index="2">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="myvh-repeater-row myvh-room-row" data-room-index="3">
+                            <h4><?php echo esc_html__('Room 3', 'my-village-hall'); ?></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Room name', 'my-village-hall'); ?></span>
+                                    <input type="text" data-room-field="name" data-room-index="3">
+                                </label>
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Capacity', 'my-village-hall'); ?></span>
+                                    <input type="number" min="0" step="1" data-room-field="capacity" data-room-index="3">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="myvh-wizard-step" data-step-index="4" data-step-title="<?php echo esc_attr__('Pricing', 'my-village-hall'); ?>" hidden>
+                <div class="myvh-site-request-section">
+                    <div class="myvh-site-request-section__header">
+                        <h3><?php echo esc_html__('Pricing', 'my-village-hall'); ?></h3>
+                        <p><?php echo esc_html__('Set hourly rates for each room you have named.', 'my-village-hall'); ?></p>
+                    </div>
+
+                    <div class="myvh-repeater" id="myvh-pricing-rows">
+                        <div class="myvh-repeater-row" data-pricing-index="1">
+                            <h4><span class="myvh-room-title" data-room-title-index="1"><?php echo esc_html__('Room 1', 'my-village-hall'); ?></span></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Hourly rate', 'my-village-hall'); ?></span>
+                                    <input type="number" min="0" step="0.01" data-pricing-field="hourly_rate" data-room-index="1" placeholder="0.00">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="myvh-repeater-row" data-pricing-index="2">
+                            <h4><span class="myvh-room-title" data-room-title-index="2"><?php echo esc_html__('Room 2', 'my-village-hall'); ?></span></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Hourly rate', 'my-village-hall'); ?></span>
+                                    <input type="number" min="0" step="0.01" data-pricing-field="hourly_rate" data-room-index="2" placeholder="0.00">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="myvh-repeater-row" data-pricing-index="3">
+                            <h4><span class="myvh-room-title" data-room-title-index="3"><?php echo esc_html__('Room 3', 'my-village-hall'); ?></span></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Hourly rate', 'my-village-hall'); ?></span>
+                                    <input type="number" min="0" step="0.01" data-pricing-field="hourly_rate" data-room-index="3" placeholder="0.00">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="myvh-wizard-step" data-step-index="5" data-step-title="<?php echo esc_attr__('Add-ons', 'my-village-hall'); ?>" hidden>
+                <div class="myvh-site-request-section">
+                    <div class="myvh-site-request-section__header">
+                        <h3><?php echo esc_html__('Add-ons', 'my-village-hall'); ?></h3>
+                        <p><?php echo esc_html__('Optionally add up to three extras that can be charged per booking.', 'my-village-hall'); ?></p>
+                    </div>
+
+                    <div class="myvh-repeater" id="myvh-addon-rows">
+                        <div class="myvh-repeater-row myvh-addon-row" data-addon-index="1">
+                            <h4><?php echo esc_html__('Add-on 1', 'my-village-hall'); ?></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Name', 'my-village-hall'); ?></span>
+                                    <input type="text" data-addon-field="name" data-addon-index="1">
+                                </label>
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Price', 'my-village-hall'); ?></span>
+                                    <input type="number" min="0" step="0.01" data-addon-field="price" data-addon-index="1">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="myvh-repeater-row myvh-addon-row" data-addon-index="2">
+                            <h4><?php echo esc_html__('Add-on 2', 'my-village-hall'); ?></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Name', 'my-village-hall'); ?></span>
+                                    <input type="text" data-addon-field="name" data-addon-index="2">
+                                </label>
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Price', 'my-village-hall'); ?></span>
+                                    <input type="number" min="0" step="0.01" data-addon-field="price" data-addon-index="2">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="myvh-repeater-row myvh-addon-row" data-addon-index="3">
+                            <h4><?php echo esc_html__('Add-on 3', 'my-village-hall'); ?></h4>
+                            <div class="myvh-site-request-grid">
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Name', 'my-village-hall'); ?></span>
+                                    <input type="text" data-addon-field="name" data-addon-index="3">
+                                </label>
+                                <label class="myvh-site-request-field">
+                                    <span class="myvh-site-request-field__label"><?php echo esc_html__('Price', 'my-village-hall'); ?></span>
+                                    <input type="number" min="0" step="0.01" data-addon-field="price" data-addon-index="3">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="myvh-wizard-step" data-step-index="6" data-step-title="<?php echo esc_attr__('Admin account', 'my-village-hall'); ?>" hidden>
+                <div class="myvh-site-request-section">
                 <div class="myvh-site-request-section__header">
                     <h3><?php echo esc_html__('Administrator account', 'my-village-hall'); ?></h3>
                     <p><?php echo esc_html__('These details are used to create the first administrator who will manage the site after launch.', 'my-village-hall'); ?></p>
@@ -284,8 +431,17 @@ if ($site_slug !== '' && $network_domain !== '') {
                         <input type="password" name="admin_password" required minlength="9" aria-describedby="myvh-admin-password-hint">
                     </label>
 
+                    <label class="myvh-site-request-field myvh-site-request-field--full">
+                        <span class="myvh-site-request-field__label"><?php echo esc_html__('Confirm admin password', 'my-village-hall'); ?> <span class="myvh-site-request-badge"><?php echo esc_html__('Required', 'my-village-hall'); ?></span></span>
+                        <span class="myvh-site-request-field__hint" id="myvh-admin-password-confirm-hint"><?php echo esc_html__('Enter the same password again to confirm.', 'my-village-hall'); ?></span>
+                        <input type="password" name="admin_password_confirm" required minlength="9" aria-describedby="myvh-admin-password-confirm-hint">
+                    </label>
+
                     <input type="hidden" name="captcha_token" id="myvh-captcha-token" value="">
                 </div>
+
+                <div class="myvh-site-request-review" id="myvh-site-request-review" aria-live="polite"></div>
+            </div>
             </div>
         </div>
 
@@ -295,12 +451,18 @@ if ($site_slug !== '' && $network_domain !== '') {
             </p>
         <?php endif; ?>
 
+        <script type="application/json" id="myvh-setup-draft-data"><?php echo esc_html(wp_json_encode($setup_draft)); ?></script>
+
         <?php wp_nonce_field('myvh_create_site_request', 'myvh_create_site_nonce'); ?>
         <input type="hidden" name="myvh_request_page_url" value="<?php echo esc_url($request_page_url ?? home_url('/')); ?>">
         <input type="hidden" name="myvh_create_site_action" value="1">
+        <input type="hidden" name="myvh_setup_draft_token" value="<?php echo esc_attr($draft_token); ?>">
+        <input type="hidden" name="setup_payload" id="myvh-setup-payload" value="">
 
         <div class="myvh-site-request-actions">
-            <button type="submit"><?php echo esc_html__('Request new site', 'my-village-hall'); ?></button>
+            <button type="button" class="myvh-site-request-nav" data-myvh-step-action="prev" hidden><?php echo esc_html__('Back', 'my-village-hall'); ?></button>
+            <button type="button" class="myvh-site-request-nav" data-myvh-step-action="next"><?php echo esc_html__('Next step', 'my-village-hall'); ?></button>
+            <button type="submit" data-myvh-step-action="submit" hidden><?php echo esc_html__('Request new site', 'my-village-hall'); ?></button>
             <p class="myvh-site-request-footnote"><?php echo esc_html__('Submitting this form will email the administrator a link to click on. Clicking on the link will setup the new site.', 'my-village-hall'); ?></p>
         </div>
     </form>

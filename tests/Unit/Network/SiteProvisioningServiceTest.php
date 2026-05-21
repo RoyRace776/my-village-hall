@@ -108,6 +108,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
                     && ($record['subdomain'] ?? '') === 'hall-one'
                     && ($record['site_name'] ?? '') === 'Hall One'
                     && ($record['admin_email'] ?? '') === ''
+                    && ($record['setup_payload']['venue']['name'] ?? '') === 'Village Hall'
                     && str_starts_with((string) ($record['admin_password'] ?? ''), 'hash:');
             }))
             ->andReturn(12);
@@ -120,6 +121,11 @@ class SiteProvisioningServiceTest extends UnitTestCase {
             'admin_last_name' => 'B',
             'admin_password' => 'Password1!',
             'myvh_request_page_url' => '/request-site',
+            'setup_payload' => [
+                'venue' => [
+                    'name' => 'Village Hall',
+                ],
+            ],
         ]);
 
         $this->assertTrue($result['ok']);
@@ -193,6 +199,11 @@ class SiteProvisioningServiceTest extends UnitTestCase {
             'admin_last_name' => 'User',
             'admin_password' => 'Password1!',
             'logo_url' => '',
+            'setup_payload' => [
+                'venue' => [
+                    'name' => 'Configured Hall',
+                ],
+            ],
         ];
 
         $this->repo->shouldReceive('find_by_token')->once()->with($token)->andReturnUsing(static fn(): array => $row);
@@ -204,7 +215,14 @@ class SiteProvisioningServiceTest extends UnitTestCase {
 
         $this->cloner->shouldReceive('clone')
             ->once()
-            ->with(5, \Mockery::on(static fn(array $site): bool => ($site['name'] ?? '') === 'hall-b'), \Mockery::on(static fn(array $ctx): bool => \intval($ctx['provision_id'] ?? 0) === 42))
+            ->with(
+                5,
+                \Mockery::on(static fn(array $site): bool => ($site['name'] ?? '') === 'hall-b'),
+                \Mockery::on(static function (array $ctx): bool {
+                    return \intval($ctx['provision_id'] ?? 0) === 42
+                        && ($ctx['setup']['venue']['name'] ?? '') === 'Configured Hall';
+                })
+            )
             ->andReturn(44);
 
         $result = $this->service->verify_and_provision($token);

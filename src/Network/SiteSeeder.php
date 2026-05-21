@@ -2,6 +2,7 @@
 
 namespace MYVH\Network;
 
+use MYVH\Addons\AddonRepository;
 use MYVH\Bootstrap\Installer;
 use MYVH\Rooms\RoomService;
 use MYVH\Rooms\RoomRepository;
@@ -55,46 +56,7 @@ class SiteSeeder {
             $this->make_client_admin_service()->add_assignment($blog_id, (int) $admin_user->ID);
             }
 
-        //TODO: change to use context to determine what to seed, rather than hardcoding this seeding of a default venue and room for every new site.  E.g. we may want to allow some sites to start with a completely blank slate, and others to have some demo data.
-        $venue_service = $this->make_venue_service();
-        $venue_id = $venue_service->save([
-            'name' => 'Our Venue',
-            'short_name' => 'Default',
-            'post_code' => 'AB1 2CD',
-            'address_line1' => '123 Main Rd, Anytown',
-            'opening_time' => '09:00',
-            'closing_time' => '17:00',
-        ]);
-
-        //TODO: change to use context to determine what to seed, rather than hardcoding this seeding of a default venue and room for every new site.  E.g. we may want to allow some sites to start with a completely blank slate, and others to have some demo data.
-        if ($venue_id && !is_wp_error($venue_id)) {
-
-            $room_service = $this->make_room_service();
-            $room_id = $room_service->save([
-                'name' => 'Main Hall',
-                'venue_id' => $venue_id,
-                'capacity' => 100,
-                'description' => 'A large hall suitable for events and gatherings.',
-                'opening_time' => '09:00',
-                'closing_time' => '17:00',
-                'allow-multi-day-bookings' => false,
-                'calc-closed-hours' => false,
-                'is_public' => true,
-            ]);
-
-            //Now add in room rates for the default room
-            if ($room_id && !is_wp_error($room_id)) {
-                $room_rate_service = $this->make_room_rate_service();
-                $room_rate_service->save([
-                    'room_id' => $room_id,
-                    'name' => 'Standard Rate',
-                    'charge_type' => 'per_hour',
-                    'rate' => 20.00,
-                    'description' => 'Standard hourly rate for the Main Hall.',
-                    'is_active' => true,
-                ]);
-            }
-        }
+        $this->seed_booking_setup($context);
 
         // Settings
         $this->make_general_settings()->save([
@@ -175,6 +137,11 @@ class SiteSeeder {
         );
     }
 
+    protected function make_addon_repository(): AddonRepository {
+        global $wpdb;
+        return new AddonRepository($wpdb, $this->null_logger());
+    }
+
     protected function make_customer_service(): CustomerService {
         global $wpdb;
         return new CustomerService(
@@ -195,5 +162,202 @@ class SiteSeeder {
 
     protected function make_notice_settings(): NoticeSettings {
         return new NoticeSettings();
+    }
+
+    private function seed_booking_setup(array $context): void {
+        $setup = is_array($context['setup'] ?? null) ? $context['setup'] : [];
+
+        if (empty($setup['venue']) || empty($setup['rooms']) || empty($setup['pricing'])) {
+            $this->seed_default_booking_setup();
+            return;
+        }
+
+        $venue = is_array($setup['venue']) ? $setup['venue'] : [];
+        $venue_opening_time = (string) ($venue['opening_time'] ?? '08:00');
+        $venue_closing_time = (string) ($venue['closing_time'] ?? '22:00');
+
+        $venue_id = $this->make_venue_service()->save([
+            'name' => (string) ($venue['name'] ?? 'Our Venue'),
+            'short_name' => (string) ($venue['short_name'] ?? 'Default'),
+            'post_code' => (string) ($venue['post_code'] ?? ''),
+            'address_line1' => (string) ($venue['address_line1'] ?? ''),
+            'contact_email' => (string) ($venue['email'] ?? $venue['contact_email'] ?? ''),
+            'opening_time' => $venue_opening_time,
+            'closing_time' => $venue_closing_time,
+        ]);
+
+        if (!$venue_id || is_wp_error($venue_id)) {
+            return;
+        }
+
+        $room_map = $this->seed_rooms_from_setup((int) $venue_id, $setup['rooms'], $venue_opening_time, $venue_closing_time);
+        if (empty($room_map)) {
+            return;
+        }
+
+        $this->seed_pricing_from_setup($room_map, $setup['pricing']);
+        $this->seed_addons_from_setup((int) $venue_id, $room_map, $setup['addons'] ?? []);
+    }
+
+    private function seed_default_booking_setup(): void {
+        $venue_id = $this->make_venue_service()->save([
+            'name' => 'Our Venue',
+            'short_name' => 'Default',
+            'post_code' => 'AB1 2CD',
+            'address_line1' => '123 Main Rd, Anytown',
+            'opening_time' => '09:00',
+            'closing_time' => '17:00',
+        ]);
+
+        if (!$venue_id || is_wp_error($venue_id)) {
+            return;
+        }
+
+        $room_id = $this->make_room_service()->save([
+            'name' => 'Main Hall',
+            'venue_id' => $venue_id,
+            'capacity' => 100,
+            'description' => 'A large hall suitable for events and gatherings.',
+            'opening_time' => '09:00',
+            'closing_time' => '17:00',
+            'allow-multi-day-bookings' => false,
+            'calc-closed-hours' => false,
+            'is_public' => true,
+        ]);
+
+        if (!$room_id || is_wp_error($room_id)) {
+            return;
+        }
+
+        $this->make_room_rate_service()->save([
+            'room_id' => $room_id,
+            'name' => 'Standard Rate',
+            'charge_type' => 'per_hour',
+            'rate' => 20.00,
+            'minimum_hours' => 1,
+            'description' => 'Standard hourly rate for the Main Hall.',
+            'is_active' => true,
+        ]);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>>|mixed $rooms
+     * @return array<string|int, int>
+     */
+    private function seed_rooms_from_setup(int $venue_id, mixed $rooms, string $venue_opening_time, string $venue_closing_time): array {
+        if (!is_array($rooms)) {
+            return [];
+        }
+
+        $room_service = $this->make_room_service();
+        $room_map = [];
+
+        foreach (array_slice(array_values($rooms), 0, 3) as $index => $room) {
+            if (!is_array($room) || trim((string) ($room['name'] ?? '')) === '') {
+                continue;
+            }
+
+            $room_id = $room_service->save([
+                'name' => (string) $room['name'],
+                'venue_id' => $venue_id,
+                'capacity' => isset($room['capacity']) ? (int) $room['capacity'] : 0,
+                'description' => (string) ($room['description'] ?? ''),
+                'opening_time' => (string) ($room['opening_time'] ?? $venue_opening_time),
+                'closing_time' => (string) ($room['closing_time'] ?? $venue_closing_time),
+                'allow-multi-day-bookings' => !empty($room['allow_multi_day_bookings']),
+                'calc-closed-hours' => !empty($room['calc_closed_hours']),
+                'is-public' => array_key_exists('is_public', $room) ? !empty($room['is_public']) : true,
+            ]);
+
+            if (!$room_id || is_wp_error($room_id)) {
+                continue;
+            }
+
+            $room_key = $room['key'] ?? $room['id'] ?? $index;
+            $room_map[$room_key] = (int) $room_id;
+            $room_map[$index] = (int) $room_id;
+        }
+
+        return $room_map;
+    }
+
+    /**
+     * @param array<string|int, int> $room_map
+     * @param array<int, array<string, mixed>>|mixed $pricing_rows
+     */
+    private function seed_pricing_from_setup(array $room_map, mixed $pricing_rows): void {
+        if (!is_array($pricing_rows)) {
+            return;
+        }
+
+        $room_rate_service = $this->make_room_rate_service();
+
+        foreach ($pricing_rows as $index => $pricing) {
+            if (!is_array($pricing)) {
+                continue;
+            }
+
+            $room_reference = $pricing['room_key'] ?? $pricing['room_id'] ?? $pricing['room_index'] ?? $index;
+            $room_id = isset($room_map[$room_reference]) ? (int) $room_map[$room_reference] : 0;
+            $hourly_rate = isset($pricing['hourly_rate']) ? (float) $pricing['hourly_rate'] : (float) ($pricing['rate'] ?? 0);
+
+            if ($room_id <= 0 || $hourly_rate <= 0) {
+                continue;
+            }
+
+            $rate_name = trim((string) ($pricing['name'] ?? ''));
+            if ($rate_name === '') {
+                $rate_name = 'Standard Rate';
+            }
+
+            $room_rate_service->save([
+                'room_id' => $room_id,
+                'name' => $rate_name,
+                'charge_type' => 'per_hour',
+                'rate' => $hourly_rate,
+                'minimum_hours' => isset($pricing['minimum_hours']) ? (float) $pricing['minimum_hours'] : 1,
+                'description' => (string) ($pricing['description'] ?? ''),
+                'is_active' => true,
+            ]);
+        }
+    }
+
+    /**
+     * @param array<string|int, int> $room_map
+     * @param array<int, array<string, mixed>>|mixed $addons
+     */
+    private function seed_addons_from_setup(int $venue_id, array $room_map, mixed $addons): void {
+        if (!is_array($addons) || $addons === []) {
+            return;
+        }
+
+        $addon_repository = $this->make_addon_repository();
+
+        foreach ($addons as $index => $addon) {
+            if (!is_array($addon) || trim((string) ($addon['name'] ?? '')) === '') {
+                continue;
+            }
+
+            $price = isset($addon['price']) ? (float) $addon['price'] : 0.0;
+            if ($price < 0) {
+                continue;
+            }
+
+            $room_reference = $addon['room_key'] ?? $addon['room_id'] ?? $addon['room_index'] ?? null;
+            $room_id = $room_reference !== null && isset($room_map[$room_reference])
+                ? (int) $room_map[$room_reference]
+                : null;
+
+            $addon_repository->create([
+                'Name' => (string) $addon['name'],
+                'Description' => (string) ($addon['description'] ?? ''),
+                'Price' => $price,
+                'ChargeType' => (string) ($addon['charge_type'] ?? 'fixed'),
+                'RoomId' => $room_id,
+                'VenueId' => $venue_id,
+                'IsActive' => 1,
+                'DisplayOrder' => isset($addon['display_order']) ? (int) $addon['display_order'] : $index,
+            ]);
+        }
     }
 }

@@ -14,6 +14,7 @@ class SaveVenueRequest extends RequestMapperBase {
             'short_name'   => self::as_text($post, 'short_name'),
             'post_code'    => self::as_text($post, 'post_code'),
             'address_line1'=> self::as_text($post, 'address_line1'),
+            'contact_email'=> self::as_email($post, 'contact_email'),
             'opening_time' => self::as_text($post, 'opening_time'),
             'closing_time' => self::as_text($post, 'closing_time'),
             'opening_hours_by_day' => self::parse_opening_hours_by_day($post),

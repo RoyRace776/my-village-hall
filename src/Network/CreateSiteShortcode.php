@@ -9,6 +9,8 @@ if (!defined('ABSPATH')) {
 
 class CreateSiteShortcode implements ShortcodeInterface {
     private const TAG = 'myvh_create_site';
+    private const DRAFT_COOKIE = 'myvh_setup_draft_token';
+    private const DRAFT_PREFIX = 'myvh_setup_draft_';
 
     public function __construct(private SiteProvisioningService $service) {}
 
@@ -23,6 +25,13 @@ class CreateSiteShortcode implements ShortcodeInterface {
             [],
             MYVH_VERSION
         );
+        wp_enqueue_script(
+            'myvh-network-create-site',
+            MYVH_PLUGIN_URL . 'assets/js/network-create-site.js',
+            [],
+            MYVH_VERSION,
+            true
+        );
 
         $state = [
             'status' => '',
@@ -33,9 +42,16 @@ class CreateSiteShortcode implements ShortcodeInterface {
         $verification_result = false;
         $verification_details = [];
         $verification_action = 'verify';
+        $draft_token = $this->ensure_draft_token();
+        $saved_draft = null;
+        $setup_draft = [];
 
         if (!is_multisite()) {
             return '<div class="myvh-site-request myvh-site-request--error">' . esc_html__('This shortcode requires WordPress multisite.', 'my-village-hall') . '</div>';
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['myvh_save_setup_draft'])) {
+            $this->handle_draft_save($draft_token);
         }
 
         if (!empty($_GET['myvh_site_cancel']) && !empty($_GET['token'])) {
@@ -64,6 +80,17 @@ class CreateSiteShortcode implements ShortcodeInterface {
                 $state['status'] = !empty($result['ok']) ? 'success' : 'error';
                 $state['message'] = (string) ($result['message'] ?? '');
                 $submitted = !empty($result['ok']);
+
+                if ($submitted) {
+                    delete_transient(self::DRAFT_PREFIX . $draft_token);
+                }
+            }
+        }
+
+        if (!$submitted && !empty($draft_token)) {
+            $saved_draft = get_transient(self::DRAFT_PREFIX . $draft_token);
+            if (is_array($saved_draft)) {
+                $setup_draft = is_array($saved_draft['setup_payload'] ?? null) ? $saved_draft['setup_payload'] : [];
             }
         }
 
@@ -74,6 +101,14 @@ class CreateSiteShortcode implements ShortcodeInterface {
             'admin_first_name' => sanitize_text_field($_POST['admin_first_name'] ?? ''),
             'admin_last_name' => sanitize_text_field($_POST['admin_last_name'] ?? ''),
         ];
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !empty($saved_draft) && is_array($saved_draft)) {
+            $form_values['site_name'] = sanitize_text_field((string) ($saved_draft['site_name'] ?? ''));
+            $form_values['subdomain'] = sanitize_title((string) ($saved_draft['subdomain'] ?? ''));
+            $form_values['admin_email'] = sanitize_email((string) ($saved_draft['admin_email'] ?? ''));
+            $form_values['admin_first_name'] = sanitize_text_field((string) ($saved_draft['admin_first_name'] ?? ''));
+            $form_values['admin_last_name'] = sanitize_text_field((string) ($saved_draft['admin_last_name'] ?? ''));
+        }
 
         if (!empty($verification_details)) {
             $form_values['site_name'] = sanitize_text_field((string) ($verification_details['site_name'] ?? $form_values['site_name']));
@@ -94,5 +129,56 @@ class CreateSiteShortcode implements ShortcodeInterface {
         ob_start();
         include MYVH_PLUGIN_DIR . 'templates/Network/create-site-form.php';
         return (string) ob_get_clean();
+    }
+
+    private function ensure_draft_token(): string {
+        $cookie = isset($_COOKIE[self::DRAFT_COOKIE]) ? sanitize_text_field(wp_unslash((string) $_COOKIE[self::DRAFT_COOKIE])) : '';
+        if ($cookie !== '') {
+            return $cookie;
+        }
+
+        $token = wp_generate_password(24, false, false);
+        $expiry = time() + (7 * 24 * 60 * 60);
+        $cookie_path = defined('COOKIEPATH') ? COOKIEPATH : '/';
+        $cookie_domain = defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '';
+        setcookie(
+            self::DRAFT_COOKIE,
+            $token,
+            $expiry,
+            $cookie_path,
+            $cookie_domain,
+            is_ssl(),
+            true
+        );
+
+        return $token;
+    }
+
+    private function handle_draft_save(string $draft_token): void {
+        if (!isset($_POST['myvh_create_site_nonce']) || !wp_verify_nonce((string) $_POST['myvh_create_site_nonce'], 'myvh_create_site_request')) {
+            wp_send_json_error(['message' => __('Invalid request nonce.', 'my-village-hall')], 403);
+        }
+
+        $setup_payload = [];
+        $raw_setup_payload = wp_unslash((string) ($_POST['setup_payload'] ?? ''));
+        if ($raw_setup_payload !== '') {
+            $decoded = json_decode($raw_setup_payload, true);
+            if (!is_array($decoded)) {
+                wp_send_json_error(['message' => __('Setup payload is invalid.', 'my-village-hall')], 400);
+            }
+            $setup_payload = $decoded;
+        }
+
+        set_transient(self::DRAFT_PREFIX . $draft_token, [
+            'site_name' => sanitize_text_field($_POST['site_name'] ?? ''),
+            'subdomain' => sanitize_title($_POST['subdomain'] ?? ''),
+            'admin_email' => sanitize_email($_POST['admin_email'] ?? ''),
+            'admin_first_name' => sanitize_text_field($_POST['admin_first_name'] ?? ''),
+            'admin_last_name' => sanitize_text_field($_POST['admin_last_name'] ?? ''),
+            'setup_payload' => $setup_payload,
+            'updated_at' => current_time('mysql'),
+        ], 7 * 24 * 60 * 60);
+
+        wp_send_json_success(['saved' => true]);
     }
 }

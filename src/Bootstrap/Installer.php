@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '1.7.0';
+    const DB_VERSION = '1.8.0';
 
     /**
      * Entry point: create all tables.
@@ -100,6 +100,10 @@ class Installer {
 
         if (version_compare($from, '1.7.0', '<')) {
             self::upgrade_to_1_7_0($wpdb);
+        }
+
+        if (version_compare($from, '1.8.0', '<')) {
+            self::upgrade_to_1_8_0($wpdb);
         }
     }
 
@@ -217,6 +221,21 @@ class Installer {
         }
     }
 
+    private static function upgrade_to_1_8_0(wpdb $wpdb): void {
+        $table = $wpdb->base_prefix . 'myvh_site_provisioning';
+
+        $has_setup_payload = $wpdb->get_var("SHOW COLUMNS FROM {$table} LIKE 'setup_payload'");
+        if (empty($has_setup_payload)) {
+            $wpdb->query("ALTER TABLE {$table} ADD COLUMN setup_payload LONGTEXT NULL AFTER logo_url");
+        }
+
+        $venues_table = $wpdb->prefix . 'myvh_venues';
+        $has_contact_email = $wpdb->get_var("SHOW COLUMNS FROM {$venues_table} LIKE 'ContactEmail'");
+        if (empty($has_contact_email)) {
+            $wpdb->query("ALTER TABLE {$venues_table} ADD COLUMN ContactEmail VARCHAR(150) NULL AFTER AddressLine1");
+        }
+    }
+
     private static function upgrade_to_1_6_0(wpdb $wpdb): void {
         $collate = $wpdb->get_charset_collate();
         self::create_room_rate_days_table($wpdb, $collate);
@@ -281,6 +300,7 @@ class Installer {
             ShortName     VARCHAR(100),
             PostCode      VARCHAR(100),
             AddressLine1  VARCHAR(100),
+            ContactEmail  VARCHAR(150),
             OpeningTime   TIME DEFAULT '09:00:00',
             ClosingTime   TIME DEFAULT '17:00:00',
             INDEX idx_name (Name)
@@ -905,6 +925,7 @@ class Installer {
             admin_last_name VARCHAR(255) NOT NULL,
             admin_password VARCHAR(255) NOT NULL,
             logo_url VARCHAR(255) NULL,
+            setup_payload LONGTEXT NULL,
             user_id BIGINT UNSIGNED NULL,
             blog_id BIGINT UNSIGNED NULL,
             status VARCHAR(20) NOT NULL,

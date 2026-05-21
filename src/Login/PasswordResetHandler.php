@@ -75,6 +75,11 @@ class PasswordResetHandler {
         if (isset($_POST['myvh_reset_confirm_nonce'])) {
             if (!wp_verify_nonce($_POST['myvh_reset_confirm_nonce'], 'myvh_reset_confirm')) wp_die('Invalid request.');
             $password = $_POST['new_password'] ?? '';
+            $confirm_password = $_POST['confirm_password'] ?? '';
+            if ((string) $password !== (string) $confirm_password) {
+                set_transient('myvh_reset_error', 'Passwords do not match.', 30);
+                wp_safe_redirect($_SERVER['REQUEST_URI']); exit;
+            }
             $error = $this->password_validator->validate((string) $password);
             if ($error) {
                 set_transient('myvh_reset_error', $error, 30);

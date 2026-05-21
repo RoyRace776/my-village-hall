@@ -46,6 +46,7 @@ class VenueService {
             'ShortName'    => sanitize_text_field($data['short_name']),
             'PostCode'     => sanitize_text_field($data['post_code']),
             'AddressLine1' => sanitize_text_field($data['address_line1']),
+            'ContactEmail' => sanitize_email($data['contact_email'] ?? ''),
             'OpeningTime'  => sanitize_text_field($data['opening_time']),
             'ClosingTime'  => sanitize_text_field($data['closing_time']),
         ];

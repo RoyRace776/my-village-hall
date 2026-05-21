@@ -41,6 +41,10 @@ $login_url = $login_page ? get_permalink($login_page->ID) : home_url('/login/');
                     <label for="myvh-new-password">New password</label>
                     <input id="myvh-new-password" type="password" name="new_password" required autocomplete="new-password" class="myvh-login-input">
                 </div>
+                <div class="myvh-form-group">
+                    <label for="myvh-new-password-confirm">Confirm new password</label>
+                    <input id="myvh-new-password-confirm" type="password" name="confirm_password" required autocomplete="new-password" class="myvh-login-input">
+                </div>
                 <p class="myvh-password-hint">Use at least 9 characters with uppercase, lowercase, number, and symbol.</p>
                 <button type="submit" class="myvh-login-button">Set password</button>
                 <div class="myvh-form-footer myvh-form-footer--secondary">
@@ -50,3 +54,37 @@ $login_url = $login_page ? get_permalink($login_page->ID) : home_url('/login/');
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.querySelector('.myvh-login-form--reset-confirm');
+    if (!form) {
+        return;
+    }
+
+    var passwordInput = form.querySelector('[name="new_password"]');
+    var confirmInput = form.querySelector('[name="confirm_password"]');
+    if (!passwordInput || !confirmInput) {
+        return;
+    }
+
+    function validateMatch() {
+        if (passwordInput.value !== confirmInput.value) {
+            confirmInput.setCustomValidity('Passwords do not match.');
+            return false;
+        }
+
+        confirmInput.setCustomValidity('');
+        return true;
+    }
+
+    passwordInput.addEventListener('input', validateMatch);
+    confirmInput.addEventListener('input', validateMatch);
+
+    form.addEventListener('submit', function (event) {
+        if (!validateMatch()) {
+            event.preventDefault();
+            confirmInput.reportValidity();
+        }
+    });
+});
+</script>

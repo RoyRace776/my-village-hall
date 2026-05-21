@@ -23,6 +23,7 @@ class SiteProvisioningRepository {
             'admin_password' => $data['admin_password'], // TODO: hash password
             'status' => 'pending',
             'logo_url' => $data['logo_url'] ?? '',
+            'setup_payload' => $this->encode_setup_payload($data['setup_payload'] ?? null),
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
         ]);
@@ -38,7 +39,7 @@ class SiteProvisioningRepository {
             ARRAY_A
         );
 
-        return $row ?: null;
+        return $this->hydrate_row($row ?: null);
     }
 
     public function update_status(int $id, string $status, array $extra = []): void {
@@ -48,6 +49,10 @@ class SiteProvisioningRepository {
             'status' => $status,
             'updated_at' => current_time('mysql'),
         ], $extra);
+
+        if (array_key_exists('setup_payload', $data)) {
+            $data['setup_payload'] = $this->encode_setup_payload($data['setup_payload']);
+        }
 
         $wpdb->update($this->table, $data, ['id' => $id]);
     }
@@ -65,7 +70,7 @@ class SiteProvisioningRepository {
             ARRAY_A
         );
 
-        return $row ?: null;
+        return $this->hydrate_row($row ?: null);
     }
 
     public function get_all(int $offset = 0, int $limit = 50): array {
@@ -80,7 +85,7 @@ class SiteProvisioningRepository {
             ARRAY_A
         );
 
-        return $rows ?: [];
+        return array_values(array_filter(array_map([$this, 'hydrate_row'], $rows ?: [])));
     }
 
     public function count_all(): int {
@@ -99,6 +104,51 @@ class SiteProvisioningRepository {
             ARRAY_A
         );
 
-        return $row ?: null;
+        return $this->hydrate_row($row ?: null);
+    }
+
+    private function encode_setup_payload(mixed $payload): ?string {
+        if ($payload === null || $payload === '') {
+            return null;
+        }
+
+        if (is_string($payload)) {
+            return $payload;
+        }
+
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        $encoded = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        return $encoded === false ? null : $encoded;
+    }
+
+    /**
+     * @param array<string, mixed>|null $row
+     * @return array<string, mixed>|null
+     */
+    private function hydrate_row(?array $row): ?array {
+        if ($row === null) {
+            return null;
+        }
+
+        if (array_key_exists('setup_payload', $row)) {
+            $row['setup_payload'] = $this->decode_setup_payload($row['setup_payload']);
+        }
+
+        return $row;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decode_setup_payload(mixed $payload): array {
+        if (!is_string($payload) || trim($payload) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($payload, true);
+        return is_array($decoded) ? $decoded : [];
     }
 }

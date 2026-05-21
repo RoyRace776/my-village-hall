@@ -51,6 +51,7 @@ class SiteProvisioningService {
             'status' => 'pending',
             'error' => '',
             'logo_url' => $data['logo_url'] ?? '',
+            'setup_payload' => $data['setup_payload'] ?? [],
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
         ]);
@@ -189,6 +190,7 @@ class SiteProvisioningService {
                 'provision_id' => $provision_id,
                 'user_id'      => $user_id,
                 'logo_url'     => $payload['logo_url'] ?? '',
+                'setup'        => is_array($payload['setup_payload'] ?? null) ? $payload['setup_payload'] : [],
             ]
         );
 
@@ -552,6 +554,14 @@ class SiteProvisioningService {
      * Sanitisation
      */
     private function sanitize(array $raw): array {
+        $setup_payload = $raw['setup_payload'] ?? [];
+        if (is_string($setup_payload) && $setup_payload !== '') {
+            $decoded = json_decode(wp_unslash($setup_payload), true);
+            if (is_array($decoded)) {
+                $setup_payload = $decoded;
+            }
+        }
+
         return [
             'site_name'        => sanitize_text_field($raw['site_name'] ?? ''),
             'subdomain'        => sanitize_title($raw['subdomain'] ?? ''),
@@ -559,8 +569,10 @@ class SiteProvisioningService {
             'admin_first_name' => sanitize_text_field($raw['admin_first_name'] ?? ''),
             'admin_last_name'  => sanitize_text_field($raw['admin_last_name'] ?? ''),
             'admin_password'   => (string) ($raw['admin_password'] ?? ''),
+            'admin_password_confirm' => (string) ($raw['admin_password_confirm'] ?? ''),
             'logo_url'         => esc_url_raw($raw['logo_url'] ?? ''),
             'request_page_url' => esc_url_raw($raw['myvh_request_page_url'] ?? ''),
+            'setup_payload'    => is_array($setup_payload) ? $setup_payload : [],
         ];
     }
 }
