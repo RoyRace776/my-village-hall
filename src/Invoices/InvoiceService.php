@@ -574,11 +574,22 @@ class InvoiceService {
      * Dompdf requires images to be embedded when isRemoteEnabled is false.
      */
     private function get_site_logo_data_uri(): string {
-        if (!function_exists('get_theme_mod')) {
+        if (!function_exists('get_attached_file')) {
             return '';
         }
 
-        $logo_id = (int) get_theme_mod('custom_logo');
+        // Prefer the plugin's own portal logo setting.
+        $logo_id = 0;
+        $portal_logo_url = trim((string) myvh_setting('general.portal_logo_url', ''));
+        if ($portal_logo_url !== '') {
+            $logo_id = (int) attachment_url_to_postid($portal_logo_url);
+        }
+
+        // Fall back to the WordPress theme's custom logo.
+        if (!$logo_id && function_exists('get_theme_mod')) {
+            $logo_id = (int) get_theme_mod('custom_logo');
+        }
+
         if (!$logo_id) {
             return '';
         }
