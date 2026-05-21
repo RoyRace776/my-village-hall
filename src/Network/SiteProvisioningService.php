@@ -189,6 +189,7 @@ class SiteProvisioningService {
             [
                 'provision_id' => $provision_id,
                 'user_id'      => $user_id,
+                'site_label'   => sanitize_text_field((string) ($payload['site_name'] ?? '')),
                 'logo_url'     => $payload['logo_url'] ?? '',
                 'setup'        => is_array($payload['setup_payload'] ?? null) ? $payload['setup_payload'] : [],
             ]

@@ -326,6 +326,69 @@ class SiteSeederTest extends UnitTestCase {
         $this->assertSame(1, $seeder->addDefaultOrganisationTypeCalls);
         $this->assertSame(1, $seeder->addSystemCustomerCalls);
     }
+
+    /** @test */
+    public function seed_updates_existing_admin_customer_and_marks_email_verified_when_initial_save_hits_duplicate(): void {
+        $customer_service = \Mockery::mock(CustomerService::class);
+        $customer_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
+            return (int) ($data['user_id'] ?? 0) === 77
+                && ($data['email'] ?? '') === 'admin@example.com'
+                && !empty($data['email_verified'])
+                && empty($data['customer_id']);
+        }))->andReturn(new WP_Error('validation', 'A customer with this email already exists'));
+
+        $customer_service->shouldReceive('get_by_email')->once()->with('admin@example.com')->andReturn(['Id' => 333]);
+
+        $customer_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
+            return (int) ($data['customer_id'] ?? 0) === 333
+                && (int) ($data['user_id'] ?? 0) === 77
+                && ($data['email'] ?? '') === 'admin@example.com'
+                && !empty($data['email_verified']);
+        }))->andReturn(333);
+
+        $venue_service = \Mockery::mock(VenueService::class);
+        $venue_service->shouldReceive('save')->once()->andReturn(31);
+
+        $room_service = \Mockery::mock(RoomService::class);
+        $room_service->shouldReceive('save')->once()->andReturn(99);
+
+        $room_rate_service = \Mockery::mock(RoomRateService::class);
+        $room_rate_service->shouldReceive('save')->once();
+
+        $client_admin_service = \Mockery::mock(ClientAdminService::class);
+        $client_admin_service->shouldReceive('add_assignment')->once()->with(123, 77);
+
+        $general_settings = \Mockery::mock(GeneralSettings::class);
+        $general_settings->shouldReceive('save')->once();
+
+        $notice_settings = \Mockery::mock(NoticeSettings::class);
+        $notice_settings->shouldReceive('get')->once()->with('notices')->andReturn([]);
+        $notice_settings->shouldReceive('save')->once();
+
+        $seeder = new TestableSiteSeeder(
+            $customer_service,
+            $venue_service,
+            $room_service,
+            $room_rate_service,
+            \Mockery::mock(AddonRepository::class),
+            $client_admin_service,
+            $general_settings,
+            $notice_settings
+        );
+
+        Functions\expect('switch_to_blog')->once()->with(123);
+        Functions\expect('restore_current_blog')->once();
+        Functions\expect('get_user_by')->once()->with('email', 'admin@example.com')->andReturn((object) [
+            'ID' => 77,
+            'user_email' => 'admin@example.com',
+            'first_name' => 'Site',
+            'last_name' => 'Admin',
+        ]);
+
+        $seeder->seed(123);
+
+        $this->addToAssertionCount(1);
+    }
 }
 
 class TestableSiteSeeder extends SiteSeeder {

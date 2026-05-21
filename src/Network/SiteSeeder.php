@@ -22,11 +22,16 @@ use MYVH\Availability\AvailabilityService;
 use MYVH\Bookings\BookingRepository;
 use MYVH\Organisations\OrganisationRepository;
 use MYVH\Organisations\OrganisationMemberRepository;
+use WP_Error;
 use Psr\Log\NullLogger;
 
 class SiteSeeder {
 
     private function null_logger(): NullLogger {
+        return new NullLogger();
+    }
+
+    private function logger(): NullLogger {
         return new NullLogger();
     }
 
@@ -43,15 +48,56 @@ class SiteSeeder {
 
         // Add in the admin user as a customer too, so they can manage their own bookings, etc.
         $customer_service = $this->make_customer_service();
-        $admin_user = get_user_by('email', get_bloginfo('admin_email'));
+        $admin_user = null;
+
+        $context_user_id = isset($context['user_id']) ? (int) $context['user_id'] : 0;
+        if ($context_user_id > 0) {
+            $admin_user = get_user_by('id', $context_user_id);
+        }
+
+        if (!$admin_user) {
+            $admin_email = (string) get_bloginfo('admin_email');
+            if ($admin_email !== '') {
+                $admin_user = get_user_by('email', $admin_email);
+            }
+        }
+
         if ($admin_user) {
-            $customer_service->save(
-                [
+            $customer_payload = [
                 'user_id' => $admin_user->ID,
                 'email' => $admin_user->user_email,
                 'name' => $admin_user->first_name . ' ' . $admin_user->last_name,
                 'email_verified' => 1,
+            ];
+
+            $customer_result = $customer_service->save($customer_payload);
+
+            if (is_wp_error($customer_result)) {
+                $this->logger()->warning('Admin customer save failed during provisioning; attempting existing-customer fallback.', [
+                    'blog_id' => $blog_id,
+                    'user_id' => (int) $admin_user->ID,
+                    'email' => (string) $admin_user->user_email,
+                    'error' => $customer_result instanceof WP_Error ? $customer_result->get_error_message() : '',
                 ]);
+
+                $existing_customer = $customer_service->get_by_email((string) $admin_user->user_email);
+                $existing_customer_id = isset($existing_customer['Id']) ? (int) $existing_customer['Id'] : 0;
+
+                if ($existing_customer_id > 0) {
+                    $customer_payload['customer_id'] = $existing_customer_id;
+                    $fallback_result = $customer_service->save($customer_payload);
+
+                    if (is_wp_error($fallback_result)) {
+                        $this->logger()->error('Admin customer fallback update failed during provisioning.', [
+                            'blog_id' => $blog_id,
+                            'customer_id' => $existing_customer_id,
+                            'user_id' => (int) $admin_user->ID,
+                            'email' => (string) $admin_user->user_email,
+                            'error' => $fallback_result instanceof WP_Error ? $fallback_result->get_error_message() : '',
+                        ]);
+                    }
+                }
+            }
 
             $this->make_client_admin_service()->add_assignment($blog_id, (int) $admin_user->ID);
             }
@@ -59,9 +105,14 @@ class SiteSeeder {
         $this->seed_booking_setup($context);
 
         // Settings
+        $site_label = sanitize_text_field((string) ($context['site_label'] ?? $context['site_name'] ?? ''));
+        if ($site_label === '') {
+            $site_label = 'My Booking System';
+        }
+
         $this->make_general_settings()->save([
             'portal_logo_url' => $context['logo_url'] ?? '',
-            'site_label' => $context['site_label'] ?? 'My Booking System',
+            'site_label' => $site_label,
         ]);
 
         $notice_settings = $this->make_notice_settings();

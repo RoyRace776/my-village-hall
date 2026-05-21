@@ -1,5 +1,5 @@
 <?php
-namespace MyVH\Settings;
+namespace MYVH\Settings;
 
 class BookingSettings extends SettingsBase {
 
