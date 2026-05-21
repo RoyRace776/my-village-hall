@@ -142,8 +142,7 @@ if ($show_reset_request) {
         <?php elseif (has_custom_logo()): ?>
             <div class="myvh-login-logo"><?php echo get_custom_logo(); ?></div>
         <?php endif; ?>
-        <p class="myvh-login-kicker"><?php echo esc_html(get_bloginfo('name')); ?></p>
-        <h1><?php echo esc_html($hero_title); ?></h1>
+        <h1><?php echo esc_html(get_bloginfo('name')); ?></h1>
         <p><?php echo esc_html($hero_message); ?></p>
     </header>
 
@@ -189,7 +188,30 @@ if ($show_reset_request) {
 
         <div class="myvh-form-group">
             <label for="myvh-password">Password</label>
-            <input type="password" id="myvh-password" name="password" required>
+            <div class="myvh-password-field">
+                <input type="password" id="myvh-password" name="password" required>
+                <button
+                    type="button"
+                    class="myvh-password-toggle"
+                    data-password-toggle
+                    data-show-label="Show password"
+                    data-hide-label="Hide password"
+                    aria-controls="myvh-password"
+                    aria-label="Show password"
+                    aria-pressed="false"
+                >
+                    <span class="myvh-password-toggle__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye">
+                            <path d="M1.5 12C3.4 7.9 7.3 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C20.6 16.1 16.7 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.8"/>
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye-off">
+                            <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M1.5 12C2.6 9.6 4.4 7.58 6.65 6.28M10.6 5.36C11.05 5.29 11.52 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C21.56 14.03 20.18 15.71 18.5 16.94M14.86 18.35C13.94 18.62 12.98 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </button>
+            </div>
         </div>
 
         <div class="myvh-form-group myvh-checkbox-group">
@@ -215,8 +237,6 @@ if ($show_reset_request) {
     <?php if ($show_register_form): ?>
     <form method="post" id="myvh-register-form" class="myvh-login-form myvh-register-form<?php echo $show_register_focus ? ' myvh-register-focus' : ''; ?>">
 
-        <h2>Create account</h2>
-        <p class="myvh-form-subtitle">Set up a customer profile for the portal.</p>
 
         <?php if ($register_error): ?>
             <div class="myvh-error-message">
@@ -254,12 +274,58 @@ if ($show_reset_request) {
 
         <div class="myvh-form-group">
             <label for="myvh-register-password">Password</label>
-            <input type="password" id="myvh-register-password" name="password" minlength="9" required>
+            <div class="myvh-password-field">
+                <input type="password" id="myvh-register-password" name="password" minlength="9" required>
+                <button
+                    type="button"
+                    class="myvh-password-toggle"
+                    data-password-toggle
+                    data-show-label="Show password"
+                    data-hide-label="Hide password"
+                    aria-controls="myvh-register-password"
+                    aria-label="Show password"
+                    aria-pressed="false"
+                >
+                    <span class="myvh-password-toggle__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye">
+                            <path d="M1.5 12C3.4 7.9 7.3 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C20.6 16.1 16.7 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.8"/>
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye-off">
+                            <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M1.5 12C2.6 9.6 4.4 7.58 6.65 6.28M10.6 5.36C11.05 5.29 11.52 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C21.56 14.03 20.18 15.71 18.5 16.94M14.86 18.35C13.94 18.62 12.98 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </button>
+            </div>
         </div>
 
         <div class="myvh-form-group">
             <label for="myvh-register-password-confirm">Confirm password</label>
-            <input type="password" id="myvh-register-password-confirm" name="confirm_password" minlength="9" required>
+            <div class="myvh-password-field">
+                <input type="password" id="myvh-register-password-confirm" name="confirm_password" minlength="9" required>
+                <button
+                    type="button"
+                    class="myvh-password-toggle"
+                    data-password-toggle
+                    data-show-label="Show password"
+                    data-hide-label="Hide password"
+                    aria-controls="myvh-register-password-confirm"
+                    aria-label="Show password"
+                    aria-pressed="false"
+                >
+                    <span class="myvh-password-toggle__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye">
+                            <path d="M1.5 12C3.4 7.9 7.3 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C20.6 16.1 16.7 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.8"/>
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye-off">
+                            <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M1.5 12C2.6 9.6 4.4 7.58 6.65 6.28M10.6 5.36C11.05 5.29 11.52 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C21.56 14.03 20.18 15.71 18.5 16.94M14.86 18.35C13.94 18.62 12.98 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </button>
+            </div>
         </div>
 
         <p class="myvh-password-hint">Use at least 9 characters with uppercase, lowercase, number, and symbol.</p>
@@ -274,3 +340,35 @@ if ($show_reset_request) {
     </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var toggleButtons = document.querySelectorAll('[data-password-toggle]');
+    if (!toggleButtons.length) {
+        return;
+    }
+
+    toggleButtons.forEach(function (button) {
+        var inputId = button.getAttribute('aria-controls');
+        if (!inputId) {
+            return;
+        }
+
+        var input = document.getElementById(inputId);
+        if (!input) {
+            return;
+        }
+
+        button.addEventListener('click', function () {
+            var shouldShow = input.type === 'password';
+            input.type = shouldShow ? 'text' : 'password';
+
+            button.setAttribute('aria-pressed', shouldShow ? 'true' : 'false');
+            button.setAttribute(
+                'aria-label',
+                shouldShow ? (button.getAttribute('data-hide-label') || 'Hide password') : (button.getAttribute('data-show-label') || 'Show password')
+            );
+        });
+    });
+});
+</script>

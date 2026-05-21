@@ -116,6 +116,21 @@ class ClientAdminService {
         $this->save_assignments($assignments);
     }
 
+    public function remove_all_assignments_for_blog(int $blog_id): void {
+        if ($blog_id <= 0) {
+            return;
+        }
+
+        $assignments = $this->get_assignments();
+
+        if (!isset($assignments[$blog_id])) {
+            return;
+        }
+
+        unset($assignments[$blog_id]);
+        $this->save_assignments($assignments);
+    }
+
     public function find_user(string $identifier): ?WP_User {
         $identifier = trim($identifier);
 
@@ -186,6 +201,10 @@ class ClientAdminService {
         $sites = [];
 
         foreach ($site_ids as $site_id) {
+            if (!$this->is_site_available($site_id)) {
+                continue;
+            }
+
             $sites[] = [
                 'blog_id' => $site_id,
                 'name' => $this->get_site_name($site_id),
@@ -247,6 +266,26 @@ class ClientAdminService {
         }
 
         return $blog_ids;
+    }
+
+    private function is_site_available(int $blog_id): bool {
+        if ($blog_id <= 0) {
+            return false;
+        }
+
+        if (!is_multisite()) {
+            return true;
+        }
+
+        $site = get_site($blog_id);
+
+        if (!$site) {
+            return false;
+        }
+
+        return (int) $site->deleted !== 1
+            && (int) $site->archived !== 1
+            && (int) $site->spam !== 1;
     }
 
     private function user_has_site_admin_cap(int $user_id, int $blog_id): bool {

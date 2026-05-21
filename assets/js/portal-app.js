@@ -109,6 +109,41 @@ document.addEventListener("DOMContentLoaded", () => {
         return Promise.resolve(false);
     }
 
+    function setPasswordToggleState(button, input, showPassword) {
+        if (!button || !input) {
+            return;
+        }
+
+        input.type = showPassword ? 'text' : 'password';
+        button.setAttribute('aria-pressed', showPassword ? 'true' : 'false');
+        button.setAttribute(
+            'aria-label',
+            showPassword
+                ? (button.getAttribute('data-hide-label') || 'Hide password')
+                : (button.getAttribute('data-show-label') || 'Show password')
+        );
+    }
+
+    function resetPasswordVisibility(container) {
+        if (!container) {
+            return;
+        }
+
+        container.querySelectorAll('[data-password-toggle]').forEach((button) => {
+            const inputId = button.getAttribute('aria-controls');
+            if (!inputId) {
+                return;
+            }
+
+            const input = document.getElementById(inputId);
+            if (!input) {
+                return;
+            }
+
+            setPasswordToggleState(button, input, false);
+        });
+    }
+
     function initPortalNavigation() {
         const portalNav = document.querySelector('[data-portal-nav]');
         if (!portalNav || portalNav.dataset.bound === '1') {
@@ -2065,6 +2100,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ensure in-content hash links still work when clicking the same route twice.
     document.getElementById('portal-content').addEventListener('click', function (e) {
+        const passwordToggle = e.target.closest('[data-password-toggle]');
+        if (passwordToggle) {
+            e.preventDefault();
+
+            const inputId = passwordToggle.getAttribute('aria-controls');
+            if (!inputId) {
+                return;
+            }
+
+            const input = document.getElementById(inputId);
+            if (!input) {
+                return;
+            }
+
+            setPasswordToggleState(passwordToggle, input, input.type === 'password');
+            return;
+        }
+
         const dashboardInvoiceRow = e.target.closest('[data-dashboard-invoice-route]');
         if (dashboardInvoiceRow) {
             const clickedControl = e.target.closest('a, button, input, select, textarea, label');
@@ -2171,6 +2224,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     form.reset();
+                    resetPasswordVisibility(form);
                     showMessage(message, res.data?.message || 'Password changed successfully', false);
                 })
                 .catch(() => {

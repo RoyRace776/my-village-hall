@@ -19,17 +19,20 @@ class CreateSiteShortcode implements ShortcodeInterface {
     }
 
     public function render( mixed $atts = [], mixed $content = null): string {
+        $plugin_url = defined('MYVH_PLUGIN_URL') ? (string) constant('MYVH_PLUGIN_URL') : '';
+        $plugin_version = defined('MYVH_VERSION') ? (string) constant('MYVH_VERSION') : null;
+
         wp_enqueue_style(
             'myvh-network-create-site',
-            MYVH_PLUGIN_URL . 'assets/css/network-create-site.css',
+            $plugin_url . 'assets/css/network-create-site.css',
             [],
-            MYVH_VERSION
+            $plugin_version
         );
         wp_enqueue_script(
             'myvh-network-create-site',
-            MYVH_PLUGIN_URL . 'assets/js/network-create-site.js',
+            $plugin_url . 'assets/js/network-create-site.js',
             [],
-            MYVH_VERSION,
+            $plugin_version,
             true
         );
 
@@ -76,10 +79,21 @@ class CreateSiteShortcode implements ShortcodeInterface {
                 $state['status'] = 'error';
                 $state['message'] = __('Invalid request nonce.', 'my-village-hall');
             } else {
-                $result = $this->service->submit($_POST);
-                $state['status'] = !empty($result['ok']) ? 'success' : 'error';
-                $state['message'] = (string) ($result['message'] ?? '');
-                $submitted = !empty($result['ok']);
+                $submit_payload = $_POST;
+                $logo_upload = $this->handle_logo_upload($_FILES['logo'] ?? null);
+
+                if (is_wp_error($logo_upload)) {
+                    $state['status'] = 'error';
+                    $state['message'] = (string) $logo_upload->get_error_message();
+                    $submitted = false;
+                } else {
+                    $submit_payload['logo_url'] = $logo_upload;
+
+                    $result = $this->service->submit($submit_payload);
+                    $state['status'] = !empty($result['ok']) ? 'success' : 'error';
+                    $state['message'] = (string) ($result['message'] ?? '');
+                    $submitted = !empty($result['ok']);
+                }
 
                 if ($submitted) {
                     delete_transient(self::DRAFT_PREFIX . $draft_token);
@@ -180,5 +194,40 @@ class CreateSiteShortcode implements ShortcodeInterface {
         ], 7 * 24 * 60 * 60);
 
         wp_send_json_success(['saved' => true]);
+    }
+
+    private function handle_logo_upload(mixed $file): string|\WP_Error {
+        if (!is_array($file) || empty($file['name'])) {
+            return '';
+        }
+
+        $upload_error = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+        if ($upload_error === UPLOAD_ERR_NO_FILE) {
+            return '';
+        }
+
+        if ($upload_error !== UPLOAD_ERR_OK) {
+            return new \WP_Error(
+                'myvh_logo_upload_failed',
+                __('Logo upload failed. Please try again.', 'my-village-hall')
+            );
+        }
+
+        if (!function_exists('wp_handle_upload')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        $result = wp_handle_upload($file, [
+            'test_form' => false,
+        ]);
+
+        if (!is_array($result) || !empty($result['error'])) {
+            return new \WP_Error(
+                'myvh_logo_upload_failed',
+                __('Logo upload failed. Please choose a valid image file and try again.', 'my-village-hall')
+            );
+        }
+
+        return esc_url_raw((string) ($result['url'] ?? ''));
     }
 }

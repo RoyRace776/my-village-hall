@@ -218,6 +218,7 @@
 
 .myvh-site-request-grid input {
     width: 100%;
+    box-sizing: border-box;
     min-height: 48px;
     padding: 11px 13px;
     border: 1px solid var(--myvh-border-strong);
@@ -231,6 +232,51 @@
 .myvh-site-request-grid input[type="file"] {
     padding: 10px 12px;
     background: #fff;
+}
+
+.myvh-password-peek {
+    position: relative;
+}
+
+.myvh-password-peek > input {
+    padding-right: 88px;
+}
+
+.myvh-password-peek__toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-height: 34px;
+    padding: 6px 12px;
+    border: 1px solid var(--myvh-border-strong);
+    border-radius: 999px;
+    background: #ffffff;
+    color: #164e63;
+    font-size: 0.84rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.myvh-password-peek__toggle:hover,
+.myvh-password-peek__toggle:focus {
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+    outline: none;
+}
+
+.myvh-password-peek__icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.myvh-password-peek__icon-slash {
+    opacity: 0;
+}
+
+.myvh-password-peek__toggle.is-visible .myvh-password-peek__icon-slash {
+    opacity: 1;
 }
 
 .myvh-site-request-grid input:focus {

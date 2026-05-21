@@ -20,7 +20,7 @@ class SiteProvisioningRepository {
             'admin_email' => $data['admin_email'],
             'admin_first_name' => $data['admin_first_name'],
             'admin_last_name' => $data['admin_last_name'],
-            'admin_password' => $data['admin_password'], // TODO: hash password
+            'admin_password' => $data['admin_password'],
             'status' => 'pending',
             'logo_url' => $data['logo_url'] ?? '',
             'setup_payload' => $this->encode_setup_payload($data['setup_payload'] ?? null),

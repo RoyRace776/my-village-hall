@@ -5,6 +5,7 @@ namespace MYVH\Network;
 use MYVH\Addons\AddonRepository;
 use MYVH\Bootstrap\Installer;
 use MYVH\Rooms\RoomService;
+use MYVH\Rooms\RoomColour;
 use MYVH\Rooms\RoomRepository;
 use MYVH\Rooms\RoomHoursRepository;
 use MYVH\Rooms\RoomDepositRepository;
@@ -110,10 +111,19 @@ class SiteSeeder {
             $site_label = 'My Booking System';
         }
 
-        $this->make_general_settings()->save([
+        $admin_email = sanitize_email((string) ($context['admin_email'] ?? ''));
+
+        $settings_payload = [
             'portal_logo_url' => $context['logo_url'] ?? '',
             'site_label' => $site_label,
-        ]);
+        ];
+
+        if ($admin_email !== '') {
+            $settings_payload['admin_email'] = $admin_email;
+            update_option('admin_email', $admin_email);
+        }
+
+        $this->make_general_settings()->save($settings_payload);
 
         $notice_settings = $this->make_notice_settings();
         $existing_notices = $notice_settings->get('notices');
@@ -267,6 +277,7 @@ class SiteSeeder {
         $room_id = $this->make_room_service()->save([
             'name' => 'Main Hall',
             'venue_id' => $venue_id,
+            'room_colour' => RoomColour::fallback(1),
             'capacity' => 100,
             'description' => 'A large hall suitable for events and gatherings.',
             'opening_time' => '09:00',
@@ -308,9 +319,18 @@ class SiteSeeder {
                 continue;
             }
 
+            $room_colour = (string) (
+                $room['room_colour']
+                ?? $room['room_color']
+                ?? $room['colour']
+                ?? $room['color']
+                ?? RoomColour::fallback($index + 1)
+            );
+
             $room_id = $room_service->save([
                 'name' => (string) $room['name'],
                 'venue_id' => $venue_id,
+                'room_colour' => $room_colour,
                 'capacity' => isset($room['capacity']) ? (int) $room['capacity'] : 0,
                 'description' => (string) ($room['description'] ?? ''),
                 'opening_time' => (string) ($room['opening_time'] ?? $venue_opening_time),

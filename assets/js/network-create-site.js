@@ -13,6 +13,32 @@
         return Number.isFinite(parsed) ? parsed : null;
     }
 
+    function buildPasswordPeek(form) {
+        qsa(form, '[data-myvh-password-toggle="1"]').forEach(function (toggleButton) {
+            var targetId = toggleButton.getAttribute('data-myvh-password-target');
+            var targetInput = targetId ? document.getElementById(targetId) : null;
+            if (!targetInput) {
+                return;
+            }
+
+            var showLabel = toggleButton.getAttribute('data-show-label') || 'Show';
+            var hideLabel = toggleButton.getAttribute('data-hide-label') || 'Hide';
+            var toggleLabel = toggleButton.querySelector('[data-myvh-password-toggle-label="1"]');
+
+            toggleButton.addEventListener('click', function () {
+                var isVisible = targetInput.type === 'text';
+                targetInput.type = isVisible ? 'password' : 'text';
+                if (toggleLabel) {
+                    toggleLabel.textContent = isVisible ? showLabel : hideLabel;
+                } else {
+                    toggleButton.textContent = isVisible ? showLabel : hideLabel;
+                }
+                toggleButton.setAttribute('aria-pressed', isVisible ? 'false' : 'true');
+                toggleButton.classList.toggle('is-visible', !isVisible);
+            });
+        });
+    }
+
     function buildWizard(form) {
         var steps = qsa(form, '.myvh-wizard-step');
         if (!steps.length) {
@@ -446,6 +472,7 @@
             return;
         }
 
+        buildPasswordPeek(form);
         buildSubdomainPreview(form);
         buildWizard(form);
     });

@@ -17,8 +17,7 @@ $login_url = $login_page ? get_permalink($login_page->ID) : home_url('/login/');
             <?php elseif (has_custom_logo()): ?>
                 <div class="myvh-login-logo"><?php echo get_custom_logo(); ?></div>
             <?php endif; ?>
-            <p class="myvh-login-kicker"><?php echo esc_html(get_bloginfo('name')); ?></p>
-            <h1>Forgot your password?</h1>
+            <h1><?php echo esc_html(get_bloginfo('name')); ?></h1>
             <p>Enter your email address and we'll send you a link to reset your password.</p>
         </header>
         <div class="myvh-login-columns myvh-login-columns--single">

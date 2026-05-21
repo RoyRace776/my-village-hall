@@ -47,10 +47,19 @@ class Installer {
         self::create_tables( $wpdb, $collate );
         self::backfill_opening_hours_by_day( $wpdb );
         self::set_default_data( $wpdb );
+
+        // Keep migration state in sync when a full install has run.
+        update_option('myvh_db_version', self::DB_VERSION);
     }
 
-        public static function maybe_upgrade(): void {
+    public static function maybe_upgrade(): void {
         $current = get_option('myvh_db_version', '0.0.0');
+
+        // Fresh installs should run the full installer, not point-in-time migrations.
+        if ($current === '0.0.0' || $current === false || $current === '') {
+            self::run();
+            return;
+        }
 
         if (version_compare($current, self::DB_VERSION, '>=')) {
             return;

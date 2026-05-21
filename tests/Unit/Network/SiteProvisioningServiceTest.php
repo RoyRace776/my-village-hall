@@ -39,6 +39,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
         Functions\stubs([
             'is_wp_error' => static fn($value): bool => $value instanceof WP_Error,
             'wp_hash_password' => static fn($value): string => 'hash:' . (string) $value,
+            'wp_unslash' => static fn($value) => $value,
             'current_time' => static fn(): string => '2026-01-01 00:00:00',
             'set_transient' => function (string $key, $value, int $ttl): bool {
                 $this->transients[$key] = $value;
@@ -109,7 +110,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
                     && ($record['site_name'] ?? '') === 'Hall One'
                     && ($record['admin_email'] ?? '') === ''
                     && ($record['setup_payload']['venue']['name'] ?? '') === 'Village Hall'
-                    && str_starts_with((string) ($record['admin_password'] ?? ''), 'hash:');
+                    && ($record['admin_password'] ?? '') === 'Password1!';
             }))
             ->andReturn(12);
 
@@ -194,7 +195,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
             'id' => 42,
             'subdomain' => 'hall-b',
             'site_name' => 'Hall B',
-            'admin_email' => '',
+            'admin_email' => 'admin@example.test',
             'admin_first_name' => 'Admin',
             'admin_last_name' => 'User',
             'admin_password' => 'Password1!',
@@ -220,6 +221,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
                 \Mockery::on(static fn(array $site): bool => ($site['name'] ?? '') === 'hall-b'),
                 \Mockery::on(static function (array $ctx): bool {
                     return \intval($ctx['provision_id'] ?? 0) === 42
+                        && ($ctx['admin_email'] ?? '') === 'admin@example.test'
                         && ($ctx['setup']['venue']['name'] ?? '') === 'Configured Hall';
                 })
             )
@@ -232,4 +234,5 @@ class SiteProvisioningServiceTest extends UnitTestCase {
         $this->assertSame('https://site-44.example.test', $result['site_url']);
         $this->assertSame(44, $result['details']['blog_id']);
     }
+
 }

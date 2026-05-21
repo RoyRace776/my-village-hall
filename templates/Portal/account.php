@@ -71,17 +71,86 @@ $profile_post_code = !empty($customer['PostCode']) ? $customer['PostCode'] : '';
             <form id="myvh-account-password-form" class="myvh-account-form">
                 <label class="myvh-account-field" for="myvh-current-password">
                     <span>Current password</span>
-                    <input id="myvh-current-password" type="password" name="current_password" required autocomplete="current-password">
+                    <div class="myvh-password-field">
+                        <input id="myvh-current-password" type="password" name="current_password" required autocomplete="current-password">
+                        <button
+                            type="button"
+                            class="myvh-password-toggle"
+                            data-password-toggle
+                            data-show-label="Show password"
+                            data-hide-label="Hide password"
+                            aria-controls="myvh-current-password"
+                            aria-label="Show password"
+                            aria-pressed="false"
+                        >
+                            <span class="myvh-password-toggle__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye">
+                                    <path d="M1.5 12C3.4 7.9 7.3 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C20.6 16.1 16.7 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.8"/>
+                                </svg>
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye-off">
+                                    <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    <path d="M1.5 12C2.6 9.6 4.4 7.58 6.65 6.28M10.6 5.36C11.05 5.29 11.52 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C21.56 14.03 20.18 15.71 18.5 16.94M14.86 18.35C13.94 18.62 12.98 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
                 </label>
 
                 <label class="myvh-account-field" for="myvh-new-password">
                     <span>New password</span>
-                    <input id="myvh-new-password" type="password" name="new_password" required minlength="9" autocomplete="new-password">
+                    <div class="myvh-password-field">
+                        <input id="myvh-new-password" type="password" name="new_password" required minlength="9" autocomplete="new-password">
+                        <button
+                            type="button"
+                            class="myvh-password-toggle"
+                            data-password-toggle
+                            data-show-label="Show password"
+                            data-hide-label="Hide password"
+                            aria-controls="myvh-new-password"
+                            aria-label="Show password"
+                            aria-pressed="false"
+                        >
+                            <span class="myvh-password-toggle__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye">
+                                    <path d="M1.5 12C3.4 7.9 7.3 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C20.6 16.1 16.7 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.8"/>
+                                </svg>
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye-off">
+                                    <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    <path d="M1.5 12C2.6 9.6 4.4 7.58 6.65 6.28M10.6 5.36C11.05 5.29 11.52 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C21.56 14.03 20.18 15.71 18.5 16.94M14.86 18.35C13.94 18.62 12.98 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
                 </label>
 
                 <label class="myvh-account-field" for="myvh-confirm-password">
                     <span>Confirm new password</span>
-                    <input id="myvh-confirm-password" type="password" name="confirm_password" required minlength="9" autocomplete="new-password">
+                    <div class="myvh-password-field">
+                        <input id="myvh-confirm-password" type="password" name="confirm_password" required minlength="9" autocomplete="new-password">
+                        <button
+                            type="button"
+                            class="myvh-password-toggle"
+                            data-password-toggle
+                            data-show-label="Show password"
+                            data-hide-label="Hide password"
+                            aria-controls="myvh-confirm-password"
+                            aria-label="Show password"
+                            aria-pressed="false"
+                        >
+                            <span class="myvh-password-toggle__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye">
+                                    <path d="M1.5 12C3.4 7.9 7.3 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C20.6 16.1 16.7 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.8"/>
+                                </svg>
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye-off">
+                                    <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    <path d="M1.5 12C2.6 9.6 4.4 7.58 6.65 6.28M10.6 5.36C11.05 5.29 11.52 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C21.56 14.03 20.18 15.71 18.5 16.94M14.86 18.35C13.94 18.62 12.98 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
                 </label>
 
                 <p class="myvh-account-hint">Use at least 9 characters with uppercase, lowercase, number, and symbol.</p>

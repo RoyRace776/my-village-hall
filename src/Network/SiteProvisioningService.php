@@ -45,7 +45,8 @@ class SiteProvisioningService {
             'admin_email' => $data['admin_email'],
             'admin_first_name' => $data['admin_first_name'],
             'admin_last_name' => $data['admin_last_name'],
-            'admin_password' => wp_hash_password($data['admin_password']),
+            // Store the validated password as entered so wp_create_user hashes it exactly once.
+            'admin_password' => (string) $data['admin_password'],
             'user_id' => 0, // resolved at provisioning step
             'blog_id' => 0, // resolved at provisioning step
             'status' => 'pending',
@@ -190,6 +191,7 @@ class SiteProvisioningService {
                 'provision_id' => $provision_id,
                 'user_id'      => $user_id,
                 'site_label'   => sanitize_text_field((string) ($payload['site_name'] ?? '')),
+                'admin_email'  => sanitize_email((string) ($payload['admin_email'] ?? '')),
                 'logo_url'     => $payload['logo_url'] ?? '',
                 'setup'        => is_array($payload['setup_payload'] ?? null) ? $payload['setup_payload'] : [],
             ]
@@ -525,6 +527,17 @@ class SiteProvisioningService {
 
         $user = get_user_by('email', $email);
         if ($user) {
+            $updated_user = wp_update_user([
+                'ID' => (int) $user->ID,
+                'user_pass' => (string) ($payload['admin_password'] ?? ''),
+                'first_name' => $payload['admin_first_name'] ?? '',
+                'last_name'  => $payload['admin_last_name'] ?? '',
+            ]);
+
+            if (is_wp_error($updated_user)) {
+                return $updated_user;
+            }
+
             return (int) $user->ID;
         }
 
@@ -569,8 +582,8 @@ class SiteProvisioningService {
             'admin_email'      => sanitize_email($raw['admin_email'] ?? ''),
             'admin_first_name' => sanitize_text_field($raw['admin_first_name'] ?? ''),
             'admin_last_name'  => sanitize_text_field($raw['admin_last_name'] ?? ''),
-            'admin_password'   => (string) ($raw['admin_password'] ?? ''),
-            'admin_password_confirm' => (string) ($raw['admin_password_confirm'] ?? ''),
+            'admin_password'   => wp_unslash((string) ($raw['admin_password'] ?? '')),
+            'admin_password_confirm' => wp_unslash((string) ($raw['admin_password_confirm'] ?? '')),
             'logo_url'         => esc_url_raw($raw['logo_url'] ?? ''),
             'request_page_url' => esc_url_raw($raw['myvh_request_page_url'] ?? ''),
             'setup_payload'    => is_array($setup_payload) ? $setup_payload : [],

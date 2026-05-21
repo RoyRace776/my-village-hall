@@ -428,13 +428,51 @@ if ($site_slug !== '' && $network_domain !== '') {
                     <label class="myvh-site-request-field myvh-site-request-field--full">
                         <span class="myvh-site-request-field__label"><?php echo esc_html__('Admin password', 'my-village-hall'); ?> <span class="myvh-site-request-badge"><?php echo esc_html__('Required', 'my-village-hall'); ?></span></span>
                         <span class="myvh-site-request-field__hint" id="myvh-admin-password-hint"><?php echo esc_html__('Use at least 9 characters including an uppercase letter, a lowercase letter, a number, and a symbol.', 'my-village-hall'); ?></span>
-                        <input type="password" name="admin_password" required minlength="9" aria-describedby="myvh-admin-password-hint">
+                        <div class="myvh-password-peek">
+                            <input type="password" id="myvh-admin-password" name="admin_password" required minlength="9" aria-describedby="myvh-admin-password-hint">
+                            <button
+                                type="button"
+                                class="myvh-password-peek__toggle"
+                                data-myvh-password-toggle="1"
+                                data-myvh-password-target="myvh-admin-password"
+                                data-show-label="<?php echo esc_attr__('Show', 'my-village-hall'); ?>"
+                                data-hide-label="<?php echo esc_attr__('Hide', 'my-village-hall'); ?>"
+                                aria-controls="myvh-admin-password"
+                                aria-pressed="false"
+                            >
+                                <svg class="myvh-password-peek__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                    <path d="M2 12C4.6 7.8 8.1 5.7 12 5.7C15.9 5.7 19.4 7.8 22 12C19.4 16.2 15.9 18.3 12 18.3C8.1 18.3 4.6 16.2 2 12Z" stroke="currentColor" stroke-width="1.8"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+                                    <path class="myvh-password-peek__icon-slash" d="M4 20L20 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                </svg>
+                                <span class="sr-only" data-myvh-password-toggle-label="1"><?php echo esc_html__('Show', 'my-village-hall'); ?></span>
+                            </button>
+                        </div>
                     </label>
 
                     <label class="myvh-site-request-field myvh-site-request-field--full">
                         <span class="myvh-site-request-field__label"><?php echo esc_html__('Confirm admin password', 'my-village-hall'); ?> <span class="myvh-site-request-badge"><?php echo esc_html__('Required', 'my-village-hall'); ?></span></span>
                         <span class="myvh-site-request-field__hint" id="myvh-admin-password-confirm-hint"><?php echo esc_html__('Enter the same password again to confirm.', 'my-village-hall'); ?></span>
-                        <input type="password" name="admin_password_confirm" required minlength="9" aria-describedby="myvh-admin-password-confirm-hint">
+                        <div class="myvh-password-peek">
+                            <input type="password" id="myvh-admin-password-confirm" name="admin_password_confirm" required minlength="9" aria-describedby="myvh-admin-password-confirm-hint">
+                            <button
+                                type="button"
+                                class="myvh-password-peek__toggle"
+                                data-myvh-password-toggle="1"
+                                data-myvh-password-target="myvh-admin-password-confirm"
+                                data-show-label="<?php echo esc_attr__('Show', 'my-village-hall'); ?>"
+                                data-hide-label="<?php echo esc_attr__('Hide', 'my-village-hall'); ?>"
+                                aria-controls="myvh-admin-password-confirm"
+                                aria-pressed="false"
+                            >
+                                <svg class="myvh-password-peek__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                    <path d="M2 12C4.6 7.8 8.1 5.7 12 5.7C15.9 5.7 19.4 7.8 22 12C19.4 16.2 15.9 18.3 12 18.3C8.1 18.3 4.6 16.2 2 12Z" stroke="currentColor" stroke-width="1.8"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+                                    <path class="myvh-password-peek__icon-slash" d="M4 20L20 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                </svg>
+                                <span class="sr-only" data-myvh-password-toggle-label="1"><?php echo esc_html__('Show', 'my-village-hall'); ?></span>
+                            </button>
+                        </div>
                     </label>
 
                     <input type="hidden" name="captcha_token" id="myvh-captcha-token" value="">

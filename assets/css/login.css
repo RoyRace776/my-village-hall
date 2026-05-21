@@ -4,8 +4,8 @@
     --myvh-login-ink: var(--myvh-ink, #1c1a17);
     --myvh-login-muted: var(--myvh-muted, #7a7166);
     --myvh-login-border: var(--myvh-warm, #ede6db);
-    --myvh-login-primary: #2f3f54;
-    --myvh-login-secondary: #445a74;
+    --myvh-login-primary: #b5451b;
+    --myvh-login-secondary: #933517;
     --myvh-login-heading-font: var(--myvh-font-heading, 'Playfair Display', Georgia, serif);
     --myvh-login-body-font: var(--myvh-font-body, 'DM Sans', system-ui, sans-serif);
 }
@@ -54,8 +54,8 @@ body.page-template-templates-page-login .myvh-login-container {
     width: auto;
 }
 
-.myvh-login-kicker {
-    margin: 0;
+.myvh-login-header .myvh-login-kicker {
+    margin: 0 0 8px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.74rem;
@@ -143,6 +143,69 @@ body.page-template-templates-page-login .myvh-login-container {
     transition: border-color 0.16s, box-shadow 0.16s;
 }
 
+.myvh-password-field {
+    position: relative;
+}
+
+.myvh-password-field input[type="password"],
+.myvh-password-field input[type="text"] {
+    padding-right: 46px;
+}
+
+.myvh-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 11px;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #6c6258;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+.myvh-password-toggle:hover {
+    color: #2f3f54;
+    background: rgba(47, 63, 84, 0.08);
+}
+
+.myvh-password-toggle:focus-visible {
+    outline: 2px solid #8f7a5f;
+    outline-offset: 1px;
+}
+
+.myvh-password-toggle__icon {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.myvh-password-toggle__icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.myvh-password-toggle__eye-off {
+    display: none;
+}
+
+.myvh-password-toggle[aria-pressed="true"] .myvh-password-toggle__eye {
+    display: none;
+}
+
+.myvh-password-toggle[aria-pressed="true"] .myvh-password-toggle__eye-off {
+    display: block;
+}
+
 .myvh-form-group input[type="text"]:focus,
 .myvh-form-group input[type="email"]:focus,
 .myvh-form-group input[type="password"]:focus {
@@ -165,27 +228,47 @@ body.page-template-templates-page-login .myvh-login-container {
     height: 16px;
 }
 
-.myvh-login-button {
+.myvh-login-form .myvh-login-button,
+.myvh-login-form button.myvh-login-button,
+.myvh-login-form input[type="submit"].myvh-login-button {
     width: 100%;
     margin-top: 8px;
     padding: 12px 14px;
     border: none;
     border-radius: 9px;
-    background: linear-gradient(135deg, var(--myvh-login-primary) 0%, var(--myvh-login-secondary) 100%);
-    color: #fff;
+    background: var(--myvh-login-primary) !important;
+    background-image: none !important;
+    color: #fff !important;
+    border: 1px solid var(--myvh-login-primary) !important;
     font-size: 0.94rem;
     font-weight: 700;
+    line-height: 1.2;
     cursor: pointer;
-    transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
+    appearance: none;
+    transition: transform 0.12s, box-shadow 0.12s, background-color 0.12s;
 }
 
-.myvh-login-button:hover {
+.myvh-login-form .myvh-login-button:hover,
+.myvh-login-form button.myvh-login-button:hover,
+.myvh-login-form input[type="submit"].myvh-login-button:hover {
+    background: var(--myvh-login-secondary) !important;
+    background-image: none !important;
+    border-color: var(--myvh-login-secondary) !important;
     transform: translateY(-1px);
     box-shadow: 0 9px 16px rgba(47, 63, 84, 0.28);
 }
 
-.myvh-login-button:active {
+.myvh-login-form .myvh-login-button:active,
+.myvh-login-form button.myvh-login-button:active,
+.myvh-login-form input[type="submit"].myvh-login-button:active {
     transform: translateY(0);
+}
+
+.myvh-login-form .myvh-login-button:focus-visible,
+.myvh-login-form button.myvh-login-button:focus-visible,
+.myvh-login-form input[type="submit"].myvh-login-button:focus-visible {
+    outline: 2px solid #8f7a5f;
+    outline-offset: 2px;
 }
 
 .myvh-error-message {

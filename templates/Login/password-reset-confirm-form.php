@@ -17,8 +17,7 @@ $login_url = $login_page ? get_permalink($login_page->ID) : home_url('/login/');
             <?php elseif (has_custom_logo()): ?>
                 <div class="myvh-login-logo"><?php echo get_custom_logo(); ?></div>
             <?php endif; ?>
-            <p class="myvh-login-kicker"><?php echo esc_html(get_bloginfo('name')); ?></p>
-            <h1>Set a new password</h1>
+            <h1><?php echo esc_html(get_bloginfo('name')); ?></h1>
             <p>Enter your new password below.</p>
         </header>
         <div class="myvh-login-columns myvh-login-columns--single">
@@ -39,11 +38,57 @@ $login_url = $login_page ? get_permalink($login_page->ID) : home_url('/login/');
                 <?php wp_nonce_field('myvh_reset_confirm', 'myvh_reset_confirm_nonce'); ?>
                 <div class="myvh-form-group">
                     <label for="myvh-new-password">New password</label>
-                    <input id="myvh-new-password" type="password" name="new_password" required autocomplete="new-password" class="myvh-login-input">
+                    <div class="myvh-password-field">
+                        <input id="myvh-new-password" type="password" name="new_password" required autocomplete="new-password" class="myvh-login-input">
+                        <button
+                            type="button"
+                            class="myvh-password-toggle"
+                            data-password-toggle
+                            data-show-label="Show password"
+                            data-hide-label="Hide password"
+                            aria-controls="myvh-new-password"
+                            aria-label="Show password"
+                            aria-pressed="false"
+                        >
+                            <span class="myvh-password-toggle__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye">
+                                    <path d="M1.5 12C3.4 7.9 7.3 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C20.6 16.1 16.7 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.8"/>
+                                </svg>
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye-off">
+                                    <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    <path d="M1.5 12C2.6 9.6 4.4 7.58 6.65 6.28M10.6 5.36C11.05 5.29 11.52 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C21.56 14.03 20.18 15.71 18.5 16.94M14.86 18.35C13.94 18.62 12.98 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
                 </div>
                 <div class="myvh-form-group">
                     <label for="myvh-new-password-confirm">Confirm new password</label>
-                    <input id="myvh-new-password-confirm" type="password" name="confirm_password" required autocomplete="new-password" class="myvh-login-input">
+                    <div class="myvh-password-field">
+                        <input id="myvh-new-password-confirm" type="password" name="confirm_password" required autocomplete="new-password" class="myvh-login-input">
+                        <button
+                            type="button"
+                            class="myvh-password-toggle"
+                            data-password-toggle
+                            data-show-label="Show password"
+                            data-hide-label="Hide password"
+                            aria-controls="myvh-new-password-confirm"
+                            aria-label="Show password"
+                            aria-pressed="false"
+                        >
+                            <span class="myvh-password-toggle__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye">
+                                    <path d="M1.5 12C3.4 7.9 7.3 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C20.6 16.1 16.7 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.8"/>
+                                </svg>
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="myvh-password-toggle__eye-off">
+                                    <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    <path d="M1.5 12C2.6 9.6 4.4 7.58 6.65 6.28M10.6 5.36C11.05 5.29 11.52 5.25 12 5.25C16.7 5.25 20.6 7.9 22.5 12C21.56 14.03 20.18 15.71 18.5 16.94M14.86 18.35C13.94 18.62 12.98 18.75 12 18.75C7.3 18.75 3.4 16.1 1.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
                 </div>
                 <p class="myvh-password-hint">Use at least 9 characters with uppercase, lowercase, number, and symbol.</p>
                 <button type="submit" class="myvh-login-button">Set password</button>
@@ -59,6 +104,32 @@ document.addEventListener('DOMContentLoaded', function () {
     var form = document.querySelector('.myvh-login-form--reset-confirm');
     if (!form) {
         return;
+    }
+
+    var toggleButtons = form.querySelectorAll('[data-password-toggle]');
+    if (toggleButtons.length) {
+        toggleButtons.forEach(function (button) {
+            var inputId = button.getAttribute('aria-controls');
+            if (!inputId) {
+                return;
+            }
+
+            var input = document.getElementById(inputId);
+            if (!input) {
+                return;
+            }
+
+            button.addEventListener('click', function () {
+                var shouldShow = input.type === 'password';
+                input.type = shouldShow ? 'text' : 'password';
+
+                button.setAttribute('aria-pressed', shouldShow ? 'true' : 'false');
+                button.setAttribute(
+                    'aria-label',
+                    shouldShow ? (button.getAttribute('data-hide-label') || 'Hide password') : (button.getAttribute('data-show-label') || 'Show password')
+                );
+            });
+        });
     }
 
     var passwordInput = form.querySelector('[name="new_password"]');

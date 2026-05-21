@@ -8,6 +8,7 @@ use MYVH\Customers\CustomerService;
 use MYVH\Network\SiteSeeder;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Pricing\RoomRateService;
+use MYVH\Rooms\RoomColour;
 use MYVH\Rooms\RoomService;
 use MYVH\Settings\GeneralSettings;
 use MYVH\Settings\NoticeSettings;
@@ -26,6 +27,7 @@ class SiteSeederTest extends UnitTestCase {
             'is_wp_error' => static fn($value) => $value instanceof WP_Error,
             'get_bloginfo' => static fn($key) => $key === 'admin_email' ? 'admin@example.com' : '',
             'current_time' => static fn() => 1700000000,
+            'sanitize_email' => static fn($value) => (string) $value,
         ]);
     }
 
@@ -46,7 +48,9 @@ class SiteSeederTest extends UnitTestCase {
 
         $room_service = \Mockery::mock(RoomService::class);
         $room_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
-            return $data['name'] === 'Main Hall' && $data['venue_id'] === 31;
+            return $data['name'] === 'Main Hall'
+                && $data['venue_id'] === 31
+                && $data['room_colour'] === RoomColour::fallback(1);
         }))->andReturn(99);
 
         $room_rate_service = \Mockery::mock(RoomRateService::class);
@@ -63,6 +67,7 @@ class SiteSeederTest extends UnitTestCase {
         $general_settings->shouldReceive('save')->once()->with([
             'portal_logo_url' => 'https://example.test/logo.png',
             'site_label' => 'Village Hall Portal',
+            'admin_email' => 'admin@example.com',
         ]);
 
         $notice_settings = \Mockery::mock(NoticeSettings::class);
@@ -92,6 +97,7 @@ class SiteSeederTest extends UnitTestCase {
 
         Functions\expect('switch_to_blog')->once()->with(123);
         Functions\expect('restore_current_blog')->once();
+        Functions\expect('update_option')->once()->with('admin_email', 'admin@example.com');
         Functions\expect('get_user_by')->once()->with('email', 'admin@example.com')->andReturn((object) [
             'ID' => 77,
             'user_email' => 'admin@example.com',
@@ -102,6 +108,7 @@ class SiteSeederTest extends UnitTestCase {
         $seeder->seed(123, [
             'logo_url' => 'https://example.test/logo.png',
             'site_label' => 'Village Hall Portal',
+            'admin_email' => 'admin@example.com',
         ]);
 
         $this->assertSame(1, $seeder->addPersonalOrganisationTypeCalls);
@@ -223,12 +230,14 @@ class SiteSeederTest extends UnitTestCase {
         $room_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
             return $data['name'] === 'Main Hall'
                 && $data['venue_id'] === 501
+                && $data['room_colour'] === RoomColour::fallback(1)
                 && $data['opening_time'] === '08:00'
                 && $data['closing_time'] === '22:00';
         }))->andReturn(601);
         $room_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
             return $data['name'] === 'Committee Room'
                 && $data['venue_id'] === 501
+                && $data['room_colour'] === RoomColour::fallback(2)
                 && $data['opening_time'] === '09:00'
                 && $data['closing_time'] === '17:00';
         }))->andReturn(602);
