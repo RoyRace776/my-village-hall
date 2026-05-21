@@ -305,12 +305,125 @@ document.addEventListener("DOMContentLoaded", () => {
         table.dataset.sortBound = '1';
     }
 
+    function initCustomerTableFilter(table) {
+        if (!table || table.dataset.customerFilterBound === '1') {
+            return;
+        }
+
+        const pageRoot = table.closest('.myvh-customers-page');
+        if (!pageRoot) {
+            return;
+        }
+
+        const searchInput = pageRoot.querySelector('[data-customer-filter-input]');
+        const createdFromInput = pageRoot.querySelector('[data-customer-created-from]');
+        const createdToInput = pageRoot.querySelector('[data-customer-created-to]');
+        const tbody = table.querySelector('tbody');
+        if (!searchInput || !tbody) {
+            return;
+        }
+
+        const getColumnText = (row, index) => {
+            const cell = row.cells[index];
+            if (!cell) {
+                return '';
+            }
+
+            return cell.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+        };
+
+        const parseInputDateStartTs = (value) => {
+            const raw = String(value || '').trim();
+            if (!raw) {
+                return null;
+            }
+
+            const date = new Date(`${raw}T00:00:00`);
+            if (Number.isNaN(date.getTime())) {
+                return null;
+            }
+
+            return Math.floor(date.getTime() / 1000);
+        };
+
+        const parseInputDateEndTs = (value) => {
+            const raw = String(value || '').trim();
+            if (!raw) {
+                return null;
+            }
+
+            const date = new Date(`${raw}T23:59:59`);
+            if (Number.isNaN(date.getTime())) {
+                return null;
+            }
+
+            return Math.floor(date.getTime() / 1000);
+        };
+
+        const getRowCreatedTs = (row) => {
+            const raw = String(row.getAttribute('data-created-ts') || '').trim();
+            if (!raw) {
+                return null;
+            }
+
+            const parsed = Number.parseInt(raw, 10);
+            return Number.isNaN(parsed) ? null : parsed;
+        };
+
+        const applyFilter = () => {
+            const query = String(searchInput.value || '').trim().toLowerCase();
+            const createdFromTs = parseInputDateStartTs(createdFromInput?.value);
+            const createdToTs = parseInputDateEndTs(createdToInput?.value);
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            rows.forEach((row) => {
+                const name = getColumnText(row, 0);
+                const email = getColumnText(row, 1);
+
+                const matchesText = query === '' || name.includes(query) || email.includes(query);
+
+                const rowCreatedTs = getRowCreatedTs(row);
+                let matchesDateRange = true;
+
+                if (createdFromTs !== null || createdToTs !== null) {
+                    if (rowCreatedTs === null) {
+                        matchesDateRange = false;
+                    } else {
+                        if (createdFromTs !== null && rowCreatedTs < createdFromTs) {
+                            matchesDateRange = false;
+                        }
+
+                        if (createdToTs !== null && rowCreatedTs > createdToTs) {
+                            matchesDateRange = false;
+                        }
+                    }
+                }
+
+                const matches = matchesText && matchesDateRange;
+                row.style.display = matches ? '' : 'none';
+            });
+        };
+
+        searchInput.addEventListener('input', applyFilter);
+        searchInput.addEventListener('change', applyFilter);
+        createdFromInput?.addEventListener('input', applyFilter);
+        createdFromInput?.addEventListener('change', applyFilter);
+        createdToInput?.addEventListener('input', applyFilter);
+        createdToInput?.addEventListener('change', applyFilter);
+        applyFilter();
+
+        table.dataset.customerFilterBound = '1';
+    }
+
     /**
      * Initialize all portal page widgets and logic.
      * Should be called after each page load or dynamic content update.
      */
     function initPortalPage() {
-        document.querySelectorAll('.myvh-customer-list-table').forEach(initTableSort);
+        document.querySelectorAll('.myvh-customer-list-table').forEach((table) => {
+            initTableSort(table);
+            initCustomerTableFilter(table);
+        });
 
         window.MyvhFlatpickr?.initWithin(document);
 

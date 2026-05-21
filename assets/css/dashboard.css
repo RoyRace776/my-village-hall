@@ -2696,6 +2696,30 @@ body .site-main:has(#myvh-portal) {
   min-height: 20px;
 }
 
+.myvh-notice {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: .9rem;
+  margin-bottom: 16px;
+}
+
+.myvh-notice p {
+  margin: 0;
+}
+
+.myvh-notice--info {
+  background: #e8f1fa;
+  border-color: #c8dcee;
+  color: #1c5c8b;
+}
+
+.myvh-notice--warning {
+  background: #fff3df;
+  border-color: #f1d6ab;
+  color: #7c4d0b;
+}
+
 .myvh-generate-panel {
   display: block;
 }

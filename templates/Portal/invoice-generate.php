@@ -86,6 +86,15 @@ $organisation_group_count = count($uninvoiced_by_organisation ?? []);
 ?>
 
 <div class="myvh-dashboard-section myvh-client-settings-page myvh-invoices-page myvh-invoice-generate-page">
+    <?php if ($auto_invoicing_enabled ?? false): ?>
+    <div class="myvh-notice myvh-notice--info">
+        <p>Auto invoicing is <strong>on</strong>. Invoices will be generated automatically overnight.</p>
+    </div>
+    <?php else: ?>
+    <div class="myvh-notice myvh-notice--warning">
+        <p>Auto invoicing is <strong>off</strong>. Invoices must be generated manually.</p>
+    </div>
+    <?php endif; ?>
     <div class="myvh-account-header">
         <div>
             <h2>Generate Invoices</h2>

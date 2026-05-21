@@ -217,6 +217,7 @@ class PortalBillingPageRenderer {
         ]);
         $uninvoiced_by_customer = $this->booking_service->get_uninvoiced_by_customer();
         $uninvoiced_by_organisation = $this->booking_service->get_uninvoiced_by_organisation();
+        $auto_invoicing_enabled = (bool) myvh_setting('invoicing.run_overnight', false);
 
         include MYVH_PLUGIN_DIR . 'templates/Portal/invoice-generate.php';
     }

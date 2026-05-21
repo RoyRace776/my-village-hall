@@ -33,21 +33,54 @@ $edit_id = isset($_GET['id']) ? \intval($_GET['id']) : 0;
         <?php if (empty($customers)): ?>
             <p>No customers found for this site.</p>
         <?php else: ?>
+            <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px; align-items:end;">
+                <div class="myvh-account-field" style="margin:0; min-width:260px; max-width:420px; flex:1;">
+                    <label for="myvh-customer-search"><strong>Search Customers</strong></label>
+                    <input
+                        id="myvh-customer-search"
+                        type="search"
+                        data-customer-filter-input
+                        placeholder="Search by name or email"
+                        autocomplete="off"
+                    >
+                </div>
+                <div class="myvh-account-field" style="margin:0; min-width:170px;">
+                    <label for="myvh-customer-created-from"><strong>Created From</strong></label>
+                    <input id="myvh-customer-created-from" type="date" data-customer-created-from>
+                </div>
+                <div class="myvh-account-field" style="margin:0; min-width:170px;">
+                    <label for="myvh-customer-created-to"><strong>Created To</strong></label>
+                    <input id="myvh-customer-created-to" type="date" data-customer-created-to>
+                </div>
+            </div>
             <table class="myvh-customer-list-table">
                 <thead>
                     <tr>
                         <th style="padding-right:32px;">Name</th>
                         <th style="padding-right:32px;">Email</th>
                         <th style="padding-right:32px;">Phone</th>
+                        <th style="padding-right:32px;">Created</th>
                         <th style="min-width:90px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($customers as $item): ?>
-                    <tr>
+                    <?php
+                    $created_display = '—';
+                    $created_ts = false;
+                    if (!empty($item['Created'])) {
+                        $created_ts = strtotime((string) $item['Created']);
+                        if ($created_ts !== false) {
+                            $created_display = wp_date(get_option('date_format'), $created_ts);
+                        }
+                    }
+                    $created_ts_attr = isset($created_ts) && $created_ts !== false ? (string) $created_ts : '';
+                    ?>
+                    <tr data-created-ts="<?php echo esc_attr($created_ts_attr); ?>">
                         <td style="padding-right:32px;"><?php echo esc_html($item['Name'] ?? ''); ?></td>
                         <td style="padding-right:32px;"><?php echo esc_html($item['Email'] ?? ''); ?></td>
                         <td style="padding-right:32px;"><?php echo esc_html($item['PhoneNumber'] ?? ''); ?></td>
+                        <td style="padding-right:32px;"><?php echo esc_html($created_display); ?></td>
                         <td style="white-space:nowrap;">
                             <a href="#customer-edit?id=<?php echo (int)($item['Id'] ?? 0); ?>" class="myvh-action-icon" aria-label="Edit customer" title="Edit customer" style="margin-right:10px; vertical-align:middle;">✎</a>
                             <a href="#" class="myvh-send-password-reset" data-customer-id="<?php echo (int)($item['Id'] ?? 0); ?>" aria-label="Send password reset email" title="Send password reset email" style="margin-right:10px; vertical-align:middle;">📧</a>

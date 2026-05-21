@@ -131,6 +131,81 @@ describe('Portal app integration behaviors', () => {
     expect(table.querySelector('tbody tr td').textContent).toBe('Zulu');
   });
 
+  test('filters customer table rows by name/email and created date range', async () => {
+    window.fetch.mockResolvedValue(
+      mockHtmlResponse(`
+        <div class="myvh-dashboard-section myvh-customers-page">
+          <input type="search" data-customer-filter-input>
+          <input type="date" data-customer-created-from>
+          <input type="date" data-customer-created-to>
+          <table class="myvh-customer-list-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-created-ts="1714521600"><td>Alice Jones</td><td>alice@example.com</td><td>Edit</td></tr>
+              <tr data-created-ts="1716249600"><td>Bob Smith</td><td>bob@villagehall.org</td><td>Edit</td></tr>
+              <tr data-created-ts="1718841600"><td>Carla Brown</td><td>carla@test.net</td><td>Edit</td></tr>
+            </tbody>
+          </table>
+        </div>
+      `)
+    );
+
+    window.location.hash = '#customers';
+    window.dispatchEvent(new Event('hashchange'));
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    const searchInput = document.querySelector('[data-customer-filter-input]');
+  const createdFromInput = document.querySelector('[data-customer-created-from]');
+  const createdToInput = document.querySelector('[data-customer-created-to]');
+    const rows = Array.from(document.querySelectorAll('.myvh-customer-list-table tbody tr'));
+
+    searchInput.value = 'bob';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(rows[0].style.display).toBe('none');
+    expect(rows[1].style.display).toBe('');
+    expect(rows[2].style.display).toBe('none');
+
+    searchInput.value = 'example.com';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(rows[0].style.display).toBe('');
+    expect(rows[1].style.display).toBe('none');
+    expect(rows[2].style.display).toBe('none');
+
+    searchInput.value = '';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    createdFromInput.value = '2024-05-15';
+    createdFromInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(rows[0].style.display).toBe('none');
+    expect(rows[1].style.display).toBe('');
+    expect(rows[2].style.display).toBe('');
+
+    createdToInput.value = '2024-05-31';
+    createdToInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(rows[0].style.display).toBe('none');
+    expect(rows[1].style.display).toBe('');
+    expect(rows[2].style.display).toBe('none');
+
+    searchInput.value = 'carla';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(rows[0].style.display).toBe('none');
+    expect(rows[1].style.display).toBe('none');
+    expect(rows[2].style.display).toBe('none');
+  });
+
   test('enables save button when adding a hall notice in settings', async () => {
     window.fetch.mockResolvedValue(
       mockHtmlResponse(`
