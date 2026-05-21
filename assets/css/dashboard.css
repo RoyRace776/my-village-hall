@@ -1440,6 +1440,25 @@ body .site-main:has(#myvh-portal) {
   font-weight: 500;
 }
 
+.myvh-account-field.myvh-account-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.myvh-account-field.myvh-account-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.myvh-account-field.myvh-account-checkbox span {
+  font-size: .88rem;
+}
+
 .myvh-account-field input {
   width: 100%;
   border: 1px solid #d9d2c8;

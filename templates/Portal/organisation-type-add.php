@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) exit;
                 <textarea id="myvh-org-type-description" name="description" rows="3"></textarea>
             </label>
 
-            <label class="myvh-account-field" style="display:flex; align-items:center; gap:8px;">
+            <label class="myvh-account-field myvh-account-checkbox">
                 <input type="checkbox" name="is_default" value="1">
                 <span>Set as default organisation type</span>
             </label>

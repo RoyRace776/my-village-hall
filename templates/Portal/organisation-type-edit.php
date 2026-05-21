@@ -42,13 +42,15 @@ $is_system = !empty($organisation_type['IsSystem']);
                     <textarea id="myvh-org-type-description-<?php echo (int) ($organisation_type['Id'] ?? 0); ?>" name="description" rows="3"><?php echo esc_textarea($organisation_type['Description'] ?? ''); ?></textarea>
                 </label>
 
-                <label class="myvh-account-field" style="display:flex; align-items:center; gap:8px;">
+                <label class="myvh-account-field myvh-account-checkbox">
                     <input type="checkbox" name="is_default" value="1" <?php checked(!empty($organisation_type['IsDefault'])); ?>>
                     <span>Default organisation type</span>
                 </label>
 
                 <div class="myvh-account-actions">
-                    <button type="submit" class="button button-primary">Update Organisation Type</button>
+                    <button type="submit" class="myvh-portal-add-btn">
+                        <span>Update Organisation Type</span>
+                    </button>
                     <a href="#organisation-types" class="button">Cancel</a>
                     <div id="myvh-org-type-edit-message" class="myvh-muted" aria-live="polite"></div>
                 </div>
