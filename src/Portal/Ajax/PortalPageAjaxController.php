@@ -5,6 +5,10 @@ use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\AjaxResponse;
+use MYVH\Subscriptions\Repositories\AccountRepository;
+use MYVH\Subscriptions\Repositories\SubscriptionRepository;
+use MYVH\Subscriptions\Services\SubscriptionGuard;
+use MYVH\Subscriptions\Services\UsageService;
 
 class PortalPageAjaxController {
     public function __construct(
@@ -14,7 +18,11 @@ class PortalPageAjaxController {
         private PortalBillingPageRenderer $billing_page_renderer,
         private PortalPeoplePageRenderer $people_page_renderer,
         private PortalOrganisationPageRenderer $organisation_page_renderer,
-        private PortalAdminConfigPageRenderer $admin_config_page_renderer
+        private PortalAdminConfigPageRenderer $admin_config_page_renderer,
+        private ?SubscriptionGuard $subscription_guard = null,
+        private ?UsageService $usage_service = null,
+        private ?SubscriptionRepository $subscription_repository = null,
+        private ?AccountRepository $account_repository = null
     ) {}
 
     public function register(): void {
@@ -73,6 +81,10 @@ class PortalPageAjaxController {
 
             case 'account':
                 $this->people_page_renderer->render_account();
+                break;
+
+            case 'subscription-upgrade':
+                $this->people_page_renderer->render_subscription_upgrade($is_client_admin);
                 break;
 
             case 'client-admins':
@@ -207,6 +219,37 @@ class PortalPageAjaxController {
                     $admin_invoice_action_bookings = $this->get_admin_bookings_pending_invoice_or_draft();
                     $admin_overdue_invoices = $this->get_admin_overdue_invoices();
                     $admin_dashboard_counts = $this->get_admin_dashboard_counts();
+                }
+                $subscription_status = '';
+                $trial_days_remaining = 0;
+                $usage_current = 0;
+                $usage_limit = 0;
+                $upgrade_url = admin_url('admin.php?page=myvh-subscription-upgrade');
+                if ($is_client_admin && $this->subscription_repository !== null) {
+                    $blog_id = function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 0;
+                    $portal_account_id = 0;
+                    if ($blog_id > 0 && $this->account_repository !== null) {
+                        $portal_account = $this->account_repository->get_by_blog_id($blog_id);
+                        $portal_account_id = is_array($portal_account) ? (int) ($portal_account['id'] ?? 0) : 0;
+                    }
+                    if ($portal_account_id > 0) {
+                        $subscription = $this->subscription_repository->get_latest_by_account_id($portal_account_id);
+                        if ($subscription !== null) {
+                            $subscription_status = $subscription->getStatus();
+                            $trial_ends_at = $subscription->getTrialEndsAt();
+                            if ($trial_ends_at !== null) {
+                                $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+                                $trial_dt = $trial_ends_at instanceof \DateTimeInterface
+                                    ? \DateTimeImmutable::createFromInterface($trial_ends_at)
+                                    : new \DateTimeImmutable($trial_ends_at);
+                                $diff = $now->diff($trial_dt);
+                                $trial_days_remaining = $trial_dt > $now ? (int) $diff->days : 0;
+                            }
+                        }
+                        if ($this->usage_service !== null) {
+                            $usage_current = (int) $this->usage_service->getCurrentUsage($portal_account_id);
+                        }
+                    }
                 }
                 include MYVH_PLUGIN_DIR . 'templates/Portal/dashboard.php';
         }

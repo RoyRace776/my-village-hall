@@ -112,6 +112,9 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                 </button>
                 <div id="myvh-portal-account-menu" class="myvh-portal-nav-submenu myvh-portal-nav-submenu--account">
                     <a href="#account"><span class="myvh-portal-menu-icon dashicons dashicons-id" aria-hidden="true"></span><span>Account</span></a>
+                    <?php if ($is_client_admin): ?>
+                        <a href="#subscription-upgrade"><span class="myvh-portal-menu-icon dashicons dashicons-chart-line" aria-hidden="true"></span><span>Upgrade Plan</span></a>
+                    <?php endif; ?>
                     <?php if ($accessible_site_count > 1): ?>
                         <div class="myvh-portal-account-sites">
                             <span class="myvh-portal-sites-label">Your clients</span>

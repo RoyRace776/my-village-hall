@@ -22,6 +22,10 @@ use MYVH\Events\EventDispatcher;
 use MYVH\Events\BookingEvents;
 use MYVH\Invoices\InvoiceItemRepository;
 use MYVH\Invoices\InvoiceService;
+use MYVH\Subscriptions\Services\AccountService;
+use MYVH\Subscriptions\Services\FeatureService;
+use MYVH\Subscriptions\Services\SubscriptionGuard;
+use MYVH\Subscriptions\Services\UsageService;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -59,6 +63,10 @@ class BookingService {
     private BookingChargeRepository $booking_charge_repo;
     private DepositService $deposit_service;
     private LoggerInterface $logger;
+    private ?SubscriptionGuard $subscription_guard;
+    private ?FeatureService $feature_service;
+    private ?UsageService $usage_service;
+    private ?AccountService $account_service;
     private array $last_warnings = [];
 
     public function __construct(
@@ -85,7 +93,11 @@ class BookingService {
         InvoiceItemRepository $invoice_item_repo,
         BookingChargeRepository $booking_charge_repo,
         DepositService $deposit_service,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        ?SubscriptionGuard $subscription_guard = null,
+        ?FeatureService $feature_service = null,
+        ?UsageService $usage_service = null,
+        ?AccountService $account_service = null
     ) {
         $this->room_service = $room_service;
         $this->booking_repo = $booking_repo;
@@ -111,6 +123,10 @@ class BookingService {
         $this->booking_charge_repo = $booking_charge_repo;
         $this->deposit_service = $deposit_service;
         $this->logger = $logger ?? new NullLogger();
+        $this->subscription_guard = $subscription_guard;
+        $this->feature_service = $feature_service;
+        $this->usage_service = $usage_service;
+        $this->account_service = $account_service;
     }
 
     public function save(array $data): int|WP_Error {
@@ -361,6 +377,21 @@ class BookingService {
     }
 
     private function create_booking( mixed $data, mixed $record): int|WP_Error {
+        $account_id = $this->resolve_current_account_id();
+
+        if ($account_id > 0 && $this->feature_service !== null && !$this->feature_service->allowsForAccount($account_id, 'bookings')) {
+            return new WP_Error('subscription_feature_blocked', __('Your current subscription plan does not include bookings', 'my-village-hall'));
+        }
+
+        if ($this->subscription_guard !== null) {
+            $allowed = $account_id > 0
+                ? $this->subscription_guard->assertCanCreateBookingForAccount($account_id)
+                : $this->subscription_guard->assertCanCreateBookingForCurrentSite();
+            if (is_wp_error($allowed)) {
+                return $allowed;
+            }
+        }
+
         // Before create event already dispatched in save()
         $booking_id = $this->booking_repo->create($record);
         if ($booking_id === false) {
@@ -381,6 +412,13 @@ class BookingService {
             return $deposit_result;
         }
 
+        if ($account_id > 0 && $this->usage_service !== null) {
+            $recorded = $this->usage_service->recordBooking($account_id);
+            if (!$recorded) {
+                return new WP_Error('usage_tracking', __('Failed to record booking usage', 'my-village-hall'));
+            }
+        }
+
         $this->booking_creation_event_dispatcher->dispatch_created($booking_id, $data);
 
         $recurring_result = $this->recurring_booking_creator->create_for_booking($booking_id, $data);
@@ -395,6 +433,24 @@ class BookingService {
         $this->booking_creation_event_dispatcher->dispatch_after_create($booking_id, $data);
 
         return $booking_id;
+    }
+
+    private function resolve_current_account_id(): int {
+        if ($this->account_service === null || !function_exists('get_current_blog_id')) {
+            return 0;
+        }
+
+        try {
+            $account = $this->account_service->resolveAccountFromBlogId((int) get_current_blog_id());
+        } catch (\Throwable $e) {
+            return 0;
+        }
+
+        if (!is_array($account)) {
+            return 0;
+        }
+
+        return (int) ($account['Id'] ?? 0);
     }
 
     /**
@@ -512,20 +568,20 @@ class BookingService {
      * @param int $booking_id
      * @return array
      */
-    public function get_addons_for_booking($booking_id): array {
+    public function get_addons_for_booking(int $booking_id): array {
         if (!$this->addon_service) return [];
         return $this->addon_service->get_addons_for_booking($booking_id);
     }
 
-    public function get_charges_for_booking($booking_id): array {
+    public function get_charges_for_booking(int $booking_id): array {
         return $this->booking_charge_repo->get_by_booking_id((int) $booking_id);
     }
 
-    public function get_deposit_items_for_booking($booking_id): array {
+    public function get_deposit_items_for_booking(int $booking_id): array {
         return $this->invoice_item_repo->get_deposit_items_for_booking((int) $booking_id);
     }
 
-    public function get_expected_deposit_for_booking($booking_id): ?array {
+    public function get_expected_deposit_for_booking(int $booking_id): ?array {
         $booking = $this->booking_repo->get_by_id((int) $booking_id);
         if (!$booking) {
             return null;
@@ -540,7 +596,7 @@ class BookingService {
         return $this->evaluate_deposit_for_record($record);
     }
 
-    public function get_by_id($booking_id): ?Booking {
+    public function get_by_id(int $booking_id): ?Booking {
         $booking_id = (int) $booking_id;
 
         if ($booking_id <= 0) {
@@ -554,7 +610,7 @@ class BookingService {
         }
     }
 
-    public function cancel($id): int|false {
+    public function cancel(int $id): int|false {
         $current_record = $this->booking_repo->get_by_id($id);
         if (!$current_record) {
             return false;
@@ -587,7 +643,7 @@ class BookingService {
         //TODO: Dispatch status change events here or in the controller, and consider if old vs new status comparison is needed for BEFORE/AFTER status change events
     }
 
-    public function delete($id): bool|WP_Error {
+    public function delete(int $id): bool|WP_Error {
         return $this->booking_deletion_service->delete($id);
     }
 
@@ -633,15 +689,15 @@ class BookingService {
      * @param array $args Optional filters (orderby, order, limit, offset, organisation_id, customer_id)
      * @return array Array of uninvoiced bookings with details
      */
-    public function get_uninvoiced_bookings($args = []): array {
+    public function get_uninvoiced_bookings(array $args = []): array {
         return $this->booking_repo->get_uninvoiced_bookings($args);
     }
 
-    public function get_uninvoiced_single_bookings($args = []): array {
+    public function get_uninvoiced_single_bookings(array $args = []): array {
         return $this->booking_repo->get_uninvoiced_single_bookings($args);
     }
 
-    public function get_uninvoiced_recurring_bookings($args = []): array {
+    public function get_uninvoiced_recurring_bookings(array $args = []): array {
         return $this->booking_repo->get_uninvoiced_recurring_bookings($args);
     }
 

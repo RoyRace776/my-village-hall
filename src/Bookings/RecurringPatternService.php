@@ -7,6 +7,9 @@ use DateTime;
 use MYVH\Bookings\RecurringPatternRepository;
 use MYVH\Bookings\BookingRepository;
 use MYVH\Bookings\Services\BookingChargeService;
+use MYVH\Subscriptions\Services\AccountService;
+use MYVH\Subscriptions\Services\SubscriptionGuard;
+use MYVH\Subscriptions\Services\UsageService;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -17,16 +20,25 @@ class RecurringPatternService {
     private $repo;
     private $booking_repo;
     private ?BookingChargeService $booking_charge_service;
+    private ?SubscriptionGuard $subscription_guard;
+    private ?UsageService $usage_service;
+    private ?AccountService $account_service;
     private $last_booking_results = null;
     private LoggerInterface $logger;
 
     public function __construct(RecurringPatternRepository $repo,
                                 BookingRepository $booking_repo,
                                 ?BookingChargeService $booking_charge_service = null,
+                                ?SubscriptionGuard $subscription_guard = null,
+                                ?UsageService $usage_service = null,
+                                ?AccountService $account_service = null,
                                 ?LoggerInterface $logger = null) {
         $this->repo = $repo;
         $this->booking_repo = $booking_repo;
         $this->booking_charge_service = $booking_charge_service;
+        $this->subscription_guard = $subscription_guard;
+        $this->usage_service = $usage_service;
+        $this->account_service = $account_service;
         $this->logger = $logger ?? new NullLogger();
     }
 
@@ -356,6 +368,8 @@ class RecurringPatternService {
             'errors' => []
         ];
 
+        $account_id = $this->resolve_current_account_id();
+
         $duration_days = max(0, (int) ((strtotime($parent_booking['EndDate']) - strtotime($parent_booking['StartDate'])) / 86400));
 
         // Create bookings for each date
@@ -385,6 +399,18 @@ class RecurringPatternService {
                 continue;
             }
 
+            if ($account_id > 0 && $this->subscription_guard !== null) {
+                $limit_check = $this->subscription_guard->assertWithinUsageLimitForCurrentSite();
+                if (is_wp_error($limit_check)) {
+                    $results['skipped']++;
+                    $results['errors'][] = sprintf(
+                        __('Booking limit reached while creating recurring series for %s', 'my-village-hall'),
+                        $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
+                    );
+                    continue;
+                }
+            }
+
             // Create the booking
             $booking_data = [
                 'CustomerId'         => $parent_booking['CustomerId'],
@@ -410,6 +436,19 @@ class RecurringPatternService {
                 continue;
             }
 
+            if ($account_id > 0 && $this->usage_service !== null) {
+                $recorded = $this->usage_service->recordBooking($account_id);
+                if (!$recorded) {
+                    $booking_repo->delete((int) $new_booking_id);
+                    $results['skipped']++;
+                    $results['errors'][] = sprintf(
+                        __('Failed to record usage for recurring booking on %s', 'my-village-hall'),
+                        $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
+                    );
+                    continue;
+                }
+            }
+
             $charge_result = $this->recalculate_booking_charges((int) $new_booking_id);
             if (is_wp_error($charge_result)) {
                 $booking_repo->delete((int) $new_booking_id);
@@ -431,6 +470,20 @@ class RecurringPatternService {
         );
 
         return $results;
+    }
+
+    private function resolve_current_account_id(): int {
+        if ($this->account_service === null || !function_exists('get_current_blog_id')) {
+            return 0;
+        }
+
+        try {
+            $account = $this->account_service->resolveAccountFromBlogId((int) get_current_blog_id());
+        } catch (\Throwable $exception) {
+            return 0;
+        }
+
+        return (int) ($account['Id'] ?? 0);
     }
 
     /**

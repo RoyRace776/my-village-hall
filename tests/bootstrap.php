@@ -31,6 +31,33 @@ if (!class_exists('wpdb')) {
     }
 }
 
+if (!class_exists('WP_REST_Response')) {
+    class WP_REST_Response {
+        private $data;
+        private $status;
+
+        public function __construct($data = null, $status = 200) {
+            $this->data = $data;
+            $this->status = (int) $status;
+        }
+
+        public function get_data() {
+            return $this->data;
+        }
+
+        public function get_status() {
+            return $this->status;
+        }
+    }
+}
+
+if (!class_exists('WP_REST_Server')) {
+    class WP_REST_Server {
+        public const CREATABLE = 'POST';
+        public const READABLE = 'GET';
+    }
+}
+
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 if (!defined('ABSPATH'))         define('ABSPATH', '/tmp/wordpress/');

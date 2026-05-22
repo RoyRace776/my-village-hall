@@ -11,6 +11,7 @@ use MYVH\Portal\Actions\DeleteBookingAction;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Portal\Support\PortalAuth;
+use MYVH\Subscriptions\Services\SubscriptionGuard;
 
 use Exception;
 
@@ -103,6 +104,26 @@ class PortalBookingAjaxController {
             $result = $this->calendar_service->create_event($request, 'portal', get_current_user_id());
 
             if (is_wp_error($result)) {
+                $error_code = (string) $result->get_error_code();
+                $subscription_error_codes = [
+                    'subscription_missing',
+                    'subscription_expired',
+                    'subscription_cancelled',
+                    'subscription_past_due',
+                    'usage_limit',
+                    'feature_locked',
+                    'subscription_account_missing',
+                ];
+
+                if (in_array($error_code, $subscription_error_codes, true)) {
+                    AjaxResponse::error($result->get_error_message(), 402, [
+                        'subscription_required' => true,
+                        'reason' => $error_code,
+                        'modal_trigger' => SubscriptionGuard::mapReasonFromCode($error_code),
+                    ]);
+                    return;
+                }
+
                 AjaxResponse::error($result->get_error_message());
                 return;
             }

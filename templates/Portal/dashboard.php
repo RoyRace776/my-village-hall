@@ -332,6 +332,59 @@ $next_month_bookings = array_slice($next_month_bookings, 0, 8);
     </div>
   </div>
 
+<?php
+$subscription_status = $subscription_status ?? '';
+$trial_days_remaining = (int) ($trial_days_remaining ?? 0);
+$usage_current = (int) ($usage_current ?? 0);
+$usage_limit = (int) ($usage_limit ?? 0);
+$upgrade_url = $upgrade_url ?? '';
+if ($subscription_status !== ''):
+?>
+  <div class="myvh-card myvh-account-card myvh-subscription-widget" style="margin-bottom:16px;padding:16px 20px;">
+    <div class="myvh-account-card-head" style="margin-bottom:12px;">
+      <div>
+        <h3 style="margin:0;"><?php esc_html_e('Subscription', 'my-village-hall'); ?></h3>
+        <span><?php echo esc_html(ucfirst($subscription_status)); ?></span>
+      </div>
+      <?php if ($upgrade_url !== ''): ?>
+        <a href="<?php echo esc_url($upgrade_url); ?>" class="myvh-button myvh-button--primary" style="text-decoration:none;"><?php esc_html_e('Upgrade', 'my-village-hall'); ?></a>
+      <?php endif; ?>
+    </div>
+
+    <?php if ($subscription_status === 'trialing' && $trial_days_remaining >= 0): ?>
+      <?php
+        if ($trial_days_remaining > 7) {
+            $badge_bg = '#1e7e34';
+        } elseif ($trial_days_remaining > 2) {
+            $badge_bg = '#856404';
+        } else {
+            $badge_bg = '#a72828';
+        }
+      ?>
+      <p style="margin:0 0 10px;">
+        <span style="display:inline-block;padding:3px 10px;border-radius:10px;background:<?php echo esc_attr($badge_bg); ?>;color:#fff;font-size:12px;font-weight:600;">
+          <?php if ($trial_days_remaining === 0): ?>
+            <?php esc_html_e('Trial expired', 'my-village-hall'); ?>
+          <?php elseif ($trial_days_remaining === 1): ?>
+            <?php esc_html_e('1 day remaining in trial', 'my-village-hall'); ?>
+          <?php else: ?>
+            <?php printf(esc_html__('%d days remaining in trial', 'my-village-hall'), $trial_days_remaining); ?>
+          <?php endif; ?>
+        </span>
+      </p>
+    <?php endif; ?>
+
+    <?php if ($usage_limit > 0): ?>
+      <?php $usage_pct = min(100, (int) round($usage_current / $usage_limit * 100)); ?>
+      <?php $meter_color = $usage_pct >= 90 ? '#a72828' : ($usage_pct >= 75 ? '#856404' : '#0073aa'); ?>
+      <p style="margin:0 0 4px;font-size:13px;">
+        <?php printf(esc_html__('Bookings: %1$d / %2$d', 'my-village-hall'), $usage_current, $usage_limit); ?>
+      </p>
+      <progress value="<?php echo esc_attr((string) $usage_current); ?>" max="<?php echo esc_attr((string) $usage_limit); ?>" style="width:100%;height:14px;accent-color:<?php echo esc_attr($meter_color); ?>"></progress>
+    <?php endif; ?>
+  </div>
+<?php endif; ?>
+
   <div class="myvh-portal-dashboard-kpi-grid">
     <div class="myvh-card myvh-account-card myvh-portal-dashboard-kpi-card">
       <span class="myvh-portal-dashboard-kpi-label">Organisations</span>

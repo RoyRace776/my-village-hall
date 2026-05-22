@@ -10,6 +10,12 @@ use MYVH\Payments\PaymentService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Portal\Support\PortalAuth;
+use MYVH\Subscriptions\Repositories\AccountRepository;
+use MYVH\Subscriptions\Repositories\PlanRepository;
+use MYVH\Subscriptions\Services\AccountService;
+use MYVH\Subscriptions\Services\BillingService;
+use MYVH\Subscriptions\Services\PlanChangePolicyService;
+use MYVH\Subscriptions\Services\TrialService;
 
 class PortalBillingAjaxController {
     public function __construct(
@@ -18,7 +24,13 @@ class PortalBillingAjaxController {
         private InvoiceGeneratorService $invoice_generator_service,
         private InvoiceService $invoice_service,
         private PaymentService $payment_service,
-        private ClientAdminService $client_admin_service
+        private ClientAdminService $client_admin_service,
+        private ?AccountRepository $account_repository = null,
+        private ?AccountService $account_service = null,
+        private ?PlanRepository $plan_repository = null,
+        private ?BillingService $billing_service = null,
+        private ?PlanChangePolicyService $plan_change_policy_service = null,
+        private ?TrialService $trial_service = null
     ) {}
 
     public function register(): void {
@@ -30,6 +42,97 @@ class PortalBillingAjaxController {
         add_action('wp_ajax_myvh_portal_create_payment', [$this, 'create_payment']);
         add_action('wp_ajax_myvh_portal_delete_payment', [$this, 'delete_payment']);
         add_action('wp_ajax_myvh_portal_settle_invoice_deposit', [$this, 'settle_invoice_deposit']);
+        add_action('wp_ajax_myvh_portal_change_subscription_plan', [$this, 'change_subscription_plan']);
+    }
+
+    public function change_subscription_plan(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        if (
+            !$this->account_repository instanceof AccountRepository
+            || !$this->plan_repository instanceof PlanRepository
+            || !$this->billing_service instanceof BillingService
+            || !$this->plan_change_policy_service instanceof PlanChangePolicyService
+        ) {
+            wp_send_json_error([
+                'message' => __('Subscription services are unavailable right now.', 'my-village-hall'),
+            ], 500);
+        }
+
+        $blog_id = function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 0;
+        $account = $blog_id > 0 ? $this->account_repository->get_by_blog_id($blog_id) : null;
+        if (!is_array($account) && $blog_id > 0 && $this->account_service instanceof AccountService) {
+            $account = $this->account_service->resolveAccountFromBlogId($blog_id);
+        }
+
+        if (!is_array($account) && $this->account_service instanceof AccountService) {
+            $site_name = sanitize_text_field((string) get_bloginfo('name'));
+            $admin_email = sanitize_email((string) get_option('admin_email', ''));
+            if ($site_name !== '' && $admin_email !== '') {
+                $account = $this->account_service->createAccount($site_name, $admin_email);
+            }
+        }
+
+        $account_id = is_array($account) ? (int) ($account['id'] ?? 0) : 0;
+
+        if ($account_id <= 0) {
+            wp_send_json_error([
+                'message' => __('No billing account is linked to this site.', 'my-village-hall'),
+            ], 404);
+        }
+
+        if ($this->trial_service instanceof TrialService) {
+            $subscription = $this->trial_service->checkAndExpireTrial($account_id);
+            if (!$subscription instanceof \MYVH\Subscriptions\Entities\Subscription) {
+                $this->trial_service->createTrialSubscription($account_id);
+            }
+        }
+
+        $plan_code = sanitize_key((string) ($_POST['plan_code'] ?? ''));
+        $payment_method = sanitize_key((string) ($_POST['payment_method'] ?? 'stripe'));
+
+        if (!in_array($payment_method, ['stripe', 'invoice'], true)) {
+            wp_send_json_error([
+                'message' => __('Unsupported payment method.', 'my-village-hall'),
+            ], 400);
+        }
+
+        $plan = $this->plan_repository->getByCode($plan_code);
+        if (!$plan instanceof \MYVH\Subscriptions\Entities\Plan) {
+            wp_send_json_error([
+                'message' => __('Selected plan was not found.', 'my-village-hall'),
+            ], 404);
+        }
+
+        $decision = $this->plan_change_policy_service->canChangeToPlan($account_id, $plan);
+        if (empty($decision['allowed'])) {
+            wp_send_json_error([
+                'message' => (string) ($decision['message'] ?? __('Plan change is not allowed.', 'my-village-hall')),
+            ], 422);
+        }
+
+        $result = $this->billing_service->requestPlanChange($account_id, $plan_code, $payment_method);
+        if (!is_array($result) || empty($result['success'])) {
+            $message = $payment_method === 'stripe'
+                ? __('Stripe is not configured for this site yet. Choose Invoice or configure Stripe keys in Billing Settings.', 'my-village-hall')
+                : __('Unable to start the plan change flow.', 'my-village-hall');
+
+            wp_send_json_error([
+                'message' => $message,
+            ], 422);
+        }
+
+        $scheduled = !empty($result['scheduled']);
+        $message = $scheduled
+            ? __('Downgrade scheduled for the end of your current billing period.', 'my-village-hall')
+            : __('Plan change started successfully.', 'my-village-hall');
+
+        wp_send_json_success([
+            'message' => $message,
+            'scheduled' => $scheduled,
+            'effective_at' => (string) ($result['effective_at'] ?? ''),
+            'redirect' => 'subscription-upgrade',
+        ]);
     }
 
     public function view_invoice_pdf(): void {

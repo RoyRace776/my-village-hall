@@ -1359,6 +1359,12 @@ window.BookingModalCreate = (function() {
         .then(res => {
 
             if (!res.success) {
+                if (res.data && res.data.subscription_required === true) {
+                    if (window.MyvhSubscriptionModals && typeof window.MyvhSubscriptionModals.show === 'function') {
+                        window.MyvhSubscriptionModals.show(res.data.modal_trigger, res.data);
+                        return;
+                    }
+                }
                 portalAlert(resolveErrorMessage(res.message || res.data, "Failed to save booking"));
                 return;
             }

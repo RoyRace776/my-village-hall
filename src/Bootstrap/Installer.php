@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '1.8.0';
+    const DB_VERSION = '1.16.1';
 
     /**
      * Entry point: create all tables.
@@ -113,6 +113,42 @@ class Installer {
 
         if (version_compare($from, '1.8.0', '<')) {
             self::upgrade_to_1_8_0($wpdb);
+        }
+
+        if (version_compare($from, '1.9.0', '<')) {
+            self::upgrade_to_1_9_0($wpdb);
+        }
+
+        if (version_compare($from, '1.10.0', '<')) {
+            self::upgrade_to_1_10_0($wpdb);
+        }
+
+        if (version_compare($from, '1.11.0', '<')) {
+            self::upgrade_to_1_11_0($wpdb);
+        }
+
+        if (version_compare($from, '1.12.0', '<')) {
+            self::upgrade_to_1_12_0($wpdb);
+        }
+
+        if (version_compare($from, '1.13.0', '<')) {
+            self::upgrade_to_1_13_0($wpdb);
+        }
+
+        if (version_compare($from, '1.14.0', '<')) {
+            self::upgrade_to_1_14_0($wpdb);
+        }
+
+        if (version_compare($from, '1.15.0', '<')) {
+            self::upgrade_to_1_15_0($wpdb);
+        }
+
+        if (version_compare($from, '1.16.0', '<')) {
+            self::upgrade_to_1_16_0($wpdb);
+        }
+
+        if (version_compare($from, '1.16.1', '<')) {
+            self::upgrade_to_1_16_1($wpdb);
         }
     }
 
@@ -245,6 +281,280 @@ class Installer {
         }
     }
 
+    private static function upgrade_to_1_9_0(wpdb $wpdb): void {
+        $collate = $wpdb->get_charset_collate();
+        self::create_subscription_saas_tables($wpdb, $collate);
+    }
+
+    private static function upgrade_to_1_10_0(wpdb $wpdb): void {
+        $plans_table = $wpdb->base_prefix . 'myvh_plans';
+        $subscriptions_table = $wpdb->base_prefix . 'myvh_subscriptions';
+
+        $has_stripe_price = self::has_column($wpdb, $plans_table, 'stripe_price_id_monthly')
+            || self::has_column($wpdb, $plans_table, 'StripePriceIdMonthly');
+        if (!$has_stripe_price) {
+            $wpdb->query("ALTER TABLE {$plans_table} ADD COLUMN stripe_price_id_monthly VARCHAR(191) NULL AFTER currency_code");
+            $wpdb->query("ALTER TABLE {$plans_table} ADD INDEX idx_stripe_price_monthly (stripe_price_id_monthly)");
+        }
+
+        $has_stripe_customer = self::has_column($wpdb, $subscriptions_table, 'stripe_customer_id')
+            || self::has_column($wpdb, $subscriptions_table, 'StripeCustomerId');
+        if (!$has_stripe_customer) {
+            $wpdb->query("ALTER TABLE {$subscriptions_table} ADD COLUMN stripe_customer_id VARCHAR(191) NULL AFTER provider");
+            $wpdb->query("ALTER TABLE {$subscriptions_table} ADD INDEX idx_stripe_customer_id (stripe_customer_id)");
+        }
+
+        $has_stripe_subscription = self::has_column($wpdb, $subscriptions_table, 'stripe_subscription_id')
+            || self::has_column($wpdb, $subscriptions_table, 'StripeSubscriptionId');
+        if (!$has_stripe_subscription) {
+            $wpdb->query("ALTER TABLE {$subscriptions_table} ADD COLUMN stripe_subscription_id VARCHAR(191) NULL AFTER stripe_customer_id");
+            $wpdb->query("ALTER TABLE {$subscriptions_table} ADD UNIQUE KEY uq_stripe_subscription_id (stripe_subscription_id)");
+        }
+    }
+
+    private static function upgrade_to_1_11_0(wpdb $wpdb): void {
+        self::rename_columns(
+            $wpdb,
+            $wpdb->base_prefix . 'myvh_plans',
+            [
+                'Id' => 'id BIGINT UNSIGNED AUTO_INCREMENT',
+                'PlanKey' => 'plan_key VARCHAR(100) NOT NULL',
+                'Name' => 'name VARCHAR(150) NOT NULL',
+                'Description' => 'description TEXT NULL',
+                'BillingInterval' => 'billing_interval VARCHAR(20) NOT NULL DEFAULT \'monthly\'',
+                'Price' => 'price DECIMAL(10,2) NOT NULL DEFAULT 0.00',
+                'CurrencyCode' => 'currency_code CHAR(3) NOT NULL DEFAULT \'GBP\'',
+                'StripePriceIdMonthly' => 'stripe_price_id_monthly VARCHAR(191) NULL',
+                'IsActive' => 'is_active TINYINT(1) NOT NULL DEFAULT 1',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ]
+        );
+
+        self::rename_columns(
+            $wpdb,
+            $wpdb->base_prefix . 'myvh_accounts',
+            [
+                'Id' => 'id BIGINT UNSIGNED AUTO_INCREMENT',
+                'BlogId' => 'blog_id BIGINT UNSIGNED NULL',
+                'OwnerUserId' => 'owner_user_id BIGINT UNSIGNED NULL',
+                'PlanId' => 'plan_id BIGINT UNSIGNED NULL',
+                'AccountName' => 'account_name VARCHAR(150) NOT NULL',
+                'ContactEmail' => 'contact_email VARCHAR(191) NOT NULL DEFAULT \'\'',
+                'Status' => 'status VARCHAR(30) NOT NULL DEFAULT \'active\'',
+                'ExternalReference' => 'external_reference VARCHAR(191) NULL',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ]
+        );
+
+        self::rename_columns(
+            $wpdb,
+            $wpdb->base_prefix . 'myvh_subscriptions',
+            [
+                'Id' => 'id BIGINT UNSIGNED AUTO_INCREMENT',
+                'AccountId' => 'account_id BIGINT UNSIGNED NOT NULL',
+                'PlanId' => 'plan_id BIGINT UNSIGNED NULL',
+                'PlanCode' => 'plan_code VARCHAR(100) NOT NULL',
+                'Status' => 'status VARCHAR(30) NOT NULL DEFAULT \'active\'',
+                'Provider' => 'provider VARCHAR(50) NULL',
+                'StripeCustomerId' => 'stripe_customer_id VARCHAR(191) NULL',
+                'StripeSubscriptionId' => 'stripe_subscription_id VARCHAR(191) NULL',
+                'ProviderSubscriptionId' => 'provider_subscription_id VARCHAR(191) NULL',
+                'StartedAt' => 'started_at DATETIME NULL',
+                'CurrentPeriodStart' => 'current_period_start DATETIME NULL',
+                'CurrentPeriodEnd' => 'current_period_end DATETIME NULL',
+                'TrialEndsAt' => 'trial_ends_at DATETIME NULL',
+                'CancelAt' => 'cancel_at DATETIME NULL',
+                'CanceledAt' => 'canceled_at DATETIME NULL',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ]
+        );
+
+        self::rename_columns(
+            $wpdb,
+            $wpdb->base_prefix . 'myvh_settings',
+            [
+                'Id' => 'id BIGINT UNSIGNED AUTO_INCREMENT',
+                'AccountId' => 'account_id BIGINT UNSIGNED NOT NULL',
+                'SettingKey' => 'setting_key VARCHAR(191) NOT NULL',
+                'SettingValue' => 'setting_value LONGTEXT NULL',
+                'IsAutoload' => 'is_autoload TINYINT(1) NOT NULL DEFAULT 0',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ]
+        );
+
+        self::rename_columns(
+            $wpdb,
+            $wpdb->base_prefix . 'myvh_usage',
+            [
+                'Id' => 'id BIGINT UNSIGNED AUTO_INCREMENT',
+                'AccountId' => 'account_id BIGINT UNSIGNED NOT NULL',
+                'MetricKey' => 'metric_key VARCHAR(100) NOT NULL',
+                'MetricPeriodStart' => 'metric_period_start DATETIME NOT NULL',
+                'MetricPeriodEnd' => 'metric_period_end DATETIME NOT NULL',
+                'Quantity' => 'quantity BIGINT NOT NULL DEFAULT 0',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'RecordedAt' => 'recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+            ]
+        );
+    }
+
+    private static function upgrade_to_1_12_0(wpdb $wpdb): void {
+        $table = $wpdb->base_prefix . 'myvh_settings';
+
+        if (!self::has_column($wpdb, $table, 'account_id')) {
+            self::create_settings_table($wpdb, $wpdb->get_charset_collate());
+            return;
+        }
+
+        $rows = $wpdb->get_results(
+            "SELECT id, account_id, setting_key
+             FROM {$table}
+             ORDER BY CASE WHEN account_id = 0 THEN 0 ELSE 1 END, id ASC",
+            ARRAY_A
+        );
+
+        $keep_ids = [];
+        $seen_keys = [];
+
+        foreach ($rows as $row) {
+            $setting_key = isset($row['setting_key']) ? (string) $row['setting_key'] : '';
+            $row_id = isset($row['id']) ? (int) $row['id'] : 0;
+            $account_id = isset($row['account_id']) ? (int) $row['account_id'] : 0;
+
+            if ($setting_key === '' || $row_id <= 0) {
+                continue;
+            }
+
+            if (isset($seen_keys[$setting_key])) {
+                continue;
+            }
+
+            $seen_keys[$setting_key] = true;
+            $keep_ids[] = $row_id;
+
+            if ($account_id !== 0) {
+                $wpdb->update(
+                    $table,
+                    ['account_id' => 0],
+                    ['id' => $row_id],
+                    ['%d'],
+                    ['%d']
+                );
+            }
+        }
+
+        if ($keep_ids !== []) {
+            $wpdb->query(
+                "DELETE FROM {$table} WHERE id NOT IN (" . implode(',', array_map('intval', $keep_ids)) . ')'
+            );
+        }
+
+        if (self::has_index($wpdb, $table, 'uq_account_setting')) {
+            $wpdb->query("ALTER TABLE {$table} DROP INDEX uq_account_setting");
+        }
+
+        $wpdb->query("ALTER TABLE {$table} DROP COLUMN account_id");
+
+        self::create_settings_table($wpdb, $wpdb->get_charset_collate());
+    }
+
+    private static function upgrade_to_1_13_0(wpdb $wpdb): void {
+        $table = $wpdb->base_prefix . 'myvh_subscriptions';
+
+        if (!self::has_column($wpdb, $table, 'booking_limit_snapshot')) {
+            $wpdb->query("ALTER TABLE {$table} ADD COLUMN booking_limit_snapshot BIGINT NULL AFTER plan_code");
+        }
+
+        if (!self::has_column($wpdb, $table, 'features_snapshot')) {
+            $wpdb->query("ALTER TABLE {$table} ADD COLUMN features_snapshot LONGTEXT NULL AFTER booking_limit_snapshot");
+        }
+    }
+
+    private static function upgrade_to_1_14_0(wpdb $wpdb): void {
+        $plans_table = $wpdb->base_prefix . 'myvh_plans';
+
+        if (!self::has_column($wpdb, $plans_table, 'booking_limit')) {
+            $wpdb->query("ALTER TABLE {$plans_table} ADD COLUMN booking_limit BIGINT NULL AFTER price");
+        }
+
+        if (!self::has_column($wpdb, $plans_table, 'features')) {
+            $wpdb->query("ALTER TABLE {$plans_table} ADD COLUMN features LONGTEXT NULL AFTER booking_limit");
+        }
+
+        $collate = $wpdb->get_charset_collate();
+        self::create_subscription_event_log_table($wpdb, $collate);
+    }
+
+    private static function upgrade_to_1_15_0(wpdb $wpdb): void {
+        $collate = $wpdb->get_charset_collate();
+        self::create_processed_stripe_events_table($wpdb, $collate);
+    }
+
+    private static function upgrade_to_1_16_0(wpdb $wpdb): void {
+        self::seed_default_plans($wpdb);
+
+        $table = $wpdb->base_prefix . 'myvh_settings';
+        $existing_id = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id FROM {$table} WHERE setting_key = %s LIMIT 1",
+                'default_plan'
+            )
+        );
+
+        if ($existing_id !== null) {
+            $wpdb->update(
+                $table,
+                ['setting_value' => 'trial'],
+                ['id' => (int) $existing_id],
+                ['%s'],
+                ['%d']
+            );
+
+            return;
+        }
+
+        $wpdb->insert(
+            $table,
+            [
+                'setting_key' => 'default_plan',
+                'setting_value' => 'trial',
+                'is_autoload' => 1,
+            ],
+            ['%s', '%s', '%d']
+        );
+    }
+
+    private static function upgrade_to_1_16_1(wpdb $wpdb): void {
+        // Backfill missing seeded plans on installs that already ran 1.16.0.
+        self::seed_default_plans($wpdb);
+    }
+
+    private static function rename_columns(wpdb $wpdb, string $table, array $columns): void {
+        foreach ($columns as $legacy_name => $definition) {
+            [$new_name] = explode(' ', $definition, 2);
+
+            if (!self::has_column($wpdb, $table, $legacy_name) || self::has_column($wpdb, $table, $new_name)) {
+                continue;
+            }
+
+            $wpdb->query("ALTER TABLE {$table} CHANGE COLUMN {$legacy_name} {$definition}");
+        }
+    }
+
+    private static function has_column(wpdb $wpdb, string $table, string $column): bool {
+        return $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", $column)) !== null;
+    }
+
+    private static function has_index(wpdb $wpdb, string $table, string $index): bool {
+        return $wpdb->get_var($wpdb->prepare("SHOW INDEX FROM {$table} WHERE Key_name = %s", $index)) !== null;
+    }
+
     private static function upgrade_to_1_6_0(wpdb $wpdb): void {
         $collate = $wpdb->get_charset_collate();
         self::create_room_rate_days_table($wpdb, $collate);
@@ -299,6 +609,174 @@ class Installer {
 
         //This is special as it's not a site specific table
         self::create_site_provisioning_table( $wpdb, $collate );
+        self::create_subscription_saas_tables( $wpdb, $collate );
+        self::create_subscription_event_log_table( $wpdb, $collate );
+    }
+
+    private static function create_subscription_saas_tables(wpdb $wpdb, string $collate): void {
+        self::create_plans_table($wpdb, $collate);
+        self::create_accounts_table($wpdb, $collate);
+        self::create_subscriptions_table($wpdb, $collate);
+        self::create_settings_table($wpdb, $collate);
+        self::create_usage_table($wpdb, $collate);
+        self::create_processed_stripe_events_table($wpdb, $collate);
+    }
+
+    private static function create_processed_stripe_events_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->base_prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_processed_stripe_events (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            event_id              VARCHAR(191) NOT NULL,
+            event_type            VARCHAR(120) NOT NULL,
+            processed_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_event_id (event_id),
+            INDEX idx_event_type (event_type),
+            INDEX idx_processed_at (processed_at)
+        ) {$collate};");
+    }
+
+    private static function create_plans_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->base_prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_plans (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            plan_key              VARCHAR(100) NOT NULL,
+            name                  VARCHAR(150) NOT NULL,
+            description           TEXT NULL,
+            billing_interval      VARCHAR(20) NOT NULL DEFAULT 'monthly',
+            price                 DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            booking_limit         BIGINT NULL,
+            features              LONGTEXT NULL,
+            currency_code         CHAR(3) NOT NULL DEFAULT 'GBP',
+            stripe_price_id_monthly VARCHAR(191) NULL,
+            is_active             TINYINT(1) NOT NULL DEFAULT 1,
+            metadata              LONGTEXT NULL,
+            created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_plan_key (plan_key),
+            INDEX idx_is_active (is_active),
+            INDEX idx_stripe_price_monthly (stripe_price_id_monthly)
+        ) {$collate};");
+    }
+
+    private static function create_subscription_event_log_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->base_prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_subscription_event_log (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            account_id            BIGINT UNSIGNED NOT NULL,
+            blog_id               BIGINT UNSIGNED NULL,
+            event_type            VARCHAR(120) NOT NULL,
+            previous_status       VARCHAR(30) NULL,
+            new_status            VARCHAR(30) NULL,
+            source                VARCHAR(40) NOT NULL DEFAULT 'system',
+            payload               LONGTEXT NULL,
+            created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_account_id (account_id),
+            INDEX idx_blog_id (blog_id),
+            INDEX idx_event_type (event_type),
+            INDEX idx_source (source),
+            INDEX idx_created_at (created_at)
+        ) {$collate};");
+    }
+
+    private static function create_accounts_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->base_prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_accounts (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            blog_id               BIGINT UNSIGNED NULL,
+            owner_user_id         BIGINT UNSIGNED NULL,
+            plan_id               BIGINT UNSIGNED NULL,
+            account_name          VARCHAR(150) NOT NULL,
+            contact_email         VARCHAR(191) NOT NULL DEFAULT '',
+            status                VARCHAR(30) NOT NULL DEFAULT 'active',
+            external_reference    VARCHAR(191) NULL,
+            metadata              LONGTEXT NULL,
+            created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_blog_id (blog_id),
+            UNIQUE KEY uq_external_reference (external_reference),
+            INDEX idx_owner_user (owner_user_id),
+            INDEX idx_plan_id (plan_id),
+            INDEX idx_status (status)
+        ) {$collate};");
+    }
+
+    private static function create_subscriptions_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->base_prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_subscriptions (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            account_id            BIGINT UNSIGNED NOT NULL,
+            plan_id               BIGINT UNSIGNED NULL,
+            plan_code             VARCHAR(100) NOT NULL,
+            booking_limit_snapshot BIGINT NULL,
+            features_snapshot     LONGTEXT NULL,
+            status                VARCHAR(30) NOT NULL DEFAULT 'active',
+            provider              VARCHAR(50) NULL,
+            stripe_customer_id    VARCHAR(191) NULL,
+            stripe_subscription_id VARCHAR(191) NULL,
+            provider_subscription_id VARCHAR(191) NULL,
+            started_at            DATETIME NULL,
+            current_period_start  DATETIME NULL,
+            current_period_end    DATETIME NULL,
+            trial_ends_at         DATETIME NULL,
+            cancel_at             DATETIME NULL,
+            canceled_at           DATETIME NULL,
+            metadata              LONGTEXT NULL,
+            created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_provider_subscription_id (provider_subscription_id),
+            UNIQUE KEY uq_stripe_subscription_id (stripe_subscription_id),
+            INDEX idx_account_id (account_id),
+            INDEX idx_plan_id (plan_id),
+            INDEX idx_plan_code (plan_code),
+            INDEX idx_stripe_customer_id (stripe_customer_id),
+            INDEX idx_status (status),
+            INDEX idx_period_end (current_period_end)
+        ) {$collate};");
+    }
+
+    private static function create_settings_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->base_prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_settings (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            setting_key           VARCHAR(191) NOT NULL,
+            setting_value         LONGTEXT NULL,
+            is_autoload           TINYINT(1) NOT NULL DEFAULT 0,
+            updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_setting_key (setting_key),
+            INDEX idx_setting_key (setting_key),
+            INDEX idx_autoload (is_autoload)
+        ) {$collate};");
+    }
+
+    private static function create_usage_table(wpdb $wpdb, string $collate): void {
+        $p = $wpdb->base_prefix;
+
+        dbDelta("CREATE TABLE {$p}myvh_usage (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            account_id            BIGINT UNSIGNED NOT NULL,
+            metric_key            VARCHAR(100) NOT NULL,
+            metric_period_start   DATETIME NOT NULL,
+            metric_period_end     DATETIME NOT NULL,
+            quantity              BIGINT NOT NULL DEFAULT 0,
+            metadata              LONGTEXT NULL,
+            recorded_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_usage_metric_period (account_id, metric_key, metric_period_start, metric_period_end),
+            INDEX idx_metric_key (metric_key),
+            INDEX idx_period (metric_period_start, metric_period_end)
+        ) {$collate};");
     }
 
     private static function create_venues_table( wpdb $wpdb, string $collate ): void {
@@ -1195,9 +1673,169 @@ class Installer {
         self::add_default_organisation_type($wpdb);
         $personal_org_id = self::add_personal_organisation($wpdb, $personal_org_type);
         self::migrate_single_booking_auto_invoice_rule_settings($wpdb);
+        self::seed_default_plans($wpdb);
+        self::seed_subscription_settings($wpdb);
 
         // This should be run afer setting the default organisation type and personal organisation, as the system customer is linked to the personal organisation type and the personal organisation is set as default (which is used when creating a new customer without an org type specified).
         self::add_system_customer($personal_org_id);
+    }
+
+    private static function seed_default_plans(wpdb $wpdb): void {
+        $table = $wpdb->base_prefix . 'myvh_plans';
+
+        $plans = [
+            [
+                'plan_key' => 'trial',
+                'name' => 'Trial',
+                'description' => 'Free trial plan',
+                'billing_interval' => 'monthly',
+                'price' => '0.00',
+                'currency_code' => 'GBP',
+                'is_active' => 1,
+                'metadata' => wp_json_encode([
+                    'features' => [
+                        'bookings' => 10,
+                        'deposits' => false,
+                        'invoicing' => true,
+                        'reporting' => false,
+                    ],
+                ]),
+            ],
+            [
+                'plan_key' => 'basic',
+                'name' => 'Basic',
+                'description' => 'Entry plan',
+                'billing_interval' => 'monthly',
+                'price' => '0.00',
+                'currency_code' => 'GBP',
+                'is_active' => 1,
+                'metadata' => wp_json_encode([
+                    'features' => [
+                        'bookings' => 30,
+                        'deposits' => false,
+                        'invoicing' => true,
+                        'reporting' => false,
+                    ],
+                ]),
+            ],
+            [
+                'plan_key' => 'standard',
+                'name' => 'Standard',
+                'description' => 'Growth plan',
+                'billing_interval' => 'monthly',
+                'price' => '0.00',
+                'currency_code' => 'GBP',
+                'is_active' => 1,
+                'metadata' => wp_json_encode([
+                    'features' => [
+                        'bookings' => 150,
+                        'deposits' => true,
+                        'invoicing' => true,
+                        'reporting' => true,
+                    ],
+                ]),
+            ],
+            [
+                'plan_key' => 'pro',
+                'name' => 'Pro',
+                'description' => 'Unlimited plan',
+                'billing_interval' => 'monthly',
+                'price' => '0.00',
+                'currency_code' => 'GBP',
+                'is_active' => 1,
+                'metadata' => wp_json_encode([
+                    'features' => [
+                        'bookings' => null,
+                        'deposits' => true,
+                        'invoicing' => true,
+                        'reporting' => true,
+                    ],
+                ]),
+            ],
+        ];
+
+        foreach ($plans as $plan) {
+            $plan_key = (string) ($plan['plan_key'] ?? '');
+
+            if ($plan_key === '') {
+                continue;
+            }
+
+            $existing_id = $wpdb->get_var(
+                $wpdb->prepare("SELECT id FROM {$table} WHERE plan_key = %s LIMIT 1", $plan_key)
+            );
+
+            if ($existing_id === null) {
+                $existing_id = $wpdb->get_var(
+                    $wpdb->prepare("SELECT id FROM {$table} WHERE LOWER(name) = LOWER(%s) LIMIT 1", (string) ($plan['name'] ?? ''))
+                );
+            }
+
+            if ($existing_id === null) {
+                // Some legacy installs contain a placeholder row with a blank plan_key.
+                // Reuse it instead of inserting a new row to avoid uq_plan_key collisions.
+                $existing_id = $wpdb->get_var("SELECT id FROM {$table} WHERE plan_key = '' OR plan_key IS NULL ORDER BY id ASC LIMIT 1");
+            }
+
+            if ($existing_id !== null) {
+                $wpdb->update(
+                    $table,
+                    [
+                        'plan_key' => $plan_key,
+                        'name' => $plan['name'],
+                        'description' => $plan['description'],
+                        'billing_interval' => $plan['billing_interval'],
+                        'price' => $plan['price'],
+                        'currency_code' => $plan['currency_code'],
+                        'is_active' => $plan['is_active'],
+                        'metadata' => $plan['metadata'],
+                    ],
+                    ['id' => (int) $existing_id],
+                    ['%s', '%s', '%s', '%s', '%f', '%s', '%d', '%s'],
+                    ['%d']
+                );
+                continue;
+            }
+
+            $wpdb->insert(
+                $table,
+                $plan,
+                ['%s', '%s', '%s', '%s', '%f', '%s', '%d', '%s']
+            );
+        }
+    }
+
+    private static function seed_subscription_settings(wpdb $wpdb): void {
+        $table = $wpdb->base_prefix . 'myvh_settings';
+
+        $defaults = [
+            'trial_days' => '14',
+            'grace_period_days' => '3',
+            'default_plan' => 'trial',
+        ];
+
+        foreach ($defaults as $key => $value) {
+            $existing_id = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT id FROM {$table} WHERE setting_key = %s LIMIT 1",
+                    $key
+                )
+            );
+
+            if ($existing_id !== null) {
+                continue;
+            }
+
+            $wpdb->insert(
+                $table,
+                [
+                    'setting_key' => $key,
+                    'setting_value' => $value,
+                    'is_autoload' => 1,
+                ],
+                ['%s', '%s', '%d']
+            );
+        }
     }
 
     public static function tidy_up(): void {

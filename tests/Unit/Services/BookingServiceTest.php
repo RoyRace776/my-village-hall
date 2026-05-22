@@ -7,6 +7,9 @@ use Tests\Support\Factories\RoomFactory;
 use MYVH\Tests\Unit\Unit_Test_Case;
 use WP_Error;
 use \MYVH\Tests\Unit\UnitTestCase;
+use MYVH\Subscriptions\Services\AccountService;
+use MYVH\Subscriptions\Services\EnforcementService;
+use MYVH\Subscriptions\Services\UsageService;
 
 /**
  * Unit tests for Booking_Service.
@@ -86,6 +89,9 @@ class BookingServiceTest extends UnitTestCase {
     private $invoice_service;
     private $invoice_item_repo;
     private $deposit_service;
+    private $enforcement_service;
+    private $usage_service;
+    private $account_service;
 
     /** @var \MYVH\Bookings\BookingService */
     private $service;
@@ -151,7 +157,15 @@ class BookingServiceTest extends UnitTestCase {
         $this->invoice_service = $this->mock(\MYVH\Invoices\InvoiceService::class);
         $this->invoice_item_repo = $this->mock(\MYVH\Invoices\InvoiceItemRepository::class);
         $this->deposit_service = $this->mock(\MYVH\Deposits\DepositService::class);
+        $this->enforcement_service = $this->mock(EnforcementService::class);
+        $this->usage_service = $this->mock(UsageService::class);
+        $this->account_service = $this->mock(AccountService::class);
         $this->deposit_service->shouldReceive('evaluate')->zeroOrMoreTimes()->andReturn(null);
+        $this->enforcement_service->shouldReceive('canCreateBooking')->andReturn(true)->byDefault();
+        $this->enforcement_service->shouldReceive('getLastError')->andReturn(null)->byDefault();
+        $this->account_service->shouldReceive('resolveAccountFromBlogId')->andReturn(null)->byDefault();
+        $this->usage_service->shouldReceive('exceedsLimit')->andReturn(false)->byDefault();
+        $this->usage_service->shouldReceive('recordBooking')->andReturn(true)->byDefault();
 
         $this->service = new \MYVH\Bookings\BookingService(
             $this->room_service,
@@ -176,7 +190,11 @@ class BookingServiceTest extends UnitTestCase {
             $this->invoice_service,
             $this->invoice_item_repo,
             $this->booking_charge_repo,
-            $this->deposit_service
+            $this->deposit_service,
+            null,
+            $this->enforcement_service,
+            $this->usage_service,
+            $this->account_service
         );
     }
 
@@ -213,6 +231,10 @@ class BookingServiceTest extends UnitTestCase {
             $this->invoice_service,
             $this->invoice_item_repo,
             $this->deposit_service
+            ,
+            $this->enforcement_service,
+            $this->usage_service,
+            $this->account_service
         );
         parent::tearDown();
     }
@@ -332,11 +354,37 @@ class BookingServiceTest extends UnitTestCase {
 
     /** @test */
     public function save_create_returns_new_booking_id_on_success(): void {
+        \Brain\Monkey\Functions\when('get_current_blog_id')->justReturn(3);
+        $this->account_service->shouldReceive('resolveAccountFromBlogId')->once()->with(3)->andReturnUsing(static fn(): array => ['Id' => 10]);
+        $this->enforcement_service->shouldReceive('canCreateBooking')->once()->with(10)->andReturn(true);
+        $this->usage_service->shouldReceive('recordBooking')->once()->with(10)->andReturn(true);
+
         $expected_id = $this->wire_happy_create(42);
 
         $result = $this->service->save($this->minimal_create_data());
 
         $this->assertSame($expected_id, $result);
+    }
+
+    /** @test */
+    public function save_create_returns_wp_error_when_account_exceeds_usage_limit(): void {
+        \Brain\Monkey\Functions\when('get_current_blog_id')->justReturn(3);
+
+        $this->booking_repo->shouldReceive('begin')->once();
+        $this->booking_repo->shouldReceive('rollback')->once();
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
+
+        $this->account_service->shouldReceive('resolveAccountFromBlogId')->once()->with(3)->andReturnUsing(static fn(): array => ['Id' => 10]);
+        $this->enforcement_service->shouldReceive('canCreateBooking')->once()->with(10)->andReturn(false);
+        $this->enforcement_service->shouldReceive('getLastError')->once()->andReturn(new WP_Error('usage_limit', 'Booking limit reached for this account'));
+
+        $this->booking_repo->shouldReceive('create')->never();
+
+        $result = $this->service->save($this->minimal_create_data());
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame('usage_limit', $result->get_error_code());
     }
 
     /** @test */

@@ -143,6 +143,19 @@ class AssetLoader {
             true
         );
 
+        if ( strpos( $hook, 'myvh-subscription' ) !== false ) {
+            wp_enqueue_script(
+                'myvh-subscription-modals',
+                MYVH_PLUGIN_URL . 'assets/js/subscription-modals.js',
+                [],
+                self::asset_version( 'assets/js/subscription-modals.js' ),
+                true
+            );
+            wp_localize_script( 'myvh-subscription-modals', 'myvhSubscription', [
+                'upgrade_url' => esc_url( admin_url( 'admin.php?page=myvh-subscription-upgrade' ) ),
+            ] );
+        }
+
         // Bookings list page
         if ( strpos( $hook, 'my-village-hall' ) !== false ) {
             wp_enqueue_script(
@@ -339,6 +352,17 @@ class AssetLoader {
             self::asset_version( 'assets/js/portal-app.js' ),
             true
         );
+
+        wp_enqueue_script(
+            'myvh-subscription-modals',
+            MYVH_PLUGIN_URL . 'assets/js/subscription-modals.js',
+            [],
+            self::asset_version( 'assets/js/subscription-modals.js' ),
+            true
+        );
+        wp_localize_script( 'myvh-subscription-modals', 'myvhSubscription', [
+            'upgrade_url' => esc_url( admin_url( 'admin.php?page=myvh-subscription-upgrade' ) ),
+        ] );
     }
 
     // ── Public calendar ([myvh_public_calendar] shortcode) ────────────────────

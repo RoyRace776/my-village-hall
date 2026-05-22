@@ -12,6 +12,9 @@ use MYVH\Pricing\PricingService;
 use MYVH\Addons\AddonRepository;
 use MYVH\Customers\CustomerRepository;
 use MYVH\Organisations\OrganisationRepository;
+use MYVH\Subscriptions\Services\AccountService;
+use MYVH\Subscriptions\Services\FeatureService;
+use MYVH\Subscriptions\Services\SubscriptionGuard;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -44,6 +47,9 @@ class InvoiceGeneratorService {
     private DepositService $deposit_service;
     private SingleBookingAutoInvoiceRuleRepository $single_rule_repository;
     private RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository;
+    private ?SubscriptionGuard $subscription_guard;
+    private ?FeatureService $feature_service;
+    private ?AccountService $account_service;
     private LoggerInterface $logger;
 
     public function __construct(
@@ -61,6 +67,9 @@ class InvoiceGeneratorService {
         DepositService $deposit_service,
         SingleBookingAutoInvoiceRuleRepository $single_rule_repository,
         RecurringBookingAutoInvoiceRuleRepository $recurring_rule_repository,
+        ?SubscriptionGuard $subscription_guard = null,
+        ?FeatureService $feature_service = null,
+        ?AccountService $account_service = null,
         ?LoggerInterface $logger = null
     ) {
         $this->invoiceService = $invoiceService;
@@ -77,6 +86,9 @@ class InvoiceGeneratorService {
         $this->deposit_service = $deposit_service;
         $this->single_rule_repository = $single_rule_repository;
         $this->recurring_rule_repository = $recurring_rule_repository;
+        $this->subscription_guard = $subscription_guard;
+        $this->feature_service = $feature_service;
+        $this->account_service = $account_service;
         $this->logger = $logger ?? new NullLogger();
     }
 
@@ -94,6 +106,19 @@ class InvoiceGeneratorService {
      * @return array|WP_Error Array of created invoice IDs or WP_Error on failure
      */
     public function generate_invoices_from_bookings( mixed $booking_ids, mixed $options = []): array|WP_Error {
+        $account_id = $this->resolve_current_account_id();
+
+        if ($account_id > 0 && $this->feature_service !== null && !$this->feature_service->allowsForAccount($account_id, 'invoicing')) {
+            return new WP_Error('subscription_feature_blocked', __('Your current subscription plan does not include invoicing', 'my-village-hall'));
+        }
+
+        if ($account_id > 0 && $this->subscription_guard !== null) {
+            $allowed = $this->subscription_guard->assertCanCreateBookingForAccount($account_id);
+            if (is_wp_error($allowed)) {
+                return $allowed;
+            }
+        }
+
         $defaults = [
             'group_by' => 'per_booking',
             'trigger_event' => 'manual',
@@ -200,6 +225,20 @@ class InvoiceGeneratorService {
         }
 
         return $created_invoice_ids;
+    }
+
+    private function resolve_current_account_id(): int {
+        if ($this->account_service === null || !function_exists('get_current_blog_id')) {
+            return 0;
+        }
+
+        try {
+            $account = $this->account_service->resolveAccountFromBlogId((int) get_current_blog_id());
+        } catch (\Throwable $e) {
+            return 0;
+        }
+
+        return is_array($account) ? (int) ($account['Id'] ?? 0) : 0;
     }
 
     private function normalize_rule_scope($rule_scope): string {

@@ -19,6 +19,8 @@ use MYVH\Events\OrganisationListener;
 use MYVH\Events\SettingsListener;
 use MYVH\Core\Scheduling\OvernightBatchRunner;
 use MYVH\Core\Shortcode\ShortcodeRegistry;
+use MYVH\Subscriptions\Services\BillingService;
+use MYVH\Subscriptions\Services\SubscriptionLifecycleScheduler;
 
 
 global $myvh_container;
@@ -89,6 +91,21 @@ if ( $myvh_container instanceof Container ) {
 
     $customer_user_sync = $myvh_container->get( MYVH\Customers\CustomerUserSync::class );
     $customer_user_sync->register();
+
+    $subscriptions_admin = $myvh_container->get( MYVH\Subscriptions\Admin\SubscriptionsAdmin::class );
+    $subscriptions_admin->init();
+
+    $billing_service = $myvh_container->get( BillingService::class );
+    $billing_service->registerWebhooks();
+
+    $subscription_lifecycle_scheduler = $myvh_container->get( SubscriptionLifecycleScheduler::class );
+    $subscription_lifecycle_scheduler->register();
+
+    $subscription_upgrade_endpoint = $myvh_container->get( MYVH\Subscriptions\Http\SubscriptionUpgradeEndpoint::class );
+    $subscription_upgrade_endpoint->register();
+
+    $subscription_checkout_endpoint = $myvh_container->get( MYVH\Subscriptions\Http\SubscriptionCheckoutEndpoint::class );
+    $subscription_checkout_endpoint->register();
 
     // Admin password reset AJAX handler
     $admin_password_reset = new MYVH\Admin\AdminPasswordResetHandler(

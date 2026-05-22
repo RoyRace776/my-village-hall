@@ -5,7 +5,7 @@ class NoticeSettings extends SettingsBase {
 
     protected $option_name = 'myvh_notice_settings';
     protected $required_capability = 'manage_options';
-    protected $hide_from_client_admin = true;
+    protected $hide_from_client_admin = false;
 
     public function tab(): array {
         return [
