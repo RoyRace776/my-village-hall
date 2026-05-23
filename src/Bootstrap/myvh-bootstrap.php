@@ -40,6 +40,7 @@ if ( $myvh_container instanceof Container ) {
 
     $registry->add( $myvh_container->get( MYVH\Login\LoginShortcode::class ) );
     $registry->add( $myvh_container->get( MYVH\Portal\PortalShortcode::class ) );
+    $registry->add( $myvh_container->get( MYVH\Portal\SubscriptionPlanTableShortcode::class ) );
     $registry->add( $myvh_container->get( MYVH\Network\CreateSiteShortcode::class ) );
 
     // Suppress the theme's page title on pages that embed the login shortcode.

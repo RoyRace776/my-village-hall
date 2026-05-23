@@ -1605,6 +1605,11 @@ body .site-main:has(#myvh-portal) {
   font-family: 'DM Sans', sans-serif;
 }
 
+.myvh-account-page #myvh-subscription-plan-code,
+.myvh-account-page #myvh-subscription-payment-method {
+  width: min(100%, 320px);
+}
+
 .myvh-account-page .myvh-plan-comparison h3 {
   margin: 0;
   color: var(--ink);

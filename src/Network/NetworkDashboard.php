@@ -4,20 +4,43 @@ namespace MYVH\Network;
 use WP_Site;
 use WP_User;
 use MYVH\Portal\ClientAdminService;
+use MYVH\Subscriptions\Entities\Plan;
+use MYVH\Subscriptions\Entities\Subscription;
+use MYVH\Subscriptions\Repositories\AccountRepository;
+use MYVH\Subscriptions\Repositories\PlanRepository;
+use MYVH\Subscriptions\Repositories\SubscriptionRepository;
 
 if (!defined('ABSPATH')) exit;
 
 class NetworkDashboard {
 
     private const CLIENT_ADMINS_PAGE = 'myvh-network-client-admins';
+    private const SUBSCRIPTION_STATUS_PAGE = 'myvh-network-subscription-status';
     private const PROVISIONING_SETTINGS_PAGE = 'myvh-network-provisioning-settings';
     private const PROVISIONING_MAINTENANCE_PAGE = 'myvh-network-provisioning-maintenance';
 
     public function __construct(
-        private ?SiteProvisioningRepository $provisioning_repo = null
+        private ?SiteProvisioningRepository $provisioning_repo = null,
+        private ?AccountRepository $account_repository = null,
+        private ?SubscriptionRepository $subscription_repository = null,
+        private ?PlanRepository $plan_repository = null
     ) {
+        global $wpdb;
+
         if ($this->provisioning_repo === null) {
             $this->provisioning_repo = new SiteProvisioningRepository();
+        }
+
+        if ($this->account_repository === null) {
+            $this->account_repository = new AccountRepository($wpdb);
+        }
+
+        if ($this->subscription_repository === null) {
+            $this->subscription_repository = new SubscriptionRepository($wpdb);
+        }
+
+        if ($this->plan_repository === null) {
+            $this->plan_repository = new PlanRepository($wpdb);
         }
     }
 
@@ -49,6 +72,15 @@ class NetworkDashboard {
 
         add_submenu_page(
             'myvh-network',
+            'Subscription Status',
+            'Subscription Status',
+            'manage_network_options',
+            self::SUBSCRIPTION_STATUS_PAGE,
+            [$this, 'render_subscription_status_page']
+        );
+
+        add_submenu_page(
+            'myvh-network',
             'Provisioning Settings',
             'Provisioning Settings',
             'manage_network_options',
@@ -69,6 +101,7 @@ class NetworkDashboard {
     public function render_menu_icons(): void {
         $icon_map = [
             'admin.php?page=' . self::CLIENT_ADMINS_PAGE => 'dashicons-admin-users',
+            'admin.php?page=' . self::SUBSCRIPTION_STATUS_PAGE => 'dashicons-chart-bar',
             'admin.php?page=' . self::PROVISIONING_SETTINGS_PAGE => 'dashicons-admin-tools',
             'admin.php?page=' . self::PROVISIONING_MAINTENANCE_PAGE => 'dashicons-clipboard',
         ];
@@ -113,6 +146,65 @@ class NetworkDashboard {
         }
 
         echo '</tbody></table></div>';
+    }
+
+    public function render_subscription_status_page(): void {
+        if (!current_user_can('manage_network_options')) {
+            wp_die('Sorry, you are not allowed to access this page.');
+        }
+
+        $sites = $this->get_subscription_status_sites();
+
+        echo '<div class="wrap">';
+        echo '<h1>Subscription Status</h1>';
+        echo '<p>Review the current subscription plan for each live site on the network.</p>';
+
+        if (empty($sites)) {
+            echo '<div class="notice notice-info"><p>No eligible sites were found.</p></div>';
+            echo '</div>';
+            return;
+        }
+
+        echo '<table class="widefat striped">';
+        echo '<thead><tr><th>Site</th><th>Plan</th><th>Status</th><th>Invoice</th><th>Trial days left</th></tr></thead><tbody>';
+
+        foreach ($sites as $site) {
+            $blog_id = (int) $site->blog_id;
+            $site_name = get_blog_option($blog_id, 'blogname', sprintf('Site %d', $blog_id));
+            $site_url = $this->get_subscription_dashboard_url($blog_id);
+            $subscription = $this->resolve_subscription_for_site($blog_id);
+
+            $plan_label = 'No subscription';
+            $status_label = 'No subscription';
+            $invoice_label = '—';
+            $trial_days_left = '—';
+
+            if ($subscription instanceof Subscription) {
+                $plan_label = $this->resolve_plan_label($subscription);
+                $status_label = ucfirst(str_replace('_', ' ', $subscription->getStatus()));
+                $invoice_label = $this->get_invoice_state_label($subscription);
+
+                if ($subscription->isTrial()) {
+                    $days_remaining = $this->get_trial_days_remaining($subscription);
+                    $trial_days_left = $days_remaining === null
+                        ? 'Unknown'
+                        : ($days_remaining === 0
+                            ? 'Expired'
+                            : sprintf('%d days', $days_remaining));
+                }
+            }
+
+            echo '<tr>';
+            echo '<td><a href="' . esc_url($site_url) . '">' . esc_html($site_name) . '</a></td>';
+            echo '<td>' . esc_html($plan_label) . '</td>';
+            echo '<td>' . esc_html($status_label) . '</td>';
+            echo '<td>' . esc_html($invoice_label) . '</td>';
+            echo '<td>' . esc_html($trial_days_left) . '</td>';
+            echo '</tr>';
+        }
+
+        echo '</tbody></table>';
+        echo '</div>';
     }
 
     public function render_client_admins_page(): void {
@@ -533,6 +625,138 @@ class NetworkDashboard {
         .myvh-status-cancelled { color: #999; font-weight: bold; text-decoration: line-through; }
         .myvh-status-failed { color: #d9534f; font-weight: bold; }
         </style>';
+    }
+
+    /**
+     * @return WP_Site[]
+     */
+    private function get_subscription_status_sites(): array {
+        $sites = get_sites([
+            'number' => 0,
+            'count' => false,
+            'fields' => '',
+            'orderby' => 'domain',
+            'order' => 'ASC',
+        ]);
+
+        if (!is_array($sites)) {
+            return [];
+        }
+
+        $template_site_id = NetworkProvisioningSettings::template_site_id();
+        $main_site_id = function_exists('get_main_site_id') ? (int) get_main_site_id() : 0;
+
+        $filtered_sites = [];
+
+        foreach ($sites as $site) {
+            $blog_id = (int) ($site->blog_id ?? 0);
+
+            if ($blog_id <= 0) {
+                continue;
+            }
+
+            if ($template_site_id > 0 && $blog_id === $template_site_id) {
+                continue;
+            }
+
+            if ($main_site_id > 0 && $blog_id === $main_site_id) {
+                continue;
+            }
+
+            $filtered_sites[] = $site;
+        }
+
+        return $filtered_sites;
+    }
+
+    private function resolve_subscription_for_site(int $blog_id): ?Subscription {
+        if ($blog_id <= 0 || !$this->account_repository instanceof AccountRepository) {
+            return null;
+        }
+
+        $account = $this->account_repository->get_by_blog_id($blog_id);
+        if (!is_array($account)) {
+            $account = $this->account_repository->get_by_external_reference('blog:' . $blog_id);
+        }
+
+        $account_id = is_array($account) ? (int) ($account['id'] ?? 0) : 0;
+        if ($account_id <= 0 || !$this->subscription_repository instanceof SubscriptionRepository) {
+            return null;
+        }
+
+        $subscription = $this->subscription_repository->get_latest_by_account_id($account_id);
+
+        return $subscription instanceof Subscription ? $subscription : null;
+    }
+
+    private function get_subscription_dashboard_url(int $blog_id): string {
+        return get_admin_url($blog_id, 'admin.php?page=myvh-subscription-dashboard&blog_id=' . $blog_id);
+    }
+
+    private function get_invoice_state_label(Subscription $subscription): string {
+        $metadata = json_decode($subscription->getMetadataRaw(), true);
+        $pending_invoice_id = is_array($metadata) ? (int) ($metadata['manual_invoice_id'] ?? 0) : 0;
+
+        if ($subscription->getStatus() === 'past_due') {
+            if ($pending_invoice_id > 0) {
+                return sprintf('Invoice #%d pending', $pending_invoice_id);
+            }
+
+            return 'Invoice needed';
+        }
+
+        if ($pending_invoice_id > 0) {
+            return sprintf('Invoice #%d pending', $pending_invoice_id);
+        }
+
+        return 'No invoice needed';
+    }
+
+    private function resolve_plan_label(Subscription $subscription): string {
+        $plan_code = $subscription->getPlanCode();
+
+        if ($plan_code !== '' && $this->plan_repository instanceof PlanRepository) {
+            $plan = $this->plan_repository->getByCode($plan_code);
+            if ($plan instanceof Plan) {
+                return $plan->getName();
+            }
+
+            return $plan_code;
+        }
+
+        $plan_id = $subscription->getPlanId();
+        if ($plan_id > 0 && $this->plan_repository instanceof PlanRepository) {
+            $plan = $this->plan_repository->get_by_id($plan_id);
+            if ($plan instanceof Plan) {
+                return $plan->getName();
+            }
+        }
+
+        return 'Unknown';
+    }
+
+    private function get_trial_days_remaining(Subscription $subscription): ?int {
+        $trial_ends_at_raw = trim($subscription->getTrialEndsAt());
+        if ($trial_ends_at_raw === '') {
+            return null;
+        }
+
+        $trial_ends_at = \DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $trial_ends_at_raw,
+            new \DateTimeZone('UTC')
+        );
+
+        if (!$trial_ends_at instanceof \DateTimeImmutable) {
+            return null;
+        }
+
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        if ($trial_ends_at <= $now) {
+            return 0;
+        }
+
+        return (int) ceil(($trial_ends_at->getTimestamp() - $now->getTimestamp()) / 86400);
     }
 
     private function get_status_class(string $status): string {

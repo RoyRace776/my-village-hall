@@ -4,6 +4,7 @@ namespace MYVH\Tests\Unit\Subscriptions;
 
 use Brain\Monkey\Functions;
 use Mockery\MockInterface;
+use MYVH\Subscriptions\Entities\Plan;
 use MYVH\Subscriptions\Entities\Subscription;
 use MYVH\Subscriptions\Admin\SubscriptionsAdmin;
 use MYVH\Subscriptions\Repositories\PlanRepository;
@@ -59,7 +60,9 @@ class SubscriptionsAdminTest extends UnitTestCase {
             'esc_html__' => fn($value) => (string) $value,
             'is_admin' => true,
             'current_user_can' => true,
+            'is_super_admin' => true,
             'get_current_blog_id' => 2,
+            'get_blog_option' => fn(int $blog_id, string $option, $default = '') => $blog_id === 4 && $option === 'blogname' ? 'Neighbour Hall' : $default,
             'get_current_screen' => (object) ['id' => 'myvh-dashboard'],
             'current_time' => fn($type = 'mysql') => $type === 'timestamp' ? strtotime('2026-05-21 10:00:00') : '2026-05-21 10:00:00',
             'esc_html' => fn($value) => (string) $value,
@@ -156,6 +159,78 @@ class SubscriptionsAdminTest extends UnitTestCase {
 
         $this->assertStringContainsString('page=myvh-subscription-billing-settings', $redirect_url);
         $this->assertStringContainsString('updated=1', $redirect_url);
+    }
+
+    /** @test */
+    public function save_plan_management_persists_price_and_booking_limits(): void {
+        $_POST['plans'] = [
+            '5' => [
+                'price' => '12.50',
+                'booking_limit' => '40',
+            ],
+            '6' => [
+                'price' => '0',
+                'booking_limit' => '',
+            ],
+        ];
+
+        $redirect_url = '';
+        Functions\when('wp_safe_redirect')->alias(function (string $url) use (&$redirect_url): bool {
+            $redirect_url = $url;
+            return true;
+        });
+
+        $this->plan_repository->shouldReceive('update_by_id')
+            ->once()
+            ->with(5, ['price' => 12.5, 'booking_limit' => 40])
+            ->andReturn(true);
+
+        $this->plan_repository->shouldReceive('update_by_id')
+            ->once()
+            ->with(6, ['price' => 0.0, 'booking_limit' => null])
+            ->andReturn(true);
+
+        $this->admin->save_plan_management();
+
+        $this->assertStringContainsString('page=myvh-subscription-plans', $redirect_url);
+        $this->assertStringContainsString('updated=1', $redirect_url);
+    }
+
+    /** @test */
+    public function render_dashboard_page_can_target_a_site_and_show_invoice_actions(): void {
+        $_REQUEST['blog_id'] = 4;
+
+        $this->account_service->shouldReceive('resolveAccountFromBlogId')
+            ->once()
+            ->with(4)
+            ->andReturnUsing(static fn(): array => ['id' => 44]);
+
+        $this->trial_service->shouldReceive('checkAndExpireTrial')
+            ->once()
+            ->with(44)
+            ->andReturnUsing(static fn(): Subscription => Subscription::fromArray([
+                'status' => 'past_due',
+                'plan_code' => 'standard',
+                'trial_ends_at' => '2026-05-24 10:00:00',
+                'metadata' => wp_json_encode(['manual_invoice_id' => 77]),
+            ]));
+
+        $this->usage_service->shouldReceive('getCurrentUsage')->once()->with(44)->andReturn(11);
+        $this->plan_repository->shouldReceive('getByCode')->twice()->with('standard')->andReturnUsing(static fn(): Plan => Plan::fromArray([
+            'plan_key' => 'standard',
+            'name' => 'Standard Plan',
+            'booking_limit' => 50,
+        ]));
+
+        ob_start();
+        $this->admin->render_dashboard_page();
+        $output = (string) ob_get_clean();
+
+        $this->assertStringContainsString('Subscription Dashboard - Neighbour Hall', $output);
+        $this->assertStringContainsString('Status', $output);
+        $this->assertStringContainsString('Invoice', $output);
+        $this->assertStringContainsString('Save Status', $output);
+        $this->assertStringContainsString('Mark Invoice as Paid', $output);
     }
 
     /** @test */

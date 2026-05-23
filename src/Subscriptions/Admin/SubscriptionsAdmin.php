@@ -24,9 +24,12 @@ if (!defined('ABSPATH')) {
 
 class SubscriptionsAdmin {
     private const DASHBOARD_SLUG = 'myvh-subscription-dashboard';
+    private const PLANS_SLUG = 'myvh-subscription-plans';
     private const BILLING_SLUG = 'myvh-subscription-billing-settings';
     private const UPGRADE_SLUG = 'myvh-subscription-upgrade';
     private const SAVE_ACTION = 'myvh_save_subscription_billing_settings';
+    private const SAVE_PLANS_ACTION = 'myvh_save_subscription_plans';
+    private const UPDATE_STATUS_ACTION = 'myvh_subscription_update_status';
     private const CHANGE_PLAN_ACTION = 'myvh_subscription_change_plan';
     private const GENERATE_MANUAL_INVOICE_ACTION = 'myvh_subscription_generate_manual_invoice';
     private const MARK_MANUAL_INVOICE_PAID_ACTION = 'myvh_subscription_mark_manual_invoice_paid';
@@ -50,6 +53,8 @@ class SubscriptionsAdmin {
     public function init(): void {
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_post_' . self::SAVE_ACTION, [$this, 'save_billing_settings']);
+        add_action('admin_post_' . self::SAVE_PLANS_ACTION, [$this, 'save_plan_management']);
+        add_action('admin_post_' . self::UPDATE_STATUS_ACTION, [$this, 'update_subscription_status']);
         add_action('admin_post_' . self::CHANGE_PLAN_ACTION, [$this, 'change_plan']);
         add_action('admin_post_' . self::GENERATE_MANUAL_INVOICE_ACTION, [$this, 'generate_manual_invoice']);
         add_action('admin_post_' . self::MARK_MANUAL_INVOICE_PAID_ACTION, [$this, 'mark_manual_invoice_paid']);
@@ -78,12 +83,23 @@ class SubscriptionsAdmin {
 
         add_submenu_page(
             'my-village-hall',
-            __('Billing Settings', 'my-village-hall'),
-            __('Billing Settings', 'my-village-hall'),
+            __('Manage Plans', 'my-village-hall'),
+            __('Manage Plans', 'my-village-hall'),
             'manage_options',
-            self::BILLING_SLUG,
-            [$this, 'render_billing_settings_page']
+            self::PLANS_SLUG,
+            [$this, 'render_plan_management_page']
         );
+
+        if ($this->current_user_can_manage_billing_settings()) {
+            add_submenu_page(
+                'my-village-hall',
+                __('Billing Settings', 'my-village-hall'),
+                __('Billing Settings', 'my-village-hall'),
+                'manage_options',
+                self::BILLING_SLUG,
+                [$this, 'render_billing_settings_page']
+            );
+        }
     }
 
     public function render_dashboard_page(): void {
@@ -91,10 +107,17 @@ class SubscriptionsAdmin {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
-        $context = $this->get_account_context();
+        $target_blog_id = $this->resolve_target_blog_id();
+        $context = $this->get_account_context($target_blog_id, $target_blog_id <= 0);
+        $dashboard_title = __('Subscription Dashboard', 'my-village-hall');
+
+        if (($context['blog_id'] ?? 0) > 0) {
+            $site_name = get_blog_option((int) $context['blog_id'], 'blogname', sprintf('Site %d', (int) $context['blog_id']));
+            $dashboard_title .= ' - ' . $site_name;
+        }
 
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('Subscription Dashboard', 'my-village-hall') . '</h1>';
+        echo '<h1>' . esc_html($dashboard_title) . '</h1>';
 
         if (!empty($_GET['manual_invoice_generated'])) {
             echo '<div class="notice notice-success is-dismissible"><p>'
@@ -216,13 +239,14 @@ class SubscriptionsAdmin {
             echo '</div>';
         }
 
+        $this->render_subscription_status_editor($context, $subscription);
         $this->render_manual_invoice_actions($context, $subscription);
 
         echo '</div>';
     }
 
     public function render_billing_settings_page(): void {
-        if (!current_user_can('manage_options')) {
+        if (!$this->current_user_can_manage_billing_settings()) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
@@ -237,18 +261,6 @@ class SubscriptionsAdmin {
         if (!empty($_GET['updated'])) {
             echo '<div class="notice notice-success is-dismissible"><p>'
                 . esc_html__('Billing settings saved.', 'my-village-hall')
-                . '</p></div>';
-        }
-
-        if (!empty($_GET['schema_cleanup']) && $_GET['schema_cleanup'] === 'success') {
-            echo '<div class="notice notice-success is-dismissible"><p>'
-                . esc_html__('Schema cleanup completed.', 'my-village-hall')
-                . '</p></div>';
-        }
-
-        if (!empty($_GET['schema_cleanup']) && $_GET['schema_cleanup'] === 'failed') {
-            echo '<div class="notice notice-error is-dismissible"><p>'
-                . esc_html__('Schema cleanup failed to run.', 'my-village-hall')
                 . '</p></div>';
         }
 
@@ -298,19 +310,155 @@ class SubscriptionsAdmin {
         submit_button(__('Save Billing Settings', 'my-village-hall'));
         echo '</form>';
 
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin-top:12px;">';
-        echo '<input type="hidden" name="action" value="' . esc_attr(self::RUN_SCHEMA_CLEANUP_ACTION) . '">';
-        wp_nonce_field('myvh_subscription_schema_cleanup');
-        submit_button(__('Run Schema Cleanup Now', 'my-village-hall'), 'secondary', 'submit', false);
-        echo '</form>';
-
-        $this->render_schema_diagnostics();
-
         echo '</div>';
     }
 
-    public function run_schema_cleanup(): void {
+    public function render_plan_management_page(): void {
         if (!current_user_can('manage_options')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        $plans = $this->plan_repository->get_all(1000, 0);
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__('Manage Plans', 'my-village-hall') . '</h1>';
+        echo '<p>' . esc_html__('Update the price and monthly booking allowance for each plan.', 'my-village-hall') . '</p>';
+
+        if (!empty($_GET['updated'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>'
+                . esc_html__('Plans updated.', 'my-village-hall')
+                . '</p></div>';
+        }
+
+        if ($plans === []) {
+            echo '<div class="notice notice-warning"><p>'
+                . esc_html__('No plans were found.', 'my-village-hall')
+                . '</p></div>';
+            echo '</div>';
+            return;
+        }
+
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="' . esc_attr(self::SAVE_PLANS_ACTION) . '">';
+        wp_nonce_field('myvh_subscription_plans');
+
+        echo '<table class="widefat striped" style="max-width:1100px;">';
+        echo '<thead><tr><th>Plan</th><th>Code</th><th>Price (£)</th><th>Booking limit</th></tr></thead><tbody>';
+
+        foreach ($plans as $plan) {
+            if (!$plan instanceof Plan) {
+                continue;
+            }
+
+            $plan_id = $plan->getId();
+            if ($plan_id <= 0) {
+                continue;
+            }
+
+            $price_value = number_format($plan->getPrice(), 2, '.', '');
+            $booking_limit_value = $plan->getBookingLimit();
+            $booking_limit_input = $booking_limit_value === null ? '' : (string) $booking_limit_value;
+
+            echo '<tr>';
+            echo '<td><strong>' . esc_html($plan->getName()) . '</strong></td>';
+            echo '<td><code>' . esc_html($plan->getCode()) . '</code></td>';
+            echo '<td><input type="number" min="0" step="0.01" name="plans[' . esc_attr((string) $plan_id) . '][price]" value="' . esc_attr($price_value) . '" class="small-text"></td>';
+            echo '<td><input type="number" min="0" step="1" name="plans[' . esc_attr((string) $plan_id) . '][booking_limit]" value="' . esc_attr($booking_limit_input) . '" class="small-text"> <span class="description">Leave blank for unlimited</span></td>';
+            echo '</tr>';
+        }
+
+        echo '</tbody></table>';
+        submit_button(__('Save Plans', 'my-village-hall'));
+        echo '</form>';
+        echo '</div>';
+    }
+
+    public function save_plan_management(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        check_admin_referer('myvh_subscription_plans');
+
+        $plans = $_POST['plans'] ?? [];
+        if (!is_array($plans)) {
+            $plans = [];
+        }
+
+        foreach ($plans as $plan_id => $values) {
+            $plan_id = (int) $plan_id;
+            if ($plan_id <= 0 || !is_array($values)) {
+                continue;
+            }
+
+            $updates = [];
+
+            $price_raw = trim((string) ($values['price'] ?? ''));
+            if ($price_raw !== '' && is_numeric($price_raw)) {
+                $updates['price'] = (float) $price_raw;
+            }
+
+            $booking_limit_raw = trim((string) ($values['booking_limit'] ?? ''));
+            if ($booking_limit_raw === '') {
+                $updates['booking_limit'] = null;
+            } elseif (is_numeric($booking_limit_raw)) {
+                $updates['booking_limit'] = max(0, (int) $booking_limit_raw);
+            }
+
+            if ($updates !== []) {
+                $this->plan_repository->update_by_id($plan_id, $updates);
+            }
+        }
+
+        wp_safe_redirect(add_query_arg([
+            'page' => self::PLANS_SLUG,
+            'updated' => 1,
+        ], admin_url('admin.php')));
+        return;
+    }
+
+    public function update_subscription_status(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        check_admin_referer('myvh_subscription_update_status');
+
+        $target_blog_id = $this->resolve_target_blog_id();
+        $context = $this->get_account_context($target_blog_id, false);
+
+        if ($context['account_id'] <= 0 || !$context['subscription'] instanceof Subscription) {
+            $this->redirect_dashboard_with_error(__('No subscription found for this site.', 'my-village-hall'), $target_blog_id);
+            return;
+        }
+
+        $status = SubscriptionStatus::normalize((string) ($_POST['subscription_status'] ?? ''));
+        if (!SubscriptionStatus::isValid($status)) {
+            $this->redirect_dashboard_with_error(__('Invalid subscription status.', 'my-village-hall'), $target_blog_id);
+            return;
+        }
+
+        $update_data = ['status' => $status];
+        if ($status === SubscriptionStatus::CANCELLED) {
+            $update_data['canceled_at'] = current_time('mysql');
+        }
+
+        $updated = $this->subscription_repository->update_by_id($context['subscription']->getId(), $update_data);
+        if (!$updated) {
+            $this->redirect_dashboard_with_error(__('Failed to update subscription status.', 'my-village-hall'), $target_blog_id);
+            return;
+        }
+
+        wp_safe_redirect(add_query_arg([
+            'page' => self::DASHBOARD_SLUG,
+            'blog_id' => $target_blog_id > 0 ? $target_blog_id : null,
+            'status_updated' => 1,
+        ], admin_url('admin.php')));
+        return;
+    }
+
+    public function run_schema_cleanup(): void {
+        if (!$this->current_user_can_manage_billing_settings()) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
@@ -767,7 +915,7 @@ class SubscriptionsAdmin {
     }
 
     public function save_billing_settings(): void {
-        if (!current_user_can('manage_options')) {
+        if (!$this->current_user_can_manage_billing_settings()) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
@@ -1057,11 +1205,15 @@ class SubscriptionsAdmin {
         }
     }
 
-    private function get_account_context(): array {
-        $blog_id = function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 0;
+    private function current_user_can_manage_billing_settings(): bool {
+        return function_exists('is_super_admin') && is_super_admin();
+    }
+
+    private function get_account_context(?int $blog_id = null, bool $allow_create_account = true): array {
+        $blog_id = $blog_id ?? (function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 0);
         $account = $blog_id > 0 ? $this->account_service->resolveAccountFromBlogId($blog_id) : null;
 
-        if (!is_array($account) && $blog_id > 0) {
+        if (!is_array($account) && $blog_id > 0 && $allow_create_account) {
             $site_name = sanitize_text_field((string) get_bloginfo('name'));
             $admin_email = sanitize_email((string) get_option('admin_email', ''));
             if ($site_name !== '' && $admin_email !== '') {
@@ -1085,6 +1237,7 @@ class SubscriptionsAdmin {
         }
 
         return [
+            'blog_id' => $blog_id,
             'account_id' => $account_id,
             'account' => $account,
             'subscription' => $subscription,
@@ -1129,10 +1282,52 @@ class SubscriptionsAdmin {
             : gmdate('Y-m-d H:i:s', $timestamp);
     }
 
+    private function render_subscription_status_editor(array $context, Subscription $subscription): void {
+        $status = $subscription->getStatus();
+        $blog_id = (int) ($context['blog_id'] ?? 0);
+
+        echo '<hr style="margin:24px 0">';
+        echo '<h2>' . esc_html__('Subscription Status', 'my-village-hall') . '</h2>';
+
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="max-width:620px;margin-bottom:20px;">';
+        echo '<input type="hidden" name="action" value="' . esc_attr(self::UPDATE_STATUS_ACTION) . '">';
+        if ($blog_id > 0) {
+            echo '<input type="hidden" name="blog_id" value="' . esc_attr((string) $blog_id) . '">';
+        }
+        wp_nonce_field('myvh_subscription_update_status');
+
+        echo '<table class="form-table" role="presentation"><tbody>';
+        echo '<tr>';
+        echo '<th scope="row"><label for="myvh-subscription-status">' . esc_html__('Status', 'my-village-hall') . '</label></th>';
+        echo '<td>';
+        echo '<select id="myvh-subscription-status" name="subscription_status" class="regular-text">';
+
+        foreach ([
+            SubscriptionStatus::TRIALING,
+            SubscriptionStatus::ACTIVE,
+            SubscriptionStatus::PAST_DUE,
+            SubscriptionStatus::CANCELLED,
+            SubscriptionStatus::EXPIRED,
+        ] as $candidate_status) {
+            echo '<option value="' . esc_attr($candidate_status) . '" ' . selected($status, $candidate_status, false) . '>'
+                . esc_html(ucwords(str_replace('_', ' ', $candidate_status)))
+                . '</option>';
+        }
+
+        echo '</select>';
+        echo '</td>';
+        echo '</tr>';
+        echo '</tbody></table>';
+
+        submit_button(__('Save Status', 'my-village-hall'));
+        echo '</form>';
+    }
+
     private function render_manual_invoice_actions(array $context, Subscription $subscription): void {
         $status = $subscription->getStatus();
         $metadata = $this->decode_metadata($subscription->getMetadataRaw());
         $pending_invoice_id = (int) ($metadata['manual_invoice_id'] ?? 0);
+        $blog_id = (int) ($context['blog_id'] ?? 0);
 
         echo '<hr style="margin:24px 0">';
         echo '<h2>' . esc_html__('Manual Payment (Invoice)', 'my-village-hall') . '</h2>';
@@ -1143,6 +1338,9 @@ class SubscriptionsAdmin {
             echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             echo '<input type="hidden" name="action" value="' . esc_attr(self::MARK_MANUAL_INVOICE_PAID_ACTION) . '">';
             echo '<input type="hidden" name="invoice_id" value="' . esc_attr((string) $pending_invoice_id) . '">';
+            if ($blog_id > 0) {
+                echo '<input type="hidden" name="blog_id" value="' . esc_attr((string) $blog_id) . '">';
+            }
             wp_nonce_field('myvh_subscription_mark_manual_invoice_paid');
             submit_button(__('Mark Invoice as Paid', 'my-village-hall'), 'primary', 'submit', false);
             echo '</form>';
@@ -1154,15 +1352,19 @@ class SubscriptionsAdmin {
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         echo '<input type="hidden" name="action" value="' . esc_attr(self::GENERATE_MANUAL_INVOICE_ACTION) . '">';
         echo '<input type="hidden" name="account_id" value="' . esc_attr((string) $context['account_id']) . '">';
+        if ($blog_id > 0) {
+            echo '<input type="hidden" name="blog_id" value="' . esc_attr((string) $blog_id) . '">';
+        }
         echo '<input type="hidden" name="payment_method" value="invoice">';
         wp_nonce_field('myvh_subscription_manual_invoice');
         submit_button(__('Generate Subscription Invoice', 'my-village-hall'), 'secondary', 'submit', false);
         echo '</form>';
     }
 
-    private function redirect_dashboard_with_error(string $message): void {
+    private function redirect_dashboard_with_error(string $message, int $blog_id = 0): void {
         wp_safe_redirect(add_query_arg([
             'page' => self::DASHBOARD_SLUG,
+            'blog_id' => $blog_id > 0 ? $blog_id : null,
             'manual_invoice_error' => $message,
         ], admin_url('admin.php')));
     }
@@ -1182,5 +1384,13 @@ class SubscriptionsAdmin {
         $decoded = json_decode($metadata_raw, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private function resolve_target_blog_id(): int {
+        if (isset($_REQUEST['blog_id'])) {
+            return max(0, (int) $_REQUEST['blog_id']);
+        }
+
+        return 0;
     }
 }

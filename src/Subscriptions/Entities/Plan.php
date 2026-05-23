@@ -70,6 +70,18 @@ class Plan {
     }
 
     public function getBookingLimit(): ?int {
+        $raw_limit = $this->attributes['booking_limit'] ?? null;
+
+        if ($raw_limit !== null && $raw_limit !== '') {
+            if (is_string($raw_limit) && strtolower(trim($raw_limit)) === 'unlimited') {
+                return null;
+            }
+
+            $limit = (int) $raw_limit;
+
+            return $limit >= 0 ? $limit : null;
+        }
+
         $features = $this->getFeatures();
         $raw_limit = $features['booking_limit'] ?? $features['bookings'] ?? null;
 

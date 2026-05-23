@@ -40,7 +40,6 @@ use MYVH\Admin\WordPress\WordPressAdminRequest;
 use MYVH\Admin\WordPress\WordPressAdminResponse;
 use MYVH\UI\MenuSeparator;
 use MYVH\UI\SubmenuIconRenderer;
-use wpdb;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
