@@ -1,6 +1,7 @@
 {
     "name": "your-org/my-village-hall",
     "description": "My Village Hall WordPress plugin",
+    "license": "proprietary",
     "type": "wordpress-plugin",
     "require": {
         "php": ">=8.1",
