@@ -1682,6 +1682,8 @@ class Installer {
 
     private static function seed_default_plans(wpdb $wpdb): void {
         $table = $wpdb->base_prefix . 'myvh_plans';
+        $has_plan_key = self::has_column($wpdb, $table, 'plan_key');
+        $has_legacy_plan_key = self::has_column($wpdb, $table, 'PlanKey');
 
         $plans = [
             [
@@ -1761,9 +1763,19 @@ class Installer {
                 continue;
             }
 
-            $existing_id = $wpdb->get_var(
-                $wpdb->prepare("SELECT id FROM {$table} WHERE plan_key = %s LIMIT 1", $plan_key)
-            );
+            $existing_id = null;
+
+            if ($has_plan_key) {
+                $existing_id = $wpdb->get_var(
+                    $wpdb->prepare("SELECT id FROM {$table} WHERE plan_key = %s LIMIT 1", $plan_key)
+                );
+            }
+
+            if ($existing_id === null && $has_legacy_plan_key) {
+                $existing_id = $wpdb->get_var(
+                    $wpdb->prepare("SELECT id FROM {$table} WHERE PlanKey = %s LIMIT 1", $plan_key)
+                );
+            }
 
             if ($existing_id === null) {
                 $existing_id = $wpdb->get_var(
@@ -1774,24 +1786,46 @@ class Installer {
             if ($existing_id === null) {
                 // Some legacy installs contain a placeholder row with a blank plan_key.
                 // Reuse it instead of inserting a new row to avoid uq_plan_key collisions.
-                $existing_id = $wpdb->get_var("SELECT id FROM {$table} WHERE plan_key = '' OR plan_key IS NULL ORDER BY id ASC LIMIT 1");
+                $blank_where = [];
+                if ($has_plan_key) {
+                    $blank_where[] = "plan_key = '' OR plan_key IS NULL";
+                }
+                if ($has_legacy_plan_key) {
+                    $blank_where[] = "PlanKey = '' OR PlanKey IS NULL";
+                }
+
+                if (!empty($blank_where)) {
+                    $existing_id = $wpdb->get_var(
+                        "SELECT id FROM {$table} WHERE (" . implode(' OR ', $blank_where) . ') ORDER BY id ASC LIMIT 1'
+                    );
+                }
+            }
+
+            $payload = [
+                'plan_key' => $plan_key,
+                'name' => $plan['name'],
+                'description' => $plan['description'],
+                'billing_interval' => $plan['billing_interval'],
+                'price' => $plan['price'],
+                'currency_code' => $plan['currency_code'],
+                'is_active' => $plan['is_active'],
+                'metadata' => $plan['metadata'],
+            ];
+
+            $formats = ['%s', '%s', '%s', '%s', '%f', '%s', '%d', '%s'];
+
+            if ($has_legacy_plan_key) {
+                // Keep legacy column in sync where it still exists or is indexed.
+                $payload['PlanKey'] = $plan_key;
+                $formats[] = '%s';
             }
 
             if ($existing_id !== null) {
                 $wpdb->update(
                     $table,
-                    [
-                        'plan_key' => $plan_key,
-                        'name' => $plan['name'],
-                        'description' => $plan['description'],
-                        'billing_interval' => $plan['billing_interval'],
-                        'price' => $plan['price'],
-                        'currency_code' => $plan['currency_code'],
-                        'is_active' => $plan['is_active'],
-                        'metadata' => $plan['metadata'],
-                    ],
+                    $payload,
                     ['id' => (int) $existing_id],
-                    ['%s', '%s', '%s', '%s', '%f', '%s', '%d', '%s'],
+                    $formats,
                     ['%d']
                 );
                 continue;
@@ -1799,8 +1833,8 @@ class Installer {
 
             $wpdb->insert(
                 $table,
-                $plan,
-                ['%s', '%s', '%s', '%s', '%f', '%s', '%d', '%s']
+                $payload,
+                $formats
             );
         }
     }

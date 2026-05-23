@@ -19,6 +19,7 @@ use MYVH\Events\OrganisationListener;
 use MYVH\Events\SettingsListener;
 use MYVH\Core\Scheduling\OvernightBatchRunner;
 use MYVH\Core\Shortcode\ShortcodeRegistry;
+use MYVH\Hooks\LoginShortcodeTitleHider;
 use MYVH\Subscriptions\Services\BillingService;
 use MYVH\Subscriptions\Services\SubscriptionLifecycleScheduler;
 
@@ -42,19 +43,8 @@ if ( $myvh_container instanceof Container ) {
     $registry->add( $myvh_container->get( MYVH\Network\CreateSiteShortcode::class ) );
 
     // Suppress the theme's page title on pages that embed the login shortcode.
-    add_action( 'wp', static function () {
-        if ( ! is_singular() ) {
-            return;
-        }
-        $post = get_post();
-        if ( ! $post || ! has_shortcode( $post->post_content, 'myvh_login' ) ) {
-            return;
-        }
-        $page_id = (int) $post->ID;
-        add_filter( 'the_title', static function ( $title, $id = 0 ) use ( $page_id ) {
-            return ( (int) $id === $page_id ) ? '' : $title;
-        }, 10, 2 );
-    } );
+    $login_shortcode_title_hider = new LoginShortcodeTitleHider();
+    add_action( 'wp', [ $login_shortcode_title_hider, 'on_wp' ] );
 
     $login_handler = $myvh_container->get( MYVH\Login\LoginHandler::class );
     $login_handler->init();
