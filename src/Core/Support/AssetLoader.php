@@ -361,7 +361,7 @@ class AssetLoader {
             true
         );
         wp_localize_script( 'myvh-subscription-modals', 'myvhSubscription', [
-            'upgrade_url' => esc_url( admin_url( 'admin.php?page=myvh-subscription-upgrade' ) ),
+            'upgrade_url' => '#subscription-upgrade',
         ] );
     }
 

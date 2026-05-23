@@ -8,7 +8,7 @@ use MYVH\Tests\Unit\Unit_Test_Case;
 use WP_Error;
 use \MYVH\Tests\Unit\UnitTestCase;
 use MYVH\Subscriptions\Services\AccountService;
-use MYVH\Subscriptions\Services\EnforcementService;
+use MYVH\Subscriptions\Services\SubscriptionGuard;
 use MYVH\Subscriptions\Services\UsageService;
 
 /**
@@ -157,7 +157,7 @@ class BookingServiceTest extends UnitTestCase {
         $this->invoice_service = $this->mock(\MYVH\Invoices\InvoiceService::class);
         $this->invoice_item_repo = $this->mock(\MYVH\Invoices\InvoiceItemRepository::class);
         $this->deposit_service = $this->mock(\MYVH\Deposits\DepositService::class);
-        $this->enforcement_service = $this->mock(EnforcementService::class);
+        $this->enforcement_service = $this->mock(SubscriptionGuard::class);
         $this->usage_service = $this->mock(UsageService::class);
         $this->account_service = $this->mock(AccountService::class);
         $this->deposit_service->shouldReceive('evaluate')->zeroOrMoreTimes()->andReturn(null);
@@ -193,6 +193,7 @@ class BookingServiceTest extends UnitTestCase {
             $this->deposit_service,
             null,
             $this->enforcement_service,
+            null,
             $this->usage_service,
             $this->account_service
         );

@@ -17,12 +17,19 @@ class SettingsPage {
     public function menu() {
 
         // Separator (using a disabled submenu as visual separator)
-        \MyVillageHall::add_menu_separator();
+        if (class_exists('MyVillageHall') && method_exists('MyVillageHall', 'add_menu_separator')) {
+            \MyVillageHall::add_menu_separator();
+        }
+
+        $menu_label = __('Settings', 'my-village-hall');
+        if (class_exists('MyVillageHall') && method_exists('MyVillageHall', 'menu_label')) {
+            $menu_label = \MyVillageHall::menu_label('dashicons-admin-generic', $menu_label);
+        }
 
         add_submenu_page(
             'my-village-hall',
             __('Settings', 'my-village-hall'),
-            \MyVillageHall::menu_label('dashicons-admin-generic', __('Settings', 'my-village-hall')),
+            $menu_label,
             'manage_options',
             'myvh-settings',
             [$this, 'render_page']

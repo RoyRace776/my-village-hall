@@ -50,6 +50,10 @@ class SubscriptionRepository extends WpdbCrudRepository {
         return is_array($row) ? $this->hydrate_row($row) : null;
     }
 
+    public function get_any_by_account_id(int $account_id): ?Subscription {
+        return $this->get_latest_by_account_id($account_id);
+    }
+
     public function get_active_by_account_id(int $account_id): ?Subscription {
                 $active_statuses = SubscriptionStatus::activeLike();
 
@@ -93,6 +97,18 @@ class SubscriptionRepository extends WpdbCrudRepository {
         }
 
         return $this->update_by_id($subscription_id, $data);
+    }
+
+    public function expireSubscription(int $subscription_id): bool {
+        if ($subscription_id <= 0) {
+            return false;
+        }
+
+        return $this->update_by_id($subscription_id, ['status' => SubscriptionStatus::EXPIRED]);
+    }
+
+    public function startTrial(array $data): int|false {
+        return $this->create($data);
     }
 
     public function get_latest_by_stripe_customer_id(string $stripe_customer_id): ?Subscription {

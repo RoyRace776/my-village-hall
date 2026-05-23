@@ -43,6 +43,60 @@ class PortalBillingAjaxController {
         add_action('wp_ajax_myvh_portal_delete_payment', [$this, 'delete_payment']);
         add_action('wp_ajax_myvh_portal_settle_invoice_deposit', [$this, 'settle_invoice_deposit']);
         add_action('wp_ajax_myvh_portal_change_subscription_plan', [$this, 'change_subscription_plan']);
+        add_action('wp_ajax_myvh_portal_update_trial_start_date', [$this, 'update_trial_start_date']);
+    }
+
+    public function update_trial_start_date(): void {
+        PortalAuth::require_global_admin($this->client_admin_service);
+
+        if (
+            !$this->account_repository instanceof AccountRepository
+            || !$this->trial_service instanceof TrialService
+        ) {
+            wp_send_json_error([
+                'message' => __('Subscription services are unavailable right now.', 'my-village-hall'),
+            ], 500);
+        }
+
+        $blog_id = function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 0;
+        $account = $blog_id > 0 ? $this->account_repository->get_by_blog_id($blog_id) : null;
+        if (!is_array($account) && $blog_id > 0 && $this->account_service instanceof AccountService) {
+            $account = $this->account_service->resolveAccountFromBlogId($blog_id);
+        }
+
+        if (!is_array($account) && $this->account_service instanceof AccountService) {
+            $site_name = sanitize_text_field((string) get_bloginfo('name'));
+            $admin_email = sanitize_email((string) get_option('admin_email', ''));
+            if ($site_name !== '' && $admin_email !== '') {
+                $account = $this->account_service->createAccount($site_name, $admin_email);
+            }
+        }
+
+        $account_id = is_array($account) ? (int) ($account['id'] ?? 0) : 0;
+        if ($account_id <= 0) {
+            wp_send_json_error([
+                'message' => __('No billing account is linked to this site.', 'my-village-hall'),
+            ], 404);
+        }
+
+        $trial_start_date = sanitize_text_field((string) ($_POST['trial_start_date'] ?? ''));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $trial_start_date)) {
+            wp_send_json_error([
+                'message' => __('Please provide a valid trial start date.', 'my-village-hall'),
+            ], 400);
+        }
+
+        $updated_subscription = $this->trial_service->updateTrialStartDate($account_id, $trial_start_date);
+        if (!$updated_subscription instanceof \MYVH\Subscriptions\Entities\Subscription) {
+            wp_send_json_error([
+                'message' => __('Trial start date can only be changed for an active trial subscription.', 'my-village-hall'),
+            ], 422);
+        }
+
+        wp_send_json_success([
+            'message' => __('Trial start date updated.', 'my-village-hall'),
+            'redirect' => 'subscription-upgrade',
+        ]);
     }
 
     public function change_subscription_plan(): void {

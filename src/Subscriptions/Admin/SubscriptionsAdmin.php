@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MYVH\Subscriptions\Admin;
 
+use MYVH\Bootstrap\Installer;
 use MYVH\Subscriptions\Entities\Plan;
 use MYVH\Subscriptions\Entities\Subscription;
 use MYVH\Subscriptions\Entities\SubscriptionStatus;
@@ -29,6 +30,7 @@ class SubscriptionsAdmin {
     private const CHANGE_PLAN_ACTION = 'myvh_subscription_change_plan';
     private const GENERATE_MANUAL_INVOICE_ACTION = 'myvh_subscription_generate_manual_invoice';
     private const MARK_MANUAL_INVOICE_PAID_ACTION = 'myvh_subscription_mark_manual_invoice_paid';
+    private const RUN_SCHEMA_CLEANUP_ACTION = 'myvh_subscription_run_schema_cleanup';
     private const NOTICE_TRIAL_WINDOW_DAYS = 7;
 
     public function __construct(
@@ -51,6 +53,7 @@ class SubscriptionsAdmin {
         add_action('admin_post_' . self::CHANGE_PLAN_ACTION, [$this, 'change_plan']);
         add_action('admin_post_' . self::GENERATE_MANUAL_INVOICE_ACTION, [$this, 'generate_manual_invoice']);
         add_action('admin_post_' . self::MARK_MANUAL_INVOICE_PAID_ACTION, [$this, 'mark_manual_invoice_paid']);
+        add_action('admin_post_' . self::RUN_SCHEMA_CLEANUP_ACTION, [$this, 'run_schema_cleanup']);
         add_action('admin_notices', [$this, 'render_subscription_notices']);
     }
 
@@ -223,7 +226,7 @@ class SubscriptionsAdmin {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
-        $trial_days = (string) $this->settings_service->get('trial_days', '14');
+        $trial_days = (string) $this->settings_service->get('trial_days', '31');
         $grace_period_days = (string) $this->settings_service->get('grace_period_days', '3');
         $default_plan = (string) $this->settings_service->get('default_plan', 'trial');
         $plans = $this->plan_repository->getAllActive();
@@ -234,6 +237,18 @@ class SubscriptionsAdmin {
         if (!empty($_GET['updated'])) {
             echo '<div class="notice notice-success is-dismissible"><p>'
                 . esc_html__('Billing settings saved.', 'my-village-hall')
+                . '</p></div>';
+        }
+
+        if (!empty($_GET['schema_cleanup']) && $_GET['schema_cleanup'] === 'success') {
+            echo '<div class="notice notice-success is-dismissible"><p>'
+                . esc_html__('Schema cleanup completed.', 'my-village-hall')
+                . '</p></div>';
+        }
+
+        if (!empty($_GET['schema_cleanup']) && $_GET['schema_cleanup'] === 'failed') {
+            echo '<div class="notice notice-error is-dismissible"><p>'
+                . esc_html__('Schema cleanup failed to run.', 'my-village-hall')
                 . '</p></div>';
         }
 
@@ -283,7 +298,472 @@ class SubscriptionsAdmin {
         submit_button(__('Save Billing Settings', 'my-village-hall'));
         echo '</form>';
 
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin-top:12px;">';
+        echo '<input type="hidden" name="action" value="' . esc_attr(self::RUN_SCHEMA_CLEANUP_ACTION) . '">';
+        wp_nonce_field('myvh_subscription_schema_cleanup');
+        submit_button(__('Run Schema Cleanup Now', 'my-village-hall'), 'secondary', 'submit', false);
+        echo '</form>';
+
+        $this->render_schema_diagnostics();
+
         echo '</div>';
+    }
+
+    public function run_schema_cleanup(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        check_admin_referer('myvh_subscription_schema_cleanup');
+
+        // Run canonical installer migrations first (includes schema normalization).
+        Installer::maybe_upgrade();
+
+        $diagnostics_after_upgrade = $this->get_schema_diagnostics();
+        $ok = !$diagnostics_after_upgrade['has_mixed_columns'];
+
+        if (!$ok) {
+            // Fallback to admin-level cleanup routine if mixed columns remain.
+            $ok = $this->run_subscription_schema_cleanup_now();
+        }
+
+        wp_safe_redirect(add_query_arg(
+            [
+                'page' => self::BILLING_SLUG,
+                'schema_cleanup' => $ok ? 'success' : 'failed',
+            ],
+            admin_url('admin.php')
+        ));
+        return;
+    }
+
+    private function run_subscription_schema_cleanup_now(): bool {
+        global $wpdb;
+
+        if (!$wpdb instanceof \wpdb) {
+            return false;
+        }
+
+        $table_pairs = [
+            'myvh_plans' => [
+                'PlanKey' => 'plan_key VARCHAR(100) NOT NULL',
+                'Name' => 'name VARCHAR(150) NOT NULL',
+                'Description' => 'description TEXT NULL',
+                'BillingInterval' => 'billing_interval VARCHAR(20) NOT NULL DEFAULT \'monthly\'',
+                'Price' => 'price DECIMAL(10,2) NOT NULL DEFAULT 0.00',
+                'CurrencyCode' => 'currency_code CHAR(3) NOT NULL DEFAULT \'GBP\'',
+                'StripePriceIdMonthly' => 'stripe_price_id_monthly VARCHAR(191) NULL',
+                'IsActive' => 'is_active TINYINT(1) NOT NULL DEFAULT 1',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ],
+            'myvh_accounts' => [
+                'BlogId' => 'blog_id BIGINT UNSIGNED NULL',
+                'OwnerUserId' => 'owner_user_id BIGINT UNSIGNED NULL',
+                'PlanId' => 'plan_id BIGINT UNSIGNED NULL',
+                'AccountName' => 'account_name VARCHAR(150) NOT NULL',
+                'ContactEmail' => 'contact_email VARCHAR(191) NOT NULL DEFAULT \'\'',
+                'Status' => 'status VARCHAR(30) NOT NULL DEFAULT \'active\'',
+                'ExternalReference' => 'external_reference VARCHAR(191) NULL',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ],
+            'myvh_subscriptions' => [
+                'AccountId' => 'account_id BIGINT UNSIGNED NOT NULL',
+                'PlanId' => 'plan_id BIGINT UNSIGNED NULL',
+                'PlanCode' => 'plan_code VARCHAR(100) NOT NULL',
+                'Status' => 'status VARCHAR(30) NOT NULL DEFAULT \'active\'',
+                'Provider' => 'provider VARCHAR(50) NULL',
+                'StripeCustomerId' => 'stripe_customer_id VARCHAR(191) NULL',
+                'StripeSubscriptionId' => 'stripe_subscription_id VARCHAR(191) NULL',
+                'ProviderSubscriptionId' => 'provider_subscription_id VARCHAR(191) NULL',
+                'StartedAt' => 'started_at DATETIME NULL',
+                'CurrentPeriodStart' => 'current_period_start DATETIME NULL',
+                'CurrentPeriodEnd' => 'current_period_end DATETIME NULL',
+                'TrialEndsAt' => 'trial_ends_at DATETIME NULL',
+                'CancelAt' => 'cancel_at DATETIME NULL',
+                'CanceledAt' => 'canceled_at DATETIME NULL',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ],
+            'myvh_settings' => [
+                'SettingKey' => 'setting_key VARCHAR(191) NOT NULL',
+                'SettingValue' => 'setting_value LONGTEXT NULL',
+                'IsAutoload' => 'is_autoload TINYINT(1) NOT NULL DEFAULT 0',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ],
+            'myvh_usage' => [
+                'AccountId' => 'account_id BIGINT UNSIGNED NOT NULL',
+                'MetricKey' => 'metric_key VARCHAR(100) NOT NULL',
+                'MetricPeriodStart' => 'metric_period_start DATETIME NOT NULL',
+                'MetricPeriodEnd' => 'metric_period_end DATETIME NOT NULL',
+                'Quantity' => 'quantity BIGINT NOT NULL DEFAULT 0',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'RecordedAt' => 'recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+            ],
+        ];
+
+        foreach ($table_pairs as $table_suffix => $columns) {
+            $table = $wpdb->base_prefix . $table_suffix;
+
+            $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+            if ($table_exists === null) {
+                continue;
+            }
+
+            foreach ($columns as $legacy_name => $definition) {
+                [$new_name] = explode(' ', $definition, 2);
+
+                $has_legacy = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", $legacy_name)) !== null;
+                $has_new = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", $new_name)) !== null;
+
+                if (!$has_legacy) {
+                    continue;
+                }
+
+                if (!$has_new) {
+                    if ($wpdb->query("ALTER TABLE {$table} CHANGE COLUMN {$legacy_name} {$definition}") === false) {
+                        return false;
+                    }
+                    continue;
+                }
+
+                if (
+                    $wpdb->query(
+                        "UPDATE {$table}
+                         SET `{$new_name}` = `{$legacy_name}`
+                         WHERE (`{$new_name}` IS NULL OR `{$new_name}` = '')
+                           AND `{$legacy_name}` IS NOT NULL
+                           AND `{$legacy_name}` <> ''"
+                    ) === false
+                ) {
+                    return false;
+                }
+
+                if ($wpdb->query("ALTER TABLE {$table} DROP COLUMN `{$legacy_name}`") === false) {
+                    // Legacy indexes can block dropping old columns; remove those and retry once.
+                    if (!$this->drop_indexes_for_column($wpdb, $table, $legacy_name)) {
+                        return false;
+                    }
+
+                    if ($wpdb->query("ALTER TABLE {$table} DROP COLUMN `{$legacy_name}`") === false) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        if (!$this->apply_subscription_saas_schema_dbdelta($wpdb)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function drop_indexes_for_column(\wpdb $wpdb, string $table, string $column): bool {
+        $indexes = $wpdb->get_results(
+            $wpdb->prepare("SHOW INDEX FROM {$table} WHERE Column_name = %s", $column),
+            ARRAY_A
+        );
+
+        if (!is_array($indexes) || $indexes === []) {
+            return true;
+        }
+
+        $dropped = [];
+        foreach ($indexes as $index_row) {
+            $key_name = isset($index_row['Key_name']) ? (string) $index_row['Key_name'] : '';
+            if ($key_name === '' || strtoupper($key_name) === 'PRIMARY' || isset($dropped[$key_name])) {
+                continue;
+            }
+
+            $safe_key = str_replace('`', '``', $key_name);
+            if ($wpdb->query("ALTER TABLE {$table} DROP INDEX `{$safe_key}`") === false) {
+                return false;
+            }
+
+            $dropped[$key_name] = true;
+        }
+
+        return true;
+    }
+
+    private function apply_subscription_saas_schema_dbdelta(\wpdb $wpdb): bool {
+        $p = $wpdb->base_prefix;
+        $collate = $wpdb->get_charset_collate();
+
+        dbDelta("CREATE TABLE {$p}myvh_plans (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            plan_key              VARCHAR(100) NOT NULL,
+            name                  VARCHAR(150) NOT NULL,
+            description           TEXT NULL,
+            billing_interval      VARCHAR(20) NOT NULL DEFAULT 'monthly',
+            price                 DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            booking_limit         BIGINT NULL,
+            features              LONGTEXT NULL,
+            currency_code         CHAR(3) NOT NULL DEFAULT 'GBP',
+            stripe_price_id_monthly VARCHAR(191) NULL,
+            is_active             TINYINT(1) NOT NULL DEFAULT 1,
+            metadata              LONGTEXT NULL,
+            created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_plan_key (plan_key),
+            INDEX idx_is_active (is_active),
+            INDEX idx_stripe_price_monthly (stripe_price_id_monthly)
+        ) {$collate};");
+
+        dbDelta("CREATE TABLE {$p}myvh_accounts (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            blog_id               BIGINT UNSIGNED NULL,
+            owner_user_id         BIGINT UNSIGNED NULL,
+            plan_id               BIGINT UNSIGNED NULL,
+            account_name          VARCHAR(150) NOT NULL,
+            contact_email         VARCHAR(191) NOT NULL DEFAULT '',
+            status                VARCHAR(30) NOT NULL DEFAULT 'active',
+            external_reference    VARCHAR(191) NULL,
+            metadata              LONGTEXT NULL,
+            created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_blog_id (blog_id),
+            UNIQUE KEY uq_external_reference (external_reference),
+            INDEX idx_owner_user (owner_user_id),
+            INDEX idx_plan_id (plan_id),
+            INDEX idx_status (status)
+        ) {$collate};");
+
+        dbDelta("CREATE TABLE {$p}myvh_subscriptions (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            account_id            BIGINT UNSIGNED NOT NULL,
+            plan_id               BIGINT UNSIGNED NULL,
+            plan_code             VARCHAR(100) NOT NULL,
+            booking_limit_snapshot BIGINT NULL,
+            features_snapshot     LONGTEXT NULL,
+            status                VARCHAR(30) NOT NULL DEFAULT 'active',
+            provider              VARCHAR(50) NULL,
+            stripe_customer_id    VARCHAR(191) NULL,
+            stripe_subscription_id VARCHAR(191) NULL,
+            provider_subscription_id VARCHAR(191) NULL,
+            started_at            DATETIME NULL,
+            current_period_start  DATETIME NULL,
+            current_period_end    DATETIME NULL,
+            trial_ends_at         DATETIME NULL,
+            cancel_at             DATETIME NULL,
+            canceled_at           DATETIME NULL,
+            metadata              LONGTEXT NULL,
+            created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_provider_subscription_id (provider_subscription_id),
+            UNIQUE KEY uq_stripe_subscription_id (stripe_subscription_id),
+            INDEX idx_account_id (account_id),
+            INDEX idx_plan_id (plan_id),
+            INDEX idx_plan_code (plan_code),
+            INDEX idx_stripe_customer_id (stripe_customer_id),
+            INDEX idx_status (status),
+            INDEX idx_period_end (current_period_end)
+        ) {$collate};");
+
+        dbDelta("CREATE TABLE {$p}myvh_settings (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            setting_key           VARCHAR(191) NOT NULL,
+            setting_value         LONGTEXT NULL,
+            is_autoload           TINYINT(1) NOT NULL DEFAULT 0,
+            updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_setting_key (setting_key),
+            INDEX idx_setting_key (setting_key),
+            INDEX idx_autoload (is_autoload)
+        ) {$collate};");
+
+        dbDelta("CREATE TABLE {$p}myvh_usage (
+            id                    BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            account_id            BIGINT UNSIGNED NOT NULL,
+            metric_key            VARCHAR(100) NOT NULL,
+            metric_period_start   DATETIME NOT NULL,
+            metric_period_end     DATETIME NOT NULL,
+            quantity              BIGINT NOT NULL DEFAULT 0,
+            metadata              LONGTEXT NULL,
+            recorded_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_usage_metric_period (account_id, metric_key, metric_period_start, metric_period_end),
+            INDEX idx_metric_key (metric_key),
+            INDEX idx_period (metric_period_start, metric_period_end)
+        ) {$collate};");
+
+        return true;
+    }
+
+    private function render_schema_diagnostics(): void {
+        $diagnostics = $this->get_schema_diagnostics();
+
+        echo '<hr style="margin:24px 0">';
+        echo '<h2>' . esc_html__('Subscription Schema Diagnostics', 'my-village-hall') . '</h2>';
+        echo '<p>' . esc_html__('Read-only check for mixed legacy camel-case and canonical snake_case columns in SaaS subscription tables.', 'my-village-hall') . '</p>';
+
+        if ($diagnostics['rows'] === []) {
+            echo '<div class="notice notice-warning"><p>'
+                . esc_html__('No diagnostics data is available right now.', 'my-village-hall')
+                . '</p></div>';
+            return;
+        }
+
+        if ($diagnostics['has_mixed_columns']) {
+            echo '<div class="notice notice-error"><p>'
+                . esc_html__('Mixed schema detected. At least one table still has duplicate legacy/canonical columns.', 'my-village-hall')
+                . '</p></div>';
+        } else {
+            echo '<div class="notice notice-success"><p>'
+                . esc_html__('Schema is normalized. No mixed legacy/canonical column pairs were found.', 'my-village-hall')
+                . '</p></div>';
+        }
+
+        echo '<table class="widefat striped" style="max-width:1000px">';
+        echo '<thead><tr>';
+        echo '<th>' . esc_html__('Table', 'my-village-hall') . '</th>';
+        echo '<th>' . esc_html__('Mixed pairs', 'my-village-hall') . '</th>';
+        echo '<th>' . esc_html__('Legacy-only columns', 'my-village-hall') . '</th>';
+        echo '<th>' . esc_html__('Status', 'my-village-hall') . '</th>';
+        echo '</tr></thead><tbody>';
+
+        foreach ($diagnostics['rows'] as $row) {
+            $mixed_pairs = $row['mixed_pairs'];
+            $legacy_only = $row['legacy_only'];
+
+            $mixed_text = $mixed_pairs !== []
+                ? implode(', ', array_map(static fn(array $pair): string => $pair['legacy'] . ' + ' . $pair['canonical'], $mixed_pairs))
+                : __('None', 'my-village-hall');
+
+            $legacy_only_text = $legacy_only !== []
+                ? implode(', ', $legacy_only)
+                : __('None', 'my-village-hall');
+
+            $status_text = $mixed_pairs !== []
+                ? __('Needs cleanup', 'my-village-hall')
+                : __('OK', 'my-village-hall');
+
+            echo '<tr>';
+            echo '<td>' . esc_html((string) $row['table']) . '</td>';
+            echo '<td>' . esc_html($mixed_text) . '</td>';
+            echo '<td>' . esc_html($legacy_only_text) . '</td>';
+            echo '<td><strong>' . esc_html($status_text) . '</strong></td>';
+            echo '</tr>';
+        }
+
+        echo '</tbody></table>';
+    }
+
+    private function get_schema_diagnostics(): array {
+        global $wpdb;
+
+        if (!$wpdb instanceof \wpdb) {
+            return [
+                'has_mixed_columns' => false,
+                'rows' => [],
+            ];
+        }
+
+        $table_prefix = $wpdb->base_prefix;
+        $table_maps = [
+            'myvh_plans' => [
+                'PlanKey' => 'plan_key',
+                'BillingInterval' => 'billing_interval',
+                'CurrencyCode' => 'currency_code',
+                'StripePriceIdMonthly' => 'stripe_price_id_monthly',
+                'IsActive' => 'is_active',
+                'CreatedAt' => 'created_at',
+                'UpdatedAt' => 'updated_at',
+            ],
+            'myvh_accounts' => [
+                'BlogId' => 'blog_id',
+                'OwnerUserId' => 'owner_user_id',
+                'PlanId' => 'plan_id',
+                'AccountName' => 'account_name',
+                'ContactEmail' => 'contact_email',
+                'ExternalReference' => 'external_reference',
+                'CreatedAt' => 'created_at',
+                'UpdatedAt' => 'updated_at',
+            ],
+            'myvh_subscriptions' => [
+                'AccountId' => 'account_id',
+                'PlanId' => 'plan_id',
+                'PlanCode' => 'plan_code',
+                'StripeCustomerId' => 'stripe_customer_id',
+                'StripeSubscriptionId' => 'stripe_subscription_id',
+                'ProviderSubscriptionId' => 'provider_subscription_id',
+                'StartedAt' => 'started_at',
+                'CurrentPeriodStart' => 'current_period_start',
+                'CurrentPeriodEnd' => 'current_period_end',
+                'TrialEndsAt' => 'trial_ends_at',
+                'CancelAt' => 'cancel_at',
+                'CanceledAt' => 'canceled_at',
+                'CreatedAt' => 'created_at',
+                'UpdatedAt' => 'updated_at',
+            ],
+            'myvh_settings' => [
+                'SettingKey' => 'setting_key',
+                'SettingValue' => 'setting_value',
+                'IsAutoload' => 'is_autoload',
+                'UpdatedAt' => 'updated_at',
+            ],
+            'myvh_usage' => [
+                'AccountId' => 'account_id',
+                'MetricKey' => 'metric_key',
+                'MetricPeriodStart' => 'metric_period_start',
+                'MetricPeriodEnd' => 'metric_period_end',
+                'RecordedAt' => 'recorded_at',
+            ],
+        ];
+
+        $rows = [];
+        $has_mixed_columns = false;
+
+        foreach ($table_maps as $table_suffix => $pairs) {
+            $table_name = $table_prefix . $table_suffix;
+            $columns = $wpdb->get_col("SHOW COLUMNS FROM {$table_name}", 0);
+            $columns = is_array($columns) ? array_map('strval', $columns) : [];
+
+            $mixed_pairs = [];
+            $legacy_only = [];
+
+            foreach ($pairs as $legacy => $canonical) {
+                $has_legacy = in_array($legacy, $columns, true);
+                $has_canonical = in_array($canonical, $columns, true);
+
+                if ($has_legacy && $has_canonical) {
+                    $mixed_pairs[] = [
+                        'legacy' => $legacy,
+                        'canonical' => $canonical,
+                    ];
+                    continue;
+                }
+
+                if ($has_legacy && !$has_canonical) {
+                    $legacy_only[] = $legacy;
+                }
+            }
+
+            if ($mixed_pairs !== []) {
+                $has_mixed_columns = true;
+            }
+
+            $rows[] = [
+                'table' => $table_name,
+                'mixed_pairs' => $mixed_pairs,
+                'legacy_only' => $legacy_only,
+            ];
+        }
+
+        return [
+            'has_mixed_columns' => $has_mixed_columns,
+            'rows' => $rows,
+        ];
     }
 
     public function save_billing_settings(): void {
@@ -293,7 +773,7 @@ class SubscriptionsAdmin {
 
         check_admin_referer('myvh_subscription_billing_settings');
 
-        $trial_days = max(1, (int) ($_POST['trial_days'] ?? 14));
+        $trial_days = max(1, (int) ($_POST['trial_days'] ?? 31));
         $grace_period_days = max(0, (int) ($_POST['grace_period_days'] ?? 3));
         $default_plan = sanitize_key((string) ($_POST['default_plan'] ?? 'trial'));
 

@@ -11,6 +11,7 @@ This inventory lists active portal-facing AJAX actions, their current backend ow
 | myvh_portal_update_invoice_status | PortalBillingAjaxController::update_invoice_status | assets/js/portal-app.js | myvh_portal | Invoice detail status update form. |
 | myvh_portal_create_payment | PortalBillingAjaxController::create_payment | assets/js/portal-app.js | myvh_portal | Payment create in portal payments view. |
 | myvh_portal_delete_payment | PortalBillingAjaxController::delete_payment | assets/js/portal-app.js | myvh_portal | Payment delete in portal payments view. |
+| myvh_portal_update_trial_start_date | PortalBillingAjaxController::update_trial_start_date | assets/js/portal-app.js | myvh_portal | Super-user-only trial period start date adjustment on subscription page. |
 | myvh_portal_update_account | PortalAccountAjaxController::update_account | assets/js/portal-app.js | myvh_portal | Account details form submit. |
 | myvh_portal_change_password | PortalAccountAjaxController::change_password | assets/js/portal-app.js | myvh_portal | Account password form submit. |
 | myvh_portal_send_password_reset | PortalAccountAjaxController::send_password_reset_email | assets/js/portal-app.js | myvh_portal | Customer password reset button in portal lists. |

@@ -20,4 +20,12 @@ class PortalAuth {
             wp_send_json_error('Permission denied', 403);
         }
     }
+
+    public static function require_global_admin(ClientAdminService $client_admin_service): void {
+        self::require_user();
+
+        if (!$client_admin_service->is_global_admin(get_current_user_id())) {
+            wp_send_json_error('Permission denied', 403);
+        }
+    }
 }

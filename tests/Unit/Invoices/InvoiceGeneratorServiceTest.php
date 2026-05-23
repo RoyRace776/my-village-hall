@@ -19,7 +19,7 @@ use MYVH\Invoices\InvoiceService;
 use MYVH\Organisations\OrganisationRepository;
 use MYVH\Pricing\PricingService;
 use MYVH\Subscriptions\Services\AccountService;
-use MYVH\Subscriptions\Services\EnforcementService;
+use MYVH\Subscriptions\Services\SubscriptionGuard;
 use MYVH\Tests\Unit\UnitTestCase;
 use WP_Error;
 
@@ -59,7 +59,7 @@ class InvoiceGeneratorServiceTest extends UnitTestCase {
         $this->deposit_service = $this->mock(DepositService::class);
         $this->single_rule_repo = $this->mock(SingleBookingAutoInvoiceRuleRepository::class);
         $this->recurring_rule_repo = $this->mock(RecurringBookingAutoInvoiceRuleRepository::class);
-        $this->enforcement_service = $this->mock(EnforcementService::class);
+        $this->enforcement_service = $this->mock(SubscriptionGuard::class);
         $this->account_service = $this->mock(AccountService::class);
 
         $this->service = new InvoiceGeneratorService(
@@ -78,6 +78,7 @@ class InvoiceGeneratorServiceTest extends UnitTestCase {
             $this->single_rule_repo,
             $this->recurring_rule_repo,
             $this->enforcement_service,
+            null,
             $this->account_service
         );
 
@@ -92,8 +93,7 @@ class InvoiceGeneratorServiceTest extends UnitTestCase {
         ]);
 
         $this->account_service->shouldReceive('resolveAccountFromBlogId')->andReturn(null)->byDefault();
-        $this->enforcement_service->shouldReceive('canCreateBooking')->andReturn(true)->byDefault();
-        $this->enforcement_service->shouldReceive('getLastError')->andReturn(null)->byDefault();
+        $this->enforcement_service->shouldReceive('assertCanCreateBookingForAccount')->andReturn(true)->byDefault();
 
         $this->single_rule_repo->shouldReceive('get_all_rules')->byDefault()->andReturn([]);
         $this->single_rule_repo->shouldReceive('get_active_rules')->byDefault()->andReturn([]);
@@ -112,8 +112,10 @@ class InvoiceGeneratorServiceTest extends UnitTestCase {
     /** @test */
     public function blocks_generation_when_subscription_enforcement_fails(): void {
         $this->account_service->shouldReceive('resolveAccountFromBlogId')->once()->with(1)->andReturnUsing(static fn(): array => ['Id' => 25]);
-        $this->enforcement_service->shouldReceive('canCreateBooking')->once()->with(25)->andReturn(false);
-        $this->enforcement_service->shouldReceive('getLastError')->once()->andReturn(new WP_Error('subscription_expired', 'Subscription has expired'));
+        $this->enforcement_service->shouldReceive('assertCanCreateBookingForAccount')
+            ->once()
+            ->with(25)
+            ->andReturn(new WP_Error('subscription_expired', 'Subscription has expired'));
 
         $result = $this->service->generate_invoices_from_bookings([99]);
 

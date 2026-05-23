@@ -130,11 +130,23 @@ class PortalPeoplePageRenderer {
             if ($current_plan instanceof Plan) {
                 $current_plan_label = $current_plan->getName();
             }
+
+            if ($subscription->isTrial()) {
+                $trial_plan = $this->plan_repository instanceof PlanRepository
+                    ? $this->plan_repository->getByCode('trial')
+                    : null;
+
+                $current_plan_label = $trial_plan instanceof Plan
+                    ? $trial_plan->getName()
+                    : __('Trial', 'my-village-hall');
+            }
         }
 
         $plan_options = $account_id > 0
             ? $this->plan_change_policy_service->getPlanOptionsForAccount($account_id)
             : [];
+
+        $is_wordpress_super_user = $this->client_admin_service->is_global_admin(get_current_user_id());
 
         include MYVH_PLUGIN_DIR . 'templates/Portal/subscription-upgrade.php';
     }

@@ -9,6 +9,8 @@ if (!defined('ABSPATH')) {
 }
 
 class Subscription {
+    private const MYSQL_DATETIME_FORMAT = 'Y-m-d H:i:s';
+
     public function __construct(private array $attributes) {
     }
 
@@ -99,6 +101,36 @@ class Subscription {
         return $this->getStatus() === SubscriptionStatus::TRIALING;
     }
 
+    public function isTrialActive(?\DateTimeImmutable $utc_now = null): bool {
+        if (!$this->isTrial()) {
+            return false;
+        }
+
+        $trial_ends_at = $this->parseUtcDateTime($this->getTrialEndsAt());
+        if (!$trial_ends_at instanceof \DateTimeImmutable) {
+            return true;
+        }
+
+        $now = $utc_now ?? new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+
+        return $trial_ends_at >= $now;
+    }
+
+    public function hasExpiredTrial(?\DateTimeImmutable $utc_now = null): bool {
+        if (!$this->isTrial()) {
+            return false;
+        }
+
+        $trial_ends_at = $this->parseUtcDateTime($this->getTrialEndsAt());
+        if (!$trial_ends_at instanceof \DateTimeImmutable) {
+            return false;
+        }
+
+        $now = $utc_now ?? new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+
+        return $trial_ends_at < $now;
+    }
+
     public function isActive(): bool {
         return $this->getStatus() === SubscriptionStatus::ACTIVE;
     }
@@ -117,5 +149,20 @@ class Subscription {
 
     public function isPendingPayment(): bool {
         return $this->isPastDue();
+    }
+
+    private function parseUtcDateTime(string $value): ?\DateTimeImmutable {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $date_time = \DateTimeImmutable::createFromFormat(
+            self::MYSQL_DATETIME_FORMAT,
+            $value,
+            new \DateTimeZone('UTC')
+        );
+
+        return $date_time instanceof \DateTimeImmutable ? $date_time : null;
     }
 }

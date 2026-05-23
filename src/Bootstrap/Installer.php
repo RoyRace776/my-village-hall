@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '1.16.1';
+    const DB_VERSION = '1.16.3';
 
     /**
      * Entry point: create all tables.
@@ -149,6 +149,14 @@ class Installer {
 
         if (version_compare($from, '1.16.1', '<')) {
             self::upgrade_to_1_16_1($wpdb);
+        }
+
+        if (version_compare($from, '1.16.2', '<')) {
+            self::upgrade_to_1_16_2($wpdb);
+        }
+
+        if (version_compare($from, '1.16.3', '<')) {
+            self::upgrade_to_1_16_3($wpdb);
         }
     }
 
@@ -533,6 +541,188 @@ class Installer {
     private static function upgrade_to_1_16_1(wpdb $wpdb): void {
         // Backfill missing seeded plans on installs that already ran 1.16.0.
         self::seed_default_plans($wpdb);
+    }
+
+    private static function upgrade_to_1_16_2(wpdb $wpdb): void {
+        $table = $wpdb->base_prefix . 'myvh_subscriptions';
+
+        $columns = [
+            'AccountId' => 'account_id BIGINT UNSIGNED NOT NULL',
+            'PlanId' => 'plan_id BIGINT UNSIGNED NULL',
+            'PlanCode' => 'plan_code VARCHAR(100) NOT NULL',
+            'Status' => 'status VARCHAR(30) NOT NULL DEFAULT \'active\'',
+            'Provider' => 'provider VARCHAR(50) NULL',
+            'StripeCustomerId' => 'stripe_customer_id VARCHAR(191) NULL',
+            'StripeSubscriptionId' => 'stripe_subscription_id VARCHAR(191) NULL',
+            'ProviderSubscriptionId' => 'provider_subscription_id VARCHAR(191) NULL',
+            'StartedAt' => 'started_at DATETIME NULL',
+            'CurrentPeriodStart' => 'current_period_start DATETIME NULL',
+            'CurrentPeriodEnd' => 'current_period_end DATETIME NULL',
+            'TrialEndsAt' => 'trial_ends_at DATETIME NULL',
+            'CancelAt' => 'cancel_at DATETIME NULL',
+            'CanceledAt' => 'canceled_at DATETIME NULL',
+            'Metadata' => 'metadata LONGTEXT NULL',
+            'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+            'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+        ];
+
+        foreach ($columns as $legacy_name => $definition) {
+            [$new_name] = explode(' ', $definition, 2);
+
+            $has_legacy = self::has_column($wpdb, $table, $legacy_name);
+            $has_new = self::has_column($wpdb, $table, $new_name);
+
+            if (!$has_legacy) {
+                continue;
+            }
+
+            if (!$has_new) {
+                $wpdb->query("ALTER TABLE {$table} CHANGE COLUMN {$legacy_name} {$definition}");
+                continue;
+            }
+
+            $wpdb->query(
+                "UPDATE {$table}
+                 SET `{$new_name}` = `{$legacy_name}`
+                 WHERE (`{$new_name}` IS NULL OR `{$new_name}` = '')
+                   AND `{$legacy_name}` IS NOT NULL
+                   AND `{$legacy_name}` <> ''"
+            );
+
+            $wpdb->query("ALTER TABLE {$table} DROP COLUMN {$legacy_name}");
+        }
+
+        // Re-apply canonical schema/indexes after legacy column cleanup.
+        self::create_subscriptions_table($wpdb, $wpdb->get_charset_collate());
+    }
+
+    private static function upgrade_to_1_16_3(wpdb $wpdb): void {
+        self::cleanup_legacy_saas_columns($wpdb);
+        self::create_subscription_saas_tables($wpdb, $wpdb->get_charset_collate());
+    }
+
+    private static function cleanup_legacy_saas_columns(wpdb $wpdb): void {
+        $table_pairs = [
+            'myvh_plans' => [
+                'PlanKey' => 'plan_key VARCHAR(100) NOT NULL',
+                'Name' => 'name VARCHAR(150) NOT NULL',
+                'Description' => 'description TEXT NULL',
+                'BillingInterval' => 'billing_interval VARCHAR(20) NOT NULL DEFAULT \'monthly\'',
+                'Price' => 'price DECIMAL(10,2) NOT NULL DEFAULT 0.00',
+                'CurrencyCode' => 'currency_code CHAR(3) NOT NULL DEFAULT \'GBP\'',
+                'StripePriceIdMonthly' => 'stripe_price_id_monthly VARCHAR(191) NULL',
+                'IsActive' => 'is_active TINYINT(1) NOT NULL DEFAULT 1',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ],
+            'myvh_accounts' => [
+                'BlogId' => 'blog_id BIGINT UNSIGNED NULL',
+                'OwnerUserId' => 'owner_user_id BIGINT UNSIGNED NULL',
+                'PlanId' => 'plan_id BIGINT UNSIGNED NULL',
+                'AccountName' => 'account_name VARCHAR(150) NOT NULL',
+                'ContactEmail' => 'contact_email VARCHAR(191) NOT NULL DEFAULT \'\'',
+                'Status' => 'status VARCHAR(30) NOT NULL DEFAULT \'active\'',
+                'ExternalReference' => 'external_reference VARCHAR(191) NULL',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ],
+            'myvh_subscriptions' => [
+                'AccountId' => 'account_id BIGINT UNSIGNED NOT NULL',
+                'PlanId' => 'plan_id BIGINT UNSIGNED NULL',
+                'PlanCode' => 'plan_code VARCHAR(100) NOT NULL',
+                'Status' => 'status VARCHAR(30) NOT NULL DEFAULT \'active\'',
+                'Provider' => 'provider VARCHAR(50) NULL',
+                'StripeCustomerId' => 'stripe_customer_id VARCHAR(191) NULL',
+                'StripeSubscriptionId' => 'stripe_subscription_id VARCHAR(191) NULL',
+                'ProviderSubscriptionId' => 'provider_subscription_id VARCHAR(191) NULL',
+                'StartedAt' => 'started_at DATETIME NULL',
+                'CurrentPeriodStart' => 'current_period_start DATETIME NULL',
+                'CurrentPeriodEnd' => 'current_period_end DATETIME NULL',
+                'TrialEndsAt' => 'trial_ends_at DATETIME NULL',
+                'CancelAt' => 'cancel_at DATETIME NULL',
+                'CanceledAt' => 'canceled_at DATETIME NULL',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'CreatedAt' => 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ],
+            'myvh_settings' => [
+                'SettingKey' => 'setting_key VARCHAR(191) NOT NULL',
+                'SettingValue' => 'setting_value LONGTEXT NULL',
+                'IsAutoload' => 'is_autoload TINYINT(1) NOT NULL DEFAULT 0',
+                'UpdatedAt' => 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            ],
+            'myvh_usage' => [
+                'AccountId' => 'account_id BIGINT UNSIGNED NOT NULL',
+                'MetricKey' => 'metric_key VARCHAR(100) NOT NULL',
+                'MetricPeriodStart' => 'metric_period_start DATETIME NOT NULL',
+                'MetricPeriodEnd' => 'metric_period_end DATETIME NOT NULL',
+                'Quantity' => 'quantity BIGINT NOT NULL DEFAULT 0',
+                'Metadata' => 'metadata LONGTEXT NULL',
+                'RecordedAt' => 'recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+            ],
+        ];
+
+        foreach ($table_pairs as $table_suffix => $columns) {
+            $table = $wpdb->base_prefix . $table_suffix;
+            $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+            if ($table_exists === null) {
+                continue;
+            }
+
+            foreach ($columns as $legacy_name => $definition) {
+                [$new_name] = explode(' ', $definition, 2);
+
+                $has_legacy = self::has_column($wpdb, $table, $legacy_name);
+                $has_new = self::has_column($wpdb, $table, $new_name);
+
+                if (!$has_legacy) {
+                    continue;
+                }
+
+                if (!$has_new) {
+                    $wpdb->query("ALTER TABLE {$table} CHANGE COLUMN {$legacy_name} {$definition}");
+                    continue;
+                }
+
+                $wpdb->query(
+                    "UPDATE {$table}
+                     SET `{$new_name}` = `{$legacy_name}`
+                     WHERE (`{$new_name}` IS NULL OR `{$new_name}` = '')
+                       AND `{$legacy_name}` IS NOT NULL
+                       AND `{$legacy_name}` <> ''"
+                );
+
+                if ($wpdb->query("ALTER TABLE {$table} DROP COLUMN `{$legacy_name}`") === false) {
+                    self::drop_indexes_for_column($wpdb, $table, $legacy_name);
+                    $wpdb->query("ALTER TABLE {$table} DROP COLUMN `{$legacy_name}`");
+                }
+            }
+        }
+    }
+
+    private static function drop_indexes_for_column(wpdb $wpdb, string $table, string $column): void {
+        $indexes = $wpdb->get_results(
+            $wpdb->prepare("SHOW INDEX FROM {$table} WHERE Column_name = %s", $column),
+            ARRAY_A
+        );
+
+        if (!is_array($indexes) || $indexes === []) {
+            return;
+        }
+
+        $dropped = [];
+        foreach ($indexes as $index_row) {
+            $key_name = isset($index_row['Key_name']) ? (string) $index_row['Key_name'] : '';
+            if ($key_name === '' || strtoupper($key_name) === 'PRIMARY' || isset($dropped[$key_name])) {
+                continue;
+            }
+
+            $safe_key = str_replace('`', '``', $key_name);
+            $wpdb->query("ALTER TABLE {$table} DROP INDEX `{$safe_key}`");
+            $dropped[$key_name] = true;
+        }
     }
 
     private static function rename_columns(wpdb $wpdb, string $table, array $columns): void {
@@ -1843,7 +2033,7 @@ class Installer {
         $table = $wpdb->base_prefix . 'myvh_settings';
 
         $defaults = [
-            'trial_days' => '14',
+            'trial_days' => '31',
             'grace_period_days' => '3',
             'default_plan' => 'trial',
         ];

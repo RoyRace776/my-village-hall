@@ -7,6 +7,7 @@ use Mockery\MockInterface;
 use MYVH\Subscriptions\Entities\Subscription;
 use MYVH\Subscriptions\Repositories\SettingsRepository;
 use MYVH\Subscriptions\Repositories\SubscriptionRepository;
+use MYVH\Subscriptions\Services\TimeService;
 use MYVH\Subscriptions\Services\TrialService;
 use MYVH\Tests\Unit\UnitTestCase;
 
@@ -17,13 +18,15 @@ class TrialServiceTest extends UnitTestCase {
     /** @var SettingsRepository&MockInterface */
     private $settings_repository;
 
+    /** @var TimeService&MockInterface */
+    private $time_service;
+
     private TrialService $service;
 
     protected function setUp(): void {
         parent::setUp();
 
         Functions\stubs([
-            'current_time' => fn($type = 'mysql') => $type === 'timestamp' ? 1716200000 : '2024-05-20 12:00:00',
             'sanitize_key' => fn($value) => strtolower((string) $value),
         ]);
 
@@ -35,7 +38,11 @@ class TrialServiceTest extends UnitTestCase {
         $settings_repository = $this->mock(SettingsRepository::class);
         $this->settings_repository = $settings_repository;
 
-        $this->service = new TrialService($this->subscription_repository, $this->settings_repository);
+        /** @var TimeService&MockInterface $time_service */
+        $time_service = $this->mock(TimeService::class);
+        $this->time_service = $time_service;
+
+        $this->service = new TrialService($this->subscription_repository, $this->settings_repository, $this->time_service);
     }
 
     /** @test */
@@ -49,9 +56,13 @@ class TrialServiceTest extends UnitTestCase {
                 'trial_ends_at' => '2024-05-01 12:00:00',
             ]));
 
-        $this->subscription_repository->shouldReceive('update_by_id')
+        $this->time_service->shouldReceive('utcNow')
             ->once()
-            ->with(81, ['status' => 'expired'])
+            ->andReturn(new \DateTimeImmutable('2024-05-20 12:00:00', new \DateTimeZone('UTC')));
+
+        $this->subscription_repository->shouldReceive('expireSubscription')
+            ->once()
+            ->with(81)
             ->andReturn(true);
 
         $subscription = $this->service->checkAndExpireTrial(15);
@@ -71,7 +82,11 @@ class TrialServiceTest extends UnitTestCase {
                 'trial_ends_at' => '2024-05-25 12:00:00',
             ]));
 
-        $this->subscription_repository->shouldReceive('update_by_id')->never();
+        $this->time_service->shouldReceive('utcNow')
+            ->once()
+            ->andReturn(new \DateTimeImmutable('2024-05-20 12:00:00', new \DateTimeZone('UTC')));
+
+        $this->subscription_repository->shouldReceive('expireSubscription')->never();
 
         $subscription = $this->service->checkAndExpireTrial(15);
 

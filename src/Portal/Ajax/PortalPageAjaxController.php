@@ -224,7 +224,7 @@ class PortalPageAjaxController {
                 $trial_days_remaining = 0;
                 $usage_current = 0;
                 $usage_limit = 0;
-                $upgrade_url = admin_url('admin.php?page=myvh-subscription-upgrade');
+                $upgrade_url = '#subscription-upgrade';
                 if ($is_client_admin && $this->subscription_repository !== null) {
                     $blog_id = function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 0;
                     $portal_account_id = 0;

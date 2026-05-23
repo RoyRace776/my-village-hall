@@ -1569,6 +1569,97 @@ body .site-main:has(#myvh-portal) {
   font-size: .8rem;
 }
 
+.myvh-account-page .myvh-plan-comparison {
+  margin: 16px 0 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.myvh-account-page .myvh-trial-badge-wrap {
+  margin: 10px 0 2px;
+}
+
+.myvh-account-page .myvh-trial-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.myvh-account-page .myvh-trial-badge--success {
+  background: #1e7e34;
+}
+
+.myvh-account-page .myvh-trial-badge--warning {
+  background: #856404;
+}
+
+.myvh-account-page .myvh-trial-badge--danger {
+  background: #a72828;
+}
+
+.myvh-account-page #myvh-trial-start-date {
+  width: min(100%, 220px);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.myvh-account-page .myvh-plan-comparison h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.03rem;
+}
+
+.myvh-account-page .myvh-plan-comparison-wrap {
+  border: 1px solid #e6ddd1;
+  border-radius: 10px;
+  overflow-x: auto;
+  background: #fff;
+}
+
+.myvh-account-page .myvh-plan-comparison-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.myvh-account-page .myvh-plan-comparison-table th,
+.myvh-account-page .myvh-plan-comparison-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid #efe7dc;
+  font-size: .87rem;
+}
+
+.myvh-account-page .myvh-plan-comparison-table th {
+  color: var(--ink);
+  font-weight: 600;
+  background: #fbf7f2;
+}
+
+.myvh-account-page .myvh-plan-comparison-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.myvh-account-page .myvh-plan-offerings {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+}
+
+@media (max-width: 782px) {
+  .myvh-account-page .myvh-plan-comparison {
+    margin-top: 14px;
+  }
+
+  .myvh-account-page .myvh-plan-comparison-table {
+    min-width: 680px;
+  }
+}
+
 #myvh-account-details-message,
 #myvh-account-password-message {
   min-height: 18px;
