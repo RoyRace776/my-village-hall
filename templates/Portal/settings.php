@@ -157,14 +157,14 @@ $settings_groups = (isset($settings_groups) && is_array($settings_groups)) ? $se
                                                                            style="width:100%;">
                                                                 </td>
                                                                 <td style="padding:4px 8px;">
-                                                                    <button type="button" class="myvh-notice-remove" style="cursor:pointer;">x Remove</button>
+                                                                    <button type="button" class="myvh-notice-remove myvh-button">Remove</button>
                                                                 </td>
                                                             </tr>
                                                             <?php endforeach; ?>
                                                         </tbody>
                                                     </table>
 
-                                                    <button type="button" class="myvh-notice-add-row" style="cursor:pointer;">+ Add Notice</button>
+                                                    <button type="button" class="myvh-notice-add-row myvh-button myvh-button-primary">+ Add Notice</button>
                                                 </div>
                                             </div>
                                             <?php if ($field_description !== ''): ?>
@@ -205,10 +205,10 @@ $settings_groups = (isset($settings_groups) && is_array($settings_groups)) ? $se
                                                         </div>
 
                                                         <div class="myvh-media-actions">
-                                                            <button type="button" class="button" data-myvh-media-select>
+                                                            <button type="button" class="myvh-button myvh-button-primary" data-myvh-media-select>
                                                                 <?php esc_html_e('Upload/Select Logo', 'my-village-hall'); ?>
                                                             </button>
-                                                            <button type="button" class="button" data-myvh-media-clear<?php echo $media_url === '' ? ' style="display:none;"' : ''; ?>>
+                                                            <button type="button" class="myvh-button" data-myvh-media-clear<?php echo $media_url === '' ? ' style="display:none;"' : ''; ?>>
                                                                 <?php esc_html_e('Remove', 'my-village-hall'); ?>
                                                             </button>
                                                         </div>
@@ -230,7 +230,7 @@ $settings_groups = (isset($settings_groups) && is_array($settings_groups)) ? $se
                         <?php endforeach; ?>
 
                         <div class="myvh-account-actions">
-                            <button type="submit" class="button button-primary">Save <?php echo esc_html($group_label); ?> Settings</button>
+                            <button type="submit" class="myvh-portal-add-btn">Save <?php echo esc_html($group_label); ?> Settings</button>
                             <div id="<?php echo esc_attr($message_id); ?>" class="myvh-muted myvh-settings-feedback" aria-live="polite"></div>
                         </div>
                     </form>

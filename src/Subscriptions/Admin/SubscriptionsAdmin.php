@@ -25,6 +25,7 @@ if (!defined('ABSPATH')) {
 class SubscriptionsAdmin {
     private const DASHBOARD_SLUG = 'myvh-subscription-dashboard';
     private const PLANS_SLUG = 'myvh-subscription-plans';
+    private const NETWORK_PARENT_SLUG = 'myvh-network';
     private const BILLING_SLUG = 'myvh-subscription-billing-settings';
     private const UPGRADE_SLUG = 'myvh-subscription-upgrade';
     private const SAVE_ACTION = 'myvh_save_subscription_billing_settings';
@@ -52,6 +53,7 @@ class SubscriptionsAdmin {
 
     public function init(): void {
         add_action('admin_menu', [$this, 'register_menu']);
+        add_action('network_admin_menu', [$this, 'register_network_menu'], 20);
         add_action('admin_post_' . self::SAVE_ACTION, [$this, 'save_billing_settings']);
         add_action('admin_post_' . self::SAVE_PLANS_ACTION, [$this, 'save_plan_management']);
         add_action('admin_post_' . self::UPDATE_STATUS_ACTION, [$this, 'update_subscription_status']);
@@ -100,6 +102,17 @@ class SubscriptionsAdmin {
                 [$this, 'render_billing_settings_page']
             );
         }
+    }
+
+    public function register_network_menu(): void {
+        add_submenu_page(
+            self::NETWORK_PARENT_SLUG,
+            __('Manage Plans', 'my-village-hall'),
+            __('Manage Plans', 'my-village-hall'),
+            'manage_network_options',
+            self::PLANS_SLUG,
+            [$this, 'render_plan_management_page']
+        );
     }
 
     public function render_dashboard_page(): void {
@@ -314,7 +327,7 @@ class SubscriptionsAdmin {
     }
 
     public function render_plan_management_page(): void {
-        if (!current_user_can('manage_options')) {
+        if (!$this->current_user_can_manage_plans()) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
@@ -374,7 +387,7 @@ class SubscriptionsAdmin {
     }
 
     public function save_plan_management(): void {
-        if (!current_user_can('manage_options')) {
+        if (!$this->current_user_can_manage_plans()) {
             wp_die(__('Permission denied', 'my-village-hall'));
         }
 
@@ -1207,6 +1220,16 @@ class SubscriptionsAdmin {
 
     private function current_user_can_manage_billing_settings(): bool {
         return function_exists('is_super_admin') && is_super_admin();
+    }
+
+    private function current_user_can_manage_plans(): bool {
+        if (current_user_can('manage_options')) {
+            return true;
+        }
+
+        return function_exists('is_network_admin')
+            && is_network_admin()
+            && current_user_can('manage_network_options');
     }
 
     private function get_account_context(?int $blog_id = null, bool $allow_create_account = true): array {

@@ -38,6 +38,8 @@ class PluginBootstrap {
 
         $this->booted = true;
 
+        $this->normalize_network_admin_blog_context();
+
         load_plugin_textdomain(
             'my-village-hall',
             false,
@@ -69,6 +71,25 @@ class PluginBootstrap {
         if ( is_multisite() && is_network_admin() ) {
             ( new NetworkDashboard() )->init();
         }
+    }
+
+    private function normalize_network_admin_blog_context(): void {
+        if ( ! is_multisite() || ! is_admin() || ! is_network_admin() ) {
+            return;
+        }
+
+        if ( ! function_exists( 'get_current_blog_id' ) || ! function_exists( 'get_main_site_id' ) ) {
+            return;
+        }
+
+        $current_blog_id = (int) get_current_blog_id();
+        $main_site_id = (int) get_main_site_id();
+
+        if ( $main_site_id <= 0 || $current_blog_id === $main_site_id ) {
+            return;
+        }
+
+        switch_to_blog( $main_site_id );
     }
 
     public function on_init(): void {

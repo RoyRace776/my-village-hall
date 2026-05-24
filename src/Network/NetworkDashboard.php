@@ -149,7 +149,7 @@ class NetworkDashboard {
     }
 
     public function render_subscription_status_page(): void {
-        if (!current_user_can('manage_network_options')) {
+        if (!$this->can_manage_network_options()) {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
@@ -208,7 +208,7 @@ class NetworkDashboard {
     }
 
     public function render_client_admins_page(): void {
-        if (!current_user_can('manage_network_options')) {
+        if (!$this->can_manage_network_options()) {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
@@ -375,7 +375,7 @@ class NetworkDashboard {
     }
 
     public function render_provisioning_settings_page(): void {
-        if (!current_user_can('manage_network_options')) {
+        if (!$this->can_manage_network_options()) {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
@@ -443,7 +443,7 @@ class NetworkDashboard {
     }
 
     public function render_provisioning_maintenance_page(): void {
-        if (!current_user_can('manage_network_options')) {
+        if (!$this->can_manage_network_options()) {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
@@ -508,9 +508,16 @@ class NetworkDashboard {
             echo '<td><a href="mailto:' . esc_attr($record['admin_email']) . '">' . esc_html($record['admin_email']) . '</a></td>';
             echo '<td><span class="' . esc_attr($status_class) . '">' . $status . '</span></td>';
             echo '<td>';
-            if ($record['blog_id']) {
-                $site_url = get_site_url($record['blog_id']);
-                echo '<a href="' . esc_url($site_url) . '" target="_blank">' . esc_html((string) $record['blog_id']) . '</a>';
+            $blog_id = (int) ($record['blog_id'] ?? 0);
+            if ($blog_id > 0) {
+                $site = get_site($blog_id);
+
+                if ($site instanceof WP_Site) {
+                    $site_url = $this->build_site_url($site);
+                    echo '<a href="' . esc_url($site_url) . '" target="_blank">' . esc_html((string) $blog_id) . '</a>';
+                } else {
+                    echo esc_html((string) $blog_id) . ' (missing)';
+                }
             } else {
                 echo '—';
             }
@@ -757,6 +764,25 @@ class NetworkDashboard {
         }
 
         return (int) ceil(($trial_ends_at->getTimestamp() - $now->getTimestamp()) / 86400);
+    }
+
+    private function build_site_url(WP_Site $site): string {
+        $scheme = is_ssl() ? 'https://' : 'http://';
+
+        return $scheme . $site->domain . $site->path;
+    }
+
+    private function can_manage_network_options(): bool {
+        if (function_exists('get_current_network') && function_exists('current_user_can_for_site')) {
+            $network = \get_current_network();
+            $network_site_id = is_object($network) && isset($network->site_id) ? (int) $network->site_id : 0;
+
+            if ($network_site_id > 0) {
+                return \current_user_can_for_site($network_site_id, 'manage_network_options');
+            }
+        }
+
+        return current_user_can('manage_network_options');
     }
 
     private function get_status_class(string $status): string {

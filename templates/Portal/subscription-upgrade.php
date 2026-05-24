@@ -13,119 +13,26 @@ $subscription_status = ($subscription instanceof \MYVH\Subscriptions\Entities\Su
 $plan_options = (isset($plan_options) && is_array($plan_options)) ? $plan_options : [];
 $is_wordpress_super_user = !empty($is_wordpress_super_user);
 
-$is_trial_like_subscription = false;
-if ($subscription instanceof \MYVH\Subscriptions\Entities\Subscription) {
-    $trial_ends_at_raw = (string) $subscription->getTrialEndsAt();
-    $is_trial_like_subscription = $subscription->isTrial()
-        || ($subscription->getPlanCode() === 'trial' && $trial_ends_at_raw !== '');
-}
-
-$subscription_status_display = $is_trial_like_subscription ? 'trialing' : $subscription_status;
-
-$can_adjust_trial_start_date = false;
-if ($subscription instanceof \MYVH\Subscriptions\Entities\Subscription) {
-    $trial_ends_at_raw = $subscription->getTrialEndsAt();
-    $can_adjust_trial_start_date = $is_trial_like_subscription
-        || ($subscription->isExpired() && $trial_ends_at_raw !== '');
-}
-
 $trial_start_date_value = '';
-$trial_start_utc_for_trial_badge = null;
 if ($subscription instanceof \MYVH\Subscriptions\Entities\Subscription) {
-    $trial_start_raw = (string) $subscription->getCurrentPeriodStart();
-    if ($trial_start_raw === '') {
-        $subscription_attributes = $subscription->toArray();
-        $trial_start_raw = isset($subscription_attributes['started_at'])
-            ? (string) $subscription_attributes['started_at']
-            : '';
-    }
-
-    if ($trial_start_raw !== '') {
-        $trial_start_utc = \DateTimeImmutable::createFromFormat(
-            'Y-m-d H:i:s',
-            $trial_start_raw,
-            new \DateTimeZone('UTC')
-        );
-
-        if ($trial_start_utc instanceof \DateTimeImmutable) {
-            $trial_start_utc_for_trial_badge = $trial_start_utc;
-            $trial_start_date_value = $trial_start_utc
-                ->setTimezone(wp_timezone())
-                ->format('Y-m-d');
-        }
+    $trial_start_raw = $subscription->getCurrentPeriodStart();
+    $trial_start_ts = $trial_start_raw !== '' ? strtotime($trial_start_raw) : false;
+    if ($trial_start_ts !== false) {
+        $trial_start_date_value = gmdate('Y-m-d', $trial_start_ts);
     }
 }
 
 $trial_days_remaining = null;
-$trial_expired_on_display = '';
-if ($subscription instanceof \MYVH\Subscriptions\Entities\Subscription && $is_trial_like_subscription) {
-    $parse_utc_datetime = static function (string $value): ?\DateTimeImmutable {
-        $value = trim($value);
-        if ($value === '') {
-            return null;
-        }
-
-        $parsed = \DateTimeImmutable::createFromFormat(
-            'Y-m-d H:i:s',
-            $value,
-            new \DateTimeZone('UTC')
-        );
-
-        return $parsed instanceof \DateTimeImmutable ? $parsed : null;
-    };
-
-    $configured_trial_days = 31;
-    global $myvh_container;
-    if (isset($myvh_container) && is_object($myvh_container) && method_exists($myvh_container, 'get')) {
-        try {
-            $settings_service = $myvh_container->get(\MYVH\Subscriptions\Services\SettingsService::class);
-            if ($settings_service instanceof \MYVH\Subscriptions\Services\SettingsService) {
-                $configured_trial_days = max(1, (int) $settings_service->get('trial_days', 31));
-            }
-        } catch (\Throwable $exception) {
-            $configured_trial_days = 31;
-        }
-    }
-
-    $trial_end_candidates = [];
-
-    $trial_end_from_column = $parse_utc_datetime((string) $subscription->getTrialEndsAt());
-    if ($trial_end_from_column instanceof \DateTimeImmutable) {
-        $trial_end_candidates[] = $trial_end_from_column;
-    }
-
-    $trial_end_from_period = $parse_utc_datetime((string) $subscription->getCurrentPeriodEnd());
-    if ($trial_end_from_period instanceof \DateTimeImmutable) {
-        $trial_end_candidates[] = $trial_end_from_period;
-    }
-
-    if ($trial_start_utc_for_trial_badge instanceof \DateTimeImmutable) {
-        $trial_end_candidates[] = $trial_start_utc_for_trial_badge->modify('+' . $configured_trial_days . ' days');
-    }
-
-    $trial_end_utc = null;
-    foreach ($trial_end_candidates as $candidate) {
-        if ($trial_start_utc_for_trial_badge instanceof \DateTimeImmutable && $candidate < $trial_start_utc_for_trial_badge) {
-            continue;
-        }
-
-        if (!$trial_end_utc instanceof \DateTimeImmutable || $candidate > $trial_end_utc) {
-            $trial_end_utc = $candidate;
-        }
-    }
-
-    if ($trial_end_utc instanceof \DateTimeImmutable) {
-        $trial_end_ts = $trial_end_utc->getTimestamp();
-        $now_ts = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->getTimestamp();
-        $seconds_left = $trial_end_ts - $now_ts;
-        $trial_days_remaining = max(0, (int) ceil($seconds_left / 86400));
-
-        if ($trial_days_remaining === 0) {
-            $trial_expired_on_display = wp_date(
-                get_option('date_format'),
-                $trial_end_ts,
-                wp_timezone()
-            );
+if ($subscription instanceof \MYVH\Subscriptions\Entities\Subscription && $subscription_status === 'trialing') {
+    $trial_ends_at = $subscription->getTrialEndsAt();
+    if ($trial_ends_at !== '') {
+        $trial_end_ts = strtotime($trial_ends_at);
+        if ($trial_end_ts === false) {
+            $trial_days_remaining = null;
+        } else {
+            $now_ts = (int) current_time('timestamp');
+            $seconds_left = $trial_end_ts - $now_ts;
+            $trial_days_remaining = max(0, (int) ceil($seconds_left / 86400));
         }
     }
 }
@@ -290,7 +197,7 @@ foreach ($plan_options as $option) {
             <p class="myvh-error"><?php esc_html_e('No active subscription found for this site.', 'my-village-hall'); ?></p>
         <?php else: ?>
             <p><strong><?php esc_html_e('Current plan:', 'my-village-hall'); ?></strong> <?php echo esc_html($current_plan_label); ?></p>
-            <p><strong><?php esc_html_e('Status:', 'my-village-hall'); ?></strong> <?php echo esc_html(ucfirst($subscription_status_display)); ?></p>
+            <p><strong><?php esc_html_e('Status:', 'my-village-hall'); ?></strong> <?php echo esc_html(ucfirst($subscription_status)); ?></p>
 
             <?php if ($trial_days_remaining !== null): ?>
                 <?php
@@ -304,16 +211,7 @@ foreach ($plan_options as $option) {
                 <div class="myvh-trial-badge-wrap">
                     <span class="myvh-trial-badge <?php echo esc_attr($trial_badge_class); ?>">
                         <?php if ($trial_days_remaining === 0): ?>
-                            <?php if ($trial_expired_on_display !== ''): ?>
-                                <?php
-                                printf(
-                                    esc_html__('Trial expired on %s', 'my-village-hall'),
-                                    esc_html($trial_expired_on_display)
-                                );
-                                ?>
-                            <?php else: ?>
-                                <?php esc_html_e('Trial expired', 'my-village-hall'); ?>
-                            <?php endif; ?>
+                            <?php esc_html_e('Trial expired', 'my-village-hall'); ?>
                         <?php elseif ($trial_days_remaining === 1): ?>
                             <?php esc_html_e('1 day remaining in trial', 'my-village-hall'); ?>
                         <?php else: ?>
@@ -344,7 +242,7 @@ foreach ($plan_options as $option) {
                 </p>
             <?php endif; ?>
 
-            <?php if ($is_wordpress_super_user && $can_adjust_trial_start_date): ?>
+            <?php if ($is_wordpress_super_user && $subscription_status === 'trialing'): ?>
                 <form class="myvh-account-form" data-portal-action="myvh_portal_update_trial_start_date" data-message-target="myvh-trial-start-message" data-reload-page="subscription-upgrade">
                     <label class="myvh-account-field" for="myvh-trial-start-date">
                         <span><?php esc_html_e('Trial start date (Super User)', 'my-village-hall'); ?></span>

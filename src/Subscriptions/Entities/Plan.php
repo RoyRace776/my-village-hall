@@ -70,9 +70,14 @@ class Plan {
     }
 
     public function getBookingLimit(): ?int {
-        $raw_limit = $this->attributes['booking_limit'] ?? null;
+        // If canonical column is present, trust it (including explicit NULL for unlimited).
+        if (array_key_exists('booking_limit', $this->attributes)) {
+            $raw_limit = $this->attributes['booking_limit'];
 
-        if ($raw_limit !== null && $raw_limit !== '') {
+            if ($raw_limit === null || $raw_limit === '') {
+                return null;
+            }
+
             if (is_string($raw_limit) && strtolower(trim($raw_limit)) === 'unlimited') {
                 return null;
             }

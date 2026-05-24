@@ -1605,11 +1605,6 @@ body .site-main:has(#myvh-portal) {
   font-family: 'DM Sans', sans-serif;
 }
 
-.myvh-account-page #myvh-subscription-plan-code,
-.myvh-account-page #myvh-subscription-payment-method {
-  width: min(100%, 320px);
-}
-
 .myvh-account-page .myvh-plan-comparison h3 {
   margin: 0;
   color: var(--ink);
@@ -2148,36 +2143,33 @@ body .site-main:has(#myvh-portal) {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid #efe8dd;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.myvh-client-settings-page .myvh-account-actions .button {
-  min-height: 38px;
-  border-radius: 8px;
-  padding: 0 16px;
-  font-weight: 600;
-}
-
-.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-clean,
-.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-clean:hover,
-.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-clean:focus {
+.myvh-client-settings-page .myvh-account-actions .myvh-portal-add-btn.myvh-settings-save-clean,
+.myvh-client-settings-page .myvh-account-actions .myvh-portal-add-btn.myvh-settings-save-clean:hover,
+.myvh-client-settings-page .myvh-account-actions .myvh-portal-add-btn.myvh-settings-save-clean:focus {
   background: #dad4ca;
   border-color: #c8bfb1;
   color: #4f473f;
   box-shadow: none;
+  transform: none;
 }
 
-.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-dirty,
-.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-dirty:hover,
-.myvh-client-settings-page .myvh-account-actions .button.myvh-settings-save-dirty:focus {
+.myvh-client-settings-page .myvh-account-actions .myvh-portal-add-btn.myvh-settings-save-dirty,
+.myvh-client-settings-page .myvh-account-actions .myvh-portal-add-btn.myvh-settings-save-dirty:hover,
+.myvh-client-settings-page .myvh-account-actions .myvh-portal-add-btn.myvh-settings-save-dirty:focus {
   background: #b5451b;
   border-color: #963916;
   color: #fff;
   box-shadow: 0 6px 14px rgba(150, 57, 22, 0.24);
 }
 
-.myvh-client-settings-page .myvh-account-actions .button:disabled {
+.myvh-client-settings-page .myvh-account-actions .myvh-portal-add-btn:disabled {
   cursor: not-allowed;
-  opacity: 1;
+  opacity: 0.55;
 }
 
 .myvh-invoices-page .myvh-account-header {
