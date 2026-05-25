@@ -11,6 +11,7 @@ $subscription_status = ($subscription instanceof \MYVH\Subscriptions\Entities\Su
     ? (string) $subscription->getStatus()
     : '';
 $plan_options = (isset($plan_options) && is_array($plan_options)) ? $plan_options : [];
+$trial_days = isset($trial_days) ? max(0, (int) $trial_days) : 0;
 $is_wordpress_super_user = !empty($is_wordpress_super_user);
 
 $trial_start_date_value = '';
@@ -151,22 +152,14 @@ foreach ($plan_options as $option) {
 
     $plan_code = $plan->getCode();
     $is_current = !empty($option['is_current']);
-    $allowed = !empty($option['allowed']);
     $is_scheduled = $scheduled_plan_code !== '' && $scheduled_plan_code === $plan_code;
-    $status_text = $is_scheduled
-        ? __('Scheduled change', 'my-village-hall')
-        : ($is_current
-            ? __('Current plan', 'my-village-hall')
-            : ($allowed ? __('Available', 'my-village-hall') : __('Unavailable', 'my-village-hall')));
-
-    $status_hint = trim((string) ($option['message'] ?? ''));
-    if ($is_scheduled && $scheduled_effective_at !== '') {
-        $status_hint = sprintf(
-            /* translators: %s is the effective date/time of a scheduled plan change. */
-            __('Effective on %s', 'my-village-hall'),
-            mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $scheduled_effective_at)
-        );
-    }
+    $trial_length = $trial_days > 0
+        ? sprintf(
+            /* translators: %d is the number of trial days. */
+            _n('%d day', '%d days', $trial_days, 'my-village-hall'),
+            $trial_days
+        )
+        : __('No trial', 'my-village-hall');
 
     if ($is_scheduled) {
         $scheduled_plan_label = $plan->getName();
@@ -177,10 +170,9 @@ foreach ($plan_options as $option) {
         'name' => $plan->getName(),
         'price' => $price_label,
         'billing' => $billing_label,
+        'trial_length' => $trial_length,
         'booking_allowance' => $booking_allowance,
         'offerings' => $offerings,
-        'status' => $status_text,
-        'status_hint' => $status_hint,
     ];
 }
 ?>
@@ -276,22 +268,24 @@ foreach ($plan_options as $option) {
 
                     <div class="myvh-plan-comparison-wrap">
                         <table class="myvh-plan-comparison-table">
+                            <caption class="screen-reader-text"><?php esc_html_e('Subscription plan comparison', 'my-village-hall'); ?></caption>
                             <thead>
                                 <tr>
                                     <th scope="col"><?php esc_html_e('Plan', 'my-village-hall'); ?></th>
                                     <th scope="col"><?php esc_html_e('Price', 'my-village-hall'); ?></th>
                                     <th scope="col"><?php esc_html_e('Billing', 'my-village-hall'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Trial length', 'my-village-hall'); ?></th>
                                     <th scope="col"><?php esc_html_e('Booking allowance', 'my-village-hall'); ?></th>
                                     <th scope="col"><?php esc_html_e('What is included', 'my-village-hall'); ?></th>
-                                    <th scope="col"><?php esc_html_e('Availability', 'my-village-hall'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($plan_comparison_rows as $row): ?>
                                     <tr>
-                                        <td><?php echo esc_html((string) $row['name']); ?></td>
-                                        <td><?php echo esc_html((string) $row['price']); ?></td>
+                                        <th scope="row" class="myvh-plan-name"><?php echo esc_html((string) $row['name']); ?></th>
+                                        <td class="myvh-plan-price"><?php echo esc_html((string) $row['price']); ?></td>
                                         <td><?php echo esc_html((string) $row['billing']); ?></td>
+                                        <td><?php echo esc_html((string) $row['trial_length']); ?></td>
                                         <td><?php echo esc_html((string) $row['booking_allowance']); ?></td>
                                         <td>
                                             <ul class="myvh-plan-offerings">
@@ -299,12 +293,6 @@ foreach ($plan_options as $option) {
                                                     <li><?php echo esc_html((string) $offering); ?></li>
                                                 <?php endforeach; ?>
                                             </ul>
-                                        </td>
-                                        <td>
-                                            <strong><?php echo esc_html((string) $row['status']); ?></strong>
-                                            <?php if ((string) $row['status_hint'] !== ''): ?>
-                                                <div class="myvh-account-hint"><?php echo esc_html((string) $row['status_hint']); ?></div>
-                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

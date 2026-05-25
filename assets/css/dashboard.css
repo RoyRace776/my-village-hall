@@ -1633,19 +1633,21 @@ body .site-main:has(#myvh-portal) {
   border-radius: 10px;
   overflow-x: auto;
   background: #fff;
+  box-shadow: 0 8px 20px rgba(28, 26, 23, 0.05);
 }
 
 .myvh-account-page .myvh-plan-comparison-table {
   width: 100%;
   min-width: 760px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .myvh-account-page .myvh-plan-comparison-table th,
 .myvh-account-page .myvh-plan-comparison-table td {
   text-align: left;
   vertical-align: top;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid #efe7dc;
   font-size: .87rem;
 }
@@ -1654,6 +1656,25 @@ body .site-main:has(#myvh-portal) {
   color: var(--ink);
   font-weight: 600;
   background: #fbf7f2;
+}
+
+.myvh-account-page .myvh-plan-comparison-table tbody tr:nth-child(even) {
+  background: #fffdfa;
+}
+
+.myvh-account-page .myvh-plan-comparison-table tbody tr:hover {
+  background: #fdf6ec;
+}
+
+.myvh-account-page .myvh-plan-comparison-table .myvh-plan-name {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.myvh-account-page .myvh-plan-comparison-table .myvh-plan-price {
+  white-space: nowrap;
+  font-weight: 700;
 }
 
 .myvh-account-page .myvh-plan-comparison-table tbody tr:last-child td {

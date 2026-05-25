@@ -12,6 +12,7 @@ use MYVH\Subscriptions\Repositories\PlanRepository;
 use MYVH\Subscriptions\Repositories\SubscriptionRepository;
 use MYVH\Subscriptions\Services\AccountService;
 use MYVH\Subscriptions\Services\PlanChangePolicyService;
+use MYVH\Subscriptions\Services\SettingsService;
 use MYVH\Subscriptions\Services\TrialService;
 
 class PortalPeoplePageRenderer {
@@ -25,7 +26,8 @@ class PortalPeoplePageRenderer {
         private ?SubscriptionRepository $subscription_repository = null,
         private ?PlanRepository $plan_repository = null,
         private ?PlanChangePolicyService $plan_change_policy_service = null,
-        private ?TrialService $trial_service = null
+        private ?TrialService $trial_service = null,
+        private ?SettingsService $settings_service = null
     ) {}
 
     public function render_account(): void {
@@ -145,6 +147,9 @@ class PortalPeoplePageRenderer {
         $plan_options = $account_id > 0
             ? $this->plan_change_policy_service->getPlanOptionsForAccount($account_id)
             : [];
+        $trial_days = $this->settings_service instanceof SettingsService
+            ? $this->settings_service->getTrialDays()
+            : 0;
 
         $is_wordpress_super_user = $this->client_admin_service->is_global_admin(get_current_user_id());
 

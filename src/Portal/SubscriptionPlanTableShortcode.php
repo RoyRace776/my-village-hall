@@ -12,6 +12,7 @@ use MYVH\Subscriptions\Repositories\AccountRepository;
 use MYVH\Subscriptions\Repositories\SubscriptionRepository;
 use MYVH\Subscriptions\Services\AccountService;
 use MYVH\Subscriptions\Services\PlanChangePolicyService;
+use MYVH\Subscriptions\Services\SettingsService;
 use MYVH\Subscriptions\Services\TrialService;
 
 class SubscriptionPlanTableShortcode implements ShortcodeInterface {
@@ -21,7 +22,8 @@ class SubscriptionPlanTableShortcode implements ShortcodeInterface {
         private ?SubscriptionRepository $subscription_repository = null,
         private ?PlanChangePolicyService $plan_change_policy_service = null,
         private ?AccountService $account_service = null,
-        private ?TrialService $trial_service = null
+        private ?TrialService $trial_service = null,
+        private ?SettingsService $settings_service = null
     ) {
     }
 
@@ -88,18 +90,9 @@ class SubscriptionPlanTableShortcode implements ShortcodeInterface {
         }
 
         $plan_options = $this->plan_change_policy_service->getPlanOptionsForAccount($account_id);
-
-        $scheduled_plan_code = '';
-        $scheduled_effective_at = '';
-        $metadata = json_decode($subscription->getMetadataRaw(), true);
-        $scheduled_plan_change = is_array($metadata) && is_array($metadata['scheduled_plan_change'] ?? null)
-            ? $metadata['scheduled_plan_change']
-            : null;
-
-        if (is_array($scheduled_plan_change)) {
-            $scheduled_plan_code = sanitize_key((string) ($scheduled_plan_change['plan_code'] ?? ''));
-            $scheduled_effective_at = (string) ($scheduled_plan_change['effective_at'] ?? '');
-        }
+        $trial_days = $this->settings_service instanceof SettingsService
+            ? $this->settings_service->getTrialDays()
+            : 0;
 
         $plan_comparison_rows = [];
         foreach ($plan_options as $option) {
@@ -191,33 +184,21 @@ class SubscriptionPlanTableShortcode implements ShortcodeInterface {
                 $offerings[] = __('Standard plan access', 'my-village-hall');
             }
 
-            $plan_code = $plan->getCode();
-            $is_current = !empty($option['is_current']);
-            $allowed = !empty($option['allowed']);
-            $is_scheduled = $scheduled_plan_code !== '' && $scheduled_plan_code === $plan_code;
-            $status_text = $is_scheduled
-                ? __('Scheduled change', 'my-village-hall')
-                : ($is_current
-                    ? __('Current plan', 'my-village-hall')
-                    : ($allowed ? __('Available', 'my-village-hall') : __('Unavailable', 'my-village-hall')));
-
-            $status_hint = trim((string) ($option['message'] ?? ''));
-            if ($is_scheduled && $scheduled_effective_at !== '') {
-                $status_hint = sprintf(
-                    /* translators: %s is the effective date/time of a scheduled plan change. */
-                    __('Effective on %s', 'my-village-hall'),
-                    mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $scheduled_effective_at)
-                );
-            }
+            $trial_length = $trial_days > 0
+                ? sprintf(
+                    /* translators: %d is the number of trial days. */
+                    _n('%d day', '%d days', $trial_days, 'my-village-hall'),
+                    $trial_days
+                )
+                : __('No trial', 'my-village-hall');
 
             $plan_comparison_rows[] = [
                 'name' => $plan->getName(),
                 'price' => $price_label,
                 'billing' => $billing_label,
+                'trial_length' => $trial_length,
                 'booking_allowance' => $booking_allowance,
                 'offerings' => $offerings,
-                'status' => $status_text,
-                'status_hint' => $status_hint,
             ];
         }
 
@@ -233,22 +214,24 @@ class SubscriptionPlanTableShortcode implements ShortcodeInterface {
 
             <div class="myvh-plan-comparison-wrap">
                 <table class="myvh-plan-comparison-table">
+                    <caption class="screen-reader-text"><?php esc_html_e('Subscription plan comparison', 'my-village-hall'); ?></caption>
                     <thead>
                         <tr>
                             <th scope="col"><?php esc_html_e('Plan', 'my-village-hall'); ?></th>
                             <th scope="col"><?php esc_html_e('Price', 'my-village-hall'); ?></th>
                             <th scope="col"><?php esc_html_e('Billing', 'my-village-hall'); ?></th>
+                            <th scope="col"><?php esc_html_e('Trial length', 'my-village-hall'); ?></th>
                             <th scope="col"><?php esc_html_e('Booking allowance', 'my-village-hall'); ?></th>
                             <th scope="col"><?php esc_html_e('What is included', 'my-village-hall'); ?></th>
-                            <th scope="col"><?php esc_html_e('Availability', 'my-village-hall'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($plan_comparison_rows as $row): ?>
                             <tr>
-                                <td><?php echo esc_html((string) $row['name']); ?></td>
-                                <td><?php echo esc_html((string) $row['price']); ?></td>
+                                <th scope="row" class="myvh-plan-name"><?php echo esc_html((string) $row['name']); ?></th>
+                                <td class="myvh-plan-price"><?php echo esc_html((string) $row['price']); ?></td>
                                 <td><?php echo esc_html((string) $row['billing']); ?></td>
+                                <td><?php echo esc_html((string) $row['trial_length']); ?></td>
                                 <td><?php echo esc_html((string) $row['booking_allowance']); ?></td>
                                 <td>
                                     <ul class="myvh-plan-offerings">
@@ -256,12 +239,6 @@ class SubscriptionPlanTableShortcode implements ShortcodeInterface {
                                             <li><?php echo esc_html((string) $offering); ?></li>
                                         <?php endforeach; ?>
                                     </ul>
-                                </td>
-                                <td>
-                                    <strong><?php echo esc_html((string) $row['status']); ?></strong>
-                                    <?php if ((string) $row['status_hint'] !== ''): ?>
-                                        <div class="myvh-account-hint"><?php echo esc_html((string) $row['status_hint']); ?></div>
-                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
