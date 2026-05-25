@@ -2,6 +2,7 @@
 
 namespace MYVH\Network;
 
+use MYVH\Email\Mailer\MailerService;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use WP_Error;
@@ -19,6 +20,7 @@ class SiteProvisioningService {
         private CreateSiteRequestValidator $validator,
         private WpSiteCloner $cloner,
         private SiteProvisioningRepository $repo,
+        private MailerService $mailer_service,
         ?LoggerInterface $logger = null
     ) {
         $this->logger = $logger ?? new NullLogger();
@@ -388,7 +390,7 @@ class SiteProvisioningService {
             $headers[] = 'Content-Type: text/html; charset=UTF-8';
         }
 
-        wp_mail($to, $subject, $body, $headers);
+        $this->mailer_service->send($to, $subject, $body, $headers);
     }
 
     private function buildEmailHtml(

@@ -15,8 +15,15 @@ class SettingsRepository extends WpdbCrudRepository {
         parent::__construct($wpdb, $wpdb->base_prefix . 'myvh_settings');
     }
 
+    private function normalize_setting_key(string $setting_key): string {
+        $normalized = strtolower(trim($setting_key));
+        $normalized = preg_replace('/[^a-z0-9._-]/', '', $normalized);
+
+        return is_string($normalized) ? $normalized : '';
+    }
+
     public function get_setting_value(string $setting_key, mixed $default = null): mixed {
-        $setting_key = sanitize_key($setting_key);
+        $setting_key = $this->normalize_setting_key($setting_key);
         if ($setting_key === '') {
             return $default;
         }
@@ -43,7 +50,7 @@ class SettingsRepository extends WpdbCrudRepository {
     }
 
     public function set_setting_value(string $setting_key, mixed $value, int $is_autoload = 0): bool {
-        $setting_key = sanitize_key($setting_key);
+        $setting_key = $this->normalize_setting_key($setting_key);
 
         if ($setting_key === '') {
             return false;

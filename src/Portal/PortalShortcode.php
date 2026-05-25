@@ -37,6 +37,7 @@ class PortalShortcode implements ShortcodeInterface
         wp_localize_script( 'myvh-portal-app', 'myvhPortal', [
             'ajax_url'      => admin_url( 'admin-ajax.php' ),
             'nonce'         => wp_create_nonce( 'myvh_portal' ),
+            'rest_nonce'    => wp_create_nonce( 'wp_rest' ),
             'isClientAdmin' => $portal_data['is_client_admin'] ? 1 : 0,
             'site_name'     => get_bloginfo( 'name' ),
         ] );

@@ -67,6 +67,14 @@ class GeneralSettings extends SettingsBase {
                     ],
                 ],
 
+                'report_page_length' => [
+                    'type' => 'integer',
+                    'label' => 'Report page length',
+                    'default' => 25,
+                    'sanitize' => 'absint',
+                    'description' => 'Number of rows shown per page in the report runner table.',
+                ],
+
             ]
 
         ]

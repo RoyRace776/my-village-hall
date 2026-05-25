@@ -6,6 +6,7 @@ namespace MYVH\Tests\Unit\Subscriptions;
 
 use Brain\Monkey\Functions;
 use Mockery\MockInterface;
+use MYVH\Email\Mailer\MailerService;
 use MYVH\Subscriptions\Entities\Subscription;
 use MYVH\Subscriptions\Repositories\AccountRepository;
 use MYVH\Subscriptions\Repositories\SubscriptionRepository;
@@ -19,6 +20,9 @@ class BillingNotificationServiceTest extends UnitTestCase {
     /** @var AccountRepository&MockInterface */
     private $account_repository;
 
+    /** @var MailerService&MockInterface */
+    private $mailer_service;
+
     private BillingNotificationService $service;
 
     protected function setUp(): void {
@@ -31,7 +35,6 @@ class BillingNotificationServiceTest extends UnitTestCase {
             'is_email' => fn($value) => is_string($value) && str_contains($value, '@'),
             'get_bloginfo' => fn($key = '') => 'My Village Hall',
             'wp_json_encode' => fn($value) => json_encode($value),
-            'wp_mail' => true,
         ]);
 
         /** @var SubscriptionRepository&MockInterface $subscription_repository */
@@ -42,12 +45,18 @@ class BillingNotificationServiceTest extends UnitTestCase {
         $account_repository = $this->mock(AccountRepository::class);
         $this->account_repository = $account_repository;
 
-        $this->service = new BillingNotificationService($this->subscription_repository, $this->account_repository);
+        /** @var MailerService&MockInterface $mailer_service */
+        $mailer_service = $this->mock(MailerService::class);
+        $this->mailer_service = $mailer_service;
+
+        $this->service = new BillingNotificationService($this->subscription_repository, $this->account_repository, $this->mailer_service);
     }
 
     /** @test */
     public function sends_trial_ending_email_and_persists_notification_marker(): void {
         $today_marker = 'trial_ending_notified_' . gmdate('Ymd');
+
+        $this->mailer_service->shouldReceive('send')->once()->andReturn(true);
 
         $this->subscription_repository->shouldReceive('update_by_id')
             ->once()
@@ -71,12 +80,7 @@ class BillingNotificationServiceTest extends UnitTestCase {
     /** @test */
     public function skips_trial_ending_send_when_already_notified_today(): void {
         $today_marker = 'trial_ending_notified_' . gmdate('Ymd');
-        $mail_calls = 0;
-
-        Functions\when('wp_mail')->alias(function () use (&$mail_calls): bool {
-            $mail_calls++;
-            return true;
-        });
+        $this->mailer_service->shouldReceive('send')->never();
 
         $this->subscription_repository->shouldReceive('update_by_id')->never();
 
@@ -87,11 +91,12 @@ class BillingNotificationServiceTest extends UnitTestCase {
         );
 
         $this->assertTrue($result);
-        $this->assertSame(0, $mail_calls);
     }
 
     /** @test */
     public function sends_payment_failed_email_and_persists_event_marker(): void {
+        $this->mailer_service->shouldReceive('send')->once()->andReturn(true);
+
         $this->subscription_repository->shouldReceive('get_latest_by_stripe_subscription_id')
             ->once()
             ->with('sub_abc')
@@ -119,12 +124,7 @@ class BillingNotificationServiceTest extends UnitTestCase {
 
     /** @test */
     public function skips_payment_failed_email_when_event_already_notified(): void {
-        $mail_calls = 0;
-
-        Functions\when('wp_mail')->alias(function () use (&$mail_calls): bool {
-            $mail_calls++;
-            return true;
-        });
+        $this->mailer_service->shouldReceive('send')->never();
 
         $this->subscription_repository->shouldReceive('get_latest_by_stripe_subscription_id')
             ->once()
@@ -145,14 +145,11 @@ class BillingNotificationServiceTest extends UnitTestCase {
         $result = $this->service->notifyPaymentFailedByStripeSubscriptionId('sub_dup', 'evt_dup_1');
 
         $this->assertTrue($result);
-        $this->assertSame(0, $mail_calls);
     }
 
     /** @test */
     public function payment_failed_notification_returns_false_when_mail_throws(): void {
-        Functions\when('wp_mail')->alias(static function (): bool {
-            throw new \RuntimeException('mail transport failed');
-        });
+        $this->mailer_service->shouldReceive('send')->andThrow(new \RuntimeException('mail transport failed'));
 
         $this->subscription_repository->shouldReceive('get_latest_by_stripe_subscription_id')
             ->once()

@@ -238,7 +238,7 @@ class InvoiceGeneratorService {
             return 0;
         }
 
-        return is_array($account) ? (int) ($account['Id'] ?? 0) : 0;
+        return is_array($account) ? (int) ($account['id'] ?? $account['Id'] ?? 0) : 0;
     }
 
     private function normalize_rule_scope($rule_scope): string {

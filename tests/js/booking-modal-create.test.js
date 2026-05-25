@@ -156,6 +156,7 @@ describe('BookingModalCreate', () => {
 
   test('submits portal create payload and calls onSuccess', async () => {
     const onSuccess = jest.fn();
+    const changeSpy = jest.fn();
     window.myvhCal = {
       currentCustomerId: 55,
       defaultOrganisationId: 88
@@ -173,6 +174,8 @@ describe('BookingModalCreate', () => {
       canManageNoInvoiceRequired: true,
       onSuccess: onSuccess
     });
+
+    document.addEventListener('myvh:portal-booking-changed', changeSpy);
 
     const form = document.getElementById('myvh-booking-form-create');
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -194,6 +197,7 @@ describe('BookingModalCreate', () => {
     expect(payload.no_invoice_required).toBe('1');
 
     expect(onSuccess).toHaveBeenCalledWith({ booking_id: 321 });
+    expect(changeSpy).toHaveBeenCalledTimes(1);
   });
 
   test('opens in edit mode, loads booking, and reveals recurring edit scope', async () => {

@@ -37,6 +37,12 @@ if ($subscription instanceof \MYVH\Subscriptions\Entities\Subscription && $subsc
     }
 }
 
+$can_update_trial_start_date = false;
+if ($subscription instanceof \MYVH\Subscriptions\Entities\Subscription) {
+    $can_update_trial_start_date = $subscription->isTrial()
+        || ($subscription->isExpired() && $subscription->getTrialEndsAt() !== '');
+}
+
 $scheduled_plan_code = '';
 $scheduled_plan_label = '';
 $scheduled_effective_at = '';
@@ -242,7 +248,7 @@ foreach ($plan_options as $option) {
                 </p>
             <?php endif; ?>
 
-            <?php if ($is_wordpress_super_user && $subscription_status === 'trialing'): ?>
+            <?php if ($is_wordpress_super_user && $can_update_trial_start_date): ?>
                 <form class="myvh-account-form" data-portal-action="myvh_portal_update_trial_start_date" data-message-target="myvh-trial-start-message" data-reload-page="subscription-upgrade">
                     <label class="myvh-account-field" for="myvh-trial-start-date">
                         <span><?php esc_html_e('Trial start date (Super User)', 'my-village-hall'); ?></span>

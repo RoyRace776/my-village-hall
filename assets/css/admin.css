@@ -258,6 +258,199 @@
     box-shadow: 0 8px 24px rgba(17, 24, 39, 0.06);
 }
 
+.myvh-report-builder-admin-page .myvh-report-app {
+    padding-left: 16px;
+    padding-right: 16px;
+    margin-top: 12px;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section {
+    display: grid;
+    gap: 12px;
+    margin-top: 0;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section--meta,
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section--fields,
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section--criteria {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+
+.myvh-portal-add-btn .dashicons,
+.myvh-report-builder-add-btn .dashicons,
+.myvh-report-builder-remove-btn .dashicons {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 1;
+    margin-right: 8px;
+}
+
+.myvh-portal-add-btn,
+.myvh-report-builder-add-btn,
+.myvh-report-builder-remove-btn {
+    align-items: center;
+}
+
+.myvh-report-builder-remove-btn {
+    display: inline-flex;
+}
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section--footer {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e6e7e8;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-account-field {
+    display: grid;
+    gap: 8px;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder [data-builder-name],
+.myvh-report-builder-admin-page .myvh-report-builder [data-builder-source],
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-select,
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-input {
+    min-height: 40px;
+    width: 100%;
+    border: 1px solid #c3c4c7;
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-field-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 42px;
+    padding: 8px;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder [data-builder-filters],
+.myvh-report-builder-admin-page .myvh-report-builder [data-builder-sort] {
+    display: grid;
+    gap: 8px;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-row {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(140px, 1fr) minmax(110px, 130px) minmax(160px, 1fr) auto;
+    align-items: center;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-row .button,
+.myvh-report-builder-admin-page .myvh-report-builder [data-builder-add-filter],
+.myvh-report-builder-admin-page .myvh-report-builder [data-builder-add-sort] {
+    min-height: 34px;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-add-btn {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid #ccd0d4;
+    background: linear-gradient(180deg, #ffffff 0%, #f6f7f7 100%);
+    color: #2c3338;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(17, 24, 39, 0.08);
+    transition: border-color .14s ease, box-shadow .14s ease, transform .14s ease;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-add-btn:hover,
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-add-btn:focus-visible {
+    border-color: #8c8f94;
+    color: #1d2327;
+    box-shadow: 0 4px 10px rgba(17, 24, 39, 0.12);
+    transform: translateY(-1px);
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-add-btn:focus-visible {
+    outline: none;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-add-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(17, 24, 39, 0.1);
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-remove-btn {
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid #d8c3c3;
+    background: #fff;
+    color: #8a2424;
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(17, 24, 39, 0.08);
+    transition: border-color .14s ease, box-shadow .14s ease, background-color .14s ease, transform .14s ease;
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-remove-btn:hover,
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-remove-btn:focus-visible {
+    border-color: #bf8f8f;
+    background: #fff5f5;
+    color: #781f1f;
+    box-shadow: 0 4px 9px rgba(120, 31, 31, 0.14);
+    transform: translateY(-1px);
+}
+
+.myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-remove-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(120, 31, 31, 0.1);
+}
+
+.myvh-report-builder-admin-page .myvh-report-runner-status {
+    grid-column: 1 / -1;
+    min-height: 20px;
+    color: #50575e;
+    font-size: 12px;
+}
+
+.myvh-report-builder-admin-page .myvh-report-runner-status.is-error {
+    color: #b32d2e;
+}
+
+.myvh-report-builder-admin-page .myvh-report-empty {
+    padding: 14px;
+    color: #646970;
+    font-size: 13px;
+}
+
+.myvh-report-builder-admin-page .myvh-report-fallback-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.myvh-report-builder-admin-page .myvh-report-fallback-table thead th {
+    text-align: left;
+    padding: 9px 10px;
+    border-bottom: 1px solid #dcdcde;
+    background: #f6f7f7;
+    color: #50575e;
+}
+
+.myvh-report-builder-admin-page .myvh-report-fallback-table tbody td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+@media screen and (max-width: 900px) {
+    .myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section--meta,
+    .myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section--fields,
+    .myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section--criteria,
+    .myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-row,
+    .myvh-report-builder-admin-page .myvh-report-builder .myvh-report-builder-section--footer {
+        grid-template-columns: 1fr;
+    }
+}
+
 #myvh-single-booking-rules-table thead th {
     background: #f6f8fb;
     color: #2c3338;
@@ -508,6 +701,13 @@
     padding-bottom: 12px;
 }
 
+.myvh-settings-page .myvh-settings-table td > input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.myvh-settings-page .myvh-settings-table td > select,
+.myvh-settings-page .myvh-settings-table td > textarea {
+    width: 50%;
+    max-width: 520px;
+}
+
 .myvh-settings-page .myvh-settings-table .description {
     margin-top: 6px;
     color: #646970;
@@ -528,5 +728,12 @@
 
     .myvh-settings-page .myvh-settings-table th {
         width: auto;
+    }
+
+    .myvh-settings-page .myvh-settings-table td > input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+    .myvh-settings-page .myvh-settings-table td > select,
+    .myvh-settings-page .myvh-settings-table td > textarea {
+        width: 100%;
+        max-width: 100%;
     }
 }

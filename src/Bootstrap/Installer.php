@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '2.0.0';
+    const DB_VERSION = '2.1.0';
 
     /**
      * Entry point: create all tables.
@@ -99,6 +99,7 @@ class Installer {
         self::create_booking_addons_table( $wpdb, $collate );
         self::create_discounts_table( $wpdb, $collate );
         self::create_booking_discounts_table( $wpdb, $collate );
+        self::create_reports_table( $wpdb, $collate );
         self::create_single_booking_auto_invoice_rules_table( $wpdb, $collate );
         self::create_recurring_booking_auto_invoice_rules_table( $wpdb, $collate );
         self::create_invoices_table( $wpdb, $collate );
@@ -653,6 +654,24 @@ class Installer {
             Created        TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_booking  (BookingId),
             INDEX idx_discount (DiscountId)
+        ) {$collate};" );
+    }
+
+    private static function create_reports_table( wpdb $wpdb, string $collate ): void {
+        $p = $wpdb->prefix;
+        dbDelta( "CREATE TABLE {$p}myvh_reports (
+            id           BIGINT UNSIGNED AUTO_INCREMENT,
+            PRIMARY KEY (id),
+            name         VARCHAR(150) NOT NULL,
+            description  TEXT NULL,
+            type         VARCHAR(20) NOT NULL,
+            data_source  VARCHAR(100) NOT NULL,
+            query_json   LONGTEXT NOT NULL,
+            created_by   BIGINT UNSIGNED NULL,
+            created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_type (type),
+            INDEX idx_created_by (created_by)
         ) {$collate};" );
     }
 
@@ -1345,6 +1364,20 @@ class Installer {
             'trial_days' => '31',
             'grace_period_days' => '3',
             'default_plan' => 'trial',
+            'email.from_address' => '',
+            'email.from_name' => '',
+            'email.reply_to' => '',
+            'mail.transport' => 'wp_mail',
+            'smtp.host' => '',
+            'smtp.port' => '587',
+            'smtp.username' => '',
+            'smtp.password' => '',
+            'smtp.encryption' => 'tls',
+            'api.provider' => 'mailgun',
+            'api.key' => '',
+            'api.domain' => '',
+            'api.endpoint' => '',
+            'api.fallback_to_wp_mail' => '1',
         ];
 
         foreach ($defaults as $key => $value) {
@@ -1403,6 +1436,7 @@ class Installer {
             'myvh_booking_charges',
             'myvh_discounts',
             'myvh_booking_discounts',
+            'myvh_reports',
             'myvh_payments',
             'myvh_venue_hours',
             'myvh_room_hours',

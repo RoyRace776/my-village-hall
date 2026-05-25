@@ -1,7 +1,10 @@
 <?php
 namespace MYVH\Email;
 
+use MYVH\Email\Mailer\MailerService;
+use MYVH\Email\Mailer\WpMailTransport;
 use MYVH\Settings\EmailTemplateSettings;
+use MYVH\Subscriptions\Repositories\SettingsRepository;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -12,11 +15,13 @@ class EmailService {
     protected int $site_id;
     protected bool $log_enabled;
     protected LoggerInterface $logger;
+    protected ?MailerService $mailer_service;
 
-    public function __construct(?int $site_id = null, bool $log_enabled = true, ?LoggerInterface $logger = null) {
+    public function __construct(?int $site_id = null, bool $log_enabled = true, ?LoggerInterface $logger = null, ?MailerService $mailer_service = null) {
         $this->site_id = $site_id ?: get_current_blog_id();
         $this->log_enabled = $log_enabled;
         $this->logger = $logger ?? new NullLogger();
+        $this->mailer_service = $mailer_service;
     }
 
     /**
@@ -60,7 +65,12 @@ class EmailService {
             $headers[] = 'Content-Type: text/html; charset=UTF-8';
         }
 
-        $result = wp_mail($to, $subject, $html ?: $text, $headers, $attachments);
+        $send_headers = $headers;
+        if (!empty($attachments)) {
+            $send_headers['attachments'] = $attachments;
+        }
+
+        $result = $this->get_mailer_service()->send($to, $subject, $html ?: $text, $send_headers);
 
         if ($this->log_enabled) {
             $this->log_email($to, $subject, $result, $template, $template_vars);
@@ -150,6 +160,23 @@ class EmailService {
             'template' => $template,
             'result' => $result ? 'sent' : 'failed',
         ]);
+    }
+
+    protected function get_mailer_service(): MailerService {
+        if ($this->mailer_service instanceof MailerService) {
+            return $this->mailer_service;
+        }
+
+        global $wpdb;
+
+        $settings_repository = new SettingsRepository($wpdb);
+        $this->mailer_service = new MailerService(
+            $settings_repository,
+            new WpMailTransport(),
+            $this->logger
+        );
+
+        return $this->mailer_service;
     }
 
     /**

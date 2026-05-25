@@ -3,6 +3,7 @@
 namespace MYVH\Tests\Unit\Network;
 
 use Brain\Monkey\Functions;
+use MYVH\Email\Mailer\MailerService;
 use MYVH\Network\CreateSiteRequestValidator;
 use MYVH\Network\SiteProvisioningRepository;
 use MYVH\Network\SiteProvisioningService;
@@ -14,6 +15,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
     private $validator;
     private $cloner;
     private $repo;
+    private $mailer;
     private SiteProvisioningService $service;
 
     /** @var array<string,mixed> */
@@ -29,11 +31,14 @@ class SiteProvisioningServiceTest extends UnitTestCase {
         $this->validator = $this->mock(CreateSiteRequestValidator::class);
         $this->cloner = $this->mock(WpSiteCloner::class);
         $this->repo = $this->mock(SiteProvisioningRepository::class);
+        $this->mailer = $this->mock(MailerService::class);
+        $this->mailer->shouldReceive('send')->andReturn(true);
 
         $this->service = new SiteProvisioningService(
             $this->validator,
             $this->cloner,
-            $this->repo
+            $this->repo,
+            $this->mailer
         );
 
         Functions\stubs([
@@ -75,7 +80,6 @@ class SiteProvisioningServiceTest extends UnitTestCase {
             'esc_html' => static fn($value): string => (string) $value,
             'esc_url' => static fn($value): string => (string) $value,
             'wp_strip_all_tags' => static fn($value): string => (string) $value,
-            'wp_mail' => static fn($to, $subject, $body, $headers = []): bool => true,
             'get_network' => static fn() => (object) ['domain' => 'example.test', 'path' => '/', 'id' => 1],
             'is_subdomain_install' => static fn(): bool => true,
             '__' => static fn($text): string => (string) $text,

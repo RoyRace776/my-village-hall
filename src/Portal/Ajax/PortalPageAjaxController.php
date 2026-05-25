@@ -8,6 +8,7 @@ use MYVH\Portal\Support\AjaxResponse;
 use MYVH\Subscriptions\Repositories\AccountRepository;
 use MYVH\Subscriptions\Repositories\SubscriptionRepository;
 use MYVH\Subscriptions\Services\SubscriptionGuard;
+use MYVH\Subscriptions\Services\TrialService;
 use MYVH\Subscriptions\Services\UsageService;
 
 class PortalPageAjaxController {
@@ -22,7 +23,8 @@ class PortalPageAjaxController {
         private ?SubscriptionGuard $subscription_guard = null,
         private ?UsageService $usage_service = null,
         private ?SubscriptionRepository $subscription_repository = null,
-        private ?AccountRepository $account_repository = null
+        private ?AccountRepository $account_repository = null,
+        private ?TrialService $trial_service = null
     ) {}
 
     public function register(): void {
@@ -195,6 +197,18 @@ class PortalPageAjaxController {
                 $this->admin_config_page_renderer->render_audit_log($is_client_admin);
                 break;
 
+            case 'reports':
+                $this->admin_config_page_renderer->render_reports($is_client_admin);
+                break;
+
+            case 'reports-builder':
+                $this->admin_config_page_renderer->render_reports_builder($is_client_admin);
+                break;
+
+            case 'reports-view':
+                $this->admin_config_page_renderer->render_reports_view($is_client_admin);
+                break;
+
             case 'organisations':
                 $this->organisation_page_renderer->render_organisations($customer, $is_client_admin);
                 break;
@@ -233,7 +247,9 @@ class PortalPageAjaxController {
                         $portal_account_id = is_array($portal_account) ? (int) ($portal_account['id'] ?? 0) : 0;
                     }
                     if ($portal_account_id > 0) {
-                        $subscription = $this->subscription_repository->get_latest_by_account_id($portal_account_id);
+                        $subscription = $this->trial_service instanceof TrialService
+                            ? $this->trial_service->checkAndExpireTrial($portal_account_id)
+                            : $this->subscription_repository->get_latest_by_account_id($portal_account_id);
                         if ($subscription !== null) {
                             $subscription_status = $subscription->getStatus();
                             $trial_ends_at = $subscription->getTrialEndsAt();

@@ -184,6 +184,15 @@ class AdminMenu {
             [ $this->router, 'render_payments_page' ]
         );
 
+        add_submenu_page(
+            'my-village-hall',
+            __( 'Report Builder', 'my-village-hall' ),
+            self::menu_label( 'dashicons-chart-bar', __( 'Reports', 'my-village-hall' ) ),
+            'manage_options',
+            'myvh-report-builder',
+            [ $this->router, 'render_report_builder_page' ]
+        );
+
         $this->menu_separator->add( 'my-village-hall' );
 
         add_submenu_page(

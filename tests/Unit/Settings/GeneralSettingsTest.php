@@ -23,6 +23,13 @@ class GeneralSettingsTest extends TestCase {
         $this->assertArrayHasKey('options', $field);
         $this->assertSame('Mon 15 Jan', $field['options']['ddd d MMM']);
         $this->assertSame('2024-01-15', $field['options']['yyyy-MM-dd']);
+
+        $this->assertArrayHasKey('report_page_length', $schema['general']['fields']);
+        $page_length = $schema['general']['fields']['report_page_length'];
+        $this->assertSame('integer', $page_length['type']);
+        $this->assertSame('Report page length', $page_length['label']);
+        $this->assertSame(25, $page_length['default']);
+        $this->assertSame('absint', $page_length['sanitize']);
     }
 
     /** @test */

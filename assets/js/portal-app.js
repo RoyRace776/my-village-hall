@@ -6,7 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const routeAliases = {
         'my-bookings': 'bookings',
         'book-room': 'bookings',
-        'home': 'dashboard'
+        'home': 'dashboard',
+        'reports/builder': 'reports-builder',
+        'reports/view': 'reports-view'
     };
 
     const legacyBookingRoutes = new Set(['new-booking', 'bookings-new', 'booking-view', 'booking-edit', 'booking-delete']);
@@ -15,6 +17,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const normalized = String(targetHash || '').replace(/^#/, '');
         const [page, queryString] = normalized.split('?');
         const params = {};
+
+        if (page && page.indexOf('reports/view/') === 0) {
+            const reportIdSegment = page.replace('reports/view/', '').trim();
+            if (reportIdSegment !== '') {
+                params.report_id = reportIdSegment;
+            }
+
+            return {
+                page: 'reports-view',
+                params: params
+            };
+        }
 
         new URLSearchParams(queryString || '').forEach((value, key) => {
             params[key] = value;
@@ -808,6 +822,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (window.MyvhPortalEmail) {
             window.MyvhPortalEmail.initEmailTemplatesPage();
             window.MyvhPortalEmail.initEmailTemplateEditPage();
+        }
+
+        if (window.MyvhPortalReports && typeof window.MyvhPortalReports.initPage === 'function') {
+            window.MyvhPortalReports.initPage();
         }
     }
 
@@ -2330,6 +2348,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (!res.success) {
                         showMessage(message, res.data, true, 'Request failed');
                         return;
+                    }
+
+                    if (portalAction === 'myvh_portal_save_client_settings') {
+                        document.dispatchEvent(new CustomEvent('myvh:settings-saved', {
+                            detail: {
+                                group: String((res.data && res.data.settings_group) || ''),
+                                settings: res.data && typeof res.data.settings === 'object' && res.data.settings !== null
+                                    ? res.data.settings
+                                    : {}
+                            }
+                        }));
                     }
 
                     if (form.tagName === 'FORM') {

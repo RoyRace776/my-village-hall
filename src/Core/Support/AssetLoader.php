@@ -143,6 +143,47 @@ class AssetLoader {
             true
         );
 
+        if ( strpos( $hook, 'myvh-report-builder' ) !== false ) {
+            wp_enqueue_style(
+                'myvh-tabulator',
+                'https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/css/tabulator.min.css',
+                [],
+                '6.2.5'
+            );
+
+            wp_enqueue_script(
+                'myvh-tabulator',
+                'https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/js/tabulator.min.js',
+                [],
+                '6.2.5',
+                true
+            );
+
+            wp_enqueue_script(
+                'myvh-report-builder',
+                MYVH_PLUGIN_URL . 'assets/js/report-builder.js',
+                [],
+                self::asset_version( 'assets/js/report-builder.js' ),
+                true
+            );
+
+            wp_enqueue_script(
+                'myvh-report-runner',
+                MYVH_PLUGIN_URL . 'assets/js/report-runner.js',
+                [ 'myvh-tabulator', 'myvh-report-builder' ],
+                self::asset_version( 'assets/js/report-runner.js' ),
+                true
+            );
+
+            wp_enqueue_script(
+                'myvh-portal-reports',
+                MYVH_PLUGIN_URL . 'assets/js/portal-reports.js',
+                [ 'myvh-report-builder', 'myvh-report-runner' ],
+                self::asset_version( 'assets/js/portal-reports.js' ),
+                true
+            );
+        }
+
         if ( strpos( $hook, 'myvh-subscription' ) !== false ) {
             wp_enqueue_script(
                 'myvh-subscription-modals',
@@ -265,6 +306,13 @@ class AssetLoader {
             MYVH_VERSION
         );
 
+        wp_enqueue_style(
+            'myvh-tabulator',
+            'https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/css/tabulator.min.css',
+            [],
+            '6.2.5'
+        );
+
         wp_enqueue_script(
             'daypilot',
             MYVH_PLUGIN_URL . 'assets/js/daypilot-all.min.js',
@@ -346,9 +394,41 @@ class AssetLoader {
         );
 
         wp_enqueue_script(
+            'myvh-tabulator',
+            'https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/js/tabulator.min.js',
+            [],
+            '6.2.5',
+            true
+        );
+
+        wp_enqueue_script(
+            'myvh-report-builder',
+            MYVH_PLUGIN_URL . 'assets/js/report-builder.js',
+            [],
+            self::asset_version( 'assets/js/report-builder.js' ),
+            true
+        );
+
+        wp_enqueue_script(
+            'myvh-report-runner',
+            MYVH_PLUGIN_URL . 'assets/js/report-runner.js',
+            [ 'myvh-tabulator', 'myvh-report-builder' ],
+            self::asset_version( 'assets/js/report-runner.js' ),
+            true
+        );
+
+        wp_enqueue_script(
+            'myvh-portal-reports',
+            MYVH_PLUGIN_URL . 'assets/js/portal-reports.js',
+            [ 'myvh-report-builder', 'myvh-report-runner' ],
+            self::asset_version( 'assets/js/portal-reports.js' ),
+            true
+        );
+
+        wp_enqueue_script(
             'myvh-portal-app',
             MYVH_PLUGIN_URL . 'assets/js/portal-app.js',
-            [ 'myvh-dashboard', 'myvh-flatpickr-init', 'myvh-portal-ajax', 'myvh-portal-email' ],
+            [ 'myvh-dashboard', 'myvh-flatpickr-init', 'myvh-portal-ajax', 'myvh-portal-email', 'myvh-portal-reports' ],
             self::asset_version( 'assets/js/portal-app.js' ),
             true
         );

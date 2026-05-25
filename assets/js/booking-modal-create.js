@@ -1371,6 +1371,10 @@ window.BookingModalCreate = (function() {
 
             close();
             config.onSuccess(res.data);
+
+            document.dispatchEvent(new CustomEvent('myvh:portal-booking-changed', {
+                detail: res.data
+            }));
         })
         .catch(err => {
             console.error(err);

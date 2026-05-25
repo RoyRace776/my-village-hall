@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MYVH\Subscriptions\Services;
 
+use MYVH\Email\Mailer\MailerService;
 use MYVH\Subscriptions\Entities\Subscription;
 use MYVH\Subscriptions\Repositories\AccountRepository;
 use MYVH\Subscriptions\Repositories\SubscriptionRepository;
@@ -18,6 +19,7 @@ class BillingNotificationService {
     public function __construct(
         private SubscriptionRepository $subscription_repository,
         private AccountRepository $account_repository,
+        private MailerService $mailer_service,
         private LoggerInterface $logger = new NullLogger()
     ) {
     }
@@ -59,7 +61,7 @@ class BillingNotificationService {
                 max(0, $days_left)
             );
 
-            $sent = wp_mail($email, $subject, $body);
+            $sent = $this->mailer_service->send($email, $subject, $body);
 
             $this->logger->info('Trial ending notification attempted', [
                 'account_id' => $account_id,
@@ -127,7 +129,7 @@ class BillingNotificationService {
             $subject = sprintf(__('Payment failed - %s', 'my-village-hall'), get_bloginfo('name'));
             $body = __('A subscription payment has failed. Please update your payment method to keep your subscription active.', 'my-village-hall');
 
-            $sent = wp_mail($email, $subject, $body);
+            $sent = $this->mailer_service->send($email, $subject, $body);
 
             $this->logger->info('Payment failed notification attempted', [
                 'account_id' => $account_id,

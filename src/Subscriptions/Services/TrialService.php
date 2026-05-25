@@ -18,7 +18,8 @@ class TrialService {
 
     public function __construct(
         private SubscriptionRepository $subscription_repository,
-        private SettingsRepository $settings_repository
+        private SettingsRepository $settings_repository,
+        private ?TimeService $time_service = null
     ) {
     }
 
@@ -41,10 +42,33 @@ class TrialService {
             return $subscription;
         }
 
-        $trial_ends_ts = strtotime($trial_ends_at);
-        $now = (int) current_time('timestamp');
+        $trial_ends = \DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $trial_ends_at,
+            new \DateTimeZone('UTC')
+        );
+        if (!$trial_ends instanceof \DateTimeImmutable) {
+            return $subscription;
+        }
 
-        if ($trial_ends_ts === false || $trial_ends_ts >= $now) {
+        $now = $this->time_service instanceof TimeService
+            ? $this->time_service->utcNow()
+            : new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+
+        if ($subscription->isExpired() && $trial_ends >= $now) {
+            $subscription_id = $subscription->getId();
+            if ($subscription_id > 0 && $this->subscription_repository->update_by_id($subscription_id, ['status' => SubscriptionStatus::TRIALING])) {
+                return $subscription->withStatus(SubscriptionStatus::TRIALING);
+            }
+
+            return $subscription->withStatus(SubscriptionStatus::TRIALING);
+        }
+
+        if (!$subscription->isTrial()) {
+            return $subscription;
+        }
+
+        if ($trial_ends >= $now) {
             return $subscription;
         }
 

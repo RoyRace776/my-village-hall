@@ -8,6 +8,7 @@ use MYVH\Audit\AuditTrail;
 use MYVH\Email\EmailTemplateRegistry;
 use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Pricing\RoomRateService;
+use MYVH\Reports\ReportViewModelFactory;
 use MYVH\Rooms\RoomService;
 use MYVH\Settings\EmailTemplateSettings;
 use MYVH\Settings\SettingsRegistry;
@@ -23,7 +24,8 @@ class PortalAdminConfigPageRenderer {
         private RoomRateService $room_rate_service,
         private VenueService $venue_service,
         private OrganisationTypeService $organisation_type_service,
-        private EmailTemplateSettings $email_template_settings
+        private EmailTemplateSettings $email_template_settings,
+        private ReportViewModelFactory $report_view_model_factory
     ) {}
 
     public function render_rooms(bool $is_client_admin): void {
@@ -323,5 +325,24 @@ class PortalAdminConfigPageRenderer {
 
         $rows = $result['rows'] ?? [];
         include MYVH_PLUGIN_DIR . 'templates/Portal/audit-log.php';
+    }
+
+    public function render_reports(bool $is_client_admin): void {
+        $view_model = $this->report_view_model_factory->build_for_mode(get_current_user_id(), 'portal');
+        $view_model['screen'] = 'reports';
+        include MYVH_PLUGIN_DIR . 'templates/Portal/reports.php';
+    }
+
+    public function render_reports_builder(bool $is_client_admin): void {
+        $view_model = $this->report_view_model_factory->build_for_mode(get_current_user_id(), 'portal');
+        $view_model['screen'] = 'builder';
+        include MYVH_PLUGIN_DIR . 'templates/Portal/reports-builder.php';
+    }
+
+    public function render_reports_view(bool $is_client_admin): void {
+        $view_model = $this->report_view_model_factory->build_for_mode(get_current_user_id(), 'portal');
+        $view_model['screen'] = 'view';
+        $view_model['bootstrap']['initialReportId'] = \intval($_GET['report_id'] ?? 0);
+        include MYVH_PLUGIN_DIR . 'templates/Portal/reports-view.php';
     }
 }

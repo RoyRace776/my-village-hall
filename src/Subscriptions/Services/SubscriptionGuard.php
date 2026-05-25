@@ -133,7 +133,7 @@ class SubscriptionGuard {
             return 0;
         }
 
-        return (int) ($account['Id'] ?? 0);
+        return (int) ($account['id'] ?? $account['Id'] ?? 0);
     }
 
     public function requireCanCreateBookingForAccount(int $account_id): void {

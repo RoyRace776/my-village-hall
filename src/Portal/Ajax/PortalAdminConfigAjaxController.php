@@ -367,7 +367,10 @@ class PortalAdminConfigAjaxController {
             $all['enable_auditing'] = !empty($input['enable_auditing']);
             $settings->save($all);
 
-            AjaxResponse::success([], __('Client settings updated', 'my-village-hall'));
+            AjaxResponse::success([
+                'settings_group' => $group,
+                'settings' => $settings->all(),
+            ], __('Client settings updated', 'my-village-hall'));
         }
 
         if (!$settings->user_can_access($current_user_id)) {
@@ -376,7 +379,10 @@ class PortalAdminConfigAjaxController {
 
         $settings->save($input);
 
-        AjaxResponse::success([], __('Client settings updated', 'my-village-hall'));
+        AjaxResponse::success([
+            'settings_group' => $group,
+            'settings' => $settings->all(),
+        ], __('Client settings updated', 'my-village-hall'));
     }
 
     public function save_single_booking_invoice_rules(): void {

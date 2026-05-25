@@ -2,6 +2,7 @@
 namespace MYVH\Portal\Ajax;
 
 use MYVH\Email\EmailService;
+use MYVH\Email\Mailer\MailerService;
 use MYVH\Email\EmailTemplateRegistry;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\PortalAuth;
@@ -12,7 +13,8 @@ class PortalEmailTemplateAjaxController {
 
     public function __construct(
         private ClientAdminService $client_admin_service,
-        private EmailTemplateSettings $email_template_settings
+        private EmailTemplateSettings $email_template_settings,
+        private MailerService $mailer_service
     ) {}
 
     public function register(): void {
@@ -127,7 +129,7 @@ class PortalEmailTemplateAjaxController {
         }
 
         $headers = ['Content-Type: text/html; charset=UTF-8'];
-        $sent    = wp_mail($recipient, $subject, $html, $headers);
+        $sent    = $this->mailer_service->send($recipient, $subject, $html, $headers);
 
         if (!$sent) {
             AjaxResponse::server_error(__('Failed to send test email — check your site mail configuration', 'my-village-hall'));

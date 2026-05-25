@@ -72,6 +72,8 @@ class AdminPageRouter {
 
     public function render_recurring_booking_invoice_rules_page(): void { $this->render_page( 'recurring-booking-invoice-rules' ); }
 
+    public function render_report_builder_page(): void { $this->render_page( 'report-builder' ); }
+
     public function render_recurring_page(): void { $this->render_page( 'recurring' ); }
 
     public function render_audit_log_page(): void { $this->render_page( 'audit-log' ); }

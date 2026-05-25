@@ -40,6 +40,6 @@ class FeatureService {
             return 0;
         }
 
-        return (int) ($account['Id'] ?? 0);
+        return (int) ($account['id'] ?? $account['Id'] ?? 0);
     }
 }

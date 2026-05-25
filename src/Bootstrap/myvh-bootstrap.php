@@ -98,6 +98,18 @@ if ( $myvh_container instanceof Container ) {
     $subscription_checkout_endpoint = $myvh_container->get( MYVH\Subscriptions\Http\SubscriptionCheckoutEndpoint::class );
     $subscription_checkout_endpoint->register();
 
+    $run_report_endpoint = $myvh_container->get( MYVH\Reports\Http\RunReportEndpoint::class );
+    $run_report_endpoint->register();
+
+    $delete_report_endpoint = $myvh_container->get( MYVH\Reports\Http\DeleteReportEndpoint::class );
+    $delete_report_endpoint->register();
+
+    $save_report_endpoint = $myvh_container->get( MYVH\Reports\Http\SaveReportEndpoint::class );
+    $save_report_endpoint->register();
+
+    $schema_report_endpoint = $myvh_container->get( MYVH\Reports\Http\SchemaReportEndpoint::class );
+    $schema_report_endpoint->register();
+
     // Admin password reset AJAX handler
     $admin_password_reset = new MYVH\Admin\AdminPasswordResetHandler(
         $myvh_container->get( MYVH\Customers\CustomerService::class )

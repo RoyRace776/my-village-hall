@@ -60,9 +60,9 @@ class TrialServiceTest extends UnitTestCase {
             ->once()
             ->andReturn(new \DateTimeImmutable('2024-05-20 12:00:00', new \DateTimeZone('UTC')));
 
-        $this->subscription_repository->shouldReceive('expireSubscription')
+        $this->subscription_repository->shouldReceive('update_by_id')
             ->once()
-            ->with(81)
+            ->with(81, ['status' => 'expired'])
             ->andReturn(true);
 
         $subscription = $this->service->checkAndExpireTrial(15);
@@ -87,6 +87,32 @@ class TrialServiceTest extends UnitTestCase {
             ->andReturn(new \DateTimeImmutable('2024-05-20 12:00:00', new \DateTimeZone('UTC')));
 
         $this->subscription_repository->shouldReceive('expireSubscription')->never();
+
+        $subscription = $this->service->checkAndExpireTrial(15);
+
+        $this->assertInstanceOf(Subscription::class, $subscription);
+        $this->assertTrue($subscription->isTrial());
+    }
+
+    /** @test */
+    public function check_and_expire_trial_revives_stale_expired_trial_when_end_date_is_still_in_future(): void {
+        $this->subscription_repository->shouldReceive('get_active_by_account_id')
+            ->once()
+            ->with(15)
+            ->andReturnUsing(static fn(): Subscription => Subscription::fromArray([
+                'id' => 83,
+                'status' => 'expired',
+                'trial_ends_at' => '2024-05-25 12:00:00',
+            ]));
+
+        $this->time_service->shouldReceive('utcNow')
+            ->once()
+            ->andReturn(new \DateTimeImmutable('2024-05-20 12:00:00', new \DateTimeZone('UTC')));
+
+        $this->subscription_repository->shouldReceive('update_by_id')
+            ->once()
+            ->with(83, ['status' => 'trialing'])
+            ->andReturn(true);
 
         $subscription = $this->service->checkAndExpireTrial(15);
 
