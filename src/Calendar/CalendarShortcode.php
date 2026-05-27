@@ -214,6 +214,7 @@ class CalendarShortcode {
 
         $login_url = $this->resolve_login_page_url();
         $register_url = $this->resolve_register_page_url( $login_url );
+        $portal_url = $this->resolve_portal_page_url();
         $logout_url = wp_logout_url( get_permalink() ?: home_url('/') );
 
         ob_start();
@@ -229,9 +230,14 @@ class CalendarShortcode {
                         esc_html__( 'Logged in as %s', 'my-village-hall' ),
                         '<strong>' . esc_html( $display_name ) . '</strong>'
                     ); ?></p>
-                    <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $logout_url ); ?>">
-                        <?php esc_html_e( 'Log out', 'my-village-hall' ); ?>
-                    </a>
+                    <div class="myvh-cal-auth-actions">
+                        <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $portal_url ); ?>">
+                            <?php esc_html_e( 'Dashboard', 'my-village-hall' ); ?>
+                        </a>
+                        <a class="myvh-cal-btn myvh-cal-login-btn" href="<?php echo esc_url( $logout_url ); ?>">
+                            <?php esc_html_e( 'Log out', 'my-village-hall' ); ?>
+                        </a>
+                    </div>
                 <?php else : ?>
                     <p><?php esc_html_e( 'Want to manage bookings? Log in or create an account.', 'my-village-hall' ); ?></p>
                     <div class="myvh-cal-auth-actions">
@@ -366,5 +372,47 @@ class CalendarShortcode {
         }
 
         return add_query_arg( 'register', '1', $login_url ) . '#myvh-register-form';
+    }
+
+    private function resolve_portal_page_url(): string {
+        $fallback = home_url('/portal/');
+
+        $filtered = apply_filters('myvh_portal_page_url', '');
+        if (is_string($filtered) && $filtered !== '') {
+            return esc_url_raw($filtered);
+        }
+
+        $portal_page = get_page_by_path('portal');
+        if ($portal_page && !empty($portal_page->ID)) {
+            return (string) get_permalink((int) $portal_page->ID);
+        }
+
+        $candidate_pages = get_posts([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'posts_per_page' => 200,
+            'orderby' => 'menu_order title',
+            'order' => 'ASC',
+            'suppress_filters' => false,
+        ]);
+
+        foreach ((array) $candidate_pages as $page) {
+            if (empty($page->ID)) {
+                continue;
+            }
+
+            if (has_shortcode((string) $page->post_content, 'myvh_portal')) {
+                return (string) get_permalink((int) $page->ID);
+            }
+        }
+
+        foreach (['portal', 'client-portal', 'account-portal', 'dashboard'] as $slug) {
+            $candidate = get_page_by_path($slug);
+            if ($candidate && !empty($candidate->ID)) {
+                return (string) get_permalink((int) $candidate->ID);
+            }
+        }
+
+        return $fallback;
     }
 }
