@@ -38,6 +38,7 @@ class AdminPageRouter {
         $titleless_shortcodes = [
             'myvh_portal',
             'myvh_public_calendar',
+            'myvh_create_site',
         ];
 
         $has_titleless_shortcode = false;
