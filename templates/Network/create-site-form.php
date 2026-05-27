@@ -501,7 +501,7 @@ if ($site_slug !== '' && $network_domain !== '') {
             <button type="button" class="myvh-site-request-nav" data-myvh-step-action="prev" hidden><?php echo esc_html__('Back', 'my-village-hall'); ?></button>
             <button type="button" class="myvh-site-request-nav" data-myvh-step-action="next"><?php echo esc_html__('Next step', 'my-village-hall'); ?></button>
             <button type="submit" data-myvh-step-action="submit" hidden><?php echo esc_html__('Request new site', 'my-village-hall'); ?></button>
-            <p class="myvh-site-request-footnote"><?php echo esc_html__('Submitting this form will email the administrator a link to click on. Clicking on the link will setup the new site.', 'my-village-hall'); ?></p>
+            <p class="myvh-site-request-footnote" id="myvh-site-request-footnote"><?php echo esc_html__('Next up: Venue details. Add your venue name and contact email.', 'my-village-hall'); ?></p>
         </div>
     </form>
 </div>

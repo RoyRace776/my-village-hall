@@ -30,7 +30,6 @@ class CalendarShortcode {
     /** Shortcode tag */
     const TAG = 'myvh_calendar';
     const TAG_PUBLIC = 'myvh_public_calendar';
-    const TAG_PUBLIC_LEGACY = 'myvh_publicc_calendar';
 
     /** REST namespace / route */
     const REST_NAMESPACE = 'myvh/v1';
@@ -39,7 +38,6 @@ class CalendarShortcode {
     public function init(): void {
         add_shortcode( self::TAG, [ $this, 'render' ] );
         add_shortcode( self::TAG_PUBLIC, [ $this, 'render' ] );
-        add_shortcode( self::TAG_PUBLIC_LEGACY, [ $this, 'render' ] );
         add_action( 'rest_api_init', [ $this, 'register_rest_route' ] );
     }
 

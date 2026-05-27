@@ -51,10 +51,19 @@
         var submitButton = form.querySelector('[data-myvh-step-action="submit"]');
         var setupPayloadInput = document.getElementById('myvh-setup-payload');
         var reviewBox = document.getElementById('myvh-site-request-review');
+        var footnote = document.getElementById('myvh-site-request-footnote');
         var draftTokenInput = form.querySelector('[name="myvh_setup_draft_token"]');
         var nonceInput = form.querySelector('[name="myvh_create_site_nonce"]');
         var draftSaveTimer = 0;
         var currentStep = 0;
+        var stepFootnotes = [
+            'Next up: Venue details. Add your venue name and contact email.',
+            'Next up: Rooms. Add up to three rooms people can book.',
+            'Next up: Pricing. Set an hourly rate for each room.',
+            'Next up: Add-ons. Add any optional extras and prices.',
+            'Next up: Admin account. Enter the administrator details and choose a password.',
+            'You are on the final step. Submit to create your site and start setup.'
+        ];
 
         function setStep(index) {
             currentStep = Math.max(0, Math.min(index, steps.length - 1));
@@ -77,6 +86,10 @@
 
             if (submitButton) {
                 submitButton.hidden = currentStep !== steps.length - 1;
+            }
+
+            if (footnote) {
+                footnote.textContent = stepFootnotes[currentStep] || '';
             }
 
             if (currentStep === steps.length - 1) {

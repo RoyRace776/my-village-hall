@@ -31,7 +31,24 @@ class AdminPageRouter {
         }
 
         $content = (string) ( $post->post_content ?? '' );
-        if ( $content === '' || ! has_shortcode( $content, 'myvh_portal' ) ) {
+        if ( $content === '' ) {
+            return;
+        }
+
+        $titleless_shortcodes = [
+            'myvh_portal',
+            'myvh_public_calendar',
+        ];
+
+        $has_titleless_shortcode = false;
+        foreach ( $titleless_shortcodes as $shortcode_tag ) {
+            if ( has_shortcode( $content, $shortcode_tag ) ) {
+                $has_titleless_shortcode = true;
+                break;
+            }
+        }
+
+        if ( ! $has_titleless_shortcode ) {
             return;
         }
 
