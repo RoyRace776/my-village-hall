@@ -2420,6 +2420,48 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     });
 
+    // Send verification email handler
+    document.getElementById('portal-content').addEventListener('click', async function (e) {
+        const button = e.target.closest('.myvh-send-verification-email');
+        if (!button) {
+            return;
+        }
+
+        e.preventDefault();
+
+        const customerId = button.dataset.customerId;
+        if (!customerId) {
+            await portalAlert('Invalid customer ID');
+            return;
+        }
+
+        if (button.disabled) {
+            return;
+        }
+
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = 'Sending...';
+
+        postPortalForm('myvh_portal_send_verification_email', { customer_id: customerId })
+            .then(res => {
+                button.disabled = false;
+                button.textContent = originalText;
+
+                if (!res.success) {
+                    portalAlert('Error: ' + (res.data?.message || res.data || 'Failed to send email'));
+                    return;
+                }
+
+                portalAlert(res.data?.message || 'Verification email sent successfully');
+            })
+            .catch(() => {
+                button.disabled = false;
+                button.textContent = originalText;
+                portalAlert('An error occurred. Please try again.');
+            });
+    });
+
     // Initial page load
     router();
 });

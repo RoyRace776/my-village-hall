@@ -48,7 +48,8 @@ window.MyVHReportBuilder = (function() {
                     filters: [],
                     orderBy: [],
                     limit: 1000
-                }
+                },
+                builderBackup: null
             };
         }
 
@@ -56,6 +57,41 @@ window.MyVHReportBuilder = (function() {
         window.MyVHReportState.bootstrap = bootstrap;
 
         return window.MyVHReportState;
+    }
+
+    function cloneBuilderState(builder) {
+        const source = builder && typeof builder === 'object' ? builder : {};
+
+        return {
+            reportId: Number(source.reportId || 0),
+            reportType: String(source.reportType || 'user'),
+            source: String(source.source || ''),
+            name: String(source.name || ''),
+            description: String(source.description || ''),
+            selectedFields: Array.isArray(source.selectedFields) ? source.selectedFields.slice() : [],
+            groupBy: Array.isArray(source.groupBy) ? source.groupBy.slice() : [],
+            aggregates: Array.isArray(source.aggregates) ? source.aggregates.map(function(aggregate) {
+                return {
+                    field: String((aggregate && aggregate.field) || ''),
+                    function: String((aggregate && aggregate.function) || 'SUM').toUpperCase(),
+                    alias: String((aggregate && aggregate.alias) || '')
+                };
+            }) : [],
+            filters: Array.isArray(source.filters) ? source.filters.map(function(filter) {
+                return {
+                    field: String((filter && filter.field) || ''),
+                    operator: String((filter && filter.operator) || '='),
+                    value: String((filter && filter.value) || '')
+                };
+            }) : [],
+            orderBy: Array.isArray(source.orderBy) ? source.orderBy.map(function(sort) {
+                return {
+                    field: String((sort && sort.field) || ''),
+                    direction: String((sort && sort.direction) || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC'
+                };
+            }) : [],
+            limit: Number(source.limit || 1000)
+        };
     }
 
     function initializeNewBuilderState(state) {
@@ -79,7 +115,8 @@ window.MyVHReportBuilder = (function() {
     function resetBuilderToNewReport(root, state) {
         initializeNewBuilderState(state);
 
-        const reportSelect = root ? root.querySelector('[data-report-select]') : null;
+        const builderContainer = root ? root.querySelector('[data-report-builder]') : null;
+        const reportSelect = builderContainer ? builderContainer.querySelector('[data-report-select]') : null;
         if (reportSelect) {
             reportSelect.value = '';
         }
@@ -153,6 +190,17 @@ window.MyVHReportBuilder = (function() {
 
         deleteButton.disabled = !canDelete;
         deleteButton.title = canDelete ? '' : 'Built-in system reports cannot be deleted.';
+    }
+
+    function updateCancelButtonState(root, state) {
+        const cancelButton = root.querySelector('[data-builder-cancel]');
+        if (!cancelButton) {
+            return;
+        }
+
+        const canCancel = !!state.builderBackup;
+        cancelButton.hidden = !canCancel;
+        cancelButton.disabled = !canCancel;
     }
 
     function renderSourceOptions(root, state) {
@@ -379,7 +427,8 @@ window.MyVHReportBuilder = (function() {
     }
 
     function refreshReportSelectOptions(root, state) {
-        const reportSelect = root.querySelector('[data-report-select]');
+        const builderContainer = root.querySelector('[data-report-builder]');
+        const reportSelect = builderContainer ? builderContainer.querySelector('[data-report-select]') : null;
         if (!reportSelect) {
             return;
         }
@@ -467,15 +516,21 @@ window.MyVHReportBuilder = (function() {
     }
 
     function bindEvents(root, state) {
-        const sourceSelect = root.querySelector('[data-builder-source]');
-        const nameInput = root.querySelector('[data-builder-name]');
-        const addFilterButton = root.querySelector('[data-builder-add-filter]');
-        const addSortButton = root.querySelector('[data-builder-add-sort]');
-        const newButton = root.querySelector('[data-builder-new]');
-        const deleteButton = root.querySelector('[data-builder-delete]');
-        const saveButton = root.querySelector('[data-builder-save]');
-        const status = root.querySelector('[data-builder-status]');
-        const reportSelect = root.querySelector('[data-report-select]');
+        const builderContainer = root.querySelector('[data-report-builder]');
+        if (!builderContainer) {
+            return;
+        }
+
+        const sourceSelect = builderContainer.querySelector('[data-builder-source]');
+        const nameInput = builderContainer.querySelector('[data-builder-name]');
+        const addFilterButton = builderContainer.querySelector('[data-builder-add-filter]');
+        const addSortButton = builderContainer.querySelector('[data-builder-add-sort]');
+        const newButton = builderContainer.querySelector('[data-builder-new]');
+        const cancelButton = builderContainer.querySelector('[data-builder-cancel]');
+        const deleteButton = builderContainer.querySelector('[data-builder-delete]');
+        const saveButton = builderContainer.querySelector('[data-builder-save]');
+        const status = builderContainer.querySelector('[data-builder-status]');
+        const reportSelect = builderContainer.querySelector('[data-report-select]');
 
         if (sourceSelect) {
             sourceSelect.addEventListener('change', function() {
@@ -521,7 +576,8 @@ window.MyVHReportBuilder = (function() {
                 const reports = Array.isArray(state.bootstrap.reports) ? state.bootstrap.reports : [];
                 const selectedId = Number(reportSelect.value || 0);
                 if (!selectedId) {
-                            resetBuilderToNewReport(root, state);
+                    state.builderBackup = null;
+                    resetBuilderToNewReport(root, state);
                     syncUiFromBuilder(root, state);
                     return;
                 }
@@ -535,16 +591,41 @@ window.MyVHReportBuilder = (function() {
                 }
 
                 setBuilderFromReport(state, report);
+                state.builderBackup = null;
                 syncUiFromBuilder(root, state);
             });
         }
 
         if (newButton) {
             newButton.addEventListener('click', function() {
+                if (!state.builderBackup) {
+                    state.builderBackup = cloneBuilderState(state.builder);
+                }
+
                 resetBuilderToNewReport(root, state);
                 syncUiFromBuilder(root, state);
                 if (status) {
                     status.textContent = 'Building a new report.';
+                }
+            });
+        }
+
+        if (cancelButton) {
+            cancelButton.addEventListener('click', function() {
+                if (!state.builderBackup) {
+                    if (status) {
+                        status.textContent = 'Nothing to cancel.';
+                    }
+                    return;
+                }
+
+                state.builder = cloneBuilderState(state.builderBackup);
+                state.builderBackup = null;
+                syncFieldSelections(state);
+                syncUiFromBuilder(root, state);
+
+                if (status) {
+                    status.textContent = 'Cancelled new report.';
                 }
             });
         }
@@ -612,6 +693,7 @@ window.MyVHReportBuilder = (function() {
                         });
 
                         resetBuilderToNewReport(root, state);
+                        state.builderBackup = null;
                         refreshReportSelectOptions(root, state);
                         syncUiFromBuilder(root, state);
 
@@ -714,6 +796,7 @@ window.MyVHReportBuilder = (function() {
 
                             state.bootstrap.reports = reports;
                             state.builder.reportId = id;
+                            state.builderBackup = null;
 
                             document.dispatchEvent(new CustomEvent('myvh:report-saved', {
                                 detail: {
@@ -739,9 +822,14 @@ window.MyVHReportBuilder = (function() {
     }
 
     function syncUiFromBuilder(root, state) {
-        const sourceSelect = root.querySelector('[data-builder-source]');
-        const nameInput = root.querySelector('[data-builder-name]');
-        const reportSelect = root.querySelector('[data-report-select]');
+        const builderContainer = root.querySelector('[data-report-builder]');
+        if (!builderContainer) {
+            return;
+        }
+
+        const sourceSelect = builderContainer.querySelector('[data-builder-source]');
+        const nameInput = builderContainer.querySelector('[data-builder-name]');
+        const reportSelect = builderContainer.querySelector('[data-report-select]');
 
         if (sourceSelect) {
             sourceSelect.value = state.builder.source;
@@ -756,6 +844,7 @@ window.MyVHReportBuilder = (function() {
         }
 
         updateDeleteButtonState(root, state);
+        updateCancelButtonState(root, state);
 
         renderFieldLists(root, state);
         renderFilters(root, state);
@@ -764,6 +853,12 @@ window.MyVHReportBuilder = (function() {
 
     function initRoot(root) {
         if (!root || root.dataset.reportBuilderInitialized === '1') {
+            return;
+        }
+
+        const builderContainer = root.querySelector('[data-report-builder]');
+        if (!builderContainer) {
+            root.dataset.reportBuilderInitialized = '1';
             return;
         }
 

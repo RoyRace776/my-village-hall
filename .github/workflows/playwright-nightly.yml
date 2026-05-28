@@ -1,8 +1,6 @@
 name: Playwright Nightly (Full)
 
 on:
-  schedule:
-    - cron: '0 2 * * *'   # 02:00 UTC every night
   workflow_dispatch:        # allow manual trigger
 
 jobs:

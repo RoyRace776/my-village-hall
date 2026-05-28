@@ -230,7 +230,8 @@ window.MyVHReportRunner = (function() {
     }
 
     function refreshReportSelectOptions(root, state) {
-        const reportSelect = root.querySelector('[data-report-select]');
+        const runnerContainer = root.querySelector('[data-report-runner]');
+        const reportSelect = runnerContainer ? runnerContainer.querySelector('[data-report-select]') : null;
         if (!reportSelect) {
             return;
         }
@@ -282,6 +283,12 @@ window.MyVHReportRunner = (function() {
             return;
         }
 
+        const runnerContainer = root.querySelector('[data-report-runner]');
+        if (!runnerContainer) {
+            root.dataset.reportRunnerInitialized = '1';
+            return;
+        }
+
         const state = ensureState();
         const payload = readRootPayload(root);
 
@@ -293,11 +300,11 @@ window.MyVHReportRunner = (function() {
             state.bootstrap = payload.bootstrap;
         }
 
-        const reportSelect = root.querySelector('[data-report-select]');
-        const runButton = root.querySelector('[data-report-run]');
-        const exportButton = root.querySelector('[data-report-export]');
-        const statusElement = root.querySelector('[data-report-status]');
-        const tableElement = root.querySelector('#myvh-report-table');
+        const reportSelect = runnerContainer.querySelector('[data-report-select]');
+        const runButton = runnerContainer.querySelector('[data-report-run]');
+        const exportButton = runnerContainer.querySelector('[data-report-export]');
+        const statusElement = runnerContainer.querySelector('[data-report-status]');
+        const tableElement = runnerContainer.querySelector('#myvh-report-table');
         const endpoints = state.bootstrap.endpoints || {};
         const runUrl = String(endpoints.run || '');
         const initialReportId = Number((state.bootstrap && state.bootstrap.initialReportId) || 0);

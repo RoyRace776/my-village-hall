@@ -172,6 +172,10 @@ if ($report_screen === 'view') {
                 <span class="dashicons dashicons-plus-alt" aria-hidden="true"></span>
                 <?php esc_html_e('New Report', 'my-village-hall'); ?>
             </button>
+            <button type="button" class="myvh-portal-add-btn myvh-portal-nav-btn" data-builder-cancel hidden>
+                <span class="dashicons dashicons-undo" aria-hidden="true"></span>
+                <?php esc_html_e('Cancel New', 'my-village-hall'); ?>
+            </button>
             <button type="button" class="myvh-portal-add-btn" data-builder-save <?php echo $can_create ? '' : 'disabled'; ?>>
                 <span class="dashicons dashicons-saved" aria-hidden="true"></span>
                 <?php esc_html_e('Save Report', 'my-village-hall'); ?>

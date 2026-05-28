@@ -3,6 +3,7 @@ namespace MYVH\Portal\Ajax;
 
 use MYVH\Customers\CustomerService;
 use MYVH\Email\PasswordSetupEmailService;
+use MYVH\Login\CustomerEmailVerificationService;
 use MYVH\Login\PasswordValidator;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\AjaxResponse;
@@ -19,6 +20,7 @@ class PortalAccountAjaxController {
         add_action('wp_ajax_myvh_portal_update_account', [$this, 'update_account']);
         add_action('wp_ajax_myvh_portal_change_password', [$this, 'change_password']);
         add_action('wp_ajax_myvh_portal_send_password_reset', [$this, 'send_password_reset_email']);
+        add_action('wp_ajax_myvh_portal_send_verification_email', [$this, 'send_verification_email']);
     }
 
     public function update_account(): void {
@@ -141,6 +143,49 @@ class PortalAccountAjaxController {
         }
 
         AjaxResponse::success([], __('Password reset email sent successfully', 'my-village-hall'));
+    }
+
+    public function send_verification_email(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $customer_id = \intval($_POST['customer_id'] ?? 0);
+
+        if ($customer_id <= 0) {
+            AjaxResponse::error(__('Customer ID is required', 'my-village-hall'));
+        }
+
+        $customer = $this->customer_service->get($customer_id);
+        if (empty($customer['Id'])) {
+            AjaxResponse::not_found(__('Customer not found', 'my-village-hall'));
+        }
+
+        if (!empty($customer['EmailVerified'])) {
+            AjaxResponse::error(__('Customer email is already verified', 'my-village-hall'));
+        }
+
+        if (empty($customer['WPUserId'])) {
+            AjaxResponse::error(__('Customer does not have a WordPress account', 'my-village-hall'));
+        }
+
+        $email = (string) ($customer['Email'] ?? '');
+        if ($email === '' || !is_email($email)) {
+            AjaxResponse::error(__('Customer email address is invalid', 'my-village-hall'));
+        }
+
+        $name = (string) ($customer['Name'] ?? '');
+        $verification_service = new CustomerEmailVerificationService();
+        $sent = $verification_service->send_verification_email(
+            $customer_id,
+            (int) $customer['WPUserId'],
+            $email,
+            $name
+        );
+
+        if (!$sent) {
+            AjaxResponse::server_error(__('Failed to send verification email', 'my-village-hall'));
+        }
+
+        AjaxResponse::success([], __('Verification email sent successfully', 'my-village-hall'));
     }
 
     private function current_user_is_client_admin(): bool {
