@@ -200,9 +200,11 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
             'end' => '2026-06-03 11:30',
         ];
 
-        $this->availability_service->shouldReceive('next_available_slot')
+        $this->availability_service->shouldReceive('find_next_booking_slot')
             ->once()
-            ->with(14, '2026-06-03', 90)
+            ->with(14, '2026-06-03', 90, \Mockery::on(static function (array $options): bool {
+                return !empty($options) && empty($options['is_recurring']);
+            }))
             ->andReturnUsing(static fn(): array => $slot);
 
         $response = $this->capture_json_response(function (): void {
@@ -214,22 +216,38 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
     }
 
     /** @test */
-    public function next_slot_returns_error_when_room_id_is_missing(): void {
+    public function next_slot_searches_all_rooms_when_room_id_is_missing(): void {
         $_POST = [
             'date' => '2026-06-03',
             'length_minutes' => '60',
             'nonce' => 'example',
         ];
 
-        $this->availability_service->shouldReceive('next_available_slot')->never();
+        $slot = [
+            'room_id' => 22,
+            'date' => '2026-06-03',
+            'length_minutes' => 60,
+            'start_date' => '2026-06-03',
+            'end_date' => '2026-06-03',
+            'start_time' => '11:00',
+            'end_time' => '12:00',
+            'start' => '2026-06-03 11:00',
+            'end' => '2026-06-03 12:00',
+        ];
+
+        $this->availability_service->shouldReceive('find_next_booking_slot')
+            ->once()
+            ->with(null, '2026-06-03', 60, \Mockery::on(static function (array $options): bool {
+                return !empty($options) && empty($options['is_recurring']);
+            }))
+            ->andReturnUsing(static fn(): array => $slot);
 
         $response = $this->capture_json_response(function (): void {
             $this->controller->next_slot();
         });
 
-        $this->assertFalse($response->success);
-        $this->assertSame(400, $response->statusCode);
-        $this->assertSame('Room is required', $response->data);
+        $this->assertTrue($response->success);
+        $this->assertSame($slot, $response->data);
     }
 
     /** @test */
@@ -241,9 +259,11 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
             'nonce' => 'example',
         ];
 
-        $this->availability_service->shouldReceive('next_available_slot')
+        $this->availability_service->shouldReceive('find_next_booking_slot')
             ->once()
-            ->with(14, '2026-06-03', 60)
+            ->with(14, '2026-06-03', 60, \Mockery::on(static function (array $options): bool {
+                return !empty($options) && empty($options['is_recurring']);
+            }))
             ->andReturn(new \WP_Error('validation', 'No available slot found in the next 7 days for the requested duration'));
 
         $response = $this->capture_json_response(function (): void {

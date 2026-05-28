@@ -54,7 +54,9 @@ class UpdateBookingAction {
 
         $result = $this->booking_service->save([
             'booking_id'  => $booking_id,
-            'edit_scope'  => sanitize_text_field($input['edit_scope'] ?? ''),
+            'edit_scope'  => ($input['edit_scope'] ?? '') !== ''
+                ? sanitize_text_field($input['edit_scope'])
+                : 'this_and_future',
             'customer_id' => (int) $booking['CustomerId'],
             'organisation_id' => (int) ($booking['OrganisationId'] ?? 0),
             'room_id'     => (int) $booking['RoomId'],

@@ -748,12 +748,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 scopeRadios.forEach((radio) => {
                     const isSingle = radio.value === 'this_only';
                     radio.disabled = scheduleChanged && !isSingle;
-                    if (radio.disabled && radio.checked) {
-                        const fallback = scopeRadios.find(option => option.value === 'this_only');
-                        if (fallback) {
-                            fallback.checked = true;
-                        }
-                    }
                 });
 
                 if (scopeHint) {

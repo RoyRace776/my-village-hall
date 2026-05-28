@@ -271,7 +271,7 @@ class AvailabilityService {
         return true;
     }
 
-    public function next_available_slot(int $room_id, ?string $date = null, int $length_minutes = 60) {
+    public function next_available_slot(int $room_id, ?string $date = null, int $length_minutes = 60, ?string $requested_start_time = null) {
         if ($room_id <= 0) {
             return new \WP_Error('validation', __('Room is required', 'my-village-hall'));
         }
@@ -288,6 +288,11 @@ class AvailabilityService {
 
         $length = max(15, (int) $length_minutes);
         $step = 15;
+        $requested_start_seconds = $this->resolve_requested_start_seconds($requested_start_time, $step);
+
+        if (is_wp_error($requested_start_seconds)) {
+            return $requested_start_seconds;
+        }
 
         if (($length % $step) !== 0) {
             $length = (int) (ceil($length / $step) * $step);
@@ -322,7 +327,20 @@ class AvailabilityService {
                 continue;
             }
 
-            for ($start_seconds = $open_seconds; $start_seconds <= $last_start_seconds; $start_seconds += ($step * 60)) {
+            $day_start_seconds = $open_seconds;
+            if ($day_offset === 0 && $requested_start_seconds !== null) {
+                if ($requested_start_seconds >= $close_seconds) {
+                    continue;
+                }
+
+                $day_start_seconds = max($open_seconds, (int) $requested_start_seconds);
+            }
+
+            if ($day_start_seconds > $last_start_seconds) {
+                continue;
+            }
+
+            for ($start_seconds = $day_start_seconds; $start_seconds <= $last_start_seconds; $start_seconds += ($step * 60)) {
                 $end_seconds = $start_seconds + ($length * 60);
 
                 $start_time = gmdate('H:i:s', $start_seconds);
@@ -373,6 +391,306 @@ class AvailabilityService {
         );
     }
 
+    public function find_next_booking_slot(?int $room_id = null, ?string $date = null, int $length_minutes = 60, array $options = []) {
+        $resolved_room_id = (int) ($room_id ?? 0);
+        $is_recurring = !empty($options['is_recurring']);
+        $requested_start_time = !empty($options['start_time']) ? sanitize_text_field((string) $options['start_time']) : null;
+
+        if ($is_recurring) {
+            $recurrence = [
+                'type' => sanitize_text_field((string) ($options['recurrence_type'] ?? 'weekly')),
+                'interval' => max(1, (int) ($options['recurrence_interval'] ?? 1)),
+                'max_occurrences' => max(1, min(365, (int) ($options['max_occurrences'] ?? 10))),
+            ];
+
+            if (!empty($options['recurrence_end_date'])) {
+                $recurrence['end_date'] = sanitize_text_field((string) $options['recurrence_end_date']);
+            }
+
+            if ($resolved_room_id > 0) {
+                return $this->find_next_recurring_slot_for_room($resolved_room_id, $date, $length_minutes, $recurrence, $requested_start_time);
+            }
+
+            return $this->find_next_slot_across_rooms($date, $length_minutes, true, $recurrence, $requested_start_time);
+        }
+
+        if ($resolved_room_id > 0) {
+            return $this->next_available_slot($resolved_room_id, $date, $length_minutes, $requested_start_time);
+        }
+
+        return $this->find_next_slot_across_rooms($date, $length_minutes, false, [], $requested_start_time);
+    }
+
+    private function find_next_slot_across_rooms(?string $date, int $length_minutes, bool $is_recurring, array $recurrence, ?string $requested_start_time = null) {
+        $rooms = $this->get_searchable_rooms();
+
+        if (empty($rooms)) {
+            return new \WP_Error('validation', __('No rooms available for booking slot search', 'my-village-hall'));
+        }
+
+        $best_slot = null;
+        $best_ts = null;
+
+        foreach ($rooms as $room) {
+            $candidate_room_id = (int) ($room['Id'] ?? 0);
+            if ($candidate_room_id <= 0) {
+                continue;
+            }
+
+            $candidate = $is_recurring
+                ? $this->find_next_recurring_slot_for_room($candidate_room_id, $date, $length_minutes, $recurrence, $requested_start_time)
+                : $this->next_available_slot($candidate_room_id, $date, $length_minutes, $requested_start_time);
+
+            if (is_wp_error($candidate) || !is_array($candidate)) {
+                continue;
+            }
+
+            $candidate_start = trim((string) ($candidate['start'] ?? ''));
+            $candidate_ts = strtotime($candidate_start);
+            if ($candidate_ts === false) {
+                continue;
+            }
+
+            if ($best_ts === null || $candidate_ts < $best_ts) {
+                $best_ts = $candidate_ts;
+                $best_slot = $candidate;
+            }
+        }
+
+        if (is_array($best_slot)) {
+            return $best_slot;
+        }
+
+        return new \WP_Error(
+            'validation',
+            __('No available slot found in the next 7 days for the requested duration', 'my-village-hall')
+        );
+    }
+
+    private function find_next_recurring_slot_for_room(int $room_id, ?string $date, int $length_minutes, array $recurrence, ?string $requested_start_time = null) {
+        $single_slot = $this->next_available_slot($room_id, $date, $length_minutes, $requested_start_time);
+        if (is_wp_error($single_slot)) {
+            return $single_slot;
+        }
+
+        $base_date = trim((string) ($date ?: wp_date('Y-m-d')));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $base_date)) {
+            return new \WP_Error('validation', __('Date must be in YYYY-MM-DD format', 'my-village-hall'));
+        }
+
+        $room = $this->room_repo->get_by_id($room_id);
+        if (!$room) {
+            return new \WP_Error('validation', __('Room is required', 'my-village-hall'));
+        }
+
+        $type = (string) ($recurrence['type'] ?? 'weekly');
+        $interval = max(1, (int) ($recurrence['interval'] ?? 1));
+        $max_occurrences = max(1, min(365, (int) ($recurrence['max_occurrences'] ?? 10)));
+        $end_date = !empty($recurrence['end_date']) ? (string) $recurrence['end_date'] : '';
+
+        $valid_types = ['daily', 'weekly', 'monthly', 'yearly'];
+        if (!in_array($type, $valid_types, true)) {
+            $type = 'weekly';
+        }
+
+        $length = max(15, (int) $length_minutes);
+        $step = 15;
+        $requested_start_seconds = $this->resolve_requested_start_seconds($requested_start_time, $step);
+
+        if (is_wp_error($requested_start_seconds)) {
+            return $requested_start_seconds;
+        }
+
+        if (($length % $step) !== 0) {
+            $length = (int) (ceil($length / $step) * $step);
+        }
+
+        $base_ts = strtotime($base_date . ' 00:00:00');
+        if ($base_ts === false) {
+            return new \WP_Error('validation', __('Date must be in YYYY-MM-DD format', 'my-village-hall'));
+        }
+
+        for ($day_offset = 0; $day_offset < 30; $day_offset++) {
+            $target_date = wp_date('Y-m-d', strtotime('+' . $day_offset . ' day', $base_ts));
+
+            $effective = $this->get_effective_room_hours_for_date($room_id, $target_date);
+            if (is_wp_error($effective)) {
+                return $effective;
+            }
+
+            if (!empty($effective['is_closed'])) {
+                continue;
+            }
+
+            $open_seconds = $this->time_to_seconds($effective['opening_time'] ?? '');
+            $close_seconds = $this->time_to_seconds($effective['closing_time'] ?? '');
+            if ($open_seconds === null || $close_seconds === null || $close_seconds <= $open_seconds) {
+                continue;
+            }
+
+            $last_start_seconds = $close_seconds - ($length * 60);
+            if ($last_start_seconds < $open_seconds) {
+                continue;
+            }
+
+            $day_start_seconds = $open_seconds;
+            if ($day_offset === 0 && $requested_start_seconds !== null) {
+                if ($requested_start_seconds >= $close_seconds) {
+                    continue;
+                }
+
+                $day_start_seconds = max($open_seconds, (int) $requested_start_seconds);
+            }
+
+            if ($day_start_seconds > $last_start_seconds) {
+                continue;
+            }
+
+            for ($start_seconds = $day_start_seconds; $start_seconds <= $last_start_seconds; $start_seconds += ($step * 60)) {
+                $end_seconds = $start_seconds + ($length * 60);
+                $start_time = gmdate('H:i:s', $start_seconds);
+                $end_time = gmdate('H:i:s', $end_seconds);
+
+                if (!$this->is_slot_valid_for_recurring_series($room_id, $target_date, $start_time, $end_time, $effective, $type, $interval, $max_occurrences, $end_date)) {
+                    continue;
+                }
+
+                return [
+                    'room_id' => $room_id,
+                    'room_name' => (string) ($room['Name'] ?? ''),
+                    'date' => $target_date,
+                    'length_minutes' => $length,
+                    'start_date' => $target_date,
+                    'end_date' => $target_date,
+                    'start_time' => substr($start_time, 0, 5),
+                    'end_time' => substr($end_time, 0, 5),
+                    'start' => $target_date . ' ' . substr($start_time, 0, 5),
+                    'end' => $target_date . ' ' . substr($end_time, 0, 5),
+                    'is_recurring' => 1,
+                    'recurrence_type' => $type,
+                    'recurrence_interval' => $interval,
+                    'max_occurrences' => $max_occurrences,
+                    'recurrence_end_date' => $end_date,
+                ];
+            }
+        }
+
+        return new \WP_Error(
+            'validation',
+            __('No available recurring slot found in the next 30 days for the requested duration', 'my-village-hall')
+        );
+    }
+
+    private function is_slot_valid_for_recurring_series(
+        int $room_id,
+        string $start_date,
+        string $start_time,
+        string $end_time,
+        array $start_day_hours,
+        string $recurrence_type,
+        int $interval,
+        int $max_occurrences,
+        string $end_date
+    ): bool {
+        $dates = $this->generate_recurring_dates($start_date, $recurrence_type, $interval, $max_occurrences, $end_date);
+        if (empty($dates)) {
+            return false;
+        }
+
+        foreach ($dates as $index => $occurrence_date) {
+            $hours = $index === 0 ? $start_day_hours : $this->get_effective_room_hours_for_date($room_id, $occurrence_date);
+            if (is_wp_error($hours) || !is_array($hours) || !empty($hours['is_closed'])) {
+                return false;
+            }
+
+            $open_seconds = $this->time_to_seconds($hours['opening_time'] ?? '');
+            $close_seconds = $this->time_to_seconds($hours['closing_time'] ?? '');
+            $start_seconds = $this->time_to_seconds($start_time);
+            $end_seconds = $this->time_to_seconds($end_time);
+
+            if (
+                $open_seconds === null ||
+                $close_seconds === null ||
+                $start_seconds === null ||
+                $end_seconds === null ||
+                $end_seconds <= $start_seconds ||
+                $start_seconds < $open_seconds ||
+                $end_seconds > $close_seconds
+            ) {
+                return false;
+            }
+
+            if (!$this->room_is_available($room_id, $occurrence_date, $start_time, $end_time, $occurrence_date, null)) {
+                return false;
+            }
+
+            if (!$this->slot_has_buffer_space($room_id, $occurrence_date, $start_time, $end_time, $hours)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function generate_recurring_dates(string $start_date, string $type, int $interval, int $max_occurrences, string $end_date = ''): array {
+        $dates = [];
+        $current = new \DateTimeImmutable($start_date);
+        $end = null;
+
+        if ($end_date !== '') {
+            $end = \DateTimeImmutable::createFromFormat('Y-m-d', $end_date);
+            if (!$end) {
+                return [];
+            }
+        }
+
+        for ($index = 0; $index < $max_occurrences; $index++) {
+            if ($end !== null && $current > $end) {
+                break;
+            }
+
+            $dates[] = $current->format('Y-m-d');
+
+            switch ($type) {
+                case 'daily':
+                    $current = $current->modify('+' . $interval . ' day');
+                    break;
+                case 'monthly':
+                    $current = $current->modify('+' . $interval . ' month');
+                    break;
+                case 'yearly':
+                    $current = $current->modify('+' . $interval . ' year');
+                    break;
+                case 'weekly':
+                default:
+                    $current = $current->modify('+' . $interval . ' week');
+                    break;
+            }
+        }
+
+        return $dates;
+    }
+
+    private function get_searchable_rooms(): array {
+        $rooms = $this->room_repo->get_all(['orderby' => 'Name', 'order' => 'ASC']);
+        if (!is_array($rooms)) {
+            return [];
+        }
+
+        return array_values(array_filter($rooms, static function ($room): bool {
+            $room_id = (int) ($room['Id'] ?? 0);
+            if ($room_id <= 0) {
+                return false;
+            }
+
+            if (array_key_exists('IsActive', (array) $room)) {
+                return (int) $room['IsActive'] === 1;
+            }
+
+            return true;
+        }));
+    }
+
     private function slot_has_buffer_space(
         int $room_id,
         string $date,
@@ -418,6 +736,31 @@ class AvailabilityService {
             $window_end,
             null
         );
+    }
+
+    private function resolve_requested_start_seconds(?string $requested_start_time, int $step_minutes): int|\WP_Error|null {
+        $value = trim((string) ($requested_start_time ?? ''));
+        if ($value === '') {
+            return null;
+        }
+
+        if (!preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $value)) {
+            return new \WP_Error('validation', __('Time must be in HH:MM format', 'my-village-hall'));
+        }
+
+        if (strlen($value) === 5) {
+            $value .= ':00';
+        }
+
+        $seconds = $this->time_to_seconds($value);
+        if ($seconds === null) {
+            return new \WP_Error('validation', __('Time must be in HH:MM format', 'my-village-hall'));
+        }
+
+        $step_seconds = max(1, $step_minutes) * 60;
+        $rounded = (int) (ceil($seconds / $step_seconds) * $step_seconds);
+
+        return min($rounded, 86400);
     }
 
     public function get_calendar_visible_hours(): array {

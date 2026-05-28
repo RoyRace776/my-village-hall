@@ -217,4 +217,30 @@ class AvailabilityServiceTest extends UnitTestCase {
         $this->assertInstanceOf(\WP_Error::class, $result);
         $this->assertSame('No available slot found in the next 7 days for the requested duration', $result->get_error_message());
     }
+
+    /** @test */
+    public function next_available_slot_respects_requested_start_time(): void {
+        $this->room_repo->shouldReceive('get_by_id')
+            ->andReturn([
+                'Id' => 6,
+                'VenueId' => 2,
+                'OpeningTime' => '09:00:00',
+                'ClosingTime' => '18:00:00',
+            ]);
+
+        $this->room_hours_repo->shouldReceive('get_by_room')
+            ->andReturn([]);
+
+        $this->booking_repo->shouldReceive('has_conflict')
+            ->andReturn(false);
+
+        $this->booking_repo->shouldReceive('has_conflict_in_buffer_window')
+            ->andReturn(false);
+
+        $result = $this->service->next_available_slot(6, '2026-06-02', 60, '13:20');
+
+        $this->assertIsArray($result);
+        $this->assertSame('13:30', $result['start_time']);
+        $this->assertSame('14:30', $result['end_time']);
+    }
 }

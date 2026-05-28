@@ -57,7 +57,7 @@ if (!defined('ABSPATH')) exit;
                         <fieldset class="myvh-account-field" data-recurring-scope-fieldset>
                             <span>Apply changes to</span>
                             <label>
-                                <input type="radio" name="edit_scope" value="this_only" checked>
+                                <input type="radio" name="edit_scope" value="this_only">
                                 This booking only
                             </label>
                             <label>
@@ -65,7 +65,7 @@ if (!defined('ABSPATH')) exit;
                                 All bookings in this series
                             </label>
                             <label>
-                                <input type="radio" name="edit_scope" value="this_and_future">
+                                <input type="radio" name="edit_scope" value="this_and_future" checked>
                                 This booking and all future bookings
                             </label>
                             <p class="myvh-account-hint" data-recurring-scope-hint>

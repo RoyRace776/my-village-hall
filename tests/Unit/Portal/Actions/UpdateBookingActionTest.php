@@ -138,4 +138,57 @@ class UpdateBookingActionTest extends UnitTestCase {
 
         $this->addToAssertionCount(1);
     }
+
+    /** @test */
+    public function execute_defaults_recurring_updates_to_this_and_future_when_scope_is_missing(): void {
+        $this->customer_service->shouldReceive('get_by_user_id')
+            ->once()
+            ->with(21)
+            ->andReturn(['Id' => 9]);
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->once()
+            ->with(21, 7)
+            ->andReturn(false);
+
+        $this->booking_service->shouldReceive('get_by_id_with_details')
+            ->once()
+            ->with(44)
+            ->andReturn([
+                'Id' => 44,
+                'CustomerId' => 9,
+                'OrganisationId' => 0,
+                'RoomId' => 5,
+                'StartDate' => '2026-05-01',
+                'EndDate' => '2026-05-01',
+                'StartTime' => '10:00:00',
+                'EndTime' => '12:00:00',
+                'Description' => 'Existing booking',
+                'Status' => 'pending',
+                'Public' => 1,
+                'NoInvoiceRequired' => 0,
+            ]);
+
+        $this->booking_service->shouldReceive('can_edit')
+            ->once()
+            ->andReturn(['can_edit' => true, 'reason' => '']);
+
+        $this->booking_service->shouldReceive('save')
+            ->once()
+            ->with(\Mockery::on(static function (array $payload): bool {
+                return \intval($payload['booking_id'] ?? 0) === 44
+                    && ($payload['edit_scope'] ?? '') === 'this_and_future';
+            }))
+            ->andReturn(44);
+
+        $this->action->execute([
+            'booking_id' => 44,
+            'start_date' => '2026-05-01',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'description' => 'Changed booking',
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
 }

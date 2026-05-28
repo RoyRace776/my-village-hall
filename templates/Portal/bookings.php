@@ -56,6 +56,10 @@ usort($groups, function ($a, $b) use ($today) {
         </div>
 
         <?php if ($is_client_admin || !empty($customer['Id'])): ?>
+            <button type="button" class="myvh-portal-add-btn myvh-portal-nav-btn" data-myvh-find-slot>
+                <span class="myvh-portal-add-btn__icon" aria-hidden="true">⏱</span>
+                <span>Find Slot</span>
+            </button>
             <a href="#new-booking" class="myvh-portal-add-btn myvh-portal-nav-btn">
                 <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
                 <span>New Booking</span>
@@ -355,6 +359,7 @@ usort($groups, function ($a, $b) use ($today) {
                                     </td>
                                     <td>
                                         <div class="myvh-booking-actions-inline">
+                                            <a class="myvh-action-icon myvh-find-slot-trigger" href="#find-slot" aria-label="Find slot" title="Find slot">⏱</a>
                                             <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
                                             <a class="myvh-action-icon" href="#booking-edit?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="Edit booking" title="Edit booking">✎</a>
                                             <?php if ($can_delete): ?>
@@ -425,6 +430,7 @@ usort($groups, function ($a, $b) use ($today) {
                                 </td>
                                 <td>
                                     <div class="myvh-booking-actions-inline">
+                                        <a class="myvh-action-icon myvh-find-slot-trigger" href="#find-slot" aria-label="Find slot" title="Find slot">⏱</a>
                                         <a class="myvh-action-icon" href="#booking-view?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="View booking" title="View booking">👁</a>
                                         <a class="myvh-action-icon" href="#booking-edit?booking_id=<?php echo \intval($b['Id'] ?? 0); ?>" aria-label="Edit booking" title="Edit booking">✎</a>
                                         <?php if ($can_delete): ?>

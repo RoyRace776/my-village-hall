@@ -257,14 +257,23 @@ class PortalBookingAjaxController {
 
         $room_id = \intval($request['room_id'] ?? 0);
         $date = sanitize_text_field($request['date'] ?? wp_date('Y-m-d'));
+        $start_time = sanitize_text_field((string) ($request['start_time'] ?? ''));
         $length_minutes = \intval($request['length_minutes'] ?? 60);
 
-        if ($room_id <= 0) {
-            AjaxResponse::error(__('Room is required', 'my-village-hall'));
-            return;
-        }
-
-        $result = $this->availability_service->next_available_slot($room_id, $date, $length_minutes);
+        $is_recurring = !empty($request['is_recurring']);
+        $result = $this->availability_service->find_next_booking_slot(
+            $room_id > 0 ? $room_id : null,
+            $date,
+            $length_minutes,
+            [
+                'is_recurring' => $is_recurring,
+                'recurrence_type' => sanitize_text_field((string) ($request['recurrence_type'] ?? 'weekly')),
+                'recurrence_interval' => \intval($request['recurrence_interval'] ?? 1),
+                'max_occurrences' => \intval($request['max_occurrences'] ?? 10),
+                'recurrence_end_date' => sanitize_text_field((string) ($request['recurrence_end_date'] ?? '')),
+                'start_time' => $start_time,
+            ]
+        );
 
         if (is_wp_error($result)) {
             AjaxResponse::error($result->get_error_message());

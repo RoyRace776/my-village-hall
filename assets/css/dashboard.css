@@ -4463,6 +4463,27 @@ body .site-main:has(#myvh-portal) {
   color: #5c6370;
 }
 
+#myvh-booking-modal-create .myvh-required-note {
+  display: block;
+  margin: 0 0 12px;
+  color: #495361;
+  font-size: 0.85rem;
+}
+
+#myvh-booking-modal-create .myvh-required-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #fbe7e6;
+  color: #8a1f16;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
 #myvh-booking-modal-create th {
   width: 120px;
   color: #3d4652;

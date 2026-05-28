@@ -24,6 +24,7 @@ $booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
 <div class="myvh-modal-content myvh-booking-modal-shell">
     <h2>Create Booking</h2>
     <p class="myvh-account-hint">Complete the details below to create a booking.</p>
+    <p class="myvh-required-note">Fields marked <span class="myvh-required-badge">Required</span> are mandatory.</p>
 
     <p class="myvh-modal-actions" style="margin-bottom: 15px;">
         <button type="submit" class="button button-primary" form="myvh-booking-form-create">Create Booking</button>
@@ -57,15 +58,15 @@ $booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
                         <td><input type="text" id="myvh-modal-end-time" data-myvh-picker="time" autocomplete="off"></td>
                     </tr>
                     <tr>
-                        <th>Room</th>
+                        <th>Room <span class="myvh-required-badge">Required</span></th>
                         <td><select name="room_id" required></select></td>
                     </tr>
                     <tr>
-                        <th>Customer</th>
+                        <th>Customer <span class="myvh-required-badge">Required</span></th>
                         <td><select name="customer_id" required></select></td>
                     </tr>
                     <tr>
-                        <th>Organisation</th>
+                        <th>Organisation <span class="myvh-required-badge">Required</span></th>
                         <td><select name="organisation_id" required></select></td>
                     </tr>
                     <tr>
@@ -74,7 +75,7 @@ $booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
                     </tr>
                     <?php if ($booking_terms_required): ?>
                     <tr id="myvh-modal-terms-row">
-                        <th>Terms and Conditions</th>
+                        <th>Terms and Conditions <span class="myvh-required-badge">Required</span></th>
                         <td>
                             <label>
                                 <input type="checkbox" name="terms_accepted" value="1" required>
@@ -98,7 +99,7 @@ $booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
                         <th>Apply changes to</th>
                         <td>
                             <label style="display:block; margin-bottom:8px;">
-                                <input type="radio" name="edit_scope" value="this_only" checked>
+                                <input type="radio" name="edit_scope" value="this_only">
                                 This booking only
                             </label>
                             <label style="display:block; margin-bottom:8px;">
@@ -106,7 +107,7 @@ $booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
                                 All bookings in this series
                             </label>
                             <label style="display:block; margin-bottom:8px;">
-                                <input type="radio" name="edit_scope" value="this_and_future">
+                                <input type="radio" name="edit_scope" value="this_and_future" checked>
                                 This booking and all future bookings
                             </label>
                             <p class="description" style="margin:8px 0 0;">

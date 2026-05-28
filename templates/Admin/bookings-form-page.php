@@ -128,7 +128,7 @@ $form_recurrence_day = sanitize_text_field($form_data['recurrence_day'] ?? strto
 $form_recurrence_end_type = sanitize_text_field($form_data['recurrence_end_type'] ?? 'date');
 $form_recurrence_end_date = sanitize_text_field($form_data['recurrence_end_date'] ?? date('Y-m-d', strtotime('+1 year')));
 $form_max_occurrences = max(1, \intval($form_data['max_occurrences'] ?? 12));
-$form_edit_scope = sanitize_text_field($form_data['edit_scope'] ?? 'this_only');
+$form_edit_scope = sanitize_text_field($form_data['edit_scope'] ?? 'this_and_future');
 
 $selected_customer_organisations = $form_customer_id > 0
     ? ($customer_organisations_map[$form_customer_id] ?? [])

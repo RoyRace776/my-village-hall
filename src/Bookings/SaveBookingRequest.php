@@ -16,9 +16,14 @@ class SaveBookingRequest extends RequestMapperBase
      */
     public static function from_post(array $post): array
     {
+        $edit_scope = self::as_text($post, 'edit_scope');
+        if ($edit_scope === '' && !empty($post['booking_id'])) {
+            $edit_scope = 'this_and_future';
+        }
+
         $data = [
             'booking_id'         => self::as_int($post, 'booking_id'),
-            'edit_scope'         => self::as_text($post, 'edit_scope'),
+            'edit_scope'         => $edit_scope,
             'customer_id'        => self::as_int($post, 'customer_id'),
             'organisation_id'    => self::as_int($post, 'organisation_id'),
             'room_id'            => self::as_int($post, 'room_id'),

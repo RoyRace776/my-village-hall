@@ -684,8 +684,8 @@ window.BookingModalCreate = (function() {
 
     function resetRecurringEditScope() {
         const scopeRow = form.querySelector('#myvh-modal-edit-scope-row');
-        form.querySelectorAll('input[name=edit_scope]').forEach((radio, index) => {
-            radio.checked = index === 0;
+        form.querySelectorAll('input[name=edit_scope]').forEach((radio) => {
+            radio.checked = radio.value === 'this_and_future';
         });
 
         if (scopeRow) {
@@ -702,8 +702,8 @@ window.BookingModalCreate = (function() {
         scopeRow.style.display = show && config.editMode ? '' : 'none';
 
         if (!show || !config.editMode) {
-            form.querySelectorAll('input[name=edit_scope]').forEach((radio, index) => {
-                radio.checked = index === 0;
+            form.querySelectorAll('input[name=edit_scope]').forEach((radio) => {
+                radio.checked = radio.value === 'this_and_future';
             });
         }
     }
@@ -720,6 +720,60 @@ window.BookingModalCreate = (function() {
         if (config.lockOrganisation && data.organisation_id) {
             setAndLock("organisation_id", data.organisation_id);
         }
+
+        if (data.room_id) {
+            setValue('room_id', data.room_id);
+        }
+
+        if (data.text !== undefined && data.text !== null) {
+            setValue('text', String(data.text));
+        }
+
+        applyRecurringPrefill(data.recurring || null);
+    }
+
+    function applyRecurringPrefill(recurringData) {
+        if (!recurringData) {
+            return;
+        }
+
+        const recurringToggle = form.querySelector('#myvh-modal-is-recurring');
+        const recurringOptions = form.querySelector('#myvh-modal-recurring-options');
+
+        if (recurringToggle) {
+            recurringToggle.checked = true;
+        }
+
+        if (recurringOptions) {
+            recurringOptions.style.display = 'block';
+        }
+
+        if (recurringData.type) {
+            setValue('recurrence_type', recurringData.type);
+        }
+
+        if (recurringData.interval) {
+            setValue('recurrence_interval', recurringData.interval);
+            setValue('recurrence_interval_md', recurringData.interval);
+        }
+
+        if (recurringData.endType === 'count') {
+            form.querySelectorAll('input[name=recurrence_end_type]').forEach((radio) => {
+                radio.checked = radio.value === 'count';
+            });
+
+            if (recurringData.maxOccurrences) {
+                setValue('max_occurrences', recurringData.maxOccurrences);
+            }
+        } else if (recurringData.endDate) {
+            form.querySelectorAll('input[name=recurrence_end_type]').forEach((radio) => {
+                radio.checked = radio.value === 'date';
+            });
+            setValue('recurrence_end_date', recurringData.endDate);
+        }
+
+        syncRecurringType();
+        syncRecurrenceEndMode();
     }
 
     function applyVisibility() {

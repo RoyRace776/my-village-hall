@@ -15,6 +15,7 @@
 window.Bookings = (function() {
 
     let globalHandlersBound = false;
+    let findSlotHandlersBound = false;
     let boundFilterRoot = null;
 
     function portalAlert(message) {
@@ -108,6 +109,485 @@ window.Bookings = (function() {
             description: getRowDataValue(row, 'description'),
             status: getRowDataValue(row, 'status')
         };
+    }
+
+    function getTodayDateString() {
+        let today = new Date();
+        let month = String(today.getMonth() + 1).padStart(2, '0');
+        let day = String(today.getDate()).padStart(2, '0');
+        return String(today.getFullYear()) + '-' + month + '-' + day;
+    }
+
+    function getDefaultStartTime(row) {
+        let fromRow = row ? String(getRowDataValue(row, 'start-time') || '').trim() : '';
+        if (/^\d{2}:\d{2}(:\d{2})?$/.test(fromRow)) {
+            return fromRow.slice(0, 5);
+        }
+
+        let now = new Date();
+        let minutes = now.getMinutes();
+        let roundedMinutes = Math.ceil(minutes / 15) * 15;
+        if (roundedMinutes >= 60) {
+            now.setHours(now.getHours() + 1);
+            roundedMinutes = 0;
+        }
+
+        let hh = String(now.getHours()).padStart(2, '0');
+        let mm = String(roundedMinutes).padStart(2, '0');
+        return hh + ':' + mm;
+    }
+
+    function parsePositiveInteger(value, fallback) {
+        let number = parseInt(String(value || '').trim(), 10);
+        if (!Number.isFinite(number) || number <= 0) {
+            return fallback;
+        }
+
+        return number;
+    }
+
+    function getBookingLengthFromRow(row) {
+        if (!row) {
+            return 60;
+        }
+
+        let startDate = getRowDataValue(row, 'start-date');
+        let endDate = getRowDataValue(row, 'end-date') || startDate;
+        let startTime = normalizeTimeValue(getRowDataValue(row, 'start-time'));
+        let endTime = normalizeTimeValue(getRowDataValue(row, 'end-time'));
+
+        if (!startDate || !startTime || !endDate || !endTime) {
+            return 60;
+        }
+
+        let start = new Date(startDate + 'T' + startTime);
+        let end = new Date(endDate + 'T' + endTime);
+        let diffMs = end.getTime() - start.getTime();
+
+        if (!Number.isFinite(diffMs) || diffMs <= 0) {
+            return 60;
+        }
+
+        return Math.max(15, Math.round(diffMs / 60000));
+    }
+
+    async function loadRoomOptions() {
+        let roomMap = new Map();
+
+        document.querySelectorAll('tr.myvh-bookings-table-row[data-room-id][data-room-name]').forEach(function(row) {
+            let roomId = parseInt(row.getAttribute('data-room-id') || '0', 10);
+            let roomName = String(row.getAttribute('data-room-name') || '').trim();
+            if (roomId > 0 && roomName) {
+                roomMap.set(roomId, roomName);
+            }
+        });
+
+        if (window.myvhCal && window.myvhCal.ajax_url && window.myvhCal.nonce) {
+            try {
+                let response = await fetch(
+                    window.myvhCal.ajax_url + '?action=myvh_calendar_rooms&nonce=' + encodeURIComponent(window.myvhCal.nonce) + '&context=portal'
+                );
+                let payload = await response.json();
+                let rooms = Array.isArray(payload) ? payload : (Array.isArray(payload && payload.data) ? payload.data : []);
+
+                rooms.forEach(function(room) {
+                    let roomId = parseInt((room && room.id) || 0, 10);
+                    let roomName = String((room && room.name) || '').trim();
+                    if (roomId > 0 && roomName) {
+                        roomMap.set(roomId, roomName);
+                    }
+                });
+            } catch (error) {
+                // Fall back to room options discovered from the bookings table.
+            }
+        }
+
+        return Array.from(roomMap.entries())
+            .map(function(entry) {
+                return { id: entry[0], name: entry[1] };
+            })
+            .sort(function(left, right) {
+                return left.name.localeCompare(right.name);
+            });
+    }
+
+    function ensureSlotFinderDialogStyles() {
+        if (document.getElementById('myvh-slot-finder-styles')) {
+            return;
+        }
+
+        let style = document.createElement('style');
+        style.id = 'myvh-slot-finder-styles';
+        style.textContent = [
+            '.myvh-slot-finder-backdrop{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;}',
+            '.myvh-slot-finder-dialog{width:min(640px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#fff;border-radius:14px;box-shadow:0 22px 56px rgba(15,23,42,.28);}',
+            '.myvh-slot-finder-head{padding:16px 18px;border-bottom:1px solid #e5e7eb;}',
+            '.myvh-slot-finder-title{margin:0;font-size:1.1rem;font-weight:700;color:#111827;}',
+            '.myvh-slot-finder-sub{margin:6px 0 0;color:#4b5563;font-size:.92rem;}',
+            '.myvh-slot-finder-note{margin:8px 0 0;color:#6b7280;font-size:.82rem;}',
+            '.myvh-slot-finder-body{padding:16px 18px;display:grid;gap:12px;}',
+            '.myvh-slot-finder-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
+            '.myvh-slot-finder-field{display:flex;flex-direction:column;gap:6px;}',
+            '.myvh-slot-finder-field label{font-size:.88rem;color:#374151;font-weight:600;}',
+            '.myvh-slot-finder-field input,.myvh-slot-finder-field select{height:38px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px;font:inherit;color:#111827;background:#fff;}',
+            '.myvh-slot-finder-checkbox{display:flex;align-items:center;gap:8px;font-weight:600;color:#1f2937;}',
+            '.myvh-slot-finder-recurring{display:none;gap:12px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;}',
+            '.myvh-slot-finder-actions{padding:12px 18px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:8px;}',
+            '.myvh-slot-finder-btn{appearance:none;border:1px solid #d1d5db;background:#fff;color:#111827;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit;}',
+            '.myvh-slot-finder-btn-primary{background:#2271b1;color:#fff;border-color:#2271b1;}',
+            '@media (max-width: 680px){.myvh-slot-finder-grid{grid-template-columns:1fr;}}'
+        ].join('');
+
+        document.head.appendChild(style);
+    }
+
+    function createSlotFinderField(labelText, inputEl) {
+        let wrapper = document.createElement('div');
+        wrapper.className = 'myvh-slot-finder-field';
+
+        let label = document.createElement('label');
+        label.textContent = labelText;
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(inputEl);
+        return wrapper;
+    }
+
+    function showSlotFinderDialog(seed, rooms) {
+        ensureSlotFinderDialogStyles();
+
+        let row = seed && seed.row ? seed.row : null;
+        let defaultDate = row ? (getRowDataValue(row, 'start-date') || getTodayDateString()) : getTodayDateString();
+        let defaultTime = getDefaultStartTime(row);
+        let defaultLength = getBookingLengthFromRow(row);
+        let defaultRecurring = !!(row && row.classList.contains('myvh-recurring-child'));
+        let defaultRoomId = row ? parseInt(getRowDataValue(row, 'room-id') || '0', 10) : 0;
+
+        return new Promise(function(resolve) {
+            let backdrop = document.createElement('div');
+            backdrop.className = 'myvh-slot-finder-backdrop';
+
+            let dialog = document.createElement('div');
+            dialog.className = 'myvh-slot-finder-dialog';
+            dialog.setAttribute('role', 'dialog');
+            dialog.setAttribute('aria-modal', 'true');
+
+            let head = document.createElement('div');
+            head.className = 'myvh-slot-finder-head';
+            head.innerHTML = '<h3 class="myvh-slot-finder-title">Find Booking Slot</h3><p class="myvh-slot-finder-sub">Choose your criteria and we will find the next available slot.</p><p class="myvh-slot-finder-note">Times are rounded up to the next 15-minute slot.</p>';
+
+            let form = document.createElement('form');
+            form.className = 'myvh-slot-finder-body';
+
+            let gridTop = document.createElement('div');
+            gridTop.className = 'myvh-slot-finder-grid';
+
+            let dateInput = document.createElement('input');
+            dateInput.type = 'date';
+            dateInput.value = defaultDate;
+            dateInput.required = true;
+
+            let timeInput = document.createElement('input');
+            timeInput.type = 'time';
+            timeInput.step = '900';
+            timeInput.value = defaultTime;
+            timeInput.required = true;
+
+            let lengthInput = document.createElement('input');
+            lengthInput.type = 'number';
+            lengthInput.min = '15';
+            lengthInput.step = '15';
+            lengthInput.value = String(defaultLength);
+            lengthInput.required = true;
+
+            gridTop.appendChild(createSlotFinderField('Start From Date', dateInput));
+            gridTop.appendChild(createSlotFinderField('Start From Time', timeInput));
+
+            let lengthRow = document.createElement('div');
+            lengthRow.className = 'myvh-slot-finder-grid';
+            lengthRow.appendChild(createSlotFinderField('Booking Length (minutes)', lengthInput));
+            lengthRow.appendChild(document.createElement('div'));
+
+            let gridScope = document.createElement('div');
+            gridScope.className = 'myvh-slot-finder-grid';
+
+            let scopeSelect = document.createElement('select');
+            let scopeAll = document.createElement('option');
+            scopeAll.value = 'all';
+            scopeAll.textContent = 'All rooms';
+            let scopeSpecific = document.createElement('option');
+            scopeSpecific.value = 'specific';
+            scopeSpecific.textContent = 'Specific room';
+            scopeSelect.appendChild(scopeAll);
+            scopeSelect.appendChild(scopeSpecific);
+
+            let roomSelect = document.createElement('select');
+            let roomPlaceholder = document.createElement('option');
+            roomPlaceholder.value = '';
+            roomPlaceholder.textContent = rooms.length ? 'Select a room' : 'No rooms available';
+            roomSelect.appendChild(roomPlaceholder);
+            rooms.forEach(function(room) {
+                let option = document.createElement('option');
+                option.value = String(room.id);
+                option.textContent = room.name;
+                roomSelect.appendChild(option);
+            });
+
+            if (defaultRoomId > 0) {
+                scopeSelect.value = 'specific';
+                roomSelect.value = String(defaultRoomId);
+            } else {
+                scopeSelect.value = 'all';
+            }
+
+            roomSelect.disabled = scopeSelect.value !== 'specific';
+
+            scopeSelect.addEventListener('change', function() {
+                roomSelect.disabled = scopeSelect.value !== 'specific';
+            });
+
+            gridScope.appendChild(createSlotFinderField('Room Scope', scopeSelect));
+            gridScope.appendChild(createSlotFinderField('Room', roomSelect));
+
+            let recurringToggleWrap = document.createElement('label');
+            recurringToggleWrap.className = 'myvh-slot-finder-checkbox';
+            let recurringToggle = document.createElement('input');
+            recurringToggle.type = 'checkbox';
+            recurringToggle.checked = defaultRecurring;
+            recurringToggleWrap.appendChild(recurringToggle);
+            recurringToggleWrap.appendChild(document.createTextNode('Find recurring booking slot'));
+
+            let recurringPanel = document.createElement('div');
+            recurringPanel.className = 'myvh-slot-finder-recurring';
+
+            let recurrenceType = document.createElement('select');
+            ['daily', 'weekly', 'monthly', 'yearly'].forEach(function(type) {
+                let option = document.createElement('option');
+                option.value = type;
+                option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                recurrenceType.appendChild(option);
+            });
+            recurrenceType.value = 'weekly';
+
+            let recurrenceInterval = document.createElement('input');
+            recurrenceInterval.type = 'number';
+            recurrenceInterval.min = '1';
+            recurrenceInterval.value = '1';
+
+            let recurrenceCount = document.createElement('input');
+            recurrenceCount.type = 'number';
+            recurrenceCount.min = '1';
+            recurrenceCount.max = '365';
+            recurrenceCount.value = '10';
+
+            let recurringGrid = document.createElement('div');
+            recurringGrid.className = 'myvh-slot-finder-grid';
+            recurringGrid.appendChild(createSlotFinderField('Recurrence Type', recurrenceType));
+            recurringGrid.appendChild(createSlotFinderField('Repeat Every (interval)', recurrenceInterval));
+
+            let countWrap = createSlotFinderField('Occurrences To Fit', recurrenceCount);
+
+            recurringPanel.appendChild(recurringGrid);
+            recurringPanel.appendChild(countWrap);
+
+            recurringPanel.style.display = recurringToggle.checked ? 'grid' : 'none';
+            recurringToggle.addEventListener('change', function() {
+                recurringPanel.style.display = recurringToggle.checked ? 'grid' : 'none';
+            });
+
+            form.appendChild(gridTop);
+            form.appendChild(lengthRow);
+            form.appendChild(gridScope);
+            form.appendChild(recurringToggleWrap);
+            form.appendChild(recurringPanel);
+
+            let actions = document.createElement('div');
+            actions.className = 'myvh-slot-finder-actions';
+
+            let cancelButton = document.createElement('button');
+            cancelButton.type = 'button';
+            cancelButton.className = 'myvh-slot-finder-btn';
+            cancelButton.textContent = 'Cancel';
+
+            let submitButton = document.createElement('button');
+            submitButton.type = 'button';
+            submitButton.className = 'myvh-slot-finder-btn myvh-slot-finder-btn-primary';
+            submitButton.textContent = 'Find Slot';
+
+            actions.appendChild(cancelButton);
+            actions.appendChild(submitButton);
+
+            function closeDialog(result) {
+                if (backdrop.parentNode) {
+                    backdrop.parentNode.removeChild(backdrop);
+                }
+                resolve(result);
+            }
+
+            cancelButton.addEventListener('click', function() {
+                closeDialog(null);
+            });
+
+            submitButton.addEventListener('click', function() {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                    return;
+                }
+
+                form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            });
+
+            backdrop.addEventListener('click', function(event) {
+                if (event.target === backdrop) {
+                    closeDialog(null);
+                }
+            });
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                let dateValue = String(dateInput.value || '').trim();
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+                    portalAlert('Please enter a valid date in YYYY-MM-DD format.');
+                    return;
+                }
+
+                let scope = scopeSelect.value;
+                let roomId = 0;
+
+                if (scope === 'specific') {
+                    roomId = parsePositiveInteger(roomSelect.value, 0);
+                    if (roomId <= 0) {
+                        portalAlert('Please select a room.');
+                        return;
+                    }
+                }
+
+                let request = {
+                    date: dateValue,
+                    start_time: String(timeInput.value || '').trim(),
+                    length_minutes: parsePositiveInteger(lengthInput.value, defaultLength),
+                    room_id: roomId,
+                    is_recurring: recurringToggle.checked ? 1 : 0
+                };
+
+                if (request.is_recurring) {
+                    request.recurrence_type = String(recurrenceType.value || 'weekly').toLowerCase();
+                    request.recurrence_interval = parsePositiveInteger(recurrenceInterval.value, 1);
+                    request.max_occurrences = parsePositiveInteger(recurrenceCount.value, 10);
+                }
+
+                closeDialog(request);
+            });
+
+            dialog.appendChild(head);
+            dialog.appendChild(form);
+            dialog.appendChild(actions);
+            backdrop.appendChild(dialog);
+            document.body.appendChild(backdrop);
+            submitButton.focus();
+        });
+    }
+
+    async function collectSlotFinderRequest(seed) {
+        let rooms = await loadRoomOptions();
+        return showSlotFinderDialog(seed, rooms);
+    }
+
+    async function requestSlot(request) {
+        if (!window.MyvhPortalAjax || typeof window.MyvhPortalAjax.post !== 'function') {
+            throw new Error('Portal booking tools are not available on this page.');
+        }
+
+        let payload = {
+            room_id: String(request.room_id || 0),
+            date: String(request.date || ''),
+            start_time: String(request.start_time || ''),
+            length_minutes: String(request.length_minutes || 60),
+            is_recurring: request.is_recurring ? '1' : '0',
+            recurrence_type: String(request.recurrence_type || ''),
+            recurrence_interval: String(request.recurrence_interval || ''),
+            max_occurrences: String(request.max_occurrences || ''),
+            recurrence_end_date: String(request.recurrence_end_date || '')
+        };
+
+        let result = await window.MyvhPortalAjax.post('myvh_portal_next_booking_slot', payload, { scope: 'portal' });
+        if (!result || !result.success || !result.data) {
+            throw new Error((result && (result.message || result.data)) || 'Could not find an available slot.');
+        }
+
+        return result.data;
+    }
+
+    function openFoundSlotInModal(slot, request, seed) {
+        let seedPrefill = (seed && seed.prefill) ? seed.prefill : {};
+        let recurring = null;
+
+        if (request.is_recurring) {
+            recurring = {
+                type: request.recurrence_type || 'weekly',
+                interval: request.recurrence_interval || 1,
+                endType: 'count',
+                maxOccurrences: request.max_occurrences || 10
+            };
+        }
+
+        runWhenBookingFlowReady(function() {
+            let flow = window.MyvhPortalCalendarFlow;
+            if (!flow || typeof flow.openCreate !== 'function') {
+                portalAlert('Booking flow is not available right now.');
+                return;
+            }
+
+            flow.openCreate({
+                start: String(slot.start || ''),
+                end: String(slot.end || ''),
+                room_id: String(slot.room_id || request.room_id || ''),
+                customer_id: seedPrefill.customerId || '',
+                organisation_id: seedPrefill.organisationId || '',
+                text: seedPrefill.description || '',
+                recurring: recurring
+            });
+        });
+    }
+
+    function handleFindSlotActionClick(event) {
+        let trigger = event.target.closest('.myvh-find-slot-trigger, [data-myvh-find-slot]');
+        if (!trigger) {
+            return;
+        }
+
+        event.preventDefault();
+
+        let row = trigger.closest('tr.myvh-bookings-table-row');
+        let seed = {
+            row: row,
+            prefill: row ? buildPrefillFromRow(row) : {}
+        };
+
+        collectSlotFinderRequest(seed)
+            .then(function(request) {
+                if (!request) {
+                    return null;
+                }
+
+                return requestSlot(request).then(function(slot) {
+                    openFoundSlotInModal(slot, request, seed);
+                    return slot;
+                });
+            })
+            .catch(function(error) {
+                portalAlert(error && error.message ? error.message : 'Could not find an available slot.');
+            });
+    }
+
+    function bindFindSlotActions() {
+        if (findSlotHandlersBound) {
+            return;
+        }
+
+        document.addEventListener('click', handleFindSlotActionClick);
+        findSlotHandlersBound = true;
     }
 
     function handlePortalBookingActionClick(event) {
@@ -710,6 +1190,8 @@ window.Bookings = (function() {
      * Initialize bookings logic (accordion, actions). Only runs once.
      */
     function init() {
+        bindFindSlotActions();
+
         if (!globalHandlersBound) {
             bindGroupToggles();
             bindActions();
@@ -726,6 +1208,8 @@ window.Bookings = (function() {
         bindExpandedFilters();
         initializeFiltersFromUrl();
     }
+
+    bindFindSlotActions();
 
     return {
         init: init
