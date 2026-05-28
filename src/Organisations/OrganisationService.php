@@ -10,10 +10,10 @@ use WP_Error;
 if (!defined('ABSPATH')) exit;
 
 class OrganisationService {
-    private $repo;
-    private $member_repo;
-    private $request_repo;
-    private $type_repo;
+    private OrganisationRepository $repo;
+    private OrganisationMemberRepository $member_repo;
+    private OrganisationMemberRequestRepository $request_repo;
+    private OrganisationTypeRepository $type_repo;
     private LoggerInterface $logger;
 
     public function __construct(
@@ -337,6 +337,120 @@ class OrganisationService {
         }
         return $this->update_member_admin_status($member_id, $is_admin);
     }
+
+    public function update_details_by_admin(int $org_id, int $acting_customer_id, array $data) {
+        if (!$this->member_repo->is_customer_admin($org_id, $acting_customer_id)) {
+            return new WP_Error('forbidden', __('Only organisation admins can update organisation details', 'my-village-hall'));
+        }
+
+        $organisation = $this->repo->get_by_id($org_id);
+        if (empty($organisation['Id'])) {
+            return new WP_Error('not_found', __('Organisation not found', 'my-village-hall'));
+        }
+
+        $allow_auto_confirm = array_key_exists('allow_auto_confirm', $data)
+            ? (!empty($data['allow_auto_confirm']) ? 1 : 0)
+            : intval($organisation['AllowAutoConfirm'] ?? 0);
+        $is_active = array_key_exists('is_active', $data)
+            ? (!empty($data['is_active']) ? 1 : 0)
+            : intval($organisation['IsActive'] ?? 1);
+
+        $updated = $this->repo->update([
+            'AllowAutoConfirm' => $allow_auto_confirm,
+            'IsActive' => $is_active,
+        ], ['Id' => $org_id]);
+
+        if (!$updated) {
+            return new WP_Error('database', __('Failed to update organisation details', 'my-village-hall'));
+        }
+
+        return true;
+    }
+
+    public function update_contact_details_by_admin(int $org_id, int $acting_customer_id, array $data) {
+        if (!$this->member_repo->is_customer_admin($org_id, $acting_customer_id)) {
+            return new WP_Error('forbidden', __('Only organisation admins can update contact details', 'my-village-hall'));
+        }
+
+        $organisation = $this->repo->get_by_id($org_id);
+        if (empty($organisation['Id'])) {
+            return new WP_Error('not_found', __('Organisation not found', 'my-village-hall'));
+        }
+
+        $contact_email_input = trim((string) ($data['contact_email'] ?? ''));
+        $contact_phone_input = trim((string) ($data['contact_phone'] ?? ''));
+        $contact_email = $contact_email_input !== ''
+            ? sanitize_email($contact_email_input)
+            : sanitize_email((string) ($organisation['ContactEmail'] ?? ''));
+        $contact_phone = $contact_phone_input !== ''
+            ? sanitize_text_field($contact_phone_input)
+            : sanitize_text_field((string) ($organisation['ContactPhone'] ?? ''));
+
+        if ($contact_email === '' || !is_email($contact_email)) {
+            return new WP_Error('validation', __('Contact email must be a valid email address', 'my-village-hall'));
+        }
+        if ($contact_phone === '') {
+            return new WP_Error('validation', __('Contact phone is required', 'my-village-hall'));
+        }
+
+        $send_booking_emails_to_organisation = array_key_exists('send_booking_emails_to_organisation', $data)
+            ? (!empty($data['send_booking_emails_to_organisation']) ? 1 : 0)
+            : intval($organisation['SendBookingEmailsToOrganisation'] ?? 0);
+        $website_url = array_key_exists('website_url', $data)
+            ? (!empty($data['website_url']) ? esc_url_raw($data['website_url']) : null)
+            : (!empty($organisation['WebsiteUrl']) ? esc_url_raw($organisation['WebsiteUrl']) : null);
+
+        $updated = $this->repo->update([
+            'ContactEmail' => $contact_email,
+            'ContactPhone' => $contact_phone,
+            'WebsiteUrl' => $website_url,
+            'SendBookingEmailsToOrganisation' => $send_booking_emails_to_organisation,
+        ], ['Id' => $org_id]);
+
+        if (!$updated) {
+            return new WP_Error('database', __('Failed to update contact details', 'my-village-hall'));
+        }
+
+        return true;
+    }
+
+    public function update_invoicing_details_by_admin(int $org_id, int $acting_customer_id, array $data) {
+        if (!$this->member_repo->is_customer_admin($org_id, $acting_customer_id)) {
+            return new WP_Error('forbidden', __('Only organisation admins can update invoicing details', 'my-village-hall'));
+        }
+
+        $organisation = $this->repo->get_by_id($org_id);
+        if (empty($organisation['Id'])) {
+            return new WP_Error('not_found', __('Organisation not found', 'my-village-hall'));
+        }
+
+        $invoice_organisation_bookings = !empty($data['invoice_organisation_bookings']) ? 1 : 0;
+        $billing_email = sanitize_email($data['billing_email'] ?? '');
+
+        if ($invoice_organisation_bookings && !empty($data['billing_email']) && !is_email($billing_email)) {
+            return new WP_Error('validation', __('Billing email must be a valid email address', 'my-village-hall'));
+        }
+
+        $updated = $this->repo->update([
+            'InvoiceOrganisationBookings' => $invoice_organisation_bookings,
+            'SingleBookingAutoInvoiceRuleId' => !empty($data['single_booking_auto_invoice_rule_id']) ? intval($data['single_booking_auto_invoice_rule_id']) : null,
+            'RecurringBookingAutoInvoiceRuleId' => !empty($data['recurring_booking_auto_invoice_rule_id']) ? intval($data['recurring_booking_auto_invoice_rule_id']) : null,
+            'BillingContactName' => $invoice_organisation_bookings && !empty($data['billing_contact_name']) ? sanitize_text_field($data['billing_contact_name']) : null,
+            'BillingEmail' => $invoice_organisation_bookings && !empty($data['billing_email']) ? $billing_email : null,
+            'BillingAddressLine1' => $invoice_organisation_bookings && !empty($data['billing_address_line1']) ? sanitize_text_field($data['billing_address_line1']) : null,
+            'BillingAddressLine2' => $invoice_organisation_bookings && !empty($data['billing_address_line2']) ? sanitize_text_field($data['billing_address_line2']) : null,
+            'BillingTownCity' => $invoice_organisation_bookings && !empty($data['billing_town_city']) ? sanitize_text_field($data['billing_town_city']) : null,
+            'BillingPostcode' => $invoice_organisation_bookings && !empty($data['billing_postcode']) ? sanitize_text_field($data['billing_postcode']) : null,
+            'BillingReference' => $invoice_organisation_bookings && !empty($data['billing_reference']) ? sanitize_text_field($data['billing_reference']) : null,
+        ], ['Id' => $org_id]);
+
+        if (!$updated) {
+            return new WP_Error('database', __('Failed to update invoicing details', 'my-village-hall'));
+        }
+
+        return true;
+    }
+
     public function update_billing_details_by_admin(int $org_id, int $acting_customer_id, array $data) {
         if (!$this->member_repo->is_customer_admin($org_id, $acting_customer_id)) {
             return new WP_Error('forbidden', __('Only organisation admins can update billing details', 'my-village-hall'));

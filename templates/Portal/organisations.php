@@ -1,4 +1,3 @@
-
 <?php
 if (!defined('ABSPATH')) exit;
 
@@ -126,273 +125,333 @@ foreach ($organisation_types as $organisation_type) {
                     $message_id = 'myvh-org-admin-message-' . $org_id;
                     $current_type_name = $organisation_type_lookup[(int) ($org['OrganisationTypeId'] ?? 0)] ?? 'Unassigned';
                 ?>
-                <div class="myvh-card myvh-account-card">
+                <div class="myvh-card myvh-account-card myvh-org-card" data-org-card data-org-id="<?php echo esc_attr($org_id); ?>">
                     <div class="myvh-account-card-head">
                         <h3><?php echo esc_html($org['Name']); ?></h3>
-                        <span>Approve requests, add and remove members, and manage admin status.</span>
+                        <span>Organisational details, contact details, invoicing details, and members.</span>
                     </div>
 
-                    <div class="myvh-account-actions" style="margin-bottom:12px;">
-                        <form class="myvh-inline-form" data-portal-action="myvh_portal_delete_organisation" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations" data-confirm="Delete this organisation? This cannot be undone.">
-                            <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
-                            <button type="submit" class="myvh-client-admin-remove-btn">Delete Organisation</button>
-                        </form>
+                    <div class="myvh-org-tabs" role="tablist" aria-label="Organisation sections">
+                        <button type="button" class="myvh-settings-tab myvh-org-tab is-active" role="tab" aria-selected="true" data-org-tab="details">Organisation Details</button>
+                        <button type="button" class="myvh-settings-tab myvh-org-tab" role="tab" aria-selected="false" data-org-tab="contact">Contact Details</button>
+                        <button type="button" class="myvh-settings-tab myvh-org-tab" role="tab" aria-selected="false" data-org-tab="invoicing">Invoicing Details</button>
+                        <button type="button" class="myvh-settings-tab myvh-org-tab" role="tab" aria-selected="false" data-org-tab="members">Member Details</button>
                     </div>
 
-                    <?php if ($is_client_admin && !empty($organisation_types)): ?>
-                        <div class="myvh-orgs-subsection">
-                            <h4>Organisation Type</h4>
+                    <div class="myvh-org-panels">
+                        <section class="myvh-org-panel is-active" data-org-panel="details" role="tabpanel" aria-label="Organisation details">
+                            <div class="myvh-orgs-subsection">
+                                <h4>Organisation Type</h4>
 
-                            <?php if (!empty($org['IsSystem'])): ?>
-                                <p class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>. System organisations cannot change type.</p>
-                            <?php else: ?>
-                                <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_type_assignment" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                <?php if ($is_client_admin && !empty($organisation_types)): ?>
+                                    <?php if (!empty($org['IsSystem'])): ?>
+                                        <p class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>. System organisations cannot change type.</p>
+                                    <?php else: ?>
+                                        <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_type_assignment" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                            <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
+
+                                            <label class="myvh-account-field" for="myvh-org-type-<?php echo esc_attr($org_id); ?>">
+                                                <span>Organisation type</span>
+                                                <select id="myvh-org-type-<?php echo esc_attr($org_id); ?>" name="organisation_type_id">
+                                                    <option value=""><?php _e('Select an organisation type...', 'my-village-hall'); ?></option>
+                                                    <?php foreach ($organisation_types as $organisation_type): ?>
+                                                        <option value="<?php echo esc_attr((int) $organisation_type['Id']); ?>" <?php selected((int) ($org['OrganisationTypeId'] ?? 0), (int) $organisation_type['Id']); ?>>
+                                                            <?php echo esc_html($organisation_type['Name'] ?? ''); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <small class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>.</small>
+                                            </label>
+
+                                            <div class="myvh-account-actions">
+                                                <button type="submit" class="myvh-portal-add-btn">
+                                                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                                                    <span>Save Type</span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <p class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>.</p>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="myvh-orgs-subsection">
+                                <h4>Organisation Status</h4>
+                                <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_details" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
                                     <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
 
-                                    <label class="myvh-account-field" for="myvh-org-type-<?php echo esc_attr($org_id); ?>">
-                                        <span>Organisation type</span>
-                                        <select id="myvh-org-type-<?php echo esc_attr($org_id); ?>" name="organisation_type_id">
-                                            <option value="">Select an organisation type...</option>
-                                            <?php foreach ($organisation_types as $organisation_type): ?>
-                                                <option value="<?php echo esc_attr((int) $organisation_type['Id']); ?>" <?php selected((int) ($org['OrganisationTypeId'] ?? 0), (int) $organisation_type['Id']); ?>>
-                                                    <?php echo esc_html($organisation_type['Name'] ?? ''); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <small class="myvh-muted">Current type: <?php echo esc_html($current_type_name); ?>.</small>
+                                    <label class="myvh-toggle-row">
+                                        <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked(!empty($org['AllowAutoConfirm'])); ?>>
+                                        <span>Allow auto confirm</span>
+                                    </label>
+
+                                    <label class="myvh-toggle-row">
+                                        <input type="checkbox" name="is_active" value="1" <?php checked(!empty($org['IsActive'])); ?>>
+                                        <span>Is active</span>
                                     </label>
 
                                     <div class="myvh-account-actions">
                                         <button type="submit" class="myvh-portal-add-btn">
                                             <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
-                                            <span>Save Type</span>
+                                            <span>Save Details</span>
                                         </button>
                                     </div>
                                 </form>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="myvh-orgs-subsection">
-                        <h4>Contact Details</h4>
-                        <p class="myvh-muted">These are the main organisation contact details.</p>
-
-                        <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_billing" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
-                            <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
-
-                            <div class="myvh-field-grid">
-                                <label class="myvh-account-field">
-                                    <span>Contact email</span>
-                                    <input type="email" name="contact_email" required value="<?php echo esc_attr($org['ContactEmail'] ?? ''); ?>" placeholder="contact@example.com">
-                                </label>
-
-                                <label class="myvh-account-field">
-                                    <span>Contact phone</span>
-                                    <input type="text" name="contact_phone" required value="<?php echo esc_attr($org['ContactPhone'] ?? ''); ?>" placeholder="01234 567890">
-                                </label>
                             </div>
 
-                            <label class="myvh-toggle-row">
-                                <input type="checkbox" name="send_booking_emails_to_organisation" value="1" <?php checked(!empty($org['SendBookingEmailsToOrganisation'])); ?>>
-                                <span>Send booking emails to organisation</span>
-                            </label>
+                            <div class="myvh-account-actions myvh-org-danger-actions">
+                                <form class="myvh-inline-form" data-portal-action="myvh_portal_delete_organisation" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations" data-confirm="Delete this organisation? This cannot be undone.">
+                                    <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
+                                    <button type="submit" class="myvh-client-admin-remove-btn">Delete Organisation</button>
+                                </form>
+                            </div>
+                        </section>
 
-                            <h4>Invoicing Details</h4>
-                            <p class="myvh-muted">Enable organisation invoicing before entering billing contact details.</p>
+                        <section class="myvh-org-panel" data-org-panel="contact" role="tabpanel" aria-label="Contact details" hidden>
+                            <div class="myvh-orgs-subsection">
+                                <h4>Contact Details</h4>
+                                <p class="myvh-muted">These are the main organisation contact details.</p>
 
-                            <label class="myvh-toggle-row">
-                                <input type="checkbox" name="invoice_organisation_bookings" value="1" class="myvh-org-invoice-toggle" <?php checked(!empty($org['InvoiceOrganisationBookings'])); ?>>
-                                <span>Invoice this organisation for its bookings</span>
-                            </label>
+                                <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_contact_details" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                    <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
 
-                            <label class="myvh-account-field">
-                                <span>Single booking auto-invoice rule</span>
-                                <select name="single_booking_auto_invoice_rule_id">
-                                    <option value="0">Use default rule</option>
-                                    <?php foreach (($single_booking_rule_options ?? []) as $rule_id => $rule_name): ?>
-                                        <option value="<?php echo esc_attr((int) $rule_id); ?>" <?php selected((int) ($org['SingleBookingAutoInvoiceRuleId'] ?? 0), (int) $rule_id); ?>>
-                                            <?php echo esc_html($rule_name); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </label>
+                                    <div class="myvh-field-grid">
+                                        <label class="myvh-account-field">
+                                            <span>Contact email</span>
+                                            <input type="email" name="contact_email" required value="<?php echo esc_attr($org['ContactEmail'] ?? ''); ?>" placeholder="contact@example.com">
+                                        </label>
 
-                            <label class="myvh-account-field">
-                                <span>Recurring booking auto-invoice rule</span>
-                                <select name="recurring_booking_auto_invoice_rule_id">
-                                    <option value="0">Use default rule</option>
-                                    <?php foreach (($recurring_booking_rule_options ?? []) as $rule_id => $rule_name): ?>
-                                        <option value="<?php echo esc_attr((int) $rule_id); ?>" <?php selected((int) ($org['RecurringBookingAutoInvoiceRuleId'] ?? 0), (int) $rule_id); ?>>
-                                            <?php echo esc_html($rule_name); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </label>
+                                        <label class="myvh-account-field">
+                                            <span>Contact phone</span>
+                                            <input type="text" name="contact_phone" required value="<?php echo esc_attr($org['ContactPhone'] ?? ''); ?>" placeholder="01234 567890">
+                                        </label>
+                                    </div>
 
-                            <div class="myvh-org-billing-fields"<?php echo empty($org['InvoiceOrganisationBookings']) ? ' hidden' : ''; ?> >
-                                <div class="myvh-field-grid">
                                     <label class="myvh-account-field">
-                                        <span>Billing contact name</span>
-                                        <input type="text" name="billing_contact_name" value="<?php echo esc_attr($org['BillingContactName'] ?? ''); ?>" placeholder="Accounts contact">
+                                        <span>Website URL</span>
+                                        <input type="url" name="website_url" value="<?php echo esc_attr($org['WebsiteUrl'] ?? ''); ?>" placeholder="https://example.com">
+                                    </label>
+
+                                    <label class="myvh-toggle-row">
+                                        <input type="checkbox" name="send_booking_emails_to_organisation" value="1" <?php checked(!empty($org['SendBookingEmailsToOrganisation'])); ?>>
+                                        <span>Send booking emails to organisation</span>
+                                    </label>
+
+                                    <div class="myvh-account-actions">
+                                        <button type="submit" class="myvh-portal-add-btn">
+                                            <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                                            <span>Save Contact Details</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </section>
+
+                        <section class="myvh-org-panel" data-org-panel="invoicing" role="tabpanel" aria-label="Invoicing details" hidden>
+                            <div class="myvh-orgs-subsection">
+                                <h4>Invoicing Details</h4>
+                                <p class="myvh-muted">Enable organisation invoicing before entering billing contact details.</p>
+
+                                <form class="myvh-account-form" data-portal-action="myvh_portal_save_org_invoicing_details" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                    <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
+
+                                    <label class="myvh-toggle-row">
+                                        <input type="checkbox" name="invoice_organisation_bookings" value="1" class="myvh-org-invoice-toggle" <?php checked(!empty($org['InvoiceOrganisationBookings'])); ?>>
+                                        <span>Invoice this organisation for its bookings</span>
                                     </label>
 
                                     <label class="myvh-account-field">
-                                        <span>Billing email</span>
-                                        <input type="email" name="billing_email" value="<?php echo esc_attr($org['BillingEmail'] ?? ''); ?>" placeholder="accounts@example.com">
+                                        <span>Single booking auto-invoice rule</span>
+                                        <select name="single_booking_auto_invoice_rule_id">
+                                            <option value="0">Use default rule</option>
+                                            <?php foreach (($single_booking_rule_options ?? []) as $rule_id => $rule_name): ?>
+                                                <option value="<?php echo esc_attr((int) $rule_id); ?>" <?php selected((int) ($org['SingleBookingAutoInvoiceRuleId'] ?? 0), (int) $rule_id); ?>>
+                                                    <?php echo esc_html($rule_name); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </label>
+
+                                    <label class="myvh-account-field">
+                                        <span>Recurring booking auto-invoice rule</span>
+                                        <select name="recurring_booking_auto_invoice_rule_id">
+                                            <option value="0">Use default rule</option>
+                                            <?php foreach (($recurring_booking_rule_options ?? []) as $rule_id => $rule_name): ?>
+                                                <option value="<?php echo esc_attr((int) $rule_id); ?>" <?php selected((int) ($org['RecurringBookingAutoInvoiceRuleId'] ?? 0), (int) $rule_id); ?>>
+                                                    <?php echo esc_html($rule_name); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </label>
+
+                                    <div class="myvh-org-billing-fields"<?php echo empty($org['InvoiceOrganisationBookings']) ? ' hidden' : ''; ?>>
+                                        <div class="myvh-field-grid">
+                                            <label class="myvh-account-field">
+                                                <span>Billing contact name</span>
+                                                <input type="text" name="billing_contact_name" value="<?php echo esc_attr($org['BillingContactName'] ?? ''); ?>" placeholder="Accounts contact">
+                                            </label>
+
+                                            <label class="myvh-account-field">
+                                                <span>Billing email</span>
+                                                <input type="email" name="billing_email" value="<?php echo esc_attr($org['BillingEmail'] ?? ''); ?>" placeholder="accounts@example.com">
+                                            </label>
+                                        </div>
+
+                                        <div class="myvh-field-grid">
+                                            <label class="myvh-account-field">
+                                                <span>Address line 1</span>
+                                                <input type="text" name="billing_address_line1" value="<?php echo esc_attr($org['BillingAddressLine1'] ?? ''); ?>">
+                                            </label>
+
+                                            <label class="myvh-account-field">
+                                                <span>Address line 2</span>
+                                                <input type="text" name="billing_address_line2" value="<?php echo esc_attr($org['BillingAddressLine2'] ?? ''); ?>">
+                                            </label>
+                                        </div>
+
+                                        <div class="myvh-field-grid">
+                                            <label class="myvh-account-field">
+                                                <span>Town or city</span>
+                                                <input type="text" name="billing_town_city" value="<?php echo esc_attr($org['BillingTownCity'] ?? ''); ?>">
+                                            </label>
+
+                                            <label class="myvh-account-field">
+                                                <span>Postcode</span>
+                                                <input type="text" name="billing_postcode" value="<?php echo esc_attr($org['BillingPostcode'] ?? ''); ?>">
+                                            </label>
+                                        </div>
+
+                                        <label class="myvh-account-field">
+                                            <span>Billing reference</span>
+                                            <input type="text" name="billing_reference" value="<?php echo esc_attr($org['BillingReference'] ?? ''); ?>" placeholder="PO number or internal reference">
+                                        </label>
+                                    </div>
+
+                                    <div class="myvh-account-actions">
+                                        <button type="submit" class="myvh-portal-add-btn">
+                                            <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                                            <span>Save Invoicing Details</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </section>
+
+                        <section class="myvh-org-panel" data-org-panel="members" role="tabpanel" aria-label="Member details" hidden>
+                            <div class="myvh-org-admin-grid">
+                                <div>
+                                    <h4>Pending Requests</h4>
+                                    <?php if (empty($requests)): ?>
+                                        <p class="myvh-muted">No pending requests.</p>
+                                    <?php else: ?>
+                                        <table class="booking-table myvh-orgs-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Email</th>
+                                                    <th>Message</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            <?php foreach ($requests as $request): ?>
+                                                <tr>
+                                                    <td><?php echo esc_html($request['CustomerName'] ?? ''); ?></td>
+                                                    <td><?php echo esc_html($request['CustomerEmail'] ?? ''); ?></td>
+                                                    <td><?php echo esc_html($request['RequestMessage'] ?? ''); ?></td>
+                                                    <td>
+                                                        <div class="booking-actions">
+                                                            <form class="myvh-inline-form" data-portal-action="myvh_portal_approve_org_request" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                                                <input type="hidden" name="request_id" value="<?php echo esc_attr((int) $request['Id']); ?>">
+                                                                <button type="submit" class="myvh-portal-add-btn">
+                                                                    <span>Approve</span>
+                                                                </button>
+                                                            </form>
+                                                            <form class="myvh-inline-form" data-portal-action="myvh_portal_reject_org_request" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                                                <input type="hidden" name="request_id" value="<?php echo esc_attr((int) $request['Id']); ?>">
+                                                                <button type="submit" class="myvh-client-admin-remove-btn">Reject</button>
+                                                            </form>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    <?php endif; ?>
                                 </div>
 
-                                <div class="myvh-field-grid">
-                                    <label class="myvh-account-field">
-                                        <span>Address line 1</span>
-                                        <input type="text" name="billing_address_line1" value="<?php echo esc_attr($org['BillingAddressLine1'] ?? ''); ?>">
-                                    </label>
+                                <div>
+                                    <h4>Add Member</h4>
+                                    <form class="myvh-account-form" data-portal-action="myvh_portal_org_add_member" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                        <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
 
-                                    <label class="myvh-account-field">
-                                        <span>Address line 2</span>
-                                        <input type="text" name="billing_address_line2" value="<?php echo esc_attr($org['BillingAddressLine2'] ?? ''); ?>">
-                                    </label>
+                                        <label class="myvh-account-field">
+                                            <span>Member email</span>
+                                            <input type="email" name="email" required placeholder="member@example.com">
+                                        </label>
+
+                                        <label class="myvh-toggle-row">
+                                            <input type="checkbox" name="is_admin" value="1">
+                                            <span>Add as admin</span>
+                                        </label>
+
+                                        <div class="myvh-account-actions">
+                                            <button type="submit" class="myvh-portal-add-btn">
+                                                <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                                                <span>Add Member</span>
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
-
-                                <div class="myvh-field-grid">
-                                    <label class="myvh-account-field">
-                                        <span>Town or city</span>
-                                        <input type="text" name="billing_town_city" value="<?php echo esc_attr($org['BillingTownCity'] ?? ''); ?>">
-                                    </label>
-
-                                    <label class="myvh-account-field">
-                                        <span>Postcode</span>
-                                        <input type="text" name="billing_postcode" value="<?php echo esc_attr($org['BillingPostcode'] ?? ''); ?>">
-                                    </label>
-                                </div>
-
-                                <label class="myvh-account-field">
-                                    <span>Billing reference</span>
-                                    <input type="text" name="billing_reference" value="<?php echo esc_attr($org['BillingReference'] ?? ''); ?>" placeholder="PO number or internal reference">
-                                </label>
                             </div>
 
-                            <div class="myvh-account-actions">
-                                <button type="submit" class="myvh-portal-add-btn">
-                                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
-                                    <span>Save Details</span>
-                                </button>
+                            <div class="myvh-orgs-subsection">
+                                <h4>Members</h4>
+                                <?php if (empty($members)): ?>
+                                    <p class="myvh-muted">No members yet.</p>
+                                <?php else: ?>
+                                    <table class="booking-table myvh-orgs-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        <?php foreach ($members as $member): ?>
+                                            <?php
+                                                $is_admin = !empty($member['IsOrganisationAdmin']);
+                                                $toggle_action_text = $is_admin ? 'Set as Member' : 'Set as Admin';
+                                            ?>
+                                            <tr>
+                                                <td><?php echo esc_html($member['Name'] ?? ''); ?></td>
+                                                <td><?php echo esc_html($member['Email'] ?? ''); ?></td>
+                                                <td><?php echo $is_admin ? '<span class="myvh-badge">Admin</span>' : '<span class="myvh-small">Member</span>'; ?></td>
+                                                <td>
+                                                    <div class="booking-actions">
+                                                        <form class="myvh-inline-form" data-portal-action="myvh_portal_org_set_admin" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
+                                                            <input type="hidden" name="member_id" value="<?php echo esc_attr((int) $member['Id']); ?>">
+                                                            <input type="hidden" name="is_admin" value="<?php echo $is_admin ? '0' : '1'; ?>">
+                                                            <button type="submit" class="myvh-portal-add-btn<?php echo $is_admin ? ' myvh-portal-add-btn--secondary' : ''; ?>">
+                                                                <span><?php echo esc_html($toggle_action_text); ?></span>
+                                                            </button>
+                                                        </form>
+                                                        <form class="myvh-inline-form" data-portal-action="myvh_portal_org_remove_member" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations" data-confirm="Remove this member from the organisation?">
+                                                            <input type="hidden" name="member_id" value="<?php echo esc_attr((int) $member['Id']); ?>">
+                                                            <button type="submit" class="myvh-client-admin-remove-btn">Remove</button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                <?php endif; ?>
                             </div>
-
-                        </form>
-                    </div>
-
-                    <div class="myvh-org-admin-grid">
-                        <div>
-                            <h4>Pending Requests</h4>
-                            <?php if (empty($requests)): ?>
-                                <p class="myvh-muted">No pending requests.</p>
-                            <?php else: ?>
-                                <table class="booking-table myvh-orgs-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Email</th>
-                                            <th>Message</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php foreach ($requests as $request): ?>
-                                        <tr>
-                                            <td><?php echo esc_html($request['CustomerName'] ?? ''); ?></td>
-                                            <td><?php echo esc_html($request['CustomerEmail'] ?? ''); ?></td>
-                                            <td><?php echo esc_html($request['RequestMessage'] ?? ''); ?></td>
-                                            <td>
-                                                <div class="booking-actions">
-                                                    <form class="myvh-inline-form" data-portal-action="myvh_portal_approve_org_request" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
-                                                        <input type="hidden" name="request_id" value="<?php echo esc_attr((int) $request['Id']); ?>">
-                                                        <button type="submit" class="myvh-portal-add-btn">
-                                                            <span>Approve</span>
-                                                        </button>
-                                                    </form>
-                                                    <form class="myvh-inline-form" data-portal-action="myvh_portal_reject_org_request" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
-                                                        <input type="hidden" name="request_id" value="<?php echo esc_attr((int) $request['Id']); ?>">
-                                                        <button type="submit" class="myvh-client-admin-remove-btn">Reject</button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            <?php endif; ?>
-                        </div>
-
-                        <div>
-                            <h4>Add Member</h4>
-                            <form class="myvh-account-form" data-portal-action="myvh_portal_org_add_member" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
-                                <input type="hidden" name="organisation_id" value="<?php echo esc_attr($org_id); ?>">
-
-                                <label class="myvh-account-field">
-                                    <span>Member email</span>
-                                    <input type="email" name="email" required placeholder="member@example.com">
-                                </label>
-
-                                <label class="myvh-toggle-row">
-                                    <input type="checkbox" name="is_admin" value="1">
-                                    <span>Add as admin</span>
-                                </label>
-
-                                <div class="myvh-account-actions">
-                                    <button type="submit" class="myvh-portal-add-btn">
-                                        <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
-                                        <span>Add Member</span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="myvh-orgs-subsection">
-                        <h4>Members</h4>
-                        <?php if (empty($members)): ?>
-                            <p class="myvh-muted">No members yet.</p>
-                        <?php else: ?>
-                            <table class="booking-table myvh-orgs-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Role</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($members as $member): ?>
-                                    <?php
-                                        $is_admin = !empty($member['IsOrganisationAdmin']);
-                                        $toggle_action_text = $is_admin ? 'Set as Member' : 'Set as Admin';
-                                    ?>
-                                    <tr>
-                                        <td><?php echo esc_html($member['Name'] ?? ''); ?></td>
-                                        <td><?php echo esc_html($member['Email'] ?? ''); ?></td>
-                                        <td><?php echo $is_admin ? '<span class="myvh-badge">Admin</span>' : '<span class="myvh-small">Member</span>'; ?></td>
-                                        <td>
-                                            <div class="booking-actions">
-                                                <form class="myvh-inline-form" data-portal-action="myvh_portal_org_set_admin" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
-                                                    <input type="hidden" name="member_id" value="<?php echo esc_attr((int) $member['Id']); ?>">
-                                                    <input type="hidden" name="is_admin" value="<?php echo $is_admin ? '0' : '1'; ?>">
-                                                    <button type="submit" class="myvh-portal-add-btn<?php echo $is_admin ? ' myvh-portal-add-btn--secondary' : ''; ?>">
-                                                        <span><?php echo esc_html($toggle_action_text); ?></span>
-                                                    </button>
-                                                </form>
-                                                <form class="myvh-inline-form" data-portal-action="myvh_portal_org_remove_member" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations" data-confirm="Remove this member from the organisation?">
-                                                    <input type="hidden" name="member_id" value="<?php echo esc_attr((int) $member['Id']); ?>">
-                                                    <button type="submit" class="myvh-client-admin-remove-btn">Remove</button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        <?php endif; ?>
+                        </section>
                     </div>
 
                     <div id="<?php echo esc_attr($message_id); ?>" class="myvh-muted" aria-live="polite"></div>

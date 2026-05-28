@@ -139,6 +139,83 @@
 .myvh-orgs-page .myvh-account-card-head {
   margin-bottom: 10px;
 }
+.myvh-orgs-page .myvh-org-card .myvh-org-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0 0 1px;
+  border-bottom: 1px solid #d8ccbc;
+}
+
+.myvh-orgs-page .myvh-org-card .myvh-org-tab {
+  appearance: none;
+  border: 1px solid #d8ccbc;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #f4eee6;
+  color: #4f473f;
+  padding: 9px 14px;
+  font-size: .84rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease, border-color .14s ease;
+}
+
+.myvh-orgs-page .myvh-org-card .myvh-org-tab:hover {
+  background: #efe7dc;
+  color: #2f2a25;
+}
+
+.myvh-orgs-page .myvh-org-card .myvh-org-tab:focus-visible {
+  outline: 2px solid rgba(181, 69, 27, .45);
+  outline-offset: 1px;
+}
+
+.myvh-orgs-page .myvh-org-card .myvh-org-tab.is-active {
+  background: #fff;
+  color: #1d2327;
+  border-color: #d8ccbc;
+  transform: translateY(1px);
+}
+
+.myvh-orgs-page .myvh-org-card .myvh-org-panels {
+  margin-top: 0;
+}
+
+.myvh-orgs-page .myvh-org-card .myvh-org-panel {
+  display: none;
+}
+
+.myvh-orgs-page .myvh-org-card .myvh-org-panel.is-active {
+  display: block;
+}
+.myvh-orgs-page .myvh-org-card .myvh-account-form {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+.myvh-orgs-page .myvh-org-card .myvh-field-grid {
+  max-width: none;
+}
+.myvh-orgs-page .myvh-org-card .myvh-account-field input,
+.myvh-orgs-page .myvh-org-card .myvh-account-field select,
+.myvh-orgs-page .myvh-org-card .myvh-account-field textarea {
+  max-width: none;
+}
+.myvh-orgs-page .myvh-org-card .myvh-account-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.myvh-orgs-page .myvh-org-card .myvh-account-actions button {
+  min-width: 0;
+  max-width: none;
+}
+.myvh-orgs-page .myvh-org-danger-actions {
+  margin-top: 12px;
+}
 .myvh-orgs-page .booking-table {
   font-size: 0.95rem;
 }

@@ -22,6 +22,7 @@ class OrganisationServiceTest extends UnitTestCase {
 
         \Brain\Monkey\Functions\stubs([
             'sanitize_email' => fn($v) => (string) $v,
+            'sanitize_text_field' => fn($v) => (string) $v,
             'is_email' => fn($v) => is_string($v) && strpos($v, '@') !== false,
             'esc_url_raw' => fn($v) => (string) $v,
             'current_time' => fn() => '2026-01-01 00:00:00',
@@ -275,6 +276,127 @@ class OrganisationServiceTest extends UnitTestCase {
 
         $result = $this->service->update_billing_details_by_admin(13, 88, [
             'invoice_organisation_bookings' => 0,
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function update_contact_details_by_admin_updates_contact_fields_only(): void {
+        $this->member_repo->shouldReceive('is_customer_admin')
+            ->once()
+            ->with(21, 77)
+            ->andReturn(true);
+
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(21)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 21,
+                'ContactEmail' => 'existing@example.org',
+                'ContactPhone' => '01234 555555',
+                'WebsiteUrl' => 'https://old.example.org',
+                'SendBookingEmailsToOrganisation' => 0,
+            ]);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->withArgs(function (array $record, array $where): bool {
+                return $record['ContactEmail'] === 'new-contact@example.org'
+                    && $record['ContactPhone'] === '07700 900222'
+                    && $record['WebsiteUrl'] === 'https://new.example.org'
+                    && $record['SendBookingEmailsToOrganisation'] === 1
+                    && !array_key_exists('InvoiceOrganisationBookings', $record)
+                    && $where['Id'] === 21;
+            })
+            ->andReturn(true);
+
+        $result = $this->service->update_contact_details_by_admin(21, 77, [
+            'contact_email' => 'new-contact@example.org',
+            'contact_phone' => '07700 900222',
+            'website_url' => 'https://new.example.org',
+            'send_booking_emails_to_organisation' => 1,
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function update_details_by_admin_updates_auto_confirm_and_active_flags(): void {
+        $this->member_repo->shouldReceive('is_customer_admin')
+            ->once()
+            ->with(23, 77)
+            ->andReturn(true);
+
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(23)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 23,
+                'AllowAutoConfirm' => 0,
+                'IsActive' => 1,
+            ]);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->withArgs(function (array $record, array $where): bool {
+                return $record['AllowAutoConfirm'] === 1
+                    && $record['IsActive'] === 0
+                    && $where['Id'] === 23;
+            })
+            ->andReturn(true);
+
+        $result = $this->service->update_details_by_admin(23, 77, [
+            'allow_auto_confirm' => 1,
+            'is_active' => 0,
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function update_invoicing_details_by_admin_updates_billing_fields_only(): void {
+        $this->member_repo->shouldReceive('is_customer_admin')
+            ->once()
+            ->with(22, 77)
+            ->andReturn(true);
+
+        $this->repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(22)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 22,
+                'InvoiceOrganisationBookings' => 0,
+            ]);
+
+        $this->repo->shouldReceive('update')
+            ->once()
+            ->withArgs(function (array $record, array $where): bool {
+                return $record['InvoiceOrganisationBookings'] === 1
+                    && (int) ($record['SingleBookingAutoInvoiceRuleId'] ?? 0) === 31
+                    && (int) ($record['RecurringBookingAutoInvoiceRuleId'] ?? 0) === 41
+                    && $record['BillingContactName'] === 'Accounts Team'
+                    && $record['BillingEmail'] === 'billing@example.org'
+                    && $record['BillingAddressLine1'] === 'Line 1'
+                    && $record['BillingAddressLine2'] === 'Line 2'
+                    && $record['BillingTownCity'] === 'Town'
+                    && $record['BillingPostcode'] === 'AB12 3CD'
+                    && $record['BillingReference'] === 'REF-22'
+                    && $where['Id'] === 22;
+            })
+            ->andReturn(true);
+
+        $result = $this->service->update_invoicing_details_by_admin(22, 77, [
+            'invoice_organisation_bookings' => 1,
+            'single_booking_auto_invoice_rule_id' => 31,
+            'recurring_booking_auto_invoice_rule_id' => 41,
+            'billing_contact_name' => 'Accounts Team',
+            'billing_email' => 'billing@example.org',
+            'billing_address_line1' => 'Line 1',
+            'billing_address_line2' => 'Line 2',
+            'billing_town_city' => 'Town',
+            'billing_postcode' => 'AB12 3CD',
+            'billing_reference' => 'REF-22',
         ]);
 
         $this->assertTrue($result);

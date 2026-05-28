@@ -7,7 +7,7 @@ use wpdb;
 if (!defined('ABSPATH')) exit;
 
 class OrganisationRepository extends RepositoryBase {
-    private $types_table;
+    private string $types_table;
     public function __construct(wpdb $wpdb) {
         $this->wpdb        = $wpdb;
         $this->table_name  = $wpdb->prefix . 'myvh_organisations';

@@ -22,6 +22,9 @@ class PortalOrganisationAjaxController {
         add_action('wp_ajax_myvh_portal_add_organisation', [$this, 'add_organisation']);
         add_action('wp_ajax_myvh_portal_delete_organisation', [$this, 'delete_organisation']);
         add_action('wp_ajax_myvh_portal_save_org_type_assignment', [$this, 'save_organisation_type_assignment']);
+        add_action('wp_ajax_myvh_portal_save_org_details', [$this, 'save_organisation_details']);
+        add_action('wp_ajax_myvh_portal_save_org_contact_details', [$this, 'save_organisation_contact_details']);
+        add_action('wp_ajax_myvh_portal_save_org_invoicing_details', [$this, 'save_organisation_invoicing_details']);
         add_action('wp_ajax_myvh_portal_save_org_billing', [$this, 'save_organisation_billing']);
         add_action('wp_ajax_myvh_portal_org_add_member', [$this, 'organisation_add_member']);
         add_action('wp_ajax_myvh_portal_org_remove_member', [$this, 'organisation_remove_member']);
@@ -165,6 +168,88 @@ class PortalOrganisationAjaxController {
         }
 
         AjaxResponse::success([], __('Organisation type updated', 'my-village-hall'));
+    }
+
+    public function save_organisation_details(): void {
+        $customer = $this->get_authenticated_customer();
+        $org_id = intval($_POST['organisation_id'] ?? 0);
+
+        if ($org_id <= 0) {
+            wp_send_json_error('Organisation is required', 400);
+        }
+
+        $result = $this->organisation_service->update_details_by_admin(
+            $org_id,
+            (int) $customer['Id'],
+            [
+                'allow_auto_confirm' => !empty($_POST['allow_auto_confirm']) ? 1 : 0,
+                'is_active' => !empty($_POST['is_active']) ? 1 : 0,
+            ]
+        );
+
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        AjaxResponse::success([], __('Organisation details updated', 'my-village-hall'));
+    }
+
+    public function save_organisation_contact_details(): void {
+        $customer = $this->get_authenticated_customer();
+        $org_id = intval($_POST['organisation_id'] ?? 0);
+
+        if ($org_id <= 0) {
+            wp_send_json_error('Organisation is required', 400);
+        }
+
+        $result = $this->organisation_service->update_contact_details_by_admin(
+            $org_id,
+            (int) $customer['Id'],
+            [
+                'contact_email' => sanitize_email($_POST['contact_email'] ?? ''),
+                'contact_phone' => sanitize_text_field($_POST['contact_phone'] ?? ''),
+                'website_url' => !empty($_POST['website_url']) ? esc_url_raw(wp_unslash($_POST['website_url'])) : null,
+                'send_booking_emails_to_organisation' => !empty($_POST['send_booking_emails_to_organisation']) ? 1 : 0,
+            ]
+        );
+
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        AjaxResponse::success([], __('Contact details updated', 'my-village-hall'));
+    }
+
+    public function save_organisation_invoicing_details(): void {
+        $customer = $this->get_authenticated_customer();
+        $org_id = intval($_POST['organisation_id'] ?? 0);
+
+        if ($org_id <= 0) {
+            wp_send_json_error('Organisation is required', 400);
+        }
+
+        $result = $this->organisation_service->update_invoicing_details_by_admin(
+            $org_id,
+            (int) $customer['Id'],
+            [
+                'invoice_organisation_bookings' => !empty($_POST['invoice_organisation_bookings']) ? 1 : 0,
+                'single_booking_auto_invoice_rule_id' => intval($_POST['single_booking_auto_invoice_rule_id'] ?? 0),
+                'recurring_booking_auto_invoice_rule_id' => intval($_POST['recurring_booking_auto_invoice_rule_id'] ?? 0),
+                'billing_contact_name' => sanitize_text_field($_POST['billing_contact_name'] ?? ''),
+                'billing_email' => sanitize_email($_POST['billing_email'] ?? ''),
+                'billing_address_line1' => sanitize_text_field($_POST['billing_address_line1'] ?? ''),
+                'billing_address_line2' => sanitize_text_field($_POST['billing_address_line2'] ?? ''),
+                'billing_town_city' => sanitize_text_field($_POST['billing_town_city'] ?? ''),
+                'billing_postcode' => sanitize_text_field($_POST['billing_postcode'] ?? ''),
+                'billing_reference' => sanitize_text_field($_POST['billing_reference'] ?? ''),
+            ]
+        );
+
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        AjaxResponse::success([], __('Invoicing details updated', 'my-village-hall'));
     }
 
     public function delete_organisation(): void {

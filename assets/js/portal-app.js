@@ -813,6 +813,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Organization billing toggles and invoices page logic
+        initOrganisationTabs();
         initRoomColourPreviews();
         initOrganisationBillingToggles();
         initRoomRatesPage();
@@ -1170,6 +1171,78 @@ document.addEventListener("DOMContentLoaded", () => {
 
             toggleInput.addEventListener('change', syncVisibility);
             syncVisibility();
+        });
+    }
+
+    /**
+     * Initialize per-organisation tabs on the portal organisations page.
+     */
+    function initOrganisationTabs() {
+        const orgCards = Array.from(document.querySelectorAll('.myvh-org-card'));
+        if (!orgCards.length) {
+            return;
+        }
+
+        orgCards.forEach((card) => {
+            const tabs = Array.from(card.querySelectorAll('[data-org-tab]'));
+            const panels = Array.from(card.querySelectorAll('[data-org-panel]'));
+            if (!tabs.length || !panels.length) {
+                return;
+            }
+
+            const storageKey = 'myvhPortalOrganisationTab-' + String(card.dataset.orgId || '');
+
+            const activateTab = (tabKey) => {
+                let hasMatch = false;
+
+                tabs.forEach((tab) => {
+                    const isActive = tab.dataset.orgTab === tabKey;
+                    tab.classList.toggle('is-active', isActive);
+                    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                    if (isActive) {
+                        hasMatch = true;
+                    }
+                });
+
+                panels.forEach((panel) => {
+                    const isActive = panel.dataset.orgPanel === tabKey;
+                    panel.classList.toggle('is-active', isActive);
+                    panel.hidden = !isActive;
+                });
+
+                if (hasMatch && storageKey !== 'myvhPortalOrganisationTab-') {
+                    try {
+                        window.localStorage.setItem(storageKey, tabKey);
+                    } catch (e) {
+                        // Ignore storage failures in private browsing modes.
+                    }
+                }
+            };
+
+            card.addEventListener('click', (event) => {
+                const clickedTab = event.target.closest('[data-org-tab]');
+                if (!clickedTab || !card.contains(clickedTab)) {
+                    return;
+                }
+
+                event.preventDefault();
+                activateTab(clickedTab.dataset.orgTab || 'details');
+            });
+
+            let initialTab = '';
+            if (storageKey !== 'myvhPortalOrganisationTab-') {
+                try {
+                    initialTab = window.localStorage.getItem(storageKey) || '';
+                } catch (e) {
+                    initialTab = '';
+                }
+            }
+
+            if (!initialTab || !tabs.some((tab) => tab.dataset.orgTab === initialTab)) {
+                initialTab = tabs[0]?.dataset.orgTab || 'details';
+            }
+
+            activateTab(initialTab);
         });
     }
 
