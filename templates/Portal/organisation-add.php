@@ -64,8 +64,13 @@ $default_organisation_type_id = isset($default_organisation_type_id) ? (int) $de
             </label>
 
             <div class="myvh-account-actions">
-                <button type="submit" class="button button-primary">Create Organisation</button>
-                <a href="#organisations" class="button">Cancel</a>
+                <button type="submit" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                    <span>Create Organisation</span>
+                </button>
+                <a href="#organisations" class="myvh-portal-add-btn myvh-portal-add-btn--secondary">
+                    <span>Cancel</span>
+                </a>
                 <div id="myvh-org-add-message" class="myvh-muted" aria-live="polite"></div>
             </div>
         </form>

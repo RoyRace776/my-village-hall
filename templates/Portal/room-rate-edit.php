@@ -153,7 +153,9 @@ $current_end_time = trim((string) ($rate['EndTime'] ?? ''));
                     <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
                     <span>Update Room Rate</span>
                 </button>
-                <a href="#room-rates" class="button">Cancel</a>
+                <a href="#room-rates" class="myvh-portal-add-btn myvh-portal-add-btn--secondary">
+                    <span>Cancel</span>
+                </a>
                 <div id="myvh-room-rate-edit-message" class="myvh-muted" aria-live="polite"></div>
             </div>
         </form>

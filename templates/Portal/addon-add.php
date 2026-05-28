@@ -62,8 +62,13 @@ $rooms = isset($rooms) && is_array($rooms) ? $rooms : [];
             </label>
 
             <div class="myvh-account-actions">
-                <button type="submit" class="button button-primary">Create Add-on</button>
-                <a href="#addons" class="button">Cancel</a>
+                <button type="submit" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                    <span>Create Add-on</span>
+                </button>
+                <a href="#addons" class="myvh-portal-add-btn myvh-portal-add-btn--secondary">
+                    <span>Cancel</span>
+                </a>
                 <div id="myvh-addon-create-message" class="myvh-muted" aria-live="polite"></div>
             </div>
         </form>

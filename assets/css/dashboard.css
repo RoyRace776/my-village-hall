@@ -1169,6 +1169,21 @@ body .site-main:has(#myvh-portal) {
   outline: none;
 }
 
+.myvh-portal-add-btn--secondary {
+  background: #f8f4ee;
+  border-color: #d8cbb9;
+  color: var(--ink);
+  box-shadow: 0 8px 18px rgba(28, 26, 23, 0.08);
+}
+
+.myvh-portal-add-btn--secondary:hover,
+.myvh-portal-add-btn--secondary:focus-visible {
+  background: #fffaf3;
+  border-color: #c7b7a2;
+  color: var(--ink);
+  box-shadow: 0 10px 20px rgba(28, 26, 23, 0.12);
+}
+
 .myvh-portal-add-btn__icon {
   display: inline-flex;
   align-items: center;

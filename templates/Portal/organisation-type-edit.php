@@ -51,7 +51,9 @@ $is_system = !empty($organisation_type['IsSystem']);
                     <button type="submit" class="myvh-portal-add-btn">
                         <span>Update Organisation Type</span>
                     </button>
-                    <a href="#organisation-types" class="button">Cancel</a>
+                    <a href="#organisation-types" class="myvh-portal-add-btn myvh-portal-add-btn--secondary">
+                        <span>Cancel</span>
+                    </a>
                     <div id="myvh-org-type-edit-message" class="myvh-muted" aria-live="polite"></div>
                 </div>
             </form>

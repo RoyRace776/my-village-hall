@@ -72,7 +72,10 @@ if (!isset($is_client_admin)) $is_client_admin = false;
             <?php endif; ?>
 
             <div class="myvh-account-actions">
-                <button type="submit" class="button button-primary">Create Customer</button>
+                <button type="submit" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                    <span>Create Customer</span>
+                </button>
                 <div id="myvh-customer-create-message" class="myvh-muted" aria-live="polite"></div>
             </div>
         </form>

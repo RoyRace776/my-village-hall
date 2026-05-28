@@ -95,8 +95,13 @@ if (!empty($customer['Updated'])) {
             </label>
             <?php endif; ?>
             <div class="myvh-account-actions">
-                <button type="submit" class="button button-primary">Update Customer</button>
-                <a href="#customers" class="button">Cancel</a>
+                <button type="submit" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                    <span>Update Customer</span>
+                </button>
+                <a href="#customers" class="myvh-portal-add-btn myvh-portal-add-btn--secondary">
+                    <span>Cancel</span>
+                </a>
                 <button type="button" class="button myvh-send-password-reset-btn" data-customer-id="<?php echo (int)$customer['Id']; ?>">Send Password Reset Email</button>
                 <div id="myvh-customer-edit-message" class="myvh-muted" aria-live="polite"></div>
             </div>

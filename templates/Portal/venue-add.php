@@ -101,8 +101,13 @@ $day_labels = [
             </div>
 
             <div class="myvh-account-actions">
-                <button type="submit" class="button button-primary">Create Venue</button>
-                <a href="#venues" class="button">Cancel</a>
+                <button type="submit" class="myvh-portal-add-btn">
+                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">+</span>
+                    <span>Create Venue</span>
+                </button>
+                <a href="#venues" class="myvh-portal-add-btn myvh-portal-add-btn--secondary">
+                    <span>Cancel</span>
+                </a>
                 <div id="myvh-venue-create-message" class="myvh-muted" aria-live="polite"></div>
             </div>
         </form>

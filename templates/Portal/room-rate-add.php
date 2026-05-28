@@ -156,7 +156,9 @@ if (!$selected_room) {
                         <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
                         <span>Create Room Rate</span>
                     </button>
-                    <a href="#room-rates" class="button">Cancel</a>
+                    <a href="#room-rates" class="myvh-portal-add-btn myvh-portal-add-btn--secondary">
+                        <span>Cancel</span>
+                    </a>
                     <div id="myvh-room-rate-create-message" class="myvh-muted" aria-live="polite"></div>
                 </div>
             </form>

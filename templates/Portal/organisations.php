@@ -88,7 +88,9 @@ foreach ($organisation_types as $organisation_type) {
                     </label>
 
                     <div class="myvh-account-actions">
-                        <button type="submit" class="button button-primary">Send Request</button>
+                        <button type="submit" class="myvh-portal-add-btn">
+                            <span>Send Request</span>
+                        </button>
                         <div id="myvh-org-request-message" class="myvh-muted" aria-live="polite"></div>
                     </div>
                 </form>
@@ -161,7 +163,10 @@ foreach ($organisation_types as $organisation_type) {
                                     </label>
 
                                     <div class="myvh-account-actions">
-                                        <button type="submit" class="button button-primary">Save Organisation Type</button>
+                                        <button type="submit" class="myvh-portal-add-btn">
+                                            <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                                            <span>Save Type</span>
+                                        </button>
                                     </div>
                                 </form>
                             <?php endif; ?>
@@ -268,7 +273,10 @@ foreach ($organisation_types as $organisation_type) {
                             </div>
 
                             <div class="myvh-account-actions">
-                                <button type="submit" class="button button-primary">Save Organisation Details</button>
+                                <button type="submit" class="myvh-portal-add-btn">
+                                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                                    <span>Save Details</span>
+                                </button>
                             </div>
 
                         </form>
@@ -299,7 +307,9 @@ foreach ($organisation_types as $organisation_type) {
                                                 <div class="booking-actions">
                                                     <form class="myvh-inline-form" data-portal-action="myvh_portal_approve_org_request" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
                                                         <input type="hidden" name="request_id" value="<?php echo esc_attr((int) $request['Id']); ?>">
-                                                        <button type="submit" class="button button-primary">Approve</button>
+                                                        <button type="submit" class="myvh-portal-add-btn">
+                                                            <span>Approve</span>
+                                                        </button>
                                                     </form>
                                                     <form class="myvh-inline-form" data-portal-action="myvh_portal_reject_org_request" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
                                                         <input type="hidden" name="request_id" value="<?php echo esc_attr((int) $request['Id']); ?>">
@@ -368,7 +378,9 @@ foreach ($organisation_types as $organisation_type) {
                                                 <form class="myvh-inline-form" data-portal-action="myvh_portal_org_set_admin" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations">
                                                     <input type="hidden" name="member_id" value="<?php echo esc_attr((int) $member['Id']); ?>">
                                                     <input type="hidden" name="is_admin" value="<?php echo $is_admin ? '0' : '1'; ?>">
-                                                    <button type="submit" class="button button-primary"><?php echo esc_html($toggle_action_text); ?></button>
+                                                    <button type="submit" class="myvh-portal-add-btn<?php echo $is_admin ? ' myvh-portal-add-btn--secondary' : ''; ?>">
+                                                        <span><?php echo esc_html($toggle_action_text); ?></span>
+                                                    </button>
                                                 </form>
                                                 <form class="myvh-inline-form" data-portal-action="myvh_portal_org_remove_member" data-message-target="<?php echo esc_attr($message_id); ?>" data-reload-page="organisations" data-confirm="Remove this member from the organisation?">
                                                     <input type="hidden" name="member_id" value="<?php echo esc_attr((int) $member['Id']); ?>">
