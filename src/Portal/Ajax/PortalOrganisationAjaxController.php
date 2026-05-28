@@ -178,6 +178,46 @@ class PortalOrganisationAjaxController {
             wp_send_json_error('Organisation is required', 400);
         }
 
+        if (array_key_exists('organisation_type_id', $_POST)) {
+            PortalAuth::require_client_admin($this->client_admin_service);
+
+            $existing = $this->organisation_service->get_by_id($org_id);
+            if (empty($existing['Id'])) {
+                AjaxResponse::not_found(__('Organisation not found', 'my-village-hall'));
+            }
+
+            $payload = [
+                'organisation_id' => $org_id,
+                'name' => $existing['Name'] ?? '',
+                'contact_email' => $existing['ContactEmail'] ?? '',
+                'contact_phone' => $existing['ContactPhone'] ?? '',
+                'website_url' => $existing['WebsiteUrl'] ?? null,
+                'organisation_type_id' => intval($_POST['organisation_type_id'] ?? 0),
+                'invoice_organisation_bookings' => !empty($existing['InvoiceOrganisationBookings']) ? 1 : 0,
+                'send_booking_emails_to_organisation' => !empty($existing['SendBookingEmailsToOrganisation']) ? 1 : 0,
+                'single_booking_auto_invoice_rule_id' => intval($existing['SingleBookingAutoInvoiceRuleId'] ?? 0),
+                'recurring_booking_auto_invoice_rule_id' => intval($existing['RecurringBookingAutoInvoiceRuleId'] ?? 0),
+                'billing_contact_name' => $existing['BillingContactName'] ?? '',
+                'billing_email' => $existing['BillingEmail'] ?? '',
+                'billing_address_line1' => $existing['BillingAddressLine1'] ?? '',
+                'billing_address_line2' => $existing['BillingAddressLine2'] ?? '',
+                'billing_town_city' => $existing['BillingTownCity'] ?? '',
+                'billing_postcode' => $existing['BillingPostcode'] ?? '',
+                'billing_reference' => $existing['BillingReference'] ?? '',
+                'is_active' => !empty($existing['IsActive']) ? 1 : 0,
+                'is_default' => !empty($existing['IsDefault']) ? 1 : 0,
+                'default_public' => !empty($existing['DefaultPublic']) ? 1 : 0,
+            ];
+
+            $type_saved = $this->organisation_service->save($payload, true);
+            if (is_wp_error($type_saved)) {
+                AjaxResponse::error($type_saved->get_error_message());
+            }
+            if (!$type_saved) {
+                AjaxResponse::error(__('Organisation update failed', 'my-village-hall'));
+            }
+        }
+
         $result = $this->organisation_service->update_details_by_admin(
             $org_id,
             (int) $customer['Id'],

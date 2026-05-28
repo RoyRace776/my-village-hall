@@ -67,6 +67,12 @@ class PortalOrganisationPageRenderer {
                 $organisation_members[$org_id] = $this->organisation_service->get_members($org_id);
                 $organisation_pending_requests[$org_id] = $this->organisation_service->get_pending_requests_for_organisation($org_id, $customer_id);
             }
+
+            foreach ($manageable_organisations as &$org) {
+                $org_id = (int) ($org['Id'] ?? 0);
+                $org['HasLinkedBookings'] = $org_id > 0 && $this->organisation_service->has_linked_bookings($org_id) ? 1 : 0;
+            }
+            unset($org);
         }
 
         include MYVH_PLUGIN_DIR . 'templates/Portal/organisations.php';

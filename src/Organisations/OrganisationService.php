@@ -45,6 +45,9 @@ class OrganisationService {
     public function get_default(): ?array {
         return $this->repo->get_default();
     }
+    public function has_linked_bookings(int $organisation_id): bool {
+        return $this->repo->count_bookings_for_organisation($organisation_id) > 0;
+    }
     public function save(array $data, bool $allow_type_changes = true): int|bool|WP_Error {
         if (empty($data['name'])) {
             return new WP_Error('validation', __('Organisation name is required', 'my-village-hall'));
