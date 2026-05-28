@@ -101,6 +101,11 @@ if ($edit_customer) {
                                         <a href="<?php echo admin_url('admin.php?page=myvh-customers&edit=' . $customer['Id']); ?>">
                                             <?php _e('Edit', 'my-village-hall'); ?>
                                         </a> |
+                                        <?php if (!empty($customer['Email'])): ?>
+                                            <a href="mailto:<?php echo esc_attr($customer['Email']); ?>">
+                                                <?php _e('Send Email', 'my-village-hall'); ?>
+                                            </a> |
+                                        <?php endif; ?>
                                         <a href="#" class="send-password-reset" data-customer-id="<?php echo \intval($customer['Id']); ?>">
                                             <?php _e('Send Password Reset', 'my-village-hall'); ?>
                                         </a> |

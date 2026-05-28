@@ -2471,13 +2471,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         button.disabled = true;
-        const originalText = button.textContent;
-        button.textContent = 'Sending...';
+        button.setAttribute('aria-busy', 'true');
+
+        const isTextButton = button.classList.contains('myvh-send-password-reset-btn');
+        const originalText = isTextButton ? button.textContent : null;
+
+        if (isTextButton) {
+            button.textContent = 'Sending...';
+        } else {
+            button.style.opacity = '0.6';
+        }
 
         postPortalForm('myvh_portal_send_password_reset', { customer_id: customerId })
             .then(res => {
                 button.disabled = false;
-                button.textContent = originalText;
+                button.removeAttribute('aria-busy');
+
+                if (isTextButton) {
+                    button.textContent = originalText;
+                } else {
+                    button.style.opacity = '';
+                }
 
                 if (!res.success) {
                     portalAlert('Error: ' + (res.data?.message || res.data || 'Failed to send email'));
@@ -2488,7 +2502,14 @@ document.addEventListener("DOMContentLoaded", () => {
             })
             .catch(() => {
                 button.disabled = false;
-                button.textContent = originalText;
+                button.removeAttribute('aria-busy');
+
+                if (isTextButton) {
+                    button.textContent = originalText;
+                } else {
+                    button.style.opacity = '';
+                }
+
                 portalAlert('An error occurred. Please try again.');
             });
     });

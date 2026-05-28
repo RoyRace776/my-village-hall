@@ -87,6 +87,9 @@ $edit_id = isset($_GET['id']) ? \intval($_GET['id']) : 0;
                         <td style="padding-right:32px;"><?php echo esc_html($created_display); ?></td>
                         <td style="white-space:nowrap;">
                             <a href="#customer-edit?id=<?php echo (int)($item['Id'] ?? 0); ?>" class="myvh-action-icon" aria-label="Edit customer" title="Edit customer" style="margin-right:10px; vertical-align:middle;">✎</a>
+                            <?php if (!empty($item['Email'])): ?>
+                                <a href="mailto:<?php echo esc_attr($item['Email']); ?>" class="myvh-action-icon" aria-label="Send email" title="Send email" style="margin-right:10px; vertical-align:middle;">✉</a>
+                            <?php endif; ?>
                             <a href="#" class="myvh-send-password-reset" data-customer-id="<?php echo (int)($item['Id'] ?? 0); ?>" aria-label="Send password reset email" title="Send password reset email" style="margin-right:10px; vertical-align:middle;">📧</a>
                             <?php if ($can_send_verification): ?>
                                 <button type="button" class="myvh-send-verification-email" data-customer-id="<?php echo (int)($item['Id'] ?? 0); ?>" aria-label="Send verification email" title="Send verification email" style="margin-right:10px; vertical-align:middle; background:none; border:none; padding:0; cursor:pointer;">✅</button>
