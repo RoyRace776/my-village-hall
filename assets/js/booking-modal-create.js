@@ -68,6 +68,7 @@ window.BookingModalCreate = (function() {
         initializePickers();
 
         applyNoInvoiceRequiredVisibility();
+        applyTermsAcceptanceVisibility();
     }
 
     /**
@@ -306,6 +307,7 @@ window.BookingModalCreate = (function() {
                     syncPickerValues();
 
                     applyNoInvoiceRequiredVisibility();
+                    applyTermsAcceptanceVisibility();
 
                     const recurringOptions = form.querySelector("#myvh-modal-recurring-options");
                     if (recurringOptions) {
@@ -415,6 +417,7 @@ window.BookingModalCreate = (function() {
 
         setValue('no_invoice_required', false);
         applyNoInvoiceRequiredVisibility();
+        applyTermsAcceptanceVisibility();
 
         syncEndDateVisibility();
         syncPickerValues();
@@ -435,6 +438,7 @@ window.BookingModalCreate = (function() {
         });
         resetQuoteSummary();
         applyNoInvoiceRequiredVisibility();
+        applyTermsAcceptanceVisibility();
         syncEndDateVisibility();
         syncPickerValues();
         syncHiddenDateTimes();
@@ -735,6 +739,25 @@ window.BookingModalCreate = (function() {
         }
 
         checkbox.disabled = !canManage || isLoading;
+    }
+
+    function applyTermsAcceptanceVisibility() {
+        const row = form.querySelector('#myvh-modal-terms-row');
+        const checkbox = form.querySelector('[name=terms_accepted]');
+
+        if (!row || !checkbox) {
+            return;
+        }
+
+        const isEditMode = !!config.editMode;
+        const isLoading = modal?.dataset.loading === '1';
+
+        row.style.display = isEditMode ? 'none' : '';
+        checkbox.disabled = isEditMode || isLoading;
+
+        if (isEditMode) {
+            checkbox.checked = false;
+        }
     }
 
     function toggleField(field, show) {
@@ -1141,6 +1164,8 @@ window.BookingModalCreate = (function() {
         if (statusRow) {
             statusRow.style.display = isEdit ? '' : 'none';
         }
+
+        applyTermsAcceptanceVisibility();
     }
 
     // ─────────────────────────────
@@ -1392,6 +1417,7 @@ window.BookingModalCreate = (function() {
         const formData = new FormData(form);
         const publicCheckbox = form.querySelector("[name=public]");
         const noInvoiceCheckbox = form.querySelector("[name=no_invoice_required]");
+        const termsCheckbox = form.querySelector("[name=terms_accepted]");
 
         // Always send explicit visibility for modal creates, even when unchecked.
         if (publicCheckbox) {
@@ -1400,6 +1426,15 @@ window.BookingModalCreate = (function() {
 
         if (noInvoiceCheckbox && config.canManageNoInvoiceRequired) {
             formData.set("no_invoice_required", noInvoiceCheckbox.checked ? "1" : "0");
+        }
+
+        if (termsCheckbox && !termsCheckbox.disabled) {
+            if (!termsCheckbox.checked) {
+                portalAlert("Please accept the terms and conditions before creating a booking.");
+                return null;
+            }
+
+            formData.set("terms_accepted", "1");
         }
 
         // Disabled controls are excluded from FormData, but locked fields are intentional selections.
@@ -1460,6 +1495,7 @@ window.BookingModalCreate = (function() {
         });
 
         applyNoInvoiceRequiredVisibility();
+        applyTermsAcceptanceVisibility();
         scheduleQuoteRefresh();
     }
 

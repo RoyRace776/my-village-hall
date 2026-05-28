@@ -49,7 +49,17 @@ class BookingRequestValidator extends RequestValidatorBase
             return $this->validation_error(__('Invalid recurring update scope', 'my-village-hall'));
         }
 
+        if (empty($data['booking_id']) && $this->terms_are_required() && empty($data['terms_accepted'])) {
+            return $this->validation_error(__('Please accept the terms and conditions before creating a booking', 'my-village-hall'));
+        }
+
         return true;
+    }
+
+    private function terms_are_required(): bool
+    {
+        $terms_html = (string) myvh_setting('booking.booking_terms_text', '');
+        return trim(wp_strip_all_tags($terms_html)) !== '';
     }
 
     private function is_valid_booking_interval(string $time): bool

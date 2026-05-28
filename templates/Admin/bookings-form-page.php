@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) {
 }
 
 use MYVH\Bookings\BookingStatus;
+use MYVH\Settings\BookingSettings;
 
 if (!current_user_can('manage_myvh')) {
     wp_die(__('Permission denied', 'my-village-hall'));
@@ -117,6 +118,7 @@ $default_status = myvh_setting('booking.require_approval', true) ? BookingStatus
 $form_status = isset($form_data['status']) ? sanitize_text_field($form_data['status']) : ($edit_booking['Status'] ?? $default_status);
 $form_public = $has_form_data ? !empty($form_data['public']) : !empty($edit_booking['Public']);
 $form_no_invoice_required = $has_form_data ? !empty($form_data['no_invoice_required']) : !empty($edit_booking['NoInvoiceRequired']);
+$form_terms_accepted = $has_form_data ? !empty($form_data['terms_accepted']) : false;
 $form_is_recurring = !empty($form_data['is_recurring']);
 $form_recurrence_type = sanitize_text_field($form_data['recurrence_type'] ?? 'weekly');
 $form_recurrence_interval = max(1, \intval($form_data['recurrence_interval'] ?? 1));
@@ -162,6 +164,9 @@ $status_colors = [
     BookingStatus::CANCELLED => '#dc3232',
     BookingStatus::COMPLETED => '#999'
 ];
+
+$booking_terms_html = BookingSettings::render_booking_terms_text((string) myvh_setting('booking.booking_terms_text', ''));
+$booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
 ?>
 
 <div class="wrap">
@@ -647,6 +652,18 @@ $status_colors = [
                                     </select>
                                 </td>
                             </tr>
+
+                            <?php if (!$edit_booking && $booking_terms_required): ?>
+                            <tr>
+                                <th><?php _e('Terms and Conditions', 'my-village-hall'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="terms_accepted" value="1" required <?php checked($form_terms_accepted); ?>>
+                                        <?php echo $booking_terms_html; ?>
+                                    </label>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
 
                             <tr>
                                 <th><?php _e('Visibility', 'my-village-hall'); ?></th>

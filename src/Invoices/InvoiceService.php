@@ -130,7 +130,7 @@ class InvoiceService {
         return $this->repo->get_all($args);
     }
 
-    public function get($id): ?array {
+    public function get(int $id): ?array {
         return $this->repo->get_by_id($id);
     }
 
@@ -138,7 +138,7 @@ class InvoiceService {
         return $this->repo->get_all_with_customers($start_date, $end_date);
     }
 
-    public function get_detail($id): ?array {
+    public function get_detail(int $id): ?array {
         $invoice = $this->repo->get_detail($id);
 
         if (!$invoice) {
@@ -152,7 +152,7 @@ class InvoiceService {
         return $invoice;
     }
 
-    public function get_detail_for_portal( mixed $id, mixed $customer_id, bool $is_client_admin = false): ?array {
+    public function get_detail_for_portal(int $id, int $customer_id, bool $is_client_admin = false): ?array {
         $invoice = $is_client_admin
             ? $this->repo->get_detail($id)
             : $this->repo->get_portal_detail($id, $customer_id);
@@ -310,19 +310,19 @@ class InvoiceService {
         return array_values($bookings);
     }
 
-    public function get_by_customer($customer_id): ?array {
+    public function get_by_customer(int $customer_id): ?array {
         return $this->repo->get_by_customer($customer_id);
     }
 
-    public function get_by_booking($booking_id): ?array {
+    public function get_by_booking(int $booking_id): ?array {
         return $this->repo->get_by_booking($booking_id);
     }
 
-    public function get_by_status($status): ?array {
+    public function get_by_status(string $status): ?array {
         return $this->repo->get_by_status($status);
     }
 
-    public function save($data): int|WP_Error {
+    public function save(array $data): int|WP_Error {
 
         if (empty($data['customer_id'])) {
             return new WP_Error('validation', __('Customer is required', 'my-village-hall'));
@@ -335,7 +335,7 @@ class InvoiceService {
         if (empty($data['invoice_id'])) {
             $invoice_number_formatted = $this->get_next_invoice_number();
         } else {
-            $invoice_number_formatted = $data['invoice_number'];
+            $invoice_number_formatted = sanitize_text_field($data['invoice_number']);
         }
 
         $total_amount = \floatval($data['total_amount']);
@@ -414,7 +414,7 @@ class InvoiceService {
         return $invoice_number_formatted;
     }
 
-    public function delete($id): int|WP_Error {
+    public function delete(int $id): int|WP_Error {
         if ($this->payment_repo->count_by_invoice($id) > 0) {
             return new WP_Error('validation', __('Cannot delete invoice with existing payments', 'my-village-hall'));
         }
@@ -574,28 +574,77 @@ class InvoiceService {
      * Dompdf requires images to be embedded when isRemoteEnabled is false.
      */
     private function get_site_logo_data_uri(): string {
-        if (!function_exists('get_attached_file')) {
-            return '';
-        }
-
-        // Prefer the plugin's own portal logo setting.
-        $logo_id = 0;
         $portal_logo_url = trim((string) myvh_setting('general.portal_logo_url', ''));
+
+        $candidate_attachment_ids = [];
+        if ($portal_logo_url !== '' && function_exists('attachment_url_to_postid')) {
+            $portal_logo_id = (int) attachment_url_to_postid($portal_logo_url);
+            if ($portal_logo_id > 0) {
+                $candidate_attachment_ids[] = $portal_logo_id;
+            }
+        }
+
+        if (function_exists('get_theme_mod')) {
+            $custom_logo_id = (int) get_theme_mod('custom_logo');
+            if ($custom_logo_id > 0) {
+                $candidate_attachment_ids[] = $custom_logo_id;
+            }
+        }
+
+        if (function_exists('get_option')) {
+            $site_icon_id = (int) get_option('site_icon');
+            if ($site_icon_id > 0) {
+                $candidate_attachment_ids[] = $site_icon_id;
+            }
+        }
+
+        $candidate_attachment_ids = array_values(array_unique($candidate_attachment_ids));
+
+        foreach ($candidate_attachment_ids as $attachment_id) {
+            $data_uri = $this->get_attachment_data_uri($attachment_id);
+            if ($data_uri !== '') {
+                return $data_uri;
+            }
+        }
+
+        // If the configured portal logo URL does not resolve to an attachment ID,
+        // attempt a direct URL-to-file path conversion for local uploads URLs.
         if ($portal_logo_url !== '') {
-            $logo_id = (int) attachment_url_to_postid($portal_logo_url);
+            $path = $this->resolve_local_upload_path_from_url($portal_logo_url);
+            if ($path !== '') {
+                return $this->get_image_data_uri_from_path($path);
+            }
+
+            $remote_data_uri = $this->get_image_data_uri_from_url($portal_logo_url);
+            if ($remote_data_uri !== '') {
+                return $remote_data_uri;
+            }
         }
 
-        // Fall back to the WordPress theme's custom logo.
-        if (!$logo_id && function_exists('get_theme_mod')) {
-            $logo_id = (int) get_theme_mod('custom_logo');
-        }
+        return '';
+    }
 
-        if (!$logo_id) {
+    /**
+     * Convert a media attachment into a data URI for Dompdf.
+     */
+    private function get_attachment_data_uri(int $attachment_id): string {
+        if ($attachment_id <= 0 || !function_exists('get_attached_file')) {
             return '';
         }
 
-        $path = get_attached_file($logo_id);
-        if (!$path || !is_readable($path)) {
+        $path = get_attached_file($attachment_id);
+        if (!is_string($path) || $path === '') {
+            return '';
+        }
+
+        return $this->get_image_data_uri_from_path($path);
+    }
+
+    /**
+     * Convert an image file on disk into a data URI.
+     */
+    private function get_image_data_uri_from_path(string $path): string {
+        if ($path === '' || !is_readable($path)) {
             return '';
         }
 
@@ -612,6 +661,74 @@ class InvoiceService {
         return 'data:' . $mime . ';base64,' . base64_encode($data);
     }
 
+    /**
+     * Map an uploads URL to a local file path when possible.
+     */
+    private function resolve_local_upload_path_from_url(string $url): string {
+        if ($url === '' || !function_exists('wp_upload_dir')) {
+            return '';
+        }
+
+        $uploads = wp_upload_dir();
+        $base_url = (string) ($uploads['baseurl'] ?? '');
+        $base_dir = (string) ($uploads['basedir'] ?? '');
+
+        if ($base_url === '' || $base_dir === '') {
+            return '';
+        }
+
+        if (!str_starts_with($url, $base_url)) {
+            return '';
+        }
+
+        $relative = ltrim(substr($url, strlen($base_url)), '/\\');
+        if ($relative === '') {
+            return '';
+        }
+
+        return trailingslashit($base_dir) . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relative);
+    }
+
+    /**
+     * Download an image URL and return a data URI.
+     */
+    private function get_image_data_uri_from_url(string $url): string {
+        if ($url === '' || !function_exists('wp_safe_remote_get')) {
+            return '';
+        }
+
+        $response = wp_safe_remote_get($url, [
+            'timeout' => 10,
+            'redirection' => 3,
+            'limit_response_size' => 5 * 1024 * 1024,
+        ]);
+
+        if (is_wp_error($response)) {
+            return '';
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        if ($code < 200 || $code >= 300) {
+            return '';
+        }
+
+        $content_type = strtolower(trim((string) wp_remote_retrieve_header($response, 'content-type')));
+        if ($content_type !== '' && str_contains($content_type, ';')) {
+            $content_type = trim((string) strtok($content_type, ';'));
+        }
+
+        if ($content_type === '' || !str_starts_with($content_type, 'image/')) {
+            return '';
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        if (!is_string($body) || $body === '') {
+            return '';
+        }
+
+        return 'data:' . $content_type . ';base64,' . base64_encode($body);
+    }
+
     // ── PDF generation ────────────────────────────────────────────────────────
 
     /**
@@ -622,9 +739,9 @@ class InvoiceService {
      * @param int $invoiceId
      * @return string|WP_Error Absolute file path on success, WP_Error on failure.
      */
-    public function generate_pdf(int $invoiceId): string|WP_Error {
+    public function generate_pdf(int $invoiceId, bool $forceRegenerate = false): string|WP_Error {
         // 1. Return existing PDF if already stored and file still present on disk.
-        if ($this->file_storage->exists($invoiceId)) {
+        if (!$forceRegenerate && $this->file_storage->exists($invoiceId)) {
             return (string) $this->file_storage->getPath($invoiceId);
         }
 
@@ -636,6 +753,7 @@ class InvoiceService {
 
         // 2a. Embed site logo as a base64 data URI (Dompdf has isRemoteEnabled=false).
         $invoice['SiteLogoDataUri'] = $this->get_site_logo_data_uri();
+        $invoice['FooterText'] = trim((string) myvh_setting('invoicing.pdf_footer_text', ''));
 
         // 3. Render HTML.
         $html = $this->pdf_renderer->renderHtml($invoice);
@@ -659,8 +777,8 @@ class InvoiceService {
      * @param int $invoiceId
      * @return string|WP_Error Public URL on success, WP_Error on failure.
      */
-    public function get_invoice_pdf_url(int $invoiceId): string|WP_Error {
-        $path = $this->generate_pdf($invoiceId);
+    public function get_invoice_pdf_url(int $invoiceId, bool $forceRegenerate = false): string|WP_Error {
+        $path = $this->generate_pdf($invoiceId, $forceRegenerate);
 
         if (is_wp_error($path)) {
             return $path;

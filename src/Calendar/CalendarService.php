@@ -18,13 +18,13 @@ use WP_Error;
 
 class CalendarService {
 
-    private $booking_service;
-    private $room_repository;
-    private $availability_service;
-    private $customer_service;
-    private $client_admin_service;
-    private $pricing_service;
-    private $deposit_service;
+    private BookingService $booking_service;
+    private RoomRepository $room_repository;
+    private AvailabilityService $availability_service;
+    private CustomerService $customer_service;
+    private ClientAdminService $client_admin_service;
+    private PricingService $pricing_service;
+    private DepositService $deposit_service;
     private LoggerInterface $logger;
 
     public function __construct(
@@ -186,6 +186,7 @@ class CalendarService {
             'recurrence_end_type' => sanitize_text_field($request['recurrence_end_type'] ?? 'date'),
             'recurrence_end_date' => sanitize_text_field($request['recurrence_end_date'] ?? ''),
             'max_occurrences' => \intval($request['max_occurrences'] ?? 0),
+            'terms_accepted' => \intval($request['terms_accepted'] ?? 0),
         ];
 
         if (array_key_exists('public', $request)) {
@@ -315,7 +316,7 @@ class CalendarService {
         ];
     }
 
-    public function update_event($request) {
+    public function update_event(array $request) {
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
         $booking_id = \intval($request['booking_id'] ?? $request['id'] ?? 0);
@@ -811,7 +812,7 @@ class CalendarService {
         return array_values(array_unique(array_filter($organisation_ids)));
     }
 
-    private function validate_calendar_booking_payload($data) {
+    private function validate_calendar_booking_payload(array $data) {
         if (empty($data['room_id'])) {
             return new WP_Error('validation', __('Room is required', 'my-village-hall'));
         }
@@ -838,10 +839,19 @@ class CalendarService {
             }
         }
 
+        if ($this->terms_are_required() && empty($data['terms_accepted'])) {
+            return new WP_Error('validation', __('Please accept the terms and conditions before creating a booking', 'my-village-hall'));
+        }
+
         return true;
     }
 
-    private function validate_calendar_quote_payload($data) {
+    private function terms_are_required(): bool {
+        $terms_html = (string) myvh_setting('booking.booking_terms_text', '');
+        return trim(wp_strip_all_tags($terms_html)) !== '';
+    }
+
+    private function validate_calendar_quote_payload(array $data) {
         if (empty($data['room_id'])) {
             return new WP_Error('validation', __('Room is required', 'my-village-hall'));
         }
@@ -867,7 +877,7 @@ class CalendarService {
         return true;
     }
 
-    private function validate_calendar_update_payload($data) {
+    private function validate_calendar_update_payload(array $data) {
         if (empty($data['room_id'])) {
             return new WP_Error('validation', __('Room is required', 'my-village-hall'));
         }
@@ -906,7 +916,7 @@ class CalendarService {
         return [$date, $time];
     }
 
-    private function normalize_addons($raw_addons) {
+    private function normalize_addons(array $raw_addons): array {
         if (!is_array($raw_addons)) {
             return [];
         }

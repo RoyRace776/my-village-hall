@@ -50,6 +50,14 @@ class BookingSettings extends SettingsBase {
                     'description' => 'How many days before the booking start time users are allowed to cancel their booking.'
                 ],
 
+                'booking_terms_text' => [
+                    'label' => 'Booking terms and conditions text',
+                    'type' => 'textarea',
+                    'default' => '',
+                    'sanitize' => [self::class, 'sanitize_booking_terms_text'],
+                    'description' => 'Shown on booking forms with a required checkbox when set. HTML links are allowed, for example: <a href="https://example.com/terms.pdf">Read terms</a>.'
+                ],
+
             ]
         ],
 
@@ -88,5 +96,46 @@ class BookingSettings extends SettingsBase {
         ]
 
     ];
+
+    public static function sanitize_booking_terms_text(mixed $value): string {
+        return wp_kses((string) $value, self::booking_terms_allowed_html());
+    }
+
+    public static function render_booking_terms_text(string $value): string {
+        $sanitized = self::sanitize_booking_terms_text($value);
+
+        if ($sanitized === '') {
+            return '';
+        }
+
+        $with_target = preg_replace_callback('/<a\b[^>]*>/i', static function (array $matches): string {
+            $tag = $matches[0];
+            $tag = preg_replace('/\s+target\s*=\s*("[^"]*"|\'[^\']*\')/i', '', $tag);
+            $tag = preg_replace('/\s+rel\s*=\s*("[^"]*"|\'[^\']*\')/i', '', $tag);
+
+            return rtrim($tag, '>') . ' target="_blank" rel="noopener noreferrer">';
+        }, $sanitized);
+
+        return wp_kses((string) $with_target, self::booking_terms_allowed_html());
+    }
+
+    private static function booking_terms_allowed_html(): array {
+        return [
+            'a' => [
+                'href' => true,
+                'target' => true,
+                'rel' => true,
+                'title' => true,
+            ],
+            'p' => [],
+            'br' => [],
+            'strong' => [],
+            'em' => [],
+            'ul' => [],
+            'ol' => [],
+            'li' => [],
+            'span' => [],
+        ];
+    }
 
 }

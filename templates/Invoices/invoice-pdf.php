@@ -19,6 +19,7 @@
  * @var string  $BillingEmail
  * @var string  $OrganisationName
  * @var string  $Notes
+ * @var string  $FooterText
  * @var string  $SubTotal
  * @var string  $TaxAmount
  * @var string  $TotalAmount
@@ -213,6 +214,10 @@ $fmt_date = static function (?string $date): string {
         color: #aaa;
         text-align: center;
     }
+
+    .footer-meta.has-custom-footer {
+        margin-top: 10pt;
+    }
 </style>
 </head>
 <body>
@@ -364,8 +369,13 @@ $fmt_date = static function (?string $date): string {
 
     <!-- ── Footer ─────────────────────────────────────── -->
     <div class="footer">
-        Invoice <?php echo htmlspecialchars($InvoiceNumber ?? '', ENT_QUOTES, 'UTF-8'); ?>
-        &mdash; Generated <?php echo date('d M Y'); ?>
+        <?php if (!empty($FooterText)): ?>
+            <div><?php echo nl2br(htmlspecialchars((string) $FooterText, ENT_QUOTES, 'UTF-8')); ?></div>
+        <?php endif; ?>
+        <div class="footer-meta<?php echo !empty($FooterText) ? ' has-custom-footer' : ''; ?>">
+            Invoice <?php echo htmlspecialchars($InvoiceNumber ?? '', ENT_QUOTES, 'UTF-8'); ?>
+            &mdash; Generated <?php echo date('d M Y'); ?>
+        </div>
     </div>
 
 </div>

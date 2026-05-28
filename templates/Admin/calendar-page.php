@@ -2,10 +2,13 @@
 if (!defined('ABSPATH')) exit;
 
 use MYVH\Addons\AddonService;
+use MYVH\Settings\BookingSettings;
 
 global $myvh_container;
 $addon_service = $myvh_container->get(AddonService::class);
 $available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
+$booking_terms_html = BookingSettings::render_booking_terms_text((string) myvh_setting('booking.booking_terms_text', ''));
+$booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
 ?>
 
 <div class="wrap">
@@ -81,7 +84,7 @@ $available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order
 </div>
 
 <?php
-add_action('admin_footer', function() use ($available_addons) {
+add_action('admin_footer', function() use ($available_addons, $booking_terms_html, $booking_terms_required) {
     ?>
         <div id="myvh-booking-modal" class="myvh-modal hidden">
         <div class="myvh-modal-content">
@@ -129,6 +132,17 @@ add_action('admin_footer', function() use ($available_addons) {
                         <th>Description</th>
                         <td><input type="text" name="text"></td>
                     </tr>
+                    <?php if ($booking_terms_required): ?>
+                    <tr>
+                        <th>Terms and Conditions</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="terms_accepted" value="1" required>
+                                <?php echo $booking_terms_html; ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
                     <tr>
                         <th>Status</th>
                         <td>

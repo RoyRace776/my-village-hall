@@ -211,7 +211,7 @@ class PortalBillingAjaxController {
             wp_die(__('Invoice not found or you do not have permission to view it.', 'my-village-hall'));
         }
 
-        $result = $this->invoice_service->get_invoice_pdf_url($invoice_id);
+        $result = $this->invoice_service->get_invoice_pdf_url($invoice_id, true);
         if (is_wp_error($result)) {
             wp_die($result->get_error_message());
         }

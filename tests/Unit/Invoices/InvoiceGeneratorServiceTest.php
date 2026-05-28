@@ -366,6 +366,44 @@ class InvoiceGeneratorServiceTest extends UnitTestCase {
     }
 
     /** @test */
+    public function per_booking_mode_uses_organisation_billing_snapshot_for_single_booking_when_enabled(): void {
+        $this->arrange_invoiceable_booking(52, 12, 55.00, 'Booking Contact', 78);
+
+        $this->organisation_repo->shouldReceive('get_by_id')
+            ->once()
+            ->with(78)
+            ->andReturnUsing(static fn(): array => [
+                'InvoiceOrganisationBookings' => 1,
+                'Name' => 'Community Trust',
+                'BillingContactName' => 'Finance Office',
+                'BillingEmail' => 'finance@trust.test',
+                'BillingAddressLine1' => '2 Market Lane',
+                'BillingAddressLine2' => null,
+                'BillingTownCity' => 'Teston',
+                'BillingPostcode' => 'TE5 7NG',
+                'BillingReference' => 'TRUST-52',
+            ]);
+
+        $this->invoice_service->shouldReceive('save')
+            ->once()
+            ->with(\Mockery::on(static function (array $payload): bool {
+                return ($payload['billing_name'] ?? '') === 'Finance Office'
+                    && ($payload['billing_organisation_name'] ?? '') === 'Community Trust'
+                    && ($payload['billing_email'] ?? '') === 'finance@trust.test'
+                    && ($payload['billing_reference'] ?? '') === 'TRUST-52';
+            }))
+            ->andReturn(801);
+
+        $this->invoice_item_repo->shouldReceive('create')->once()->andReturn(true);
+
+        $result = $this->service->generate_invoices_from_bookings([52], [
+            'group_by' => 'per_booking',
+        ]);
+
+        $this->assertSame([801], $result);
+    }
+
+    /** @test */
     public function returns_error_and_skips_invoice_save_when_no_line_items_can_be_built(): void {
         $booking_id = 61;
 

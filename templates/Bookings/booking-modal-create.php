@@ -8,10 +8,13 @@ if (!is_user_logged_in()) {
 
 // TODO: Refactor to use REST API for addons data
 use MYVH\Addons\AddonService;
+use MYVH\Settings\BookingSettings;
 
 global $myvh_container;
 $addon_service = $myvh_container->get(AddonService::class);
 $available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
+$booking_terms_html = BookingSettings::render_booking_terms_text((string) myvh_setting('booking.booking_terms_text', ''));
+$booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
 
 // TODO: Take out code relating to viewing bookings and make this template just for creating bookings.
 
@@ -69,6 +72,17 @@ $available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order
                         <th>Description</th>
                         <td><input type="text" name="text" placeholder="Optional"></td>
                     </tr>
+                    <?php if ($booking_terms_required): ?>
+                    <tr id="myvh-modal-terms-row">
+                        <th>Terms and Conditions</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="terms_accepted" value="1" required>
+                                <?php echo $booking_terms_html; ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
                     <tr id="myvh-modal-status-row" style="display:none;">
                         <th>Status</th>
                         <td>

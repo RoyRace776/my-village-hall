@@ -52,6 +52,13 @@ class InvoicingSettings extends SettingsBase {
                     'sanitize' => 'boolval',
                     'description' => 'When enabled, invoices are automatically generated overnight for the next day. Otherwise, they will need to be generated manually.'
                 ],
+                'pdf_footer_text' => [
+                    'label' => 'Invoice PDF footer text',
+                    'type' => 'textarea',
+                    'default' => '',
+                    'sanitize' => 'sanitize_textarea_field',
+                    'description' => 'Optional footer text shown at the bottom of invoice PDFs. You can use multiple lines, for example: payment terms, bank account name, sort code, and account number.'
+                ],
             ],
         ],
     ];

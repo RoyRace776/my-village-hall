@@ -431,7 +431,9 @@ class InvoiceGeneratorService {
             max(0, \intval($options['due_date_offset_days'] ?? 30))
         );
 
-        $billing_snapshot = $this->build_billing_snapshot($first_booking, $options);
+        $snapshot_options = $options;
+        $snapshot_options['booking_count'] = count($bookings);
+        $billing_snapshot = $this->build_billing_snapshot($first_booking, $snapshot_options);
 
         // Create the invoice
         $invoice_data = [
@@ -542,12 +544,13 @@ class InvoiceGeneratorService {
 
     private function build_billing_snapshot( mixed $booking, mixed $options): array {
         $group_by = sanitize_key($options['group_by'] ?? 'per_booking');
+        $booking_count = max(1, \intval($options['booking_count'] ?? 1));
         $customer_id = \intval($booking['CustomerId'] ?? 0);
         $organisation_id = \intval($booking['OrganisationId'] ?? 0);
 
         $customer = $customer_id > 0 ? $this->customer_repo->get_by_id($customer_id) : null;
 
-        if ($group_by === 'by_organisation' && $organisation_id > 0) {
+        if ($organisation_id > 0 && ($group_by === 'by_organisation' || $booking_count === 1)) {
             $organisation = $this->organisation_repo->get_by_id($organisation_id);
 
             if (!empty($organisation) && !empty($organisation['InvoiceOrganisationBookings'])) {

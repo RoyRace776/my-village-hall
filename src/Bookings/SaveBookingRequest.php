@@ -30,6 +30,7 @@ class SaveBookingRequest extends RequestMapperBase
             'description'        => self::as_textarea($post, 'description'),
             'public'             => self::as_bool_int($post, 'public'),
             'no_invoice_required'=> self::as_bool_int($post, 'no_invoice_required'),
+            'terms_accepted'     => self::as_bool_int($post, 'terms_accepted'),
             'return_to'          => self::as_redirect($post, 'return_to', ''),
             'chargeable_hours'   => array_key_exists('chargeable_hours', $post) ? self::as_float($post, 'chargeable_hours') : null,
             'is_recurring'       => self::as_bool_int($post, 'is_recurring'),
@@ -50,7 +51,7 @@ class SaveBookingRequest extends RequestMapperBase
         return $data;
     }
 
-    private static function normalize_addons($addons): array
+    private static function normalize_addons( array $addons): array
     {
         if (empty($addons) || !is_array($addons)) {
             return [];

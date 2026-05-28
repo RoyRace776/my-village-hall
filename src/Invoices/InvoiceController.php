@@ -7,10 +7,10 @@ if (!defined('ABSPATH')) exit;
 
 class InvoiceController {
 
-    private $service;
-    private $generator_service;
-    private $request_validator;
-    private $email_service;
+    private InvoiceService $service;
+    private InvoiceGeneratorService $generator_service;
+    private InvoiceRequestValidator $request_validator;
+    private EmailService $email_service;
 
     public function __construct(
         InvoiceService $service,
@@ -131,7 +131,7 @@ class InvoiceController {
         check_admin_referer('myvh_view_invoice_pdf');
 
         $id = \intval($_REQUEST['id'] ?? 0);
-        $result = $this->service->get_invoice_pdf_url($id);
+        $result = $this->service->get_invoice_pdf_url($id, true);
 
         if (is_wp_error($result)) {
             $this->redirect_with_message(

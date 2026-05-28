@@ -31,6 +31,7 @@ class InvoiceServiceTest extends UnitTestCase {
             '__' => fn($value) => $value,
             'is_wp_error' => fn($value) => $value instanceof WP_Error,
             'MYVH\\Invoices\\is_wp_error' => fn($value) => $value instanceof WP_Error,
+            'MYVH\\Invoices\\myvh_setting' => fn($key, $default = null) => $default,
         ]);
 
         $this->invoice_repo  = $this->mock(InvoiceRepository::class);
@@ -568,6 +569,75 @@ class InvoiceServiceTest extends UnitTestCase {
         $result = $this->service->generate_pdf($invoice_id);
 
         $this->assertSame($expected_path, $result);
+    }
+
+    /** @test */
+    public function generate_pdf_passes_configured_footer_text_to_renderer(): void {
+        $invoice_id = 13;
+
+        Functions\when('MYVH\\Invoices\\myvh_setting')->alias(
+            static function ($key, $default = null) {
+                if ($key === 'invoicing.pdf_footer_text') {
+                    return "Payment terms: 14 days\\nBank transfer preferred";
+                }
+
+                return $default;
+            }
+        );
+
+        $this->file_storage->shouldReceive('exists')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn(false);
+
+        $this->invoice_repo->shouldReceive('get_detail')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn([
+                'Id' => $invoice_id,
+                'InvoiceNumber' => 'INV-000013',
+                'InvoiceDate' => '2026-04-18',
+                'TotalAmount' => '120.00',
+            ]);
+
+        $this->invoice_repo->shouldReceive('get_items_for_invoice')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn([]);
+
+        $this->payment_repo->shouldReceive('get_by_invoice')
+            ->once()
+            ->with($invoice_id)
+            ->andReturn([]);
+
+        $this->pdf_renderer->shouldReceive('renderHtml')
+            ->once()
+            ->withArgs(static function (array $inv): bool {
+                $footer = (string) ($inv['FooterText'] ?? '');
+
+                return str_contains($footer, 'Payment terms: 14 days')
+                    && str_contains($footer, 'Bank transfer preferred');
+            })
+            ->andReturn('<html>invoice html</html>');
+
+        $this->pdf_generator->shouldReceive('render')
+            ->once()
+            ->with('<html>invoice html</html>')
+            ->andReturn('%PDF-binary');
+
+        $this->file_storage->shouldReceive('save')
+            ->once()
+            ->with($invoice_id, '%PDF-binary')
+            ->andReturn('/tmp/invoice-INV-000013.pdf');
+
+        $this->invoice_repo->shouldReceive('set_pdf_path')
+            ->once()
+            ->with($invoice_id, '/tmp/invoice-INV-000013.pdf')
+            ->andReturn(true);
+
+        $result = $this->service->generate_pdf($invoice_id);
+
+        $this->assertSame('/tmp/invoice-INV-000013.pdf', $result);
     }
 
     /** @test */

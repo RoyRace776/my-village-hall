@@ -74,4 +74,24 @@ class InvoicePdfRendererTest extends UnitTestCase {
 
         $this->assertStringNotContainsString('Booking date:', $html);
     }
+
+    /** @test */
+    public function render_html_includes_custom_footer_text_with_line_breaks_and_escaping(): void {
+        $renderer = new InvoicePdfRenderer(MYVH_PLUGIN_DIR . 'templates/Invoices/');
+
+        $html = $renderer->renderHtml([
+            'InvoiceNumber' => 'INV-000103',
+            'InvoiceDate' => '2026-06-01',
+            'Status' => 'sent',
+            'Items' => [],
+            'FooterText' => "Please pay within 14 days\n<script>alert('x')</script>",
+            'SubTotal' => 0,
+            'TaxAmount' => 0,
+            'TotalAmount' => 0,
+        ]);
+
+        $this->assertStringContainsString('Please pay within 14 days', $html);
+        $this->assertStringContainsString("&lt;script&gt;alert(&#039;x&#039;)&lt;/script&gt;", $html);
+        $this->assertStringContainsString('<br', $html);
+    }
 }
