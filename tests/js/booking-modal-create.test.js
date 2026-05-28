@@ -100,6 +100,7 @@ describe('BookingModalCreate', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
     delete window.BookingModalCreate;
+    delete window.MyvhPortalDialog;
 
     buildModalFixture();
 
@@ -198,6 +199,175 @@ describe('BookingModalCreate', () => {
 
     expect(onSuccess).toHaveBeenCalledWith({ booking_id: 321 });
     expect(changeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('continues a deferred recurring create only after confirmation', async () => {
+    const onSuccess = jest.fn();
+    window.myvhCal = {
+      currentCustomerId: 55,
+      defaultOrganisationId: 88
+    };
+    window.MyvhPortalDialog = {
+      alert: jest.fn(() => Promise.resolve(true)),
+      confirm: jest.fn(() => Promise.resolve(true))
+    };
+
+    window.fetch
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({
+          success: true,
+          data: {
+            id: 321,
+            deferred_creation: {
+              booking_id: 321,
+              requested_status: 'confirmed',
+              child_booking_ids: [401],
+              failed_occurrences: [
+                { label: '2026-06-08', reason: 'conflict', message: 'Booking conflict for 2026-06-08' }
+              ]
+            }
+          }
+        })
+      })
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({ success: true, data: { id: 321 } })
+      });
+
+    document.querySelector('[name="room_id"]').innerHTML = '<option value="14">Main Hall</option>';
+    document.querySelector('[name="room_id"]').value = '14';
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal',
+      onSuccess: onSuccess
+    });
+
+    const form = document.getElementById('myvh-booking-form-create');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    expect(window.MyvhPortalDialog.confirm).toHaveBeenCalledTimes(1);
+    expect(window.fetch).toHaveBeenCalledTimes(2);
+
+    const secondPayload = Object.fromEntries(window.fetch.mock.calls[1][1].body.entries());
+    expect(secondPayload.action).toBe('myvh_portal_finalize_deferred_booking_creation');
+    expect(secondPayload.booking_id).toBe('321');
+    expect(secondPayload.requested_status).toBe('confirmed');
+    expect(secondPayload['child_booking_ids[]']).toBe('401');
+    expect(onSuccess).toHaveBeenCalledWith({ id: 321 });
+  });
+
+  test('cancels all deferred recurring bookings when the user declines to continue', async () => {
+    const onSuccess = jest.fn();
+    window.myvhCal = {
+      currentCustomerId: 55,
+      defaultOrganisationId: 88
+    };
+    window.MyvhPortalDialog = {
+      alert: jest.fn(() => Promise.resolve(true)),
+      confirm: jest.fn(() => Promise.resolve(false))
+    };
+
+    window.fetch
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({
+          success: true,
+          data: {
+            id: 654,
+            deferred_creation: {
+              booking_id: 654,
+              requested_status: 'pending',
+              child_booking_ids: [777],
+              failed_occurrences: [
+                { label: '2026-07-10', reason: 'conflict', message: 'Booking conflict for 2026-07-10' }
+              ]
+            }
+          }
+        })
+      })
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({ success: true, data: { id: 654 } })
+      });
+
+    document.querySelector('[name="room_id"]').innerHTML = '<option value="14">Main Hall</option>';
+    document.querySelector('[name="room_id"]').value = '14';
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal',
+      onSuccess: onSuccess
+    });
+
+    const form = document.getElementById('myvh-booking-form-create');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    expect(window.fetch).toHaveBeenCalledTimes(2);
+    const secondPayload = Object.fromEntries(window.fetch.mock.calls[1][1].body.entries());
+    expect(secondPayload.action).toBe('myvh_portal_cancel_deferred_booking_creation');
+    expect(secondPayload.booking_id).toBe('654');
+    expect(onSuccess).toHaveBeenCalledWith({ cancelled_deferred_creation: true, id: 654 });
+  });
+
+  test('formats deferred clash dates using portal bookings date format setting', async () => {
+    window.myvhCal = {
+      currentCustomerId: 55,
+      defaultOrganisationId: 88,
+      portalBookingsDateFormat: 'd/M/yyyy'
+    };
+
+    window.MyvhPortalDialog = {
+      alert: jest.fn(() => Promise.resolve(true)),
+      confirm: jest.fn(() => Promise.resolve(false))
+    };
+
+    window.fetch
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({
+          success: true,
+          data: {
+            id: 654,
+            deferred_creation: {
+              booking_id: 654,
+              requested_status: 'pending',
+              child_booking_ids: [777],
+              failed_occurrences: [
+                { date: '2026-07-10', end_date: '2026-07-12', reason: 'conflict', message: 'conflict' }
+              ]
+            }
+          }
+        })
+      })
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({ success: true, data: { id: 654 } })
+      });
+
+    document.querySelector('[name="room_id"]').innerHTML = '<option value="14">Main Hall</option>';
+    document.querySelector('[name="room_id"]').value = '14';
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal'
+    });
+
+    const form = document.getElementById('myvh-booking-form-create');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    const confirmMessage = window.MyvhPortalDialog.confirm.mock.calls[0][0];
+    expect(confirmMessage).toContain('10/7/2026 to 12/7/2026');
   });
 
   test('opens in edit mode, loads booking, and reveals recurring edit scope', async () => {

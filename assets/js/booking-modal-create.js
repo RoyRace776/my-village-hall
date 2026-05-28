@@ -16,6 +16,14 @@ window.BookingModalCreate = (function() {
         return Promise.resolve(true);
     }
 
+    function portalConfirm(message, options) {
+        if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.confirm === 'function') {
+            return window.MyvhPortalDialog.confirm(message, options);
+        }
+
+        return Promise.resolve(window.confirm(message));
+    }
+
     /**
      * Initialize the booking modal with configuration and bind events.
      * @param {object} userConfig - Configuration overrides and hooks
@@ -1346,6 +1354,179 @@ window.BookingModalCreate = (function() {
         return fallbackMessage;
     }
 
+    function normalizeDeferredChildBookingIds(payload) {
+        if (!payload || !Array.isArray(payload.child_booking_ids)) {
+            return [];
+        }
+
+        return payload.child_booking_ids
+            .map((value) => Number(value) || 0)
+            .filter((value, index, values) => value > 0 && values.indexOf(value) === index);
+    }
+
+    function getPortalBookingsDateFormat() {
+        const format = window.myvhCal && window.myvhCal.portalBookingsDateFormat;
+        if (typeof format === 'string' && format.trim() !== '') {
+            return format.trim();
+        }
+
+        return 'd MMM';
+    }
+
+    function formatIsoDateWithPattern(value, pattern) {
+        if (typeof value !== 'string') {
+            return '';
+        }
+
+        const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) {
+            return '';
+        }
+
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const date = new Date(year, month - 1, day);
+
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+
+        const replacements = {
+            yyyy: String(year),
+            MMMM: new Intl.DateTimeFormat(undefined, { month: 'long' }).format(date),
+            MMM: new Intl.DateTimeFormat(undefined, { month: 'short' }).format(date),
+            MM: String(month).padStart(2, '0'),
+            M: String(month),
+            ddd: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(date),
+            dd: String(day).padStart(2, '0'),
+            d: String(day)
+        };
+
+        return pattern.replace(/yyyy|MMMM|MMM|MM|M|ddd|dd|d/g, (token) => replacements[token] || token);
+    }
+
+    function formatDeferredOccurrenceLabel(occurrence) {
+        if (!occurrence || typeof occurrence !== 'object') {
+            return '';
+        }
+
+        const pattern = getPortalBookingsDateFormat();
+        const startFormatted = formatIsoDateWithPattern(String(occurrence.date || ''), pattern);
+        const endFormatted = formatIsoDateWithPattern(String(occurrence.end_date || ''), pattern);
+
+        if (startFormatted && endFormatted && startFormatted !== endFormatted) {
+            return `${startFormatted} to ${endFormatted}`;
+        }
+
+        if (startFormatted) {
+            return startFormatted;
+        }
+
+        return typeof occurrence.label === 'string' ? occurrence.label.trim() : '';
+    }
+
+    function formatDeferredCreationMessage(payload) {
+        const failedOccurrences = Array.isArray(payload && payload.failed_occurrences)
+            ? payload.failed_occurrences
+            : [];
+
+        const labels = failedOccurrences
+            .map((occurrence) => formatDeferredOccurrenceLabel(occurrence))
+            .filter((label) => label !== '');
+
+        const list = labels.length > 0
+            ? labels.map((label) => `- ${label}`).join('\n')
+            : '- Unknown occurrence';
+
+        return [
+            'Some recurring bookings could not be created:',
+            list,
+            '',
+            'Choose “Continue with bookings” to keep the bookings that were created, or “Cancel all recurring bookings” to remove this whole recurring booking.'
+        ].join('\n');
+    }
+
+    function buildDeferredActionFormData(action, payload) {
+        const formData = new FormData();
+        formData.append('action', action);
+        formData.append('nonce', config.nonce);
+        formData.append('booking_id', String(payload.booking_id || ''));
+        formData.append('requested_status', String(payload.requested_status || 'pending'));
+
+        normalizeDeferredChildBookingIds(payload).forEach((bookingId) => {
+            formData.append('child_booking_ids[]', String(bookingId));
+        });
+
+        if (config.context && config.context !== 'portal') {
+            formData.append('context', config.context);
+        }
+
+        return formData;
+    }
+
+    function submitDeferredAction(action, payload) {
+        return fetch(config.ajax_url, {
+            method: 'POST',
+            body: buildDeferredActionFormData(action, payload)
+        }).then((response) => response.json());
+    }
+
+    function dispatchBookingChanged(detail) {
+        document.dispatchEvent(new CustomEvent('myvh:portal-booking-changed', {
+            detail: detail
+        }));
+    }
+
+    function finalizeSuccessfulSave(detail) {
+        close();
+        config.onSuccess(detail);
+        dispatchBookingChanged(detail);
+    }
+
+    function handleDeferredCreation(detail) {
+        const deferred = detail && detail.deferred_creation ? detail.deferred_creation : null;
+        if (!deferred) {
+            finalizeSuccessfulSave(detail);
+            return Promise.resolve();
+        }
+
+        const continueAction = config.context === 'portal'
+            ? 'myvh_portal_finalize_deferred_booking_creation'
+            : 'myvh_finalize_deferred_booking_creation';
+        const cancelAction = config.context === 'portal'
+            ? 'myvh_portal_cancel_deferred_booking_creation'
+            : 'myvh_cancel_deferred_booking_creation';
+
+        return portalConfirm(formatDeferredCreationMessage(deferred), {
+            title: 'Recurring booking conflicts',
+            okText: 'Continue with bookings',
+            cancelText: 'Cancel all recurring bookings'
+        }).then((confirmed) => {
+            if (confirmed) {
+                return submitDeferredAction(continueAction, deferred).then((result) => {
+                    if (!result.success) {
+                        return portalAlert(resolveErrorMessage(result.message || result.data, 'Failed to finalise booking'));
+                    }
+
+                    finalizeSuccessfulSave(result.data || { id: deferred.booking_id });
+                    return undefined;
+                });
+            }
+
+            return submitDeferredAction(cancelAction, deferred).then((result) => {
+                if (!result.success) {
+                    return portalAlert(resolveErrorMessage(result.message || result.data, 'Failed to cancel recurring bookings'));
+                }
+
+                close();
+                config.onSuccess({ cancelled_deferred_creation: true, id: deferred.booking_id });
+                dispatchBookingChanged({ cancelled_deferred_creation: true, id: deferred.booking_id });
+                return undefined;
+            });
+        });
+    }
+
     // ─────────────────────────────
     // Submit
     // ─────────────────────────────
@@ -1394,12 +1575,7 @@ window.BookingModalCreate = (function() {
                 return;
             }
 
-            close();
-            config.onSuccess(res.data);
-
-            document.dispatchEvent(new CustomEvent('myvh:portal-booking-changed', {
-                detail: res.data
-            }));
+            return handleDeferredCreation(res.data);
         })
         .catch(err => {
             console.error(err);

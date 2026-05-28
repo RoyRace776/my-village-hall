@@ -68,6 +68,7 @@ class BookingService {
     private ?UsageService $usage_service;
     private ?AccountService $account_service;
     private array $last_warnings = [];
+    private ?array $last_deferred_creation = null;
 
     public function __construct(
         RoomService $room_service,
@@ -132,6 +133,7 @@ class BookingService {
     public function save(array $data): int|WP_Error {
         $this->logger->info('Saving booking with data', ['data' => $data]);
         $this->last_warnings = [];
+        $this->last_deferred_creation = null;
         $this->booking_repo->begin();
         try {
             $this->booking_lifecycle_event_dispatcher->dispatch_before_save($data);
@@ -377,6 +379,13 @@ class BookingService {
     }
 
     private function create_booking( mixed $data, mixed $record): int|WP_Error {
+        $requested_status = sanitize_text_field((string) ($record['Status'] ?? $data['status'] ?? BookingStatus::PENDING->value));
+        $is_recurring_create = !empty($data['is_recurring']);
+
+        if ($is_recurring_create) {
+            $record['Status'] = BookingStatus::PENDING->value;
+        }
+
         $account_id = $this->resolve_current_account_id();
 
         if ($account_id > 0 && $this->feature_service !== null && !$this->feature_service->allowsForAccount($account_id, 'bookings')) {
@@ -419,12 +428,35 @@ class BookingService {
             }
         }
 
-        $this->booking_creation_event_dispatcher->dispatch_created($booking_id, $data);
-
         $recurring_result = $this->recurring_booking_creator->create_for_booking($booking_id, $data);
         if (is_wp_error($recurring_result)) {
             return $recurring_result;
         }
+
+        $deferred_creation = $this->build_deferred_creation_payload($booking_id, $data);
+        if ($deferred_creation !== null) {
+            $this->last_deferred_creation = $deferred_creation;
+            return $booking_id;
+        }
+
+        if ($is_recurring_create) {
+            $finalized = $this->finalize_deferred_creation(
+                $booking_id,
+                $requested_status,
+                array_values(array_map('intval', $this->recurring_pattern_service->get_last_booking_results()['created_booking_ids'] ?? []))
+            );
+            if (is_wp_error($finalized)) {
+                return $finalized;
+            }
+
+            if (!empty($recurring_result)) {
+                $this->last_warnings = array_merge($this->last_warnings, $recurring_result);
+            }
+
+            return $booking_id;
+        }
+
+        $this->booking_creation_event_dispatcher->dispatch_created($booking_id, $data);
 
         if (!empty($recurring_result)) {
             $this->last_warnings = array_merge($this->last_warnings, $recurring_result);
@@ -546,6 +578,112 @@ class BookingService {
 
     public function get_last_warnings(): array {
         return $this->last_warnings;
+    }
+
+    public function get_last_deferred_creation(): ?array {
+        return $this->last_deferred_creation;
+    }
+
+    public function finalize_deferred_creation(int $booking_id, string $requested_status, array $child_booking_ids = []): bool|WP_Error {
+        $booking = $this->booking_repo->get_by_id($booking_id);
+        if (!$booking) {
+            return new WP_Error('not_found', __('Booking not found', 'my-village-hall'));
+        }
+
+        $status = sanitize_text_field($requested_status);
+        if ($status !== BookingStatus::CONFIRMED->value) {
+            $status = BookingStatus::PENDING->value;
+        }
+
+        $child_booking_ids = array_values(array_unique(array_filter(array_map('intval', $child_booking_ids))));
+
+        if ($status === BookingStatus::CONFIRMED->value) {
+            $updated = $this->booking_repo->update(['Status' => $status], ['Id' => $booking_id]);
+            if ($updated === false) {
+                return new WP_Error('database', __('Failed to confirm booking', 'my-village-hall'));
+            }
+
+            foreach ($child_booking_ids as $child_booking_id) {
+                $child_updated = $this->booking_repo->update(['Status' => $status], ['Id' => $child_booking_id]);
+                if ($child_updated === false) {
+                    return new WP_Error('database', __('Failed to confirm recurring bookings', 'my-village-hall'));
+                }
+            }
+
+            $this->booking_creation_event_dispatcher->dispatch_confirmed($booking_id, $this->build_creation_dispatch_data($booking, $status));
+        } else {
+            $dispatch_data = $this->build_creation_dispatch_data($booking, $status);
+            $this->booking_creation_event_dispatcher->dispatch_created($booking_id, $dispatch_data);
+
+            $refreshed_booking = $this->booking_repo->get_by_id($booking_id);
+            $resolved_status = sanitize_text_field((string) ($refreshed_booking['Status'] ?? $status));
+            foreach ($child_booking_ids as $child_booking_id) {
+                $child_updated = $this->booking_repo->update(['Status' => $resolved_status], ['Id' => $child_booking_id]);
+                if ($child_updated === false) {
+                    return new WP_Error('database', __('Failed to update recurring booking statuses', 'my-village-hall'));
+                }
+            }
+        }
+
+        $this->booking_creation_event_dispatcher->dispatch_after_create($booking_id, $this->build_creation_dispatch_data($booking, $status));
+
+        return true;
+    }
+
+    public function cancel_deferred_creation(int $booking_id, array $child_booking_ids = []): bool|WP_Error {
+        $booking = $this->booking_repo->get_by_id($booking_id);
+        if (!$booking) {
+            return new WP_Error('not_found', __('Booking not found', 'my-village-hall'));
+        }
+
+        $child_booking_ids = array_values(array_unique(array_filter(array_map('intval', $child_booking_ids))));
+
+        foreach (array_reverse($child_booking_ids) as $child_booking_id) {
+            $deleted = $this->booking_deletion_service->delete($child_booking_id);
+            if (is_wp_error($deleted)) {
+                return $deleted;
+            }
+        }
+
+        $pattern = $this->recurring_pattern_service->get_by_parent_booking($booking_id);
+        if (!empty($pattern['Id'])) {
+            $pattern_deleted = $this->recurring_pattern_service->delete((int) $pattern['Id']);
+            if ($pattern_deleted === false) {
+                return new WP_Error('database', __('Failed to remove recurring pattern', 'my-village-hall'));
+            }
+        }
+
+        return $this->booking_deletion_service->delete($booking_id);
+    }
+
+    private function build_deferred_creation_payload(int $booking_id, array $data): ?array {
+        if (empty($data['is_recurring'])) {
+            return null;
+        }
+
+        $booking_results = $this->recurring_pattern_service->get_last_booking_results();
+        if (!is_array($booking_results) || empty($booking_results['failed_occurrences'])) {
+            return null;
+        }
+
+        $pattern = $this->recurring_pattern_service->get_by_parent_booking($booking_id);
+
+        return [
+            'booking_id' => $booking_id,
+            'pattern_id' => (int) ($pattern['Id'] ?? 0),
+            'requested_status' => sanitize_text_field((string) ($data['status'] ?? BookingStatus::PENDING->value)),
+            'child_booking_ids' => array_values(array_map('intval', $booking_results['created_booking_ids'] ?? [])),
+            'failed_occurrences' => array_values($booking_results['failed_occurrences'] ?? []),
+        ];
+    }
+
+    private function build_creation_dispatch_data(array $booking, string $status): array {
+        return [
+            'room_id' => (int) ($booking['RoomId'] ?? 0),
+            'start_time' => (string) ($booking['StartTime'] ?? ''),
+            'end_time' => (string) ($booking['EndTime'] ?? ''),
+            'status' => $status,
+        ];
     }
 
     /**

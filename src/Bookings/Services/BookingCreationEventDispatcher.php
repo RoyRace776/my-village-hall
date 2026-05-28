@@ -10,6 +10,19 @@ if (!defined('ABSPATH')) exit;
 
 class BookingCreationEventDispatcher
 {
+    public function dispatch_confirmed(int $booking_id, array $data): void
+    {
+        EventDispatcher::dispatch(
+            BookingEvents::CONFIRMED,
+            [
+                'booking_id' => $booking_id,
+                'room_id' => $data['room_id'],
+                'start' => $data['start_time'],
+                'end' => $data['end_time'],
+            ]
+        );
+    }
+
     public function dispatch_created(int $booking_id, array $data): void
     {
         EventDispatcher::dispatch(
@@ -23,15 +36,7 @@ class BookingCreationEventDispatcher
         );
 
         if (($data['status'] ?? '') == BookingStatus::CONFIRMED->value) {
-            EventDispatcher::dispatch(
-                BookingEvents::CONFIRMED,
-                [
-                    'booking_id' => $booking_id,
-                    'room_id' => $data['room_id'],
-                    'start' => $data['start_time'],
-                    'end' => $data['end_time'],
-                ]
-            );
+            $this->dispatch_confirmed($booking_id, $data);
         }
     }
 

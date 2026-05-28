@@ -161,7 +161,8 @@ class BookingServiceTest extends UnitTestCase {
         $this->usage_service = $this->mock(UsageService::class);
         $this->account_service = $this->mock(AccountService::class);
         $this->deposit_service->shouldReceive('evaluate')->zeroOrMoreTimes()->andReturn(null);
-        $this->enforcement_service->shouldReceive('canCreateBooking')->andReturn(true)->byDefault();
+        $this->enforcement_service->shouldReceive('assertCanCreateBookingForAccount')->andReturn(true)->byDefault();
+        $this->enforcement_service->shouldReceive('assertCanCreateBookingForCurrentSite')->andReturn(true)->byDefault();
         $this->enforcement_service->shouldReceive('getLastError')->andReturn(null)->byDefault();
         $this->account_service->shouldReceive('resolveAccountFromBlogId')->andReturn(null)->byDefault();
         $this->usage_service->shouldReceive('exceedsLimit')->andReturn(false)->byDefault();
@@ -357,7 +358,7 @@ class BookingServiceTest extends UnitTestCase {
     public function save_create_returns_new_booking_id_on_success(): void {
         \Brain\Monkey\Functions\when('get_current_blog_id')->justReturn(3);
         $this->account_service->shouldReceive('resolveAccountFromBlogId')->once()->with(3)->andReturnUsing(static fn(): array => ['Id' => 10]);
-        $this->enforcement_service->shouldReceive('canCreateBooking')->once()->with(10)->andReturn(true);
+        $this->enforcement_service->shouldReceive('assertCanCreateBookingForAccount')->once()->with(10)->andReturn(true);
         $this->usage_service->shouldReceive('recordBooking')->once()->with(10)->andReturn(true);
 
         $expected_id = $this->wire_happy_create(42);
@@ -365,6 +366,57 @@ class BookingServiceTest extends UnitTestCase {
         $result = $this->service->save($this->minimal_create_data());
 
         $this->assertSame($expected_id, $result);
+    }
+
+    /** @test */
+    public function save_defers_create_side_effects_when_recurring_creation_has_partial_failures(): void {
+        \Brain\Monkey\Functions\when('get_current_blog_id')->justReturn(3);
+        $this->account_service->shouldReceive('resolveAccountFromBlogId')->once()->with(3)->andReturnUsing(static fn(): array => ['Id' => 10]);
+        $this->enforcement_service->shouldReceive('assertCanCreateBookingForAccount')->once()->with(10)->andReturn(true);
+        $this->usage_service->shouldReceive('recordBooking')->once()->with(10)->andReturn(true);
+
+        $this->wire_happy_create(42);
+
+        $this->recurring_pattern_service->shouldReceive('save')->once()->andReturn(77);
+        $this->recurring_pattern_service->shouldReceive('get_last_booking_results')->twice()->andReturn([
+            'created' => 2,
+            'skipped' => 1,
+            'created_booking_ids' => [101],
+            'failed_occurrences' => [
+                [
+                    'label' => '2026-06-08',
+                    'reason' => 'conflict',
+                    'message' => 'Booking conflict for 2026-06-08',
+                ],
+            ],
+            'conflicts' => ['2026-06-08'],
+            'errors' => [],
+        ]);
+        $this->recurring_pattern_service->shouldReceive('get_by_parent_booking')->once()->with(42)->andReturnUsing(static fn(): array => ['Id' => 77]);
+
+        $result = $this->service->save($this->minimal_create_data([
+            'is_recurring' => 1,
+            'recurrence_type' => 'weekly',
+            'recurrence_end_type' => 'count',
+            'max_occurrences' => 3,
+            'start_date' => '2026-06-01',
+        ]));
+
+        $this->assertSame(42, $result);
+        $this->assertSame([], $this->service->get_last_warnings());
+        $this->assertSame([
+            'booking_id' => 42,
+            'pattern_id' => 77,
+            'requested_status' => 'confirmed',
+            'child_booking_ids' => [101],
+            'failed_occurrences' => [
+                [
+                    'label' => '2026-06-08',
+                    'reason' => 'conflict',
+                    'message' => 'Booking conflict for 2026-06-08',
+                ],
+            ],
+        ], $this->service->get_last_deferred_creation());
     }
 
     /** @test */
@@ -377,8 +429,7 @@ class BookingServiceTest extends UnitTestCase {
         $this->room_service->shouldReceive('get')->with(5)->once()->andReturn($this->minimal_room());
 
         $this->account_service->shouldReceive('resolveAccountFromBlogId')->once()->with(3)->andReturnUsing(static fn(): array => ['Id' => 10]);
-        $this->enforcement_service->shouldReceive('canCreateBooking')->once()->with(10)->andReturn(false);
-        $this->enforcement_service->shouldReceive('getLastError')->once()->andReturn(new WP_Error('usage_limit', 'Booking limit reached for this account'));
+        $this->enforcement_service->shouldReceive('assertCanCreateBookingForAccount')->once()->with(10)->andReturn(new WP_Error('usage_limit', 'Booking limit reached for this account'));
 
         $this->booking_repo->shouldReceive('create')->never();
 

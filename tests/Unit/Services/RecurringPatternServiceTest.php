@@ -441,6 +441,8 @@ class RecurringPatternServiceTest extends UnitTestCase {
         $this->assertIsArray($result);
         $this->assertSame(2, (int) ($result['created'] ?? 0));
         $this->assertSame(0, (int) ($result['skipped'] ?? 0));
+        $this->assertSame([101], $result['created_booking_ids'] ?? []);
+        $this->assertSame([], $result['failed_occurrences'] ?? []);
         $this->assertSame([], $result['errors'] ?? []);
     }
 
@@ -505,7 +507,10 @@ class RecurringPatternServiceTest extends UnitTestCase {
         $this->assertIsArray($result);
         $this->assertSame(1, (int) ($result['created'] ?? 0));
         $this->assertSame(1, (int) ($result['skipped'] ?? 0));
+        $this->assertSame([], $result['created_booking_ids'] ?? []);
         $this->assertNotEmpty($result['errors'] ?? []);
+        $this->assertSame('charge_creation_failed', $result['failed_occurrences'][0]['reason'] ?? null);
+        $this->assertSame('2026-07-08', $result['failed_occurrences'][0]['date'] ?? null);
     }
 
     /** @test */

@@ -33,6 +33,8 @@ class PortalBookingAjaxController {
         add_action('wp_ajax_myvh_portal_update_booking', [$this, 'update']);
         add_action('wp_ajax_myvh_portal_delete_booking', [$this, 'delete']);
         add_action('wp_ajax_myvh_portal_create_booking', [$this, 'create_for_modal']);
+        add_action('wp_ajax_myvh_portal_finalize_deferred_booking_creation', [$this, 'finalize_deferred_creation']);
+        add_action('wp_ajax_myvh_portal_cancel_deferred_booking_creation', [$this, 'cancel_deferred_creation']);
         add_action('wp_ajax_myvh_portal_update_booking_modal', [$this, 'update_for_modal']);
         add_action('wp_ajax_myvh_portal_next_booking_slot', [$this, 'next_slot']);
     }
@@ -156,6 +158,63 @@ class PortalBookingAjaxController {
         AjaxResponse::success($result);
     }
 
+    public function finalize_deferred_creation(): void {
+        PortalAuth::require_user();
+
+        $request = wp_unslash($_POST);
+        $result = [];
+        $booking_id = (int) ($request['booking_id'] ?? 0);
+        $requested_status = sanitize_text_field((string) ($request['requested_status'] ?? 'pending'));
+        $child_booking_ids = $this->normalize_numeric_list($request['child_booking_ids'] ?? []);
+
+        if ($booking_id <= 0) {
+            AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
+            return;
+        }
+
+        try {
+            $result = $this->booking_service->finalize_deferred_creation($booking_id, $requested_status, $child_booking_ids);
+
+            if (is_wp_error($result)) {
+                AjaxResponse::error($result->get_error_message());
+                return;
+            }
+        } catch (Exception $e) {
+            AjaxResponse::error($e->getMessage());
+            return;
+        }
+
+        AjaxResponse::success(['id' => $booking_id]);
+    }
+
+    public function cancel_deferred_creation(): void {
+        PortalAuth::require_user();
+
+        $request = wp_unslash($_POST);
+        $result = [];
+        $booking_id = (int) ($request['booking_id'] ?? 0);
+        $child_booking_ids = $this->normalize_numeric_list($request['child_booking_ids'] ?? []);
+
+        if ($booking_id <= 0) {
+            AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
+            return;
+        }
+
+        try {
+            $result = $this->booking_service->cancel_deferred_creation($booking_id, $child_booking_ids);
+
+            if (is_wp_error($result)) {
+                AjaxResponse::error($result->get_error_message());
+                return;
+            }
+        } catch (Exception $e) {
+            AjaxResponse::error($e->getMessage());
+            return;
+        }
+
+        AjaxResponse::success(['id' => $booking_id]);
+    }
+
     public function update_for_modal(): void {
         PortalAuth::require_user();
 
@@ -221,5 +280,13 @@ class PortalBookingAjaxController {
         }
 
         return $this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
+    }
+
+    private function normalize_numeric_list(mixed $value): array {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $value))));
     }
 }

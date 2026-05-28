@@ -54,6 +54,8 @@ class CalendarAjaxController {
         add_action('wp_ajax_myvh_calendar_events', [$this, 'get_events']);
         add_action('wp_ajax_myvh_move_booking', [$this, 'move_booking']);
         add_action('wp_ajax_myvh_create_event', [$this, 'create_event']);
+        add_action('wp_ajax_myvh_finalize_deferred_booking_creation', [$this, 'finalize_deferred_booking_creation']);
+        add_action('wp_ajax_myvh_cancel_deferred_booking_creation', [$this, 'cancel_deferred_booking_creation']);
         add_action('wp_ajax_myvh_update_event', [$this, 'update_event']);
         add_action('wp_ajax_myvh_customers', [$this, 'get_customers']);
         add_action('wp_ajax_myvh_organisations', [$this, 'get_organisations']);
@@ -332,6 +334,8 @@ class CalendarAjaxController {
             AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
         }
 
+        $result = [];
+
         try {
             $result = $this->calendar_service->update_event($request);
 
@@ -345,6 +349,58 @@ class CalendarAjaxController {
         }
 
         AjaxResponse::success($result);
+    }
+
+    public function finalize_deferred_booking_creation(): void {
+
+        check_ajax_referer('myvh_calendar', 'nonce');
+
+        $request = $this->get_request_data();
+        $context = sanitize_text_field($request['context'] ?? 'admin');
+
+        if ($context === 'portal') {
+            $this->authorize_user();
+        } elseif (!current_user_can('manage_myvh')) {
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
+        }
+
+        try {
+            $result = $this->calendar_service->finalize_deferred_creation($request);
+
+            if (is_wp_error($result)) {
+                AjaxResponse::error($result->get_error_message());
+            }
+
+            AjaxResponse::success($result);
+        } catch (Exception $e) {
+            AjaxResponse::server_error($e->getMessage());
+        }
+    }
+
+    public function cancel_deferred_booking_creation(): void {
+
+        check_ajax_referer('myvh_calendar', 'nonce');
+
+        $request = $this->get_request_data();
+        $context = sanitize_text_field($request['context'] ?? 'admin');
+
+        if ($context === 'portal') {
+            $this->authorize_user();
+        } elseif (!current_user_can('manage_myvh')) {
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
+        }
+
+        try {
+            $result = $this->calendar_service->cancel_deferred_creation($request);
+
+            if (is_wp_error($result)) {
+                AjaxResponse::error($result->get_error_message());
+            }
+
+            AjaxResponse::success($result);
+        } catch (Exception $e) {
+            AjaxResponse::server_error($e->getMessage());
+        }
     }
 
 

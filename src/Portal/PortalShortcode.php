@@ -49,6 +49,7 @@ class PortalShortcode implements ShortcodeInterface
             'portalNonce'           => wp_create_nonce( 'myvh_portal' ),
             'site_name'             => get_bloginfo( 'name' ),
             'headerDateFormat'      => myvh_setting( 'calendar.calendar_date_format', 'd MMM' ),
+            'portalBookingsDateFormat' => myvh_setting( 'general.portal_bookings_date_format', 'd MMM' ),
             'startOfWeek'           => (int) get_option( 'start_of_week', 1 ),
             'maxBookingDaysAhead'   => (int) myvh_setting( 'booking.max_booking_days', 365 ),
             'currentCustomerId'     => $portal_data['current_customer_id'],

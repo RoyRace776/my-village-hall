@@ -364,6 +364,8 @@ class RecurringPatternService {
         $results = [
             'created' => 0,
             'skipped' => 0,
+            'created_booking_ids' => [],
+            'failed_occurrences' => [],
             'conflicts' => [],
             'errors' => []
         ];
@@ -392,21 +394,45 @@ class RecurringPatternService {
             );
 
             if ($conflict) {
-                $results['skipped']++;
-                $results['conflicts'][] = $duration_days > 0
+                $occurrence_label = $duration_days > 0
                     ? ($date . ' to ' . $child_end_date)
                     : $date;
+
+                $results['skipped']++;
+                $results['conflicts'][] = $occurrence_label;
+                $results['failed_occurrences'][] = [
+                    'date' => $date,
+                    'end_date' => $child_end_date,
+                    'label' => $occurrence_label,
+                    'reason' => 'conflict',
+                    'message' => sprintf(
+                        __('Booking conflict for %s', 'my-village-hall'),
+                        $occurrence_label
+                    ),
+                ];
                 continue;
             }
 
             if ($account_id > 0 && $this->subscription_guard !== null) {
                 $limit_check = $this->subscription_guard->assertWithinUsageLimitForCurrentSite();
                 if (is_wp_error($limit_check)) {
+                    $occurrence_label = $duration_days > 0
+                        ? ($date . ' to ' . $child_end_date)
+                        : $date;
+
                     $results['skipped']++;
-                    $results['errors'][] = sprintf(
+                    $message = sprintf(
                         __('Booking limit reached while creating recurring series for %s', 'my-village-hall'),
-                        $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
+                        $occurrence_label
                     );
+                    $results['errors'][] = $message;
+                    $results['failed_occurrences'][] = [
+                        'date' => $date,
+                        'end_date' => $child_end_date,
+                        'label' => $occurrence_label,
+                        'reason' => 'usage_limit',
+                        'message' => $message,
+                    ];
                     continue;
                 }
             }
@@ -429,10 +455,21 @@ class RecurringPatternService {
             $new_booking_id = $booking_repo->create($booking_data);
 
             if (!$new_booking_id) {
-                $results['errors'][] = sprintf(
+                $occurrence_label = $duration_days > 0
+                    ? ($date . ' to ' . $child_end_date)
+                    : $date;
+                $message = sprintf(
                     __('Failed to create booking for %s', 'my-village-hall'),
-                    $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
+                    $occurrence_label
                 );
+                $results['errors'][] = $message;
+                $results['failed_occurrences'][] = [
+                    'date' => $date,
+                    'end_date' => $child_end_date,
+                    'label' => $occurrence_label,
+                    'reason' => 'create_failed',
+                    'message' => $message,
+                ];
                 continue;
             }
 
@@ -440,11 +477,23 @@ class RecurringPatternService {
                 $recorded = $this->usage_service->recordBooking($account_id);
                 if (!$recorded) {
                     $booking_repo->delete((int) $new_booking_id);
+                    $occurrence_label = $duration_days > 0
+                        ? ($date . ' to ' . $child_end_date)
+                        : $date;
+
                     $results['skipped']++;
-                    $results['errors'][] = sprintf(
+                    $message = sprintf(
                         __('Failed to record usage for recurring booking on %s', 'my-village-hall'),
-                        $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
+                        $occurrence_label
                     );
+                    $results['errors'][] = $message;
+                    $results['failed_occurrences'][] = [
+                        'date' => $date,
+                        'end_date' => $child_end_date,
+                        'label' => $occurrence_label,
+                        'reason' => 'usage_tracking',
+                        'message' => $message,
+                    ];
                     continue;
                 }
             }
@@ -452,14 +501,27 @@ class RecurringPatternService {
             $charge_result = $this->recalculate_booking_charges((int) $new_booking_id);
             if (is_wp_error($charge_result)) {
                 $booking_repo->delete((int) $new_booking_id);
+                $occurrence_label = $duration_days > 0
+                    ? ($date . ' to ' . $child_end_date)
+                    : $date;
+
                 $results['skipped']++;
-                $results['errors'][] = sprintf(
+                $message = sprintf(
                     __('Failed to create booking charges for %s', 'my-village-hall'),
-                    $duration_days > 0 ? ($date . ' to ' . $child_end_date) : $date
+                    $occurrence_label
                 );
+                $results['errors'][] = $message;
+                $results['failed_occurrences'][] = [
+                    'date' => $date,
+                    'end_date' => $child_end_date,
+                    'label' => $occurrence_label,
+                    'reason' => 'charge_creation_failed',
+                    'message' => $message,
+                ];
                 continue;
             }
 
+            $results['created_booking_ids'][] = (int) $new_booking_id;
             $results['created']++;
         }
 

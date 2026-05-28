@@ -231,12 +231,51 @@ class CalendarService {
         }
 
         $response = ['id' => $id];
+        $deferred_creation = $this->booking_service->get_last_deferred_creation();
+        if ($deferred_creation !== null) {
+            $response['deferred_creation'] = $deferred_creation;
+            return $response;
+        }
+
         $warnings = $this->booking_service->get_last_warnings();
         if (!empty($warnings)) {
             $response['warning'] = implode(' ', $warnings);
         }
 
         return $response;
+    }
+
+    public function finalize_deferred_creation(array $request): array|WP_Error {
+        $booking_id = (int) ($request['booking_id'] ?? 0);
+        if ($booking_id <= 0) {
+            return new WP_Error('validation', __('Booking ID is required', 'my-village-hall'));
+        }
+
+        $requested_status = sanitize_text_field((string) ($request['requested_status'] ?? BookingStatus::PENDING->value));
+        $child_booking_ids = $this->normalize_numeric_list($request['child_booking_ids'] ?? []);
+
+        $result = $this->booking_service->finalize_deferred_creation($booking_id, $requested_status, $child_booking_ids);
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return ['id' => $booking_id];
+    }
+
+    public function cancel_deferred_creation(array $request): array|WP_Error {
+        $booking_id = (int) ($request['booking_id'] ?? 0);
+        if ($booking_id <= 0) {
+            return new WP_Error('validation', __('Booking ID is required', 'my-village-hall'));
+        }
+
+        $child_booking_ids = $this->normalize_numeric_list($request['child_booking_ids'] ?? []);
+
+        $result = $this->booking_service->cancel_deferred_creation($booking_id, $child_booking_ids);
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return ['id' => $booking_id];
     }
 
     public function quote_event( mixed $request, mixed $context = 'admin', mixed $viewer_user_id = 0): array|WP_Error {
@@ -371,6 +410,14 @@ class CalendarService {
         }
 
         return $this->client_admin_service->can_administer_blog($viewer_user_id, get_current_blog_id());
+    }
+
+    private function normalize_numeric_list(mixed $value): array {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $value))));
     }
 
     private function get_room_metadata() {
