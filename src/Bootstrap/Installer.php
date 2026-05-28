@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Installer {
-    const DB_VERSION = '2.1.0';
+    const DB_VERSION = '2.2.0';
 
     /**
      * Entry point: create all tables.
@@ -109,6 +109,9 @@ class Installer {
 
         //This is special as it's not a site specific table
         self::create_site_provisioning_table( $wpdb, $collate );
+        self::create_integrity_runs_table( $wpdb, $collate );
+        self::create_integrity_findings_table( $wpdb, $collate );
+        self::create_integrity_site_status_table( $wpdb, $collate );
         self::create_subscription_saas_tables( $wpdb, $collate );
         self::create_subscription_event_log_table( $wpdb, $collate );
     }
@@ -968,6 +971,69 @@ class Installer {
         ) $collate;";
 
         dbDelta( $sql );
+    }
+
+    private static function create_integrity_runs_table(wpdb $wpdb, string $collate): void {
+        $table = $wpdb->base_prefix . 'myvh_integrity_runs';
+
+        dbDelta("CREATE TABLE {$table} (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            target_blog_id BIGINT UNSIGNED NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'queued',
+            queued_by_user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            total_sites INT UNSIGNED NOT NULL DEFAULT 0,
+            processed_sites INT UNSIGNED NOT NULL DEFAULT 0,
+            error_sites INT UNSIGNED NOT NULL DEFAULT 0,
+            warning_sites INT UNSIGNED NOT NULL DEFAULT 0,
+            summary LONGTEXT NULL,
+            started_at DATETIME NULL,
+            completed_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            PRIMARY KEY (id),
+            INDEX idx_target_blog (target_blog_id),
+            INDEX idx_status (status),
+            INDEX idx_created_at (created_at)
+        ) {$collate};");
+    }
+
+    private static function create_integrity_findings_table(wpdb $wpdb, string $collate): void {
+        $table = $wpdb->base_prefix . 'myvh_integrity_findings';
+
+        dbDelta("CREATE TABLE {$table} (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            run_id BIGINT UNSIGNED NOT NULL,
+            blog_id BIGINT UNSIGNED NOT NULL,
+            check_key VARCHAR(120) NOT NULL,
+            severity VARCHAR(20) NOT NULL,
+            message VARCHAR(255) NOT NULL,
+            details LONGTEXT NULL,
+            created_at DATETIME NOT NULL,
+            PRIMARY KEY (id),
+            INDEX idx_run_id (run_id),
+            INDEX idx_blog_id (blog_id),
+            INDEX idx_severity (severity),
+            INDEX idx_check_key (check_key)
+        ) {$collate};");
+    }
+
+    private static function create_integrity_site_status_table(wpdb $wpdb, string $collate): void {
+        $table = $wpdb->base_prefix . 'myvh_integrity_site_status';
+
+        dbDelta("CREATE TABLE {$table} (
+            blog_id BIGINT UNSIGNED NOT NULL,
+            last_run_id BIGINT UNSIGNED NOT NULL,
+            last_status VARCHAR(20) NOT NULL,
+            last_run_at DATETIME NOT NULL,
+            error_count INT UNSIGNED NOT NULL DEFAULT 0,
+            warning_count INT UNSIGNED NOT NULL DEFAULT 0,
+            summary LONGTEXT NULL,
+            updated_at DATETIME NOT NULL,
+            PRIMARY KEY (blog_id),
+            INDEX idx_last_run (last_run_id),
+            INDEX idx_last_status (last_status),
+            INDEX idx_last_run_at (last_run_at)
+        ) {$collate};");
     }
 
     public static function backfill_opening_hours_by_day( wpdb $wpdb ): void {

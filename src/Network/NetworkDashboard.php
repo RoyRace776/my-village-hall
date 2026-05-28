@@ -18,12 +18,17 @@ class NetworkDashboard {
     private const SUBSCRIPTION_STATUS_PAGE = 'myvh-network-subscription-status';
     private const PROVISIONING_SETTINGS_PAGE = 'myvh-network-provisioning-settings';
     private const PROVISIONING_MAINTENANCE_PAGE = 'myvh-network-provisioning-maintenance';
+    private const INTEGRITY_PAGE = 'myvh-network-integrity';
+    private const RUN_NETWORK_INTEGRITY_ACTION = 'myvh_network_run_integrity';
+    private const RUN_SINGLE_SITE_INTEGRITY_ACTION = 'myvh_network_run_site_integrity';
 
     public function __construct(
         private ?SiteProvisioningRepository $provisioning_repo = null,
         private ?AccountRepository $account_repository = null,
         private ?SubscriptionRepository $subscription_repository = null,
-        private ?PlanRepository $plan_repository = null
+        private ?PlanRepository $plan_repository = null,
+        private ?IntegrityRepository $integrity_repository = null,
+        private ?IntegrityRunManager $integrity_run_manager = null
     ) {
         global $wpdb;
 
@@ -42,10 +47,110 @@ class NetworkDashboard {
         if ($this->plan_repository === null) {
             $this->plan_repository = new PlanRepository($wpdb);
         }
+
+        if ($this->integrity_repository === null && $wpdb instanceof \wpdb) {
+            $this->integrity_repository = new IntegrityRepository();
+        }
+
+        if ($this->integrity_run_manager === null && $wpdb instanceof \wpdb && $this->integrity_repository instanceof IntegrityRepository) {
+            $this->integrity_run_manager = new IntegrityRunManager($this->integrity_repository, new SiteIntegrityChecker($wpdb));
+        }
     }
 
     public function init(): void {
         add_action('network_admin_menu', [$this, 'add_menu']);
+        add_action('admin_post_' . self::RUN_NETWORK_INTEGRITY_ACTION, [$this, 'handle_run_network_integrity']);
+        add_action('admin_post_' . self::RUN_SINGLE_SITE_INTEGRITY_ACTION, [$this, 'handle_run_single_site_integrity']);
+        add_action('wp_dashboard_setup', [$this, 'register_integrity_dashboard_widget']);
+        add_action('wp_network_dashboard_setup', [$this, 'register_integrity_dashboard_widget']);
+    }
+
+    public function register_integrity_dashboard_widget(): void {
+        if (!is_multisite() || !$this->can_manage_network_options()) {
+            return;
+        }
+
+        wp_add_dashboard_widget(
+            'myvh_integrity_checks_widget',
+            'Village Hall Integrity Checks',
+            [$this, 'render_integrity_dashboard_widget']
+        );
+    }
+
+    public function render_integrity_dashboard_widget(): void {
+        if (!$this->integrity_repository instanceof IntegrityRepository || !$this->integrity_run_manager instanceof IntegrityRunManager) {
+            echo '<p>Integrity services are not available.</p>';
+            return;
+        }
+
+        $active_run = $this->integrity_repository->get_active_run();
+        $recent_runs = $this->integrity_repository->get_recent_runs(5);
+        $current_blog_id = (int) get_current_blog_id();
+        $status_map = $this->integrity_repository->get_site_status_map([$current_blog_id]);
+        $site_status = $status_map[$current_blog_id] ?? null;
+
+        echo '<p>Run checks directly from your dashboard or open the full integrity page for details.</p>';
+
+        if (is_array($active_run)) {
+            echo '<div class="notice notice-info" style="margin:0 0 12px 0;"><p style="margin:8px 12px;">';
+            echo 'Active run #' . esc_html((string) ((int) ($active_run['id'] ?? 0))) . ' is ' . esc_html((string) ($active_run['status'] ?? 'running')) . '. ';
+            echo 'Progress: ' . esc_html((string) ((int) ($active_run['processed_sites'] ?? 0))) . '/' . esc_html((string) ((int) ($active_run['total_sites'] ?? 0))) . ' sites.';
+            echo '</p></div>';
+        }
+
+        echo '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">';
+
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('myvh_network_integrity_run_all');
+        echo '<input type="hidden" name="action" value="' . esc_attr(self::RUN_NETWORK_INTEGRITY_ACTION) . '">';
+        echo '<button type="submit" class="button button-primary">Run All Sites</button>';
+        echo '</form>';
+
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('myvh_network_integrity_run_site');
+        echo '<input type="hidden" name="action" value="' . esc_attr(self::RUN_SINGLE_SITE_INTEGRITY_ACTION) . '">';
+        echo '<input type="hidden" name="blog_id" value="' . esc_attr((string) $current_blog_id) . '">';
+        echo '<button type="submit" class="button">Run This Site</button>';
+        echo '</form>';
+
+        echo '<a class="button" href="' . esc_url(network_admin_url('admin.php?page=' . self::INTEGRITY_PAGE)) . '">Open Full Integrity Page</a>';
+        echo '</div>';
+
+        if (is_array($site_status)) {
+            echo '<p><strong>This site</strong>: Last run ' . esc_html((string) ($site_status['last_run_at'] ?? 'Never'));
+            echo ' | Status: ' . esc_html((string) ($site_status['last_status'] ?? 'not-run'));
+            echo ' | Errors: ' . esc_html((string) ((int) ($site_status['error_count'] ?? 0)));
+            echo ' | Warnings: ' . esc_html((string) ((int) ($site_status['warning_count'] ?? 0))) . '</p>';
+        } else {
+            echo '<p><strong>This site</strong>: No integrity run has been recorded yet.</p>';
+        }
+
+        echo '<h4 style="margin:12px 0 8px;">Recent Runs</h4>';
+
+        if (empty($recent_runs)) {
+            echo '<p>No runs recorded yet.</p>';
+            return;
+        }
+
+        echo '<ul style="margin:0;padding-left:18px;">';
+        foreach ($recent_runs as $run) {
+            $run_id = (int) ($run['id'] ?? 0);
+            $status = (string) ($run['status'] ?? 'unknown');
+            $target_blog = (int) ($run['target_blog_id'] ?? 0);
+            $target = $target_blog > 0 ? ('Site #' . $target_blog) : 'All Sites';
+            $view_link = add_query_arg([
+                'page' => self::INTEGRITY_PAGE,
+                'run_id' => $run_id,
+            ], network_admin_url('admin.php'));
+
+            echo '<li style="margin:0 0 4px 0;">';
+            echo '#' . esc_html((string) $run_id) . ' ';
+            echo esc_html($status) . ' ';
+            echo '(' . esc_html($target) . ') ';
+            echo '<a href="' . esc_url($view_link) . '">View</a>';
+            echo '</li>';
+        }
+        echo '</ul>';
     }
 
     public function add_menu(): void {
@@ -96,6 +201,15 @@ class NetworkDashboard {
             self::PROVISIONING_MAINTENANCE_PAGE,
             [$this, 'render_provisioning_maintenance_page']
         );
+
+        add_submenu_page(
+            'myvh-network',
+            'Integrity Checks',
+            'Integrity Checks',
+            'manage_network_options',
+            self::INTEGRITY_PAGE,
+            [$this, 'render_integrity_page']
+        );
     }
 
     public function render_menu_icons(): void {
@@ -104,6 +218,7 @@ class NetworkDashboard {
             'admin.php?page=' . self::SUBSCRIPTION_STATUS_PAGE => 'dashicons-chart-bar',
             'admin.php?page=' . self::PROVISIONING_SETTINGS_PAGE => 'dashicons-admin-tools',
             'admin.php?page=' . self::PROVISIONING_MAINTENANCE_PAGE => 'dashicons-clipboard',
+            'admin.php?page=' . self::INTEGRITY_PAGE => 'dashicons-shield',
         ];
         $json_map = wp_json_encode($icon_map);
 
@@ -113,6 +228,14 @@ class NetworkDashboard {
 
     public function render_dashboard(): void {
         echo '<div class="wrap"><h1>Village Hall Network Dashboard</h1>';
+
+        echo '<details class="postbox" open style="max-width: 980px; margin: 16px 0;">';
+        echo '<summary style="cursor:pointer; padding: 12px 16px; font-size: 16px; font-weight: 600; user-select: none;">Integrity Checks</summary>';
+        echo '<div style="padding: 0 16px 12px;">';
+        echo '<p style="margin-top: 0;">Quick access to run and review integrity checks without leaving this dashboard.</p>';
+        $this->render_integrity_dashboard_widget();
+        echo '</div>';
+        echo '</details>';
 
         /** @var WP_Site[] $sites */
         $sites = get_sites([
@@ -632,6 +755,204 @@ class NetworkDashboard {
         .myvh-status-cancelled { color: #999; font-weight: bold; text-decoration: line-through; }
         .myvh-status-failed { color: #d9534f; font-weight: bold; }
         </style>';
+    }
+
+    public function handle_run_network_integrity(): void {
+        if (!$this->can_manage_network_options()) {
+            wp_die('Sorry, you are not allowed to access this page.');
+        }
+
+        if (!$this->integrity_run_manager instanceof IntegrityRunManager) {
+            wp_die('Integrity services are not available.');
+        }
+
+        check_admin_referer('myvh_network_integrity_run_all');
+
+        $result = $this->integrity_run_manager->queue_network_run(get_current_user_id());
+
+        $notice = is_wp_error($result) ? 'queue_failed' : 'queued';
+
+        wp_safe_redirect(add_query_arg([
+            'page' => self::INTEGRITY_PAGE,
+            'myvh_notice' => $notice,
+        ], network_admin_url('admin.php')));
+        exit;
+    }
+
+    public function handle_run_single_site_integrity(): void {
+        if (!$this->can_manage_network_options()) {
+            wp_die('Sorry, you are not allowed to access this page.');
+        }
+
+        if (!$this->integrity_run_manager instanceof IntegrityRunManager) {
+            wp_die('Integrity services are not available.');
+        }
+
+        check_admin_referer('myvh_network_integrity_run_site');
+
+        $blog_id = isset($_POST['blog_id']) ? (int) $_POST['blog_id'] : 0;
+        $result = $this->integrity_run_manager->run_single_site($blog_id, get_current_user_id());
+
+        $notice = is_wp_error($result) ? 'site_run_failed' : 'site_run_completed';
+
+        wp_safe_redirect(add_query_arg([
+            'page' => self::INTEGRITY_PAGE,
+            'myvh_notice' => $notice,
+            'blog_id' => $blog_id,
+            'run_id' => is_wp_error($result) ? 0 : (int) $result,
+        ], network_admin_url('admin.php')));
+        exit;
+    }
+
+    public function render_integrity_page(): void {
+        if (!$this->can_manage_network_options()) {
+            wp_die('Sorry, you are not allowed to access this page.');
+        }
+
+        if (!$this->integrity_repository instanceof IntegrityRepository) {
+            wp_die('Integrity services are not available.');
+        }
+
+        $sites = $this->get_subscription_status_sites();
+        $blog_ids = array_map(static fn($site): int => (int) ($site->blog_id ?? 0), $sites);
+        $status_map = $this->integrity_repository->get_site_status_map($blog_ids);
+        $recent_runs = $this->integrity_repository->get_recent_runs(25);
+        $active_run = $this->integrity_repository->get_active_run();
+        $notice = sanitize_key($_GET['myvh_notice'] ?? '');
+        $run_id = isset($_GET['run_id']) ? (int) $_GET['run_id'] : 0;
+        $selected_run = $run_id > 0 ? $this->integrity_repository->get_run($run_id) : null;
+        $selected_run_findings = $run_id > 0 ? $this->integrity_repository->get_run_findings($run_id, 300) : [];
+
+        $notices = [
+            'queued' => ['success', 'Integrity check has been queued and will run in the background.'],
+            'queue_failed' => ['error', 'Integrity check could not be queued. Another run may already be active.'],
+            'site_run_completed' => ['success', 'Site integrity check completed.'],
+            'site_run_failed' => ['error', 'Site integrity check failed.'],
+        ];
+
+        echo '<div class="wrap">';
+        echo '<h1>Integrity Checks</h1>';
+        echo '<p>Run database and booking integrity checks for all sites or an individual site.</p>';
+
+        if (isset($notices[$notice])) {
+            [$notice_type, $notice_text] = $notices[$notice];
+            echo '<div class="notice notice-' . esc_attr($notice_type) . ' is-dismissible"><p>' . esc_html($notice_text) . '</p></div>';
+        }
+
+        if (is_array($active_run)) {
+            echo '<div class="notice notice-info"><p>';
+            echo 'Active run #' . esc_html((string) ((int) ($active_run['id'] ?? 0))) . ' is ' . esc_html((string) ($active_run['status'] ?? 'running')) . '. ';
+            echo 'Progress: ' . esc_html((string) ((int) ($active_run['processed_sites'] ?? 0))) . '/' . esc_html((string) ((int) ($active_run['total_sites'] ?? 0))) . ' sites.';
+            echo '</p></div>';
+        }
+
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin: 16px 0 24px;">';
+        wp_nonce_field('myvh_network_integrity_run_all');
+        echo '<input type="hidden" name="action" value="' . esc_attr(self::RUN_NETWORK_INTEGRITY_ACTION) . '">';
+        submit_button('Run Integrity Check For All Sites', 'primary', '', false);
+        echo '</form>';
+
+        echo '<h2>Site Status</h2>';
+        echo '<table class="widefat striped">';
+        echo '<thead><tr><th>Site</th><th>Last run</th><th>Status</th><th>Errors</th><th>Warnings</th><th>Actions</th></tr></thead><tbody>';
+
+        foreach ($sites as $site) {
+            $blog_id = (int) ($site->blog_id ?? 0);
+            $site_name = get_blog_option($blog_id, 'blogname', sprintf('Site %d', $blog_id));
+            $row = $status_map[$blog_id] ?? null;
+            $last_run_at = is_array($row) && !empty($row['last_run_at']) ? (string) $row['last_run_at'] : 'Never';
+            $status = is_array($row) && !empty($row['last_status']) ? (string) $row['last_status'] : 'not-run';
+            $errors = is_array($row) ? (int) ($row['error_count'] ?? 0) : 0;
+            $warnings = is_array($row) ? (int) ($row['warning_count'] ?? 0) : 0;
+
+            echo '<tr>';
+            echo '<td>' . esc_html($site_name) . ' <span style="color:#777;">(#' . esc_html((string) $blog_id) . ')</span></td>';
+            echo '<td>' . esc_html($last_run_at) . '</td>';
+            echo '<td>' . esc_html($status) . '</td>';
+            echo '<td>' . esc_html((string) $errors) . '</td>';
+            echo '<td>' . esc_html((string) $warnings) . '</td>';
+            echo '<td>';
+
+            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;">';
+            wp_nonce_field('myvh_network_integrity_run_site');
+            echo '<input type="hidden" name="action" value="' . esc_attr(self::RUN_SINGLE_SITE_INTEGRITY_ACTION) . '">';
+            echo '<input type="hidden" name="blog_id" value="' . esc_attr((string) $blog_id) . '">';
+            submit_button('Run This Site', 'secondary small', '', false);
+            echo '</form>';
+
+            if (is_array($row) && !empty($row['last_run_id'])) {
+                $details_link = add_query_arg([
+                    'page' => self::INTEGRITY_PAGE,
+                    'run_id' => (int) $row['last_run_id'],
+                ], network_admin_url('admin.php'));
+                echo ' <a class="button button-small" href="' . esc_url($details_link) . '">View Last Result</a>';
+            }
+
+            echo '</td>';
+            echo '</tr>';
+        }
+
+        if (empty($sites)) {
+            echo '<tr><td colspan="6">No eligible sites were found.</td></tr>';
+        }
+
+        echo '</tbody></table>';
+
+        echo '<h2 style="margin-top: 24px;">Recent Runs</h2>';
+        echo '<table class="widefat striped">';
+        echo '<thead><tr><th>Run</th><th>Status</th><th>Target</th><th>Progress</th><th>Error Sites</th><th>Warning Sites</th><th>Completed</th><th>Actions</th></tr></thead><tbody>';
+
+        if (empty($recent_runs)) {
+            echo '<tr><td colspan="8">No runs recorded yet.</td></tr>';
+        } else {
+            foreach ($recent_runs as $run) {
+                $target_blog = (int) ($run['target_blog_id'] ?? 0);
+                $target_label = $target_blog > 0 ? ('Site #' . $target_blog) : 'All Sites';
+                $view_link = add_query_arg([
+                    'page' => self::INTEGRITY_PAGE,
+                    'run_id' => (int) ($run['id'] ?? 0),
+                ], network_admin_url('admin.php'));
+
+                echo '<tr>';
+                echo '<td>#' . esc_html((string) ((int) ($run['id'] ?? 0))) . '</td>';
+                echo '<td>' . esc_html((string) ($run['status'] ?? 'unknown')) . '</td>';
+                echo '<td>' . esc_html($target_label) . '</td>';
+                echo '<td>' . esc_html((string) ((int) ($run['processed_sites'] ?? 0))) . '/' . esc_html((string) ((int) ($run['total_sites'] ?? 0))) . '</td>';
+                echo '<td>' . esc_html((string) ((int) ($run['error_sites'] ?? 0))) . '</td>';
+                echo '<td>' . esc_html((string) ((int) ($run['warning_sites'] ?? 0))) . '</td>';
+                echo '<td>' . esc_html((string) ($run['completed_at'] ?? '—')) . '</td>';
+                echo '<td><a class="button button-small" href="' . esc_url($view_link) . '">View</a></td>';
+                echo '</tr>';
+            }
+        }
+
+        echo '</tbody></table>';
+
+        if (is_array($selected_run)) {
+            echo '<h2 style="margin-top: 24px;">Run #' . esc_html((string) ((int) ($selected_run['id'] ?? 0))) . ' Findings</h2>';
+            echo '<p>' . esc_html((string) ($selected_run['summary'] ?? '')) . '</p>';
+
+            echo '<table class="widefat striped">';
+            echo '<thead><tr><th>Site</th><th>Severity</th><th>Check</th><th>Message</th><th>When</th></tr></thead><tbody>';
+
+            if (empty($selected_run_findings)) {
+                echo '<tr><td colspan="5">No findings for this run.</td></tr>';
+            } else {
+                foreach ($selected_run_findings as $finding) {
+                    echo '<tr>';
+                    echo '<td>' . esc_html((string) ((int) ($finding['blog_id'] ?? 0))) . '</td>';
+                    echo '<td>' . esc_html((string) ($finding['severity'] ?? 'info')) . '</td>';
+                    echo '<td>' . esc_html((string) ($finding['check_key'] ?? '')) . '</td>';
+                    echo '<td>' . esc_html((string) ($finding['message'] ?? '')) . '</td>';
+                    echo '<td>' . esc_html((string) ($finding['created_at'] ?? '')) . '</td>';
+                    echo '</tr>';
+                }
+            }
+
+            echo '</tbody></table>';
+        }
+
+        echo '</div>';
     }
 
     /**

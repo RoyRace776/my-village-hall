@@ -11,6 +11,7 @@ use MYVH\Hooks\EventListeners;
 use MYVH\Lifecycle\Contracts\OptionStoreInterface;
 use MYVH\Lifecycle\Contracts\PluginInstallerInterface;
 use MYVH\Login\PasswordResetLoader;
+use MYVH\Network\IntegrityRunManager;
 use MYVH\Network\NetworkDashboard;
 use MYVH\Settings\SettingsPage;
 use MYVH\Settings\SettingsRegistry;
@@ -68,7 +69,10 @@ class PluginBootstrap {
         ( new CalendarShortcode() )->init();
         ( new PasswordResetLoader() )->init();
 
-        if ( is_multisite() && is_network_admin() ) {
+        if ( is_multisite() ) {
+            ( new IntegrityRunManager() )->register();
+            // Register dashboard hooks on every multisite admin request so
+            // admin-post actions remain available when posting from network pages.
             ( new NetworkDashboard() )->init();
         }
     }
