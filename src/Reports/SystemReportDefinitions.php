@@ -12,29 +12,16 @@ final class SystemReportDefinitions {
      * @return array<int, Report>
      */
     public static function all(): array {
-        $today = gmdate('Y-m-d');
-
         $definitions = [
             [
                 'id' => self::UPCOMING_BOOKINGS_ID,
-                'name' => 'Upcoming bookings',
-                'description' => 'Confirmed future bookings sorted by date.',
+                'name' => 'All Bookings',
+                'description' => 'All bookings sorted by date.',
                 'type' => Report::TYPE_SYSTEM,
                 'data_source' => 'bookings',
                 'query_json' => wp_json_encode([
-                    'select' => ['booking_id', 'date', 'organisation', 'total', 'status'],
-                    'filters' => [
-                        [
-                            'field' => 'date',
-                            'operator' => '>=',
-                            'value' => $today,
-                        ],
-                        [
-                            'field' => 'status',
-                            'operator' => 'IN',
-                            'value' => ['confirmed'],
-                        ],
-                    ],
+                    'select' => ['booking_id', 'date', 'customer_name', 'room', 'organisation', 'total', 'status'],
+                    'filters' => [],
                     'sort' => [
                         [
                             'field' => 'date',

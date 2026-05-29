@@ -37,6 +37,18 @@ final class ReportQueryBuilder {
                     'type' => 'string',
                     'operators' => ['=', '!=', 'LIKE', 'IN'],
                 ],
+                'customer_name' => [
+                    'label' => 'Customer Name',
+                    'column' => 'customer_name',
+                    'type' => 'string',
+                    'operators' => ['=', '!=', 'LIKE', 'IN'],
+                ],
+                'room' => [
+                    'label' => 'Room',
+                    'column' => 'room',
+                    'type' => 'string',
+                    'operators' => ['=', '!=', 'LIKE', 'IN'],
+                ],
                 'total' => [
                     'label' => 'Total',
                     'column' => 'total',
@@ -299,10 +311,14 @@ final class ReportQueryBuilder {
                 SELECT
                     b.Id AS `booking_id`,
                     b.StartDate AS `date`,
+                    COALESCE(c.Name, '') AS `customer_name`,
+                    COALESCE(r.Name, '') AS `room`,
                     COALESCE(o.Name, '') AS `organisation`,
                     COALESCE(ch.TotalAmount, 0) AS `total`,
                     b.Status AS `status`
                 FROM {$table_prefix}myvh_bookings b
+                LEFT JOIN {$table_prefix}myvh_customers c ON b.CustomerId = c.Id
+                LEFT JOIN {$table_prefix}myvh_rooms r ON b.RoomId = r.Id
                 LEFT JOIN {$table_prefix}myvh_organisations o ON b.OrganisationId = o.Id
                 LEFT JOIN (
                     SELECT BookingId, SUM(TotalAmount) AS TotalAmount

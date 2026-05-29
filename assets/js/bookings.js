@@ -638,6 +638,14 @@ window.Bookings = (function() {
     }
 
     /**
+     * Check whether the recurring flat-view mode is active.
+     */
+    function isRecurringFlatView() {
+        var flatRadio = document.querySelector('.myvh-recurring-view-mode[value="flat"]');
+        return flatRadio ? flatRadio.checked : false;
+    }
+
+    /**
      * Filter bookings table rows by selected statuses.
      */
     function filterByStatus() {
@@ -947,10 +955,62 @@ window.Bookings = (function() {
 
         // Show/hide group headers based on child visibility
         let groupHeaders = document.querySelectorAll('.myvh-booking-group-header');
+        let flatView = isRecurringFlatView();
+        let table = document.getElementById('myvh-bookings-table');
+
+        if (table) {
+            table.classList.toggle('myvh-flat-recurring-view', flatView);
+        }
+
         groupHeaders.forEach(function(header) {
             let groupId = header.getAttribute('data-group');
-            header.classList.toggle('myvh-hidden-by-filter', !groups[groupId]);
+            // In flat view, always hide group headers; otherwise hide based on child visibility
+            header.classList.toggle('myvh-hidden-by-filter', flatView || !groups[groupId]);
         });
+
+        // Sort rows by date in flat view; restore original order in grouped view
+        if (table) {
+            let tbody = table.querySelector('tbody');
+            if (tbody) {
+                // Snapshot original order the first time we see this tbody
+                let allRows = Array.from(tbody.children);
+                allRows.forEach(function(row, index) {
+                    if (!row.hasAttribute('data-original-order')) {
+                        row.setAttribute('data-original-order', String(index));
+                    }
+                });
+
+                if (flatView) {
+                    allRows.sort(function(a, b) {
+                        let dateA = (a.getAttribute('data-start-date') || '') + ' ' + (a.getAttribute('data-start-time') || '');
+                        let dateB = (b.getAttribute('data-start-date') || '') + ' ' + (b.getAttribute('data-start-time') || '');
+                        return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
+                    });
+                } else {
+                    allRows.sort(function(a, b) {
+                        return parseInt(a.getAttribute('data-original-order') || '0', 10) -
+                               parseInt(b.getAttribute('data-original-order') || '0', 10);
+                    });
+                }
+
+                allRows.forEach(function(row) {
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // Update the subtitle to reflect current view mode
+        let subtitle = document.getElementById('myvh-bookings-subtitle');
+        if (subtitle) {
+            if (flatView) {
+                subtitle.textContent = 'Grouped bookings are shown individually';
+            } else {
+                let originalSubtitle = subtitle.getAttribute('data-original');
+                if (originalSubtitle) {
+                    subtitle.textContent = originalSubtitle;
+                }
+            }
+        }
     }
 
     /**
@@ -1150,6 +1210,11 @@ window.Bookings = (function() {
             descriptionFilter.addEventListener('input', applyAllFilters);
         }
 
+        // Recurring view mode toggle (grouped vs flat)
+        document.querySelectorAll('.myvh-recurring-view-mode').forEach(function(radio) {
+            radio.addEventListener('change', applyAllFilters);
+        });
+
         // Clear filters button
         let clearBtn = document.getElementById(prefix + 'clear');
         if (clearBtn) {
@@ -1181,6 +1246,11 @@ window.Bookings = (function() {
                     cb.checked = true;
                 });
 
+                // Reset recurring view mode to 'grouped'
+                document.querySelectorAll('.myvh-recurring-view-mode').forEach(function(radio) {
+                    radio.checked = (radio.value === 'grouped');
+                });
+
                 applyAllFilters();
             });
         }
@@ -1191,6 +1261,12 @@ window.Bookings = (function() {
      */
     function init() {
         bindFindSlotActions();
+
+        // Cache the original subtitle text so it can be restored when leaving flat view
+        let subtitle = document.getElementById('myvh-bookings-subtitle');
+        if (subtitle && !subtitle.hasAttribute('data-original')) {
+            subtitle.setAttribute('data-original', subtitle.textContent);
+        }
 
         if (!globalHandlersBound) {
             bindGroupToggles();

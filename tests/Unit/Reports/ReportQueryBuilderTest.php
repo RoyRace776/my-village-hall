@@ -32,4 +32,28 @@ final class ReportQueryBuilderTest extends UnitTestCase {
         $this->assertStringContainsString('LIMIT %d OFFSET %d', $result['sql']);
         $this->assertSame(['confirmed', 25, 5], $result['params']);
     }
+
+    public function test_bookings_source_supports_customer_name_field(): void {
+        $builder = new ReportQueryBuilder();
+
+        $schema = $builder->get_schema_for_source('bookings');
+        $field_names = array_map(static fn(array $field): string => (string) ($field['name'] ?? ''), $schema['fields']);
+
+        $this->assertContains('customer_name', $field_names);
+        $this->assertContains('room', $field_names);
+
+        $result = $builder->build([
+            'select' => ['booking_id', 'customer_name', 'room'],
+            'sort' => [
+                ['field' => 'customer_name', 'direction' => 'ASC'],
+            ],
+            'limit' => 10,
+            'offset' => 0,
+        ], 'bookings', 'wp_');
+
+        $this->assertStringContainsString('src.`customer_name` AS `customer_name`', $result['sql']);
+        $this->assertStringContainsString('src.`room` AS `room`', $result['sql']);
+        $this->assertStringContainsString('ORDER BY src.`customer_name` ASC', $result['sql']);
+        $this->assertSame([10, 0], $result['params']);
+    }
 }

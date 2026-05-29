@@ -990,6 +990,21 @@ body .site-main:has(#myvh-portal) {
   display: table-row;
 }
 
+/* Flat recurring view: show all child rows as standalone rows */
+#myvh-bookings-table.myvh-flat-recurring-view tr.myvh-booking-group-header {
+  display: none !important;
+}
+
+#myvh-bookings-table.myvh-flat-recurring-view tr.myvh-recurring-child {
+  display: table-row;
+}
+
+.myvh-recurring-view-toggle {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 .myvh-portal-bookings-table tr.myvh-hidden-by-filter {
   display: none !important;
 }

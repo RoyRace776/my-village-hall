@@ -71,7 +71,7 @@ usort($groups, function ($a, $b) use ($today) {
         <div class="myvh-account-card-head">
             <div>
                 <h3><?php echo $is_client_admin ? 'Booking Timeline' : 'Your Booking Timeline'; ?></h3>
-                <span><?php echo esc_html((string) $group_count); ?> <?php echo 1 === $group_count ? 'booking group' : 'booking groups'; ?></span>
+                <span id="myvh-bookings-subtitle"><?php echo esc_html((string) $group_count); ?> <?php echo 1 === $group_count ? 'booking group' : 'booking groups'; ?></span>
             </div>
         </div>
 
@@ -225,6 +225,22 @@ usort($groups, function ($a, $b) use ($today) {
                     </div>
                 </div>
 
+                <div class="myvh-filter-row">
+                    <div class="myvh-filter-field">
+                        <label><?php _e('Recurring Bookings:', 'my-village-hall'); ?></label>
+                        <div class="myvh-recurring-view-toggle">
+                            <label class="myvh-checkbox-label">
+                                <input type="radio" name="myvh-recurring-view" class="myvh-recurring-view-mode" value="grouped" checked>
+                                <span><?php _e('Grouped', 'my-village-hall'); ?></span>
+                            </label>
+                            <label class="myvh-checkbox-label">
+                                <input type="radio" name="myvh-recurring-view" class="myvh-recurring-view-mode" value="flat">
+                                <span><?php _e('Individual bookings', 'my-village-hall'); ?></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="myvh-filter-actions">
                     <button type="button" class="button button-secondary" id="myvh-filter-clear">
                         <?php _e('Clear Filters', 'my-village-hall'); ?>
@@ -334,7 +350,7 @@ usort($groups, function ($a, $b) use ($today) {
                                     </td>
                                     <td>
                                         <strong>
-                                            <?php echo esc_html($b['RoomName'] ?? 'Room booking'); ?>
+                                            ↻ <?php echo esc_html($b['RoomName'] ?? 'Room booking'); ?>
                                             <?php if (!empty($b['Description'])): ?>
                                                 - <?php echo esc_html($b['Description']); ?>
                                             <?php endif; ?>
