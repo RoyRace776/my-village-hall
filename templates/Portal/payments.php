@@ -7,6 +7,22 @@ $selected_invoice_id = isset($selected_invoice_id) ? \intval($selected_invoice_i
 $payments = isset($payments) && is_array($payments) ? $payments : [];
 $payment_methods = isset($payment_methods) && is_array($payment_methods) ? $payment_methods : [];
 $invoices = isset($invoices) && is_array($invoices) ? $invoices : [];
+$selected_invoice_amount_due = null;
+
+if ($selected_invoice_id > 0) {
+    foreach ($invoices as $invoice) {
+        $invoice_id = \intval($invoice['Id'] ?? 0);
+        if ($invoice_id !== $selected_invoice_id) {
+            continue;
+        }
+
+        $selected_invoice_amount_due = isset($invoice['AmountDue'])
+            ? max(0.0, \floatval($invoice['AmountDue']))
+            : max(0.0, \floatval($invoice['TotalAmount'] ?? 0) - \floatval($invoice['AmountPaid'] ?? 0));
+        break;
+    }
+}
+
 $selected_start_date = isset($selected_start_date) ? (string) $selected_start_date : date('Y-m-d', strtotime('-1 month', current_time('timestamp')));
 $selected_end_date = isset($selected_end_date) ? (string) $selected_end_date : current_time('Y-m-d');
 $payment_quick_date_ranges = isset($payment_quick_date_ranges) && is_array($payment_quick_date_ranges) ? $payment_quick_date_ranges : [];
@@ -40,7 +56,7 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                 <h3>Add Payment</h3>
                 <span><?php echo $selected_invoice_id > 0 ? 'For selected invoice' : 'Choose an invoice'; ?></span>
             </div>
-            <form class="myvh-account-form" data-portal-action="myvh_portal_create_payment" data-message-target="myvh-payment-create-message">
+            <form class="myvh-account-form" data-portal-action="myvh_portal_create_payment" data-message-target="myvh-payment-create-message"<?php echo $selected_invoice_amount_due !== null ? ' data-selected-amount-due="' . esc_attr(number_format($selected_invoice_amount_due, 2, '.', '')) . '"' : ''; ?>>
                 <?php if ($selected_invoice_id > 0): ?>
                     <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) $selected_invoice_id); ?>">
                 <?php endif; ?>
@@ -54,7 +70,7 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                             <?php foreach ($invoices as $invoice): ?>
                                 <?php
                                 $amount_due = isset($invoice['AmountDue'])
-                                    ? \floatval($invoice['AmountDue'])
+                                    ? max(0.0, \floatval($invoice['AmountDue']))
                                     : max(0.0, \floatval($invoice['TotalAmount'] ?? 0) - \floatval($invoice['AmountPaid'] ?? 0));
                                 ?>
                                 <option

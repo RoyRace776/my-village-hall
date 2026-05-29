@@ -215,6 +215,63 @@ jQuery(document).ready(function($) {
         log('settings fallback tracker initialized');
     })();
 
+    (function initAdminPaymentsOutstandingLabel() {
+        const pageQuery = new URLSearchParams(window.location.search || '');
+        if (pageQuery.get('page') !== 'myvh-payments') {
+            return;
+        }
+
+        const amountLabel = document.getElementById('myvh-payment-amount-label');
+        if (!amountLabel || amountLabel.dataset.amountLabelBound === '1') {
+            return;
+        }
+
+        const paymentForm = amountLabel.closest('form');
+        const invoiceSelect = document.getElementById('myvh-payment-invoice');
+        const baseLabel = amountLabel.getAttribute('data-base-label') || 'Amount';
+        const currencyFormatter = new Intl.NumberFormat('en-GB', {
+            style: 'currency',
+            currency: 'GBP',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+
+        const updateAmountLabelFromRaw = function(rawAmountDue, fallbackToZero) {
+            let amountDue = Number.parseFloat(rawAmountDue);
+
+            if (!Number.isFinite(amountDue) && fallbackToZero) {
+                amountDue = 0;
+            }
+
+            if (!Number.isFinite(amountDue)) {
+                amountLabel.textContent = baseLabel;
+                return;
+            }
+
+            amountLabel.textContent = baseLabel + ' (' + currencyFormatter.format(Math.max(0, amountDue)) + ' owing)';
+        };
+
+        if (invoiceSelect) {
+            const updateFromSelect = function() {
+                const selectedOption = invoiceSelect.options[invoiceSelect.selectedIndex];
+
+                if (!selectedOption || !selectedOption.value) {
+                    amountLabel.textContent = baseLabel;
+                    return;
+                }
+
+                updateAmountLabelFromRaw(selectedOption.getAttribute('data-amount-due') || '', true);
+            };
+
+            invoiceSelect.addEventListener('change', updateFromSelect);
+            updateFromSelect();
+        } else if (paymentForm) {
+            updateAmountLabelFromRaw(paymentForm.getAttribute('data-selected-amount-due') || '', true);
+        }
+
+        amountLabel.dataset.amountLabelBound = '1';
+    })();
+
     // ==================== Helper functions ====================
 
     /**

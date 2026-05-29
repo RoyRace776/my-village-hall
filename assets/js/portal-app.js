@@ -1048,10 +1048,11 @@ document.addEventListener("DOMContentLoaded", () => {
             filterForm.dataset.bound = '1';
         }
 
+        const paymentCreateForm = paymentsPage.querySelector('[data-portal-action="myvh_portal_create_payment"]');
         const invoiceSelect = paymentsPage.querySelector('#myvh-portal-payment-invoice');
         const amountLabel = paymentsPage.querySelector('#myvh-portal-payment-amount-label');
 
-        if (!invoiceSelect || !amountLabel || invoiceSelect.dataset.amountLabelBound === '1') {
+        if (!amountLabel || amountLabel.dataset.amountLabelBound === '1') {
             return;
         }
 
@@ -1063,28 +1064,42 @@ document.addEventListener("DOMContentLoaded", () => {
             maximumFractionDigits: 2,
         });
 
-        const updateAmountLabel = () => {
-            const selectedOption = invoiceSelect.options[invoiceSelect.selectedIndex];
+        const updateAmountLabelFromRaw = (rawAmountDue, fallbackToZero) => {
+            let amountDue = Number.parseFloat(rawAmountDue);
 
-            if (!selectedOption || !selectedOption.value) {
-                amountLabel.textContent = baseLabel;
-                return;
+            if (!Number.isFinite(amountDue) && fallbackToZero) {
+                amountDue = 0;
             }
-
-            const rawAmountDue = selectedOption.getAttribute('data-amount-due') || '';
-            const amountDue = Number.parseFloat(rawAmountDue);
 
             if (!Number.isFinite(amountDue)) {
                 amountLabel.textContent = baseLabel;
                 return;
             }
 
-            amountLabel.textContent = baseLabel + ' (' + currencyFormatter.format(amountDue) + ' outstanding)';
+            amountLabel.textContent = baseLabel + ' (' + currencyFormatter.format(Math.max(0, amountDue)) + ' owing)';
         };
 
-        invoiceSelect.addEventListener('change', updateAmountLabel);
-        invoiceSelect.dataset.amountLabelBound = '1';
-        updateAmountLabel();
+        if (invoiceSelect) {
+            const updateAmountLabel = () => {
+                const selectedOption = invoiceSelect.options[invoiceSelect.selectedIndex];
+
+                if (!selectedOption || !selectedOption.value) {
+                    amountLabel.textContent = baseLabel;
+                    return;
+                }
+
+                const rawAmountDue = selectedOption.getAttribute('data-amount-due') || '';
+                updateAmountLabelFromRaw(rawAmountDue, true);
+            };
+
+            invoiceSelect.addEventListener('change', updateAmountLabel);
+            updateAmountLabel();
+        } else if (paymentCreateForm) {
+            const selectedAmountDue = paymentCreateForm.getAttribute('data-selected-amount-due') || '';
+            updateAmountLabelFromRaw(selectedAmountDue, true);
+        }
+
+        amountLabel.dataset.amountLabelBound = '1';
     }
 
     /**

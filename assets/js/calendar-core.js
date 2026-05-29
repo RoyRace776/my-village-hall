@@ -199,10 +199,14 @@ window.CalendarCore = (function () {
         return Number.isFinite(patternId) && patternId > 0;
     }
 
-    function withRecurringSeriesPrefix(value, tags) {
+    function withRecurringSeriesPrefix(value, tags, showIconWhenEmpty = false) {
         const text = String(value || "").trim();
-        if (text === "" || !isRecurringSeriesBooking(tags)) {
+        if (!isRecurringSeriesBooking(tags)) {
             return text;
+        }
+
+        if (text === "") {
+            return showIconWhenEmpty ? RECURRING_SERIES_ICON : "";
         }
 
         const escapedIcon = RECURRING_SERIES_ICON.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -435,7 +439,7 @@ window.CalendarCore = (function () {
                 }
 
                 events.forEach(e => {
-                    e.text = withRecurringSeriesPrefix(e.text, e && e.tags ? e.tags : {});
+                    e.text = withRecurringSeriesPrefix(e.text, e && e.tags ? e.tags : {}, true);
                     e.toolTip = buildEventTooltip(e, context);
                 });
                 const calendarEvents = currentDetail === "Month"
@@ -468,7 +472,7 @@ window.CalendarCore = (function () {
                         ? e.resource
                         : (e?.tags?.roomId ?? "");
                     e.resource = String(resourceValue);
-                    e.text = withRecurringSeriesPrefix(e.text, e && e.tags ? e.tags : {});
+                    e.text = withRecurringSeriesPrefix(e.text, e && e.tags ? e.tags : {}, true);
                     e.toolTip = buildEventTooltip(e, context);
                 });
                 targetScheduler.events.list = applyEventStatusColors(events, statusColors);

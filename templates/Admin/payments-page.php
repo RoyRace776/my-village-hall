@@ -75,7 +75,7 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                     </p>
                 <?php endif; ?>
 
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"<?php echo $selected_invoice ? ' data-selected-amount-due="' . esc_attr(number_format(max(0.0, (float) ($selected_invoice['AmountDue'] ?? 0)), 2, '.', '')) . '"' : ''; ?>>
                     <input type="hidden" name="action" value="myvh_record_payment">
                     <input type="hidden" name="redirect_page" value="myvh-payments">
                     <?php if ($selected_invoice_id > 0): ?>
@@ -91,7 +91,14 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                             <select id="myvh-payment-invoice" name="invoice_id" class="regular-text" required>
                                 <option value=""><?php esc_html_e('Select an invoice', 'my-village-hall'); ?></option>
                                 <?php foreach ($invoices as $invoice): ?>
-                                    <option value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
+                                    <?php
+                                    $amount_due = isset($invoice['AmountDue'])
+                                        ? max(0.0, \floatval($invoice['AmountDue']))
+                                        : max(0.0, \floatval($invoice['TotalAmount'] ?? 0) - \floatval($invoice['AmountPaid'] ?? 0));
+                                    ?>
+                                    <option
+                                        value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>"
+                                        data-amount-due="<?php echo esc_attr(number_format($amount_due, 2, '.', '')); ?>">
                                         <?php echo esc_html(($invoice['InvoiceNumber'] ?? '') . ' - ' . ($invoice['CustomerName'] ?? __('Unknown', 'my-village-hall'))); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -107,7 +114,7 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                     </p>
 
                     <p>
-                        <label for="myvh-payment-amount"><strong><?php esc_html_e('Amount', 'my-village-hall'); ?></strong></label>
+                        <label for="myvh-payment-amount"><strong id="myvh-payment-amount-label" data-base-label="<?php echo esc_attr__('Amount', 'my-village-hall'); ?>"><?php esc_html_e('Amount', 'my-village-hall'); ?></strong></label>
                     </p>
                     <p>
                         <input id="myvh-payment-amount" type="number" name="payment_amount" min="0.01" step="0.01" class="regular-text" required>
