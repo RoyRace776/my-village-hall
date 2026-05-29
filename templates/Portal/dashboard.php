@@ -462,7 +462,7 @@ if ($subscription_status !== ''):
         <?php if (empty($admin_invoice_action_bookings)): ?>
           <p class="myvh-muted">No bookings currently need invoice action.</p>
         <?php else: ?>
-          <div class="myvh-bookings-list myvh-portal-dashboard-bookings-list myvh-portal-dashboard-bookings-list-compact">
+          <div class="myvh-bookings-list myvh-portal-dashboard-bookings-list myvh-portal-dashboard-bookings-list-compact<?php echo count($admin_invoice_action_bookings) > 6 ? ' myvh-portal-dashboard-bookings-list-scroll' : ''; ?>">
             <table class="myvh-customer-list-table myvh-portal-bookings-table">
               <thead>
                 <tr>

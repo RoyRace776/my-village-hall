@@ -4057,6 +4057,11 @@ body .site-main:has(#myvh-portal) {
   margin-bottom: 0;
 }
 
+.myvh-portal-dashboard-bookings-list-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
 .myvh-portal-dashboard-empty-state,
 .myvh-portal-bookings-empty-state {
   padding: 26px 20px;

@@ -1783,7 +1783,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Read tracked fields dynamically so add/remove notice rows are included.
             const getTrackedFields = () => Array.from(form.querySelectorAll('input, select, textarea'))
                 .filter((field) => field.name && !field.disabled)
-                .filter((field) => field.type !== 'hidden' || field.hasAttribute('data-myvh-media-input'));
+                .filter((field) => field.type !== 'hidden' || field.hasAttribute('data-myvh-media-input') || field.hasAttribute('data-myvh-picker'));
 
             // Capture current state for dirty check
             const captureState = () => JSON.stringify(

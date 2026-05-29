@@ -243,6 +243,36 @@ describe('Portal app integration behaviors', () => {
     expect(submitButton.disabled).toBe(false);
   });
 
+  test('enables save button when hall notice date hidden picker value changes', async () => {
+    window.fetch.mockResolvedValue(
+      mockHtmlResponse(`
+        <div class="myvh-dashboard-section myvh-client-settings-page">
+          <form class="myvh-account-form myvh-settings-form" data-portal-action="myvh_portal_save_client_settings" data-reload-page="settings">
+            <input type="hidden" name="hall_notices[0][start_date]" value="2026-06-01" data-myvh-picker="date">
+            <button type="submit" class="button button-primary">Save Settings</button>
+          </form>
+        </div>
+      `)
+    );
+
+    window.location.hash = '#settings';
+    window.dispatchEvent(new Event('hashchange'));
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
+
+    const form = document.querySelector('.myvh-settings-form');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const dateInput = form.querySelector('input[name="hall_notices[0][start_date]"]');
+
+    expect(submitButton.disabled).toBe(true);
+
+    dateInput.value = '2026-06-15';
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(submitButton.disabled).toBe(false);
+  });
+
   test('updates payment amount label when invoice is selected', async () => {
     window.fetch.mockResolvedValue(
       mockHtmlResponse(`
@@ -280,7 +310,7 @@ describe('Portal app integration behaviors', () => {
     invoiceSelect.value = '42';
     invoiceSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-    expect(amountLabel.textContent).toBe('Amount (£45.00 outstanding)');
+    expect(amountLabel.textContent).toBe('Amount (£45.00 owing)');
   });
 
   test('applies payments date filter via hash route', async () => {
