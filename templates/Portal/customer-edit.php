@@ -68,7 +68,7 @@ if (!empty($customer['Updated'])) {
             <?php if (!empty($is_client_admin)): ?>
             <label class="myvh-account-field myvh-room-toggle">
                 <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked(!empty($customer['AllowAutoConfirm'])); ?>>
-                <span class="myvh-room-toggle-copy">Allow Auto Confirm</span>
+                <span class="myvh-room-toggle-copy">Auto confirm bookings</span>
             </label>
             <label class="myvh-account-field">
                 <span>Single booking auto-invoice rule</span>

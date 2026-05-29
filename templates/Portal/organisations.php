@@ -166,7 +166,7 @@ foreach ($organisation_types as $organisation_type) {
 
                                     <label class="myvh-toggle-row">
                                         <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked(!empty($org['AllowAutoConfirm'])); ?>>
-                                        <span>Allow auto confirm</span>
+                                        <span>Auto confirm bookings</span>
                                     </label>
 
                                     <label class="myvh-toggle-row">

@@ -193,7 +193,7 @@ if ($edit_customer) {
                                     </select>
                                 </p>
                                     <input type="checkbox" name="allow_auto_confirm" value="1" <?php checked($edit_customer && !empty($edit_customer['AllowAutoConfirm'])); ?>>
-                                    <?php _e('Allow Auto Confirm', 'my-village-hall'); ?>
+                                    <?php _e('Auto confirm bookings', 'my-village-hall'); ?>
                                 </label>
                                 <?php endif; ?>
                             </td>

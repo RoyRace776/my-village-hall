@@ -60,7 +60,7 @@ $available_orgs = [];
                             <td>
                                 <label>
                                     <input type="checkbox" name="allow_auto_confirm" value="1">
-                                    <?php _e('Allow Auto Confirm', 'my-village-hall'); ?>
+                                    <?php _e('Auto confirm bookings', 'my-village-hall'); ?>
                                 </label>
                                 <p style="margin-top:10px;">
                                     <label for="myvh-new-customer-auto-invoice-rule"><strong><?php _e('Single booking auto-invoice rule', 'my-village-hall'); ?></strong></label><br>

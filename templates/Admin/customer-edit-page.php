@@ -42,7 +42,7 @@ if (!$customer) {
                 <td><input name="email_verified" type="checkbox" value="1" <?php checked(!empty($customer['EmailVerified'])); ?>></td>
             </tr>
             <tr>
-                <th>Allow Auto Confirm</th>
+                <th>Auto confirm bookings</th>
                 <td><input name="allow_auto_confirm" type="checkbox" value="1" <?php checked(!empty($customer['AllowAutoConfirm'])); ?>></td>
             </tr>
         </table>

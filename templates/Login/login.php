@@ -116,6 +116,12 @@ if ($register_page_url === '') {
     $register_page_url = add_query_arg('register', '1', $current_url) . '#myvh-register-form';
 }
 
+$existing_email_login_url = remove_query_arg('register', $login_page_url);
+if ($existing_email_login_url === '') {
+    $existing_email_login_url = remove_query_arg('register', $current_url);
+}
+$existing_email_login_url .= '#myvh-username';
+
 $show_register_focus = $query_register || $mode === 'register';
 
 $show_reset_request = !empty($_GET['reset']) && $_GET['reset'] === '1';
@@ -251,7 +257,7 @@ if ($show_reset_request) {
         <?php if ($existing_email): ?>
             <div class="myvh-note-message">
                 <span>This email is already registered.</span>
-                <a href="#myvh-username" class="myvh-note-action">Use it to log in</a>
+                <a href="<?php echo esc_url($existing_email_login_url); ?>" class="myvh-note-action">Use it to log in</a>
             </div>
         <?php endif; ?>
 

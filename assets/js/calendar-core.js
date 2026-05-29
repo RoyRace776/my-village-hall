@@ -351,6 +351,36 @@ window.CalendarCore = (function () {
         return Math.max(40, Math.floor(availableWidth / Math.max(1, Number(dayCount) || 1)));
     }
 
+    function getSchedulerDayCellWidthForVisibleHours(containerId, rowHeaderWidth, startHour, endHour, cellDuration) {
+        if (!Number.isFinite(startHour) || !Number.isFinite(endHour) || endHour <= startHour) {
+            return null;
+        }
+
+        const container = document.getElementById(containerId);
+        const containerWidth = Math.round(
+            container?.getBoundingClientRect?.().width
+            || container?.clientWidth
+            || container?.parentElement?.clientWidth
+            || 0
+        );
+        const availableWidth = containerWidth - Number(rowHeaderWidth || 0) - 1;
+
+        if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+            return null;
+        }
+
+        const slotsPerHour = 60 / Math.max(1, Number(cellDuration) || 1);
+        const visibleHourSpan = endHour - startHour;
+
+        if (!Number.isFinite(slotsPerHour) || slotsPerHour <= 0 || visibleHourSpan <= 0) {
+            return null;
+        }
+
+        // Ensure total scrollable width can move left edge from 00:00 to opening hour.
+        const minCellWidth = Math.ceil(availableWidth / (slotsPerHour * visibleHourSpan));
+        return Math.max(40, minCellWidth);
+    }
+
     function destroy() {
         if (calendar) {
             calendar.dispose();
@@ -830,11 +860,21 @@ window.CalendarCore = (function () {
             startDate = getSchedulerStartDate("Day", opts.startDate);
             config.startDate = startDate;
             config.scale = "CellDuration";
-            config.days = 1;
+            config.days = visibleEndHour !== null ? visibleEndHour / 24 : 1;
             config.cellDuration = 15;
+            const dayCellWidth = getSchedulerDayCellWidthForVisibleHours(
+                containerId,
+                config.rowHeaderWidth,
+                visibleStartHour,
+                visibleEndHour,
+                config.cellDuration
+            );
+            if (dayCellWidth !== null) {
+                config.cellWidth = dayCellWidth;
+            }
             config.timeHeaders = [
                 { groupBy: "Day", format: opts.headerDateFormat || "d MMM" },
-                { groupBy: "Hour" }
+                { groupBy: "Hour", format: "HH:mm" }
             ];
         } else if (detail === "Month") {
             startDate = getSchedulerStartDate("Month", opts.startDate);
@@ -864,6 +904,47 @@ window.CalendarCore = (function () {
 
         scheduler = new DayPilot.Scheduler(containerId, config);
         scheduler.resources = [];
+
+        const dayStartScrollTarget = detail === "Day" && visibleStartHour !== null
+            ? new DayPilot.Date(startDate.toString("yyyy-MM-dd")).addHours(visibleStartHour)
+            : null;
+        let pendingInitialDayStartScroll = dayStartScrollTarget !== null;
+
+        if (pendingInitialDayStartScroll) {
+            let enforcingDayStartScroll = false;
+            const previousOnScroll = scheduler.onScroll;
+
+            scheduler.onScroll = args => {
+                previousOnScroll?.(args);
+
+                if (enforcingDayStartScroll) {
+                    return;
+                }
+
+                const viewportStartTicks = args?.viewport?.start?.ticks;
+                if (typeof viewportStartTicks !== "number") {
+                    return;
+                }
+
+                if (viewportStartTicks < dayStartScrollTarget.ticks) {
+                    enforcingDayStartScroll = true;
+                    scheduler.scrollTo(dayStartScrollTarget);
+                    enforcingDayStartScroll = false;
+                }
+            };
+
+            scheduler.onAfterUpdate = () => {
+                if (!pendingInitialDayStartScroll) {
+                    return;
+                }
+
+                scheduler.scrollTo(dayStartScrollTarget);
+                pendingInitialDayStartScroll = false;
+            };
+
+            scheduler.scrollTo(dayStartScrollTarget);
+        }
+
         scheduler.init();
 
         let roomsUrl = `${opts.ajax_url}?action=myvh_calendar_rooms&nonce=${opts.nonce}&context=${encodeURIComponent(opts.context || "admin")}`;
@@ -878,6 +959,7 @@ window.CalendarCore = (function () {
 
                 scheduler.resources = buildGroupedSchedulerResources(rooms);
                 scheduler.update();
+
                 loadEvents(opts.ajax_url, opts.nonce, opts.context, opts);
             })
             .catch(err => {
