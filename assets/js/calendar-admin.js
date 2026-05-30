@@ -559,7 +559,8 @@ window.CalendarAdmin = (function() {
                     .then(r => r.json()),
 
             onClose: () => api?.clearSelection?.(),
-            onSuccess: () => api.reload()
+            onSuccess: () => api.reload(),
+            canChooseConfirmationEmail: true
         });
 
         // IMPORTANT: use initCalendar (alias to init)

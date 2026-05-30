@@ -197,6 +197,13 @@ class CalendarService {
             $data['no_invoice_required'] = \intval($request['no_invoice_required']);
         }
 
+        $can_control_confirmation_email = $context !== 'portal'
+            || $this->client_admin_service->can_administer_blog($viewer_user_id, get_current_blog_id());
+        if ($can_control_confirmation_email && array_key_exists('send_confirmation_email', $request)) {
+            $data['send_confirmation_email'] = \intval($request['send_confirmation_email']) === 1 ? 1 : 0;
+        }
+        $data['can_control_confirmation_email'] = $can_control_confirmation_email ? 1 : 0;
+
         if ($context === 'portal') {
             $is_client_admin = $this->client_admin_service->can_administer_blog($viewer_user_id, get_current_blog_id());
 
@@ -217,6 +224,8 @@ class CalendarService {
                 $data['customer_id'] = (int) $portal_customer['Id'];
                 $data['organisation_id'] = $selected_org_id;
                 $data['status'] = BookingStatus::PENDING->value;
+                unset($data['send_confirmation_email']);
+                $data['can_control_confirmation_email'] = 0;
             }
         }
 
@@ -253,8 +262,22 @@ class CalendarService {
 
         $requested_status = sanitize_text_field((string) ($request['requested_status'] ?? BookingStatus::PENDING->value));
         $child_booking_ids = $this->normalize_numeric_list($request['child_booking_ids'] ?? []);
+        $context = sanitize_text_field((string) ($request['context'] ?? 'admin'));
+        $viewer_user_id = (int) get_current_user_id();
+        $can_control_confirmation_email = $context !== 'portal'
+            || $this->client_admin_service->can_administer_blog($viewer_user_id, get_current_blog_id());
+        $send_confirmation_email = null;
+        if ($can_control_confirmation_email && array_key_exists('send_confirmation_email', $request)) {
+            $send_confirmation_email = \intval($request['send_confirmation_email']) === 1 ? 1 : 0;
+        }
 
-        $result = $this->booking_service->finalize_deferred_creation($booking_id, $requested_status, $child_booking_ids);
+        $result = $this->booking_service->finalize_deferred_creation(
+            $booking_id,
+            $requested_status,
+            $child_booking_ids,
+            $send_confirmation_email,
+            $can_control_confirmation_email
+        );
         if (is_wp_error($result)) {
             return $result;
         }
@@ -390,6 +413,15 @@ class CalendarService {
         ) && array_key_exists('no_invoice_required', $request)) {
             $data['no_invoice_required'] = \intval($request['no_invoice_required']);
         }
+
+        $update_context = sanitize_text_field((string) ($request['context'] ?? 'admin'));
+        $update_user_id = (int) get_current_user_id();
+        $can_control_confirmation_email = $update_context !== 'portal'
+            || $this->client_admin_service->can_administer_blog($update_user_id, get_current_blog_id());
+        if ($can_control_confirmation_email && array_key_exists('send_confirmation_email', $request)) {
+            $data['send_confirmation_email'] = \intval($request['send_confirmation_email']) === 1 ? 1 : 0;
+        }
+        $data['can_control_confirmation_email'] = $can_control_confirmation_email ? 1 : 0;
 
         $validation = $this->validate_calendar_update_payload($data);
         if (is_wp_error($validation)) {

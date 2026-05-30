@@ -19,6 +19,7 @@ class BookingCreationEventDispatcher
                 'room_id' => $data['room_id'],
                 'start' => $data['start_time'],
                 'end' => $data['end_time'],
+                'send_confirmation_email' => isset($data['send_confirmation_email']) && \intval($data['send_confirmation_email']) === 0 ? 0 : 1,
             ]
         );
     }
@@ -32,6 +33,7 @@ class BookingCreationEventDispatcher
                 'room_id' => $data['room_id'],
                 'start' => $data['start_time'],
                 'end' => $data['end_time'],
+                'send_confirmation_email' => isset($data['send_confirmation_email']) && \intval($data['send_confirmation_email']) === 0 ? 0 : 1,
             ]
         );
 

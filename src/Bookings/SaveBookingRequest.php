@@ -35,6 +35,7 @@ class SaveBookingRequest extends RequestMapperBase
             'description'        => self::as_textarea($post, 'description'),
             'public'             => self::as_bool_int($post, 'public'),
             'no_invoice_required'=> self::as_bool_int($post, 'no_invoice_required'),
+            'send_confirmation_email'=> self::as_bool_int($post, 'send_confirmation_email'),
             'terms_accepted'     => self::as_bool_int($post, 'terms_accepted'),
             'return_to'          => self::as_redirect($post, 'return_to', ''),
             'chargeable_hours'   => array_key_exists('chargeable_hours', $post) ? self::as_float($post, 'chargeable_hours') : null,

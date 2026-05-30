@@ -166,6 +166,11 @@ class PortalBookingAjaxController {
         $booking_id = (int) ($request['booking_id'] ?? 0);
         $requested_status = sanitize_text_field((string) ($request['requested_status'] ?? 'pending'));
         $child_booking_ids = $this->normalize_numeric_list($request['child_booking_ids'] ?? []);
+        $can_control_confirmation_email = $this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
+        $send_confirmation_email = null;
+        if ($can_control_confirmation_email && array_key_exists('send_confirmation_email', $request)) {
+            $send_confirmation_email = \intval($request['send_confirmation_email']) === 1 ? 1 : 0;
+        }
 
         if ($booking_id <= 0) {
             AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
@@ -173,7 +178,13 @@ class PortalBookingAjaxController {
         }
 
         try {
-            $result = $this->booking_service->finalize_deferred_creation($booking_id, $requested_status, $child_booking_ids);
+            $result = $this->booking_service->finalize_deferred_creation(
+                $booking_id,
+                $requested_status,
+                $child_booking_ids,
+                $send_confirmation_email,
+                $can_control_confirmation_email
+            );
 
             if (is_wp_error($result)) {
                 AjaxResponse::error($result->get_error_message());

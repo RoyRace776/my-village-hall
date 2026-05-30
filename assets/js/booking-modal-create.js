@@ -7,6 +7,7 @@ window.BookingModalCreate = (function() {
     const organisationsCache = {};
     let quoteTimer = null;
     let quoteRequestId = 0;
+    let lastSubmitSendChoice = null;
 
     function portalAlert(message) {
         if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
@@ -47,6 +48,7 @@ window.BookingModalCreate = (function() {
             hideOrganisation: false,
             requireOrganisation: false,
             canManageNoInvoiceRequired: false,
+            canChooseConfirmationEmail: false,
 
             // Hooks
             onSuccess: () => {},
@@ -77,6 +79,7 @@ window.BookingModalCreate = (function() {
 
         applyNoInvoiceRequiredVisibility();
         applyTermsAcceptanceVisibility();
+        applySubmitButtonVisibility();
     }
 
     /**
@@ -84,6 +87,13 @@ window.BookingModalCreate = (function() {
      */
     function bindEvents() {
         form.addEventListener("submit", submit);
+
+        modal.querySelectorAll('button[type="submit"][data-send-confirmation-email]').forEach((button) => {
+            button.addEventListener('click', () => {
+                lastSubmitSendChoice = button.dataset.sendConfirmationEmail === '1' ? 1 : 0;
+                form.dataset.sendConfirmationEmailChoice = String(lastSubmitSendChoice);
+            });
+        });
 
         const cancelButtons = modal.querySelectorAll(".myvh-cancel");
         cancelButtons.forEach((button) => {
@@ -259,6 +269,7 @@ window.BookingModalCreate = (function() {
             }
             if (prefill.status) {
                 setValue('status', String(prefill.status).toLowerCase());
+                applySubmitButtonVisibility();
             }
 
             setLoading(true);
@@ -293,6 +304,7 @@ window.BookingModalCreate = (function() {
                     setValue('organisation_id', booking['OrganisationId']);
                     setValue('text', booking['Description'] || '');
                     setValue('status', String(booking['Status'] || 'pending').toLowerCase());
+                    applySubmitButtonVisibility();
                     setValue('start', startDateTime);
                     setValue('end', endDateTime);
                     setDisplayedDateTimes(startDateTime, endDateTime);
@@ -477,6 +489,13 @@ window.BookingModalCreate = (function() {
                 syncAddonAvailability();
                 syncEndDateVisibility();
                 syncHiddenDateTimes();
+            });
+        }
+
+        const status = form.querySelector('[name=status]');
+        if (status) {
+            status.addEventListener('change', () => {
+                applySubmitButtonVisibility();
             });
         }
 
@@ -819,6 +838,50 @@ window.BookingModalCreate = (function() {
 
         if (isEditMode) {
             checkbox.checked = false;
+        }
+    }
+
+    function resolveRequestedStatus() {
+        const statusSelect = form.querySelector('[name=status]');
+        if (statusSelect && !statusSelect.disabled && config.editMode) {
+            return String(statusSelect.value || '').toLowerCase();
+        }
+
+        return String(form.dataset.createDefaultStatus || 'pending').toLowerCase();
+    }
+
+    function canChooseConfirmationEmail() {
+        return !!config.canChooseConfirmationEmail;
+    }
+
+    function shouldShowConfirmationActionButtons() {
+        if (!canChooseConfirmationEmail()) {
+            return false;
+        }
+
+        if (!config.editMode) {
+            return true;
+        }
+
+        return resolveRequestedStatus() === 'confirmed';
+    }
+
+    function applySubmitButtonVisibility() {
+        const standardButton = modal.querySelector('.myvh-submit-standard');
+        const sendButton = modal.querySelector('.myvh-submit-send-email');
+        const noEmailButton = modal.querySelector('.myvh-submit-no-email');
+        const showDualButtons = shouldShowConfirmationActionButtons();
+
+        if (standardButton) {
+            standardButton.style.display = showDualButtons ? 'none' : '';
+        }
+
+        if (sendButton) {
+            sendButton.style.display = showDualButtons ? '' : 'none';
+        }
+
+        if (noEmailButton) {
+            noEmailButton.style.display = showDualButtons ? '' : 'none';
         }
     }
 
@@ -1200,7 +1263,9 @@ window.BookingModalCreate = (function() {
     function updateModalMode(isEdit) {
         const title = modal.querySelector('h2');
         const hint = modal.querySelector('.myvh-account-hint');
-        const submitButtons = modal.querySelectorAll('button[type="submit"]');
+        const standardButton = modal.querySelector('.myvh-submit-standard');
+        const sendButton = modal.querySelector('.myvh-submit-send-email');
+        const noEmailButton = modal.querySelector('.myvh-submit-no-email');
         const statusRow = form.querySelector('#myvh-modal-status-row');
 
         if (title) {
@@ -1213,10 +1278,21 @@ window.BookingModalCreate = (function() {
                 : 'Complete the details below to create a booking.';
         }
 
-        submitButtons.forEach((button) => {
-            button.style.display = '';
-            button.textContent = isEdit ? 'Update Booking' : 'Create Booking';
-        });
+        if (standardButton) {
+            standardButton.textContent = isEdit ? 'Update Booking' : 'Create Booking';
+        }
+
+        if (sendButton) {
+            sendButton.textContent = isEdit
+                ? 'Update and Send Confirmation Email'
+                : 'Create and Send Confirmation Email';
+        }
+
+        if (noEmailButton) {
+            noEmailButton.textContent = isEdit
+                ? 'Update Booking'
+                : 'Create Booking';
+        }
 
         modal.querySelectorAll('.myvh-delete-booking').forEach((button) => {
             button.style.display = isEdit ? '' : 'none';
@@ -1228,6 +1304,7 @@ window.BookingModalCreate = (function() {
         }
 
         applyTermsAcceptanceVisibility();
+        applySubmitButtonVisibility();
     }
 
     // ─────────────────────────────
@@ -1507,6 +1584,9 @@ window.BookingModalCreate = (function() {
         formData.append('nonce', config.nonce);
         formData.append('booking_id', String(payload.booking_id || ''));
         formData.append('requested_status', String(payload.requested_status || 'pending'));
+        if (payload.send_confirmation_email !== undefined && payload.send_confirmation_email !== null) {
+            formData.append('send_confirmation_email', String(Number(payload.send_confirmation_email) === 1 ? 1 : 0));
+        }
 
         normalizeDeferredChildBookingIds(payload).forEach((bookingId) => {
             formData.append('child_booking_ids[]', String(bookingId));
@@ -1596,9 +1676,21 @@ window.BookingModalCreate = (function() {
             return;
         }
 
-        const formData = buildSubmitFormData();
+        const submitter = e && e.submitter ? e.submitter : null;
+        const submitterSendChoice = submitter && submitter.dataset && submitter.dataset.sendConfirmationEmail
+            ? (submitter.dataset.sendConfirmationEmail === '1' ? 1 : 0)
+            : null;
+        const datasetChoice = form && form.dataset && form.dataset.sendConfirmationEmailChoice !== undefined
+            ? (form.dataset.sendConfirmationEmailChoice === '1' ? 1 : 0)
+            : null;
+        const formData = buildSubmitFormData(submitterSendChoice ?? lastSubmitSendChoice ?? datasetChoice);
         if (!formData) {
             return;
+        }
+
+        lastSubmitSendChoice = null;
+        if (form && form.dataset) {
+            delete form.dataset.sendConfirmationEmailChoice;
         }
 
         setLoading(true);
@@ -1640,7 +1732,7 @@ window.BookingModalCreate = (function() {
         });
     }
 
-    function buildSubmitFormData() {
+    function buildSubmitFormData(sendConfirmationChoice = null) {
 
         syncHiddenDateTimes();
 
@@ -1665,6 +1757,13 @@ window.BookingModalCreate = (function() {
             }
 
             formData.set("terms_accepted", "1");
+        }
+
+        if (shouldShowConfirmationActionButtons()) {
+            const resolvedChoice = sendConfirmationChoice === null ? 1 : (Number(sendConfirmationChoice) === 1 ? 1 : 0);
+            formData.set('send_confirmation_email', String(resolvedChoice));
+        } else {
+            formData.delete('send_confirmation_email');
         }
 
         // Disabled controls are excluded from FormData, but locked fields are intentional selections.
@@ -1712,9 +1811,18 @@ window.BookingModalCreate = (function() {
             modal.dataset.loading = state ? '1' : '0';
         }
 
-        form.querySelectorAll("button[type=submit]").forEach(btn => {
+        modal.querySelectorAll("button[type=submit]").forEach(btn => {
             btn.disabled = state;
-            btn.textContent = state ? "Saving..." : (config.editMode ? "Update Booking" : "Create Booking");
+            if (state) {
+                btn.dataset.labelBeforeLoading = btn.textContent;
+                btn.textContent = "Saving...";
+                return;
+            }
+
+            if (btn.dataset.labelBeforeLoading) {
+                btn.textContent = btn.dataset.labelBeforeLoading;
+                delete btn.dataset.labelBeforeLoading;
+            }
         });
 
         form.querySelectorAll("input, select").forEach(el => {
@@ -1726,6 +1834,7 @@ window.BookingModalCreate = (function() {
 
         applyNoInvoiceRequiredVisibility();
         applyTermsAcceptanceVisibility();
+        applySubmitButtonVisibility();
         scheduleQuoteRefresh();
     }
 

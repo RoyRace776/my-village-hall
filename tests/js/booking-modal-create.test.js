@@ -13,8 +13,12 @@ function buildModalFixture() {
     <div id="myvh-booking-modal-create" class="hidden">
       <h2>Create Booking</h2>
       <div class="myvh-account-hint"></div>
-      <form id="myvh-booking-form-create">
-        <button type="submit">Create Booking</button>
+      <p class="myvh-modal-actions">
+        <button type="submit" class="myvh-submit-standard" form="myvh-booking-form-create">Create Booking</button>
+        <button type="submit" class="myvh-submit-send-email" data-send-confirmation-email="1" form="myvh-booking-form-create" style="display:none;">Create + Send Confirmation Email</button>
+        <button type="submit" class="myvh-submit-no-email" data-send-confirmation-email="0" form="myvh-booking-form-create" style="display:none;">Create Without Sending Email</button>
+      </p>
+      <form id="myvh-booking-form-create" data-create-default-status="pending">
         <button type="button" class="myvh-cancel">Cancel</button>
         <button type="button" class="myvh-delete-booking" style="display:none">Delete</button>
 
@@ -199,6 +203,49 @@ describe('BookingModalCreate', () => {
 
     expect(onSuccess).toHaveBeenCalledWith({ booking_id: 321 });
     expect(changeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('uses dual confirmation action buttons and submits no-email flag when requested', async () => {
+    const onSuccess = jest.fn();
+    window.myvhCal = {
+      currentCustomerId: 55,
+      defaultOrganisationId: 88
+    };
+
+    document.querySelector('[name="room_id"]').innerHTML = '<option value="14">Main Hall</option>';
+    document.querySelector('[name="room_id"]').value = '14';
+
+    window.BookingModalCreate.init({
+      ajax_url: '/ajax',
+      nonce: 'portal-nonce',
+      context: 'portal',
+      canChooseConfirmationEmail: true,
+      onSuccess: onSuccess
+    });
+
+    const form = document.getElementById('myvh-booking-form-create');
+    form.dataset.createDefaultStatus = 'confirmed';
+    window.BookingModalCreate.open({});
+
+    const sendButton = document.querySelector('.myvh-submit-send-email');
+    const noEmailButton = document.querySelector('.myvh-submit-no-email');
+    const standardButton = document.querySelector('.myvh-submit-standard');
+
+    expect(standardButton.style.display).toBe('none');
+    expect(sendButton.style.display).toBe('');
+    expect(noEmailButton.style.display).toBe('');
+
+    form.dataset.sendConfirmationEmailChoice = '0';
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await flushPromises();
+    await flushPromises();
+
+    expect(window.fetch).toHaveBeenCalledTimes(1);
+    const payload = Object.fromEntries(window.fetch.mock.calls[0][1].body.entries());
+    expect(payload.send_confirmation_email).toBe('0');
+    expect(payload.action).toBe('myvh_portal_create_booking');
+    expect(onSuccess).toHaveBeenCalledWith({ booking_id: 321 });
   });
 
   test('continues a deferred recurring create only after confirmation', async () => {

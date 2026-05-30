@@ -39,15 +39,22 @@ class BookingListener {
     public function handle_booking_created($payload): void {
 
         $booking_id = $payload['booking_id'];
+        $send_confirmation_email = isset($payload['send_confirmation_email']) && \intval($payload['send_confirmation_email']) === 0
+            ? 0
+            : 1;
 
         // If the booking is suitable for autoconfirm, then confirm it immediately
         //(new BookingStatus())->auto_confirm($booking_id);
         global $myvh_container;
         $booking_auto_confirm = $myvh_container->get(BookingAutoConfirm::class);
-        $booking_auto_confirm->auto_confirm($booking_id);
+        $booking_auto_confirm->auto_confirm($booking_id, $send_confirmation_email);
     }
 
     public function handle_booking_confirmed($payload): void {
+        if (isset($payload['send_confirmation_email']) && \intval($payload['send_confirmation_email']) === 0) {
+            return;
+        }
+
         $booking_id = $payload['booking_id'];
         $email = $this->resolve_email($booking_id);
         $template_vars = $this->get_booking_template_vars($booking_id);

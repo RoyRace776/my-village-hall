@@ -15,6 +15,9 @@ $addon_service = $myvh_container->get(AddonService::class);
 $available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order' => 'ASC']);
 $booking_terms_html = BookingSettings::render_booking_terms_text((string) myvh_setting('booking.booking_terms_text', ''));
 $booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
+$create_default_status = myvh_setting('booking.require_approval', true)
+    ? 'pending'
+    : 'confirmed';
 
 // TODO: Take out code relating to viewing bookings and make this template just for creating bookings.
 
@@ -27,12 +30,14 @@ $booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
     <p class="myvh-required-note">Fields marked <span class="myvh-required-badge">Required</span> are mandatory.</p>
 
     <p class="myvh-modal-actions" style="margin-bottom: 15px;">
-        <button type="submit" class="button button-primary" form="myvh-booking-form-create">Create Booking</button>
+        <button type="submit" class="button button-primary myvh-submit-standard" form="myvh-booking-form-create">Create Booking</button>
+        <button type="submit" class="button button-primary myvh-submit-no-email" data-send-confirmation-email="0" form="myvh-booking-form-create" style="display:none;">Create Booking</button>
+        <button type="submit" class="button button-primary myvh-submit-send-email" data-send-confirmation-email="1" form="myvh-booking-form-create" style="display:none;">Create and Send Confirmation Email</button>
         <button type="button" class="button button-link-delete myvh-delete-booking" style="display:none;" disabled>Delete Booking</button>
         <button type="button" class="button myvh-cancel">Cancel</button>
     </p>
 
-    <form id="myvh-booking-form-create">
+    <form id="myvh-booking-form-create" data-create-default-status="<?php echo esc_attr($create_default_status); ?>">
         <input type="hidden" name="start">
         <input type="hidden" name="end">
         <input type="hidden" name="booking_id">
@@ -261,11 +266,6 @@ $booking_terms_required = trim(wp_strip_all_tags($booking_terms_html)) !== '';
             </div>
             <?php endif; ?>
 
-            <p class="myvh-modal-actions">
-                <button type="submit" class="button button-primary">Create Booking</button>
-                <button type="button" class="button button-link-delete myvh-delete-booking" style="display:none;" disabled>Delete Booking</button>
-                <button type="button" class="button myvh-cancel">Cancel</button>
-            </p>
         </form>
     </div>
 </div>

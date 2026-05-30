@@ -23,7 +23,7 @@ class BookingAutoConfirm
         $this->organisation_repo = $organisation_repo;
     }
 
-    public function auto_confirm($booking_id) : string
+    public function auto_confirm($booking_id, ?int $send_confirmation_email = 1) : string
     {
         // TODO: Auto-confirm logic can be implemented here, e.g. based on booking date or other criteria
         // For now, we'll just return the booking with status set to confirmed
@@ -35,7 +35,10 @@ class BookingAutoConfirm
 
         if ($org['AllowAutoConfirm'] || $customer['AllowAutoConfirm']) {
                $this->booking_repo->update(['Status' => BookingStatus::CONFIRMED->value], ['Id' => $booking_id]);
-             do_action('myvh_event_booking.confirmed', ['booking_id' => $booking_id]);
+                         do_action('myvh_event_booking.confirmed', [
+                                 'booking_id' => $booking_id,
+                                 'send_confirmation_email' => $send_confirmation_email === 0 ? 0 : 1,
+                         ]);
 
         }
 

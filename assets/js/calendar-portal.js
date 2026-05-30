@@ -607,6 +607,7 @@ window.Calendar = (function() {
                 lockAddonPrices: true,
                 requireOrganisation: true,
                 canManageNoInvoiceRequired: isClientAdmin,
+                canChooseConfirmationEmail: isClientAdmin,
 
                 onClose: () => api?.clearSelection?.(),
                 onSuccess: handleBookingSaved,
@@ -638,6 +639,7 @@ window.Calendar = (function() {
                 lockAddonPrices: true,
                 requireOrganisation: true,
                 canManageNoInvoiceRequired: isClientAdmin,
+                canChooseConfirmationEmail: isClientAdmin,
 
                 onClose: () => api?.clearSelection?.(),
                 onEdit: ({ bookingId }) => {

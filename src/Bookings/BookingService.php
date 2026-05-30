@@ -251,6 +251,10 @@ class BookingService {
         }
 
         $new_status = sanitize_text_field((string) ($record['Status'] ?? $data['status'] ?? ''));
+        $send_confirmation_email = $this->resolve_send_confirmation_email_for_update($data, $new_status, (string) ($current_record['Status'] ?? ''));
+        if ($send_confirmation_email !== null) {
+            $data['send_confirmation_email'] = $send_confirmation_email;
+        }
 
         $this->booking_status_transition_dispatcher->dispatch_before(
             $booking_id,
@@ -365,6 +369,14 @@ class BookingService {
         $normalized['no_invoice_required'] = \intval($record['NoInvoiceRequired'] ?? $data['no_invoice_required'] ?? $current_record['NoInvoiceRequired'] ?? 0);
         $normalized['edit_scope'] = $this->normalize_edit_scope($data['edit_scope'] ?? '');
 
+        if (array_key_exists('send_confirmation_email', $data)) {
+            $normalized['send_confirmation_email'] = \intval($data['send_confirmation_email']) === 1 ? 1 : 0;
+        }
+
+        if (array_key_exists('can_control_confirmation_email', $data)) {
+            $normalized['can_control_confirmation_email'] = \intval($data['can_control_confirmation_email']) === 1 ? 1 : 0;
+        }
+
         return $normalized;
     }
 
@@ -380,6 +392,10 @@ class BookingService {
 
     private function create_booking( mixed $data, mixed $record): int|WP_Error {
         $requested_status = sanitize_text_field((string) ($record['Status'] ?? $data['status'] ?? BookingStatus::PENDING->value));
+        $send_confirmation_email = $this->resolve_send_confirmation_email_for_create($data, $requested_status);
+        if ($send_confirmation_email !== null) {
+            $data['send_confirmation_email'] = $send_confirmation_email;
+        }
         $is_recurring_create = !empty($data['is_recurring']);
 
         if ($is_recurring_create) {
@@ -443,7 +459,9 @@ class BookingService {
             $finalized = $this->finalize_deferred_creation(
                 $booking_id,
                 $requested_status,
-                array_values(array_map('intval', $this->recurring_pattern_service->get_last_booking_results()['created_booking_ids'] ?? []))
+                array_values(array_map('intval', $this->recurring_pattern_service->get_last_booking_results()['created_booking_ids'] ?? [])),
+                $send_confirmation_email,
+                !empty($data['can_control_confirmation_email'])
             );
             if (is_wp_error($finalized)) {
                 return $finalized;
@@ -584,7 +602,7 @@ class BookingService {
         return $this->last_deferred_creation;
     }
 
-    public function finalize_deferred_creation(int $booking_id, string $requested_status, array $child_booking_ids = []): bool|WP_Error {
+    public function finalize_deferred_creation(int $booking_id, string $requested_status, array $child_booking_ids = [], ?int $send_confirmation_email = null, bool $can_control_confirmation_email = false): bool|WP_Error {
         $booking = $this->booking_repo->get_by_id($booking_id);
         if (!$booking) {
             return new WP_Error('not_found', __('Booking not found', 'my-village-hall'));
@@ -596,6 +614,12 @@ class BookingService {
         }
 
         $child_booking_ids = array_values(array_unique(array_filter(array_map('intval', $child_booking_ids))));
+
+        $resolved_send_confirmation_email = $this->resolve_send_confirmation_email_for_status(
+            $send_confirmation_email,
+            $can_control_confirmation_email,
+            $status
+        );
 
         if ($status === BookingStatus::CONFIRMED->value) {
             $updated = $this->booking_repo->update(['Status' => $status], ['Id' => $booking_id]);
@@ -610,7 +634,12 @@ class BookingService {
                 }
             }
 
-            $this->booking_creation_event_dispatcher->dispatch_confirmed($booking_id, $this->build_creation_dispatch_data($booking, $status));
+            $dispatch_data = $this->build_creation_dispatch_data($booking, $status);
+            if ($resolved_send_confirmation_email !== null) {
+                $dispatch_data['send_confirmation_email'] = $resolved_send_confirmation_email;
+            }
+
+            $this->booking_creation_event_dispatcher->dispatch_confirmed($booking_id, $dispatch_data);
         } else {
             $dispatch_data = $this->build_creation_dispatch_data($booking, $status);
             $this->booking_creation_event_dispatcher->dispatch_created($booking_id, $dispatch_data);
@@ -628,6 +657,56 @@ class BookingService {
         $this->booking_creation_event_dispatcher->dispatch_after_create($booking_id, $this->build_creation_dispatch_data($booking, $status));
 
         return true;
+    }
+
+    private function resolve_send_confirmation_email_for_create(array $data, string $status): ?int {
+        $can_control = !empty($data['can_control_confirmation_email']);
+
+        if ($can_control) {
+            if (!array_key_exists('send_confirmation_email', $data)) {
+                return 1;
+            }
+
+            return \intval($data['send_confirmation_email']) === 1 ? 1 : 0;
+        }
+
+        return 1;
+    }
+
+    private function resolve_send_confirmation_email_for_update(array $data, string $new_status, string $old_status): ?int {
+        $status_is_confirmed = $new_status === BookingStatus::CONFIRMED->value;
+        if (!$status_is_confirmed) {
+            return null;
+        }
+
+        $is_transition_to_confirmed = $old_status !== BookingStatus::CONFIRMED->value;
+        $can_control = !empty($data['can_control_confirmation_email']);
+
+        if (!$can_control && !$is_transition_to_confirmed) {
+            return null;
+        }
+
+        return $this->resolve_send_confirmation_email_for_status(
+            $data['send_confirmation_email'] ?? null,
+            $can_control,
+            $new_status
+        );
+    }
+
+    private function resolve_send_confirmation_email_for_status(mixed $requested, bool $can_control, string $status): ?int {
+        if ($status !== BookingStatus::CONFIRMED->value) {
+            return null;
+        }
+
+        if ($can_control) {
+            if ($requested === null || $requested === '') {
+                return 1;
+            }
+
+            return \intval($requested) === 1 ? 1 : 0;
+        }
+
+        return 1;
     }
 
     public function cancel_deferred_creation(int $booking_id, array $child_booking_ids = []): bool|WP_Error {
@@ -672,6 +751,7 @@ class BookingService {
             'booking_id' => $booking_id,
             'pattern_id' => (int) ($pattern['Id'] ?? 0),
             'requested_status' => sanitize_text_field((string) ($data['status'] ?? BookingStatus::PENDING->value)),
+            'send_confirmation_email' => isset($data['send_confirmation_email']) && \intval($data['send_confirmation_email']) === 0 ? 0 : 1,
             'child_booking_ids' => array_values(array_map('intval', $booking_results['created_booking_ids'] ?? [])),
             'failed_occurrences' => array_values($booking_results['failed_occurrences'] ?? []),
         ];

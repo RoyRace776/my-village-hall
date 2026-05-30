@@ -26,12 +26,32 @@ window.Bookings = (function() {
         return Promise.resolve(true);
     }
 
-    function portalConfirm(message) {
+    function portalConfirm(message, options) {
         if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.confirm === 'function') {
-            return window.MyvhPortalDialog.confirm(message);
+            return window.MyvhPortalDialog.confirm(message, options || {});
         }
 
         return Promise.resolve(false);
+    }
+
+    function chooseConfirmEmailAction() {
+        return portalConfirm('How would you like to confirm this booking?', {
+            title: 'Confirm Booking',
+            okText: 'Confirm + Send Email',
+            cancelText: 'More options'
+        }).then(function(send) {
+            if (send) {
+                return 'send';
+            }
+
+            return portalConfirm('Confirm this booking without sending a confirmation email?', {
+                title: 'Confirm Without Email',
+                okText: 'Confirm Without Email',
+                cancelText: 'Cancel'
+            }).then(function(noEmailConfirmed) {
+                return noEmailConfirmed ? 'no_email' : 'cancel';
+            });
+        });
     }
 
     function runWhenBookingFlowReady(action) {
@@ -858,8 +878,8 @@ window.Bookings = (function() {
                 return;
             }
 
-            portalConfirm('Change this booking status from Pending to Confirmed?').then(function(confirmed) {
-                if (!confirmed) {
+            chooseConfirmEmailAction().then(function(actionChoice) {
+                if (actionChoice === 'cancel') {
                     return;
                 }
 
@@ -892,7 +912,8 @@ window.Bookings = (function() {
                     text: String(booking.Description || ''),
                     status: 'confirmed',
                     public: String(parseInt(booking.Public || 0, 10) ? 1 : 0),
-                    no_invoice_required: String(parseInt(booking.NoInvoiceRequired || 0, 10) ? 1 : 0)
+                    no_invoice_required: String(parseInt(booking.NoInvoiceRequired || 0, 10) ? 1 : 0),
+                    send_confirmation_email: actionChoice === 'send' ? '1' : '0'
                 };
 
                 return window.MyvhPortalAjax.post('myvh_portal_update_booking_modal', payload, { scope: 'portal' });
