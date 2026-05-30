@@ -2427,6 +2427,17 @@ document.addEventListener("DOMContentLoaded", () => {
         if (portalAction) {
             e.preventDefault();
 
+            const submitter = e.submitter;
+            if (submitter && submitter.getAttribute) {
+                const sendReceiptValue = submitter.getAttribute('data-send-receipt');
+                if (sendReceiptValue !== null) {
+                    const sendReceiptField = form.querySelector('input[name="send_receipt"]');
+                    if (sendReceiptField) {
+                        sendReceiptField.value = sendReceiptValue === '1' ? '1' : '0';
+                    }
+                }
+            }
+
             const confirmMessage = form.dataset.confirm || '';
             if (confirmMessage && !(await portalConfirm(confirmMessage))) {
                 return;

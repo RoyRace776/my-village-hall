@@ -114,11 +114,16 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                     <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="4"></textarea>
                 </div>
 
-                <button type="submit" class="myvh-portal-add-btn" data-send-receipt="0">
-                    <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
-                    <span>Save Payment</span>
-                </button>
-                <button type="submit" class="myvh-button" data-send-receipt="1">Save and Send Receipt</button>
+                <div class="myvh-account-actions">
+                    <button type="submit" class="myvh-portal-add-btn" data-send-receipt="0">
+                        <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
+                        <span>Save Payment</span>
+                    </button>
+                    <button type="submit" class="myvh-portal-add-btn" data-send-receipt="1">
+                        <span class="myvh-portal-add-btn__icon" aria-hidden="true">✉</span>
+                        <span>Save and Send Receipt</span>
+                    </button>
+                </div>
                 <p class="myvh-muted" id="myvh-payment-create-message"></p>
             </form>
         </div>
@@ -195,7 +200,7 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                                 <?php
                                 $payment_id = \intval($payment['Id'] ?? 0);
                                 $invoice_id = \intval($payment['InvoiceId'] ?? 0);
-                                $message_id = 'myvh-payment-delete-message-' . $payment_id;
+                                $message_id = 'myvh-payment-action-message-' . $payment_id;
                                 ?>
                                 <tr>
                                     <td><?php echo esc_html(date('j M Y', strtotime((string) ($payment['PaymentDate'] ?? 'now')))); ?></td>
@@ -206,11 +211,17 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                                     <td><?php echo esc_html($payment['TransactionReference'] ?? ''); ?></td>
                                     <td><?php echo esc_html($payment['Notes'] ?? ''); ?></td>
                                     <td>
-                                        <form class="myvh-inline-form" data-portal-action="myvh_portal_delete_payment" data-message-target="<?php echo esc_attr($message_id); ?>" data-confirm="Delete this payment?">
+                                        <form class="myvh-inline-form" style="display:inline-block; margin-right:10px;" data-portal-action="myvh_portal_send_payment_receipt" data-message-target="<?php echo esc_attr($message_id); ?>">
                                             <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) $payment_id); ?>">
                                             <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) $invoice_id); ?>">
                                             <input type="hidden" name="redirect_route" value="<?php echo esc_attr($redirect_route); ?>">
-                                            <button type="submit" class="myvh-button myvh-button-small">Delete</button>
+                                            <button type="submit" class="myvh-action-icon" aria-label="Send receipt" title="Send receipt" style="background:none; border:none; padding:0; margin:0; cursor:pointer;">📧</button>
+                                        </form>
+                                        <form class="myvh-inline-form" style="display:inline-block;" data-portal-action="myvh_portal_delete_payment" data-message-target="<?php echo esc_attr($message_id); ?>" data-confirm="Delete this payment?">
+                                            <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) $payment_id); ?>">
+                                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) $invoice_id); ?>">
+                                            <input type="hidden" name="redirect_route" value="<?php echo esc_attr($redirect_route); ?>">
+                                            <button type="submit" class="myvh-action-icon" aria-label="Delete payment" title="Delete payment" style="background:none; border:none; padding:0; margin:0; cursor:pointer;">🗑</button>
                                         </form>
                                         <p class="myvh-muted" id="<?php echo esc_attr($message_id); ?>"></p>
                                     </td>

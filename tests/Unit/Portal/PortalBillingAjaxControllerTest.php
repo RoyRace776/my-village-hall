@@ -184,6 +184,28 @@ class PortalBillingAjaxControllerTest extends UnitTestCase {
         $this->assertTrue((bool) ($response->data['receipt_sent'] ?? false));
     }
 
+    /** @test */
+    public function send_payment_receipt_returns_success_when_receipt_is_sent(): void {
+        $_POST = [
+            'payment_id' => 77,
+            'redirect_route' => 'payments?invoice_id=42',
+        ];
+
+        $this->payment_service->shouldReceive('send_receipt')
+            ->once()
+            ->with(77)
+            ->andReturn(true);
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->send_payment_receipt();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame(200, $response->statusCode);
+        $this->assertIsArray($response->data);
+        $this->assertSame('payments?invoice_id=42', (string) ($response->data['redirect'] ?? ''));
+    }
+
     private function capture_json_response(callable $callback): PortalBillingJsonResponseException {
         try {
             $callback();

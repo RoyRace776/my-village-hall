@@ -38,11 +38,10 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
         <div class="notice notice-error is-dismissible"><p><?php echo esc_html(wp_unslash($_GET['error'])); ?></p></div>
     <?php endif; ?>
     <?php if (isset($_GET['updated'])): ?>
-        <?php if (isset($_GET['receipt_sent'])): ?>
-            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Payment saved and receipt emailed.', 'my-village-hall'); ?></p></div>
-        <?php else: ?>
-            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Payment saved.', 'my-village-hall'); ?></p></div>
-        <?php endif; ?>
+        <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Payment saved.', 'my-village-hall'); ?></p></div>
+    <?php endif; ?>
+    <?php if (isset($_GET['receipt_sent'])): ?>
+        <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Receipt emailed.', 'my-village-hall'); ?></p></div>
     <?php endif; ?>
     <?php if (isset($_GET['receipt_error'])): ?>
         <div class="notice notice-warning is-dismissible"><p><?php echo esc_html(wp_unslash($_GET['receipt_error'])); ?></p></div>
@@ -199,13 +198,25 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                                     <td><?php echo esc_html($payment['TransactionReference'] ?? ''); ?></td>
                                     <td><?php echo esc_html($payment['Notes'] ?? ''); ?></td>
                                     <td>
-                                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('Delete this payment?', 'my-village-hall')); ?>');">
+                                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block; margin-right:10px;">
+                                            <input type="hidden" name="action" value="myvh_send_payment_receipt">
+                                            <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) \intval($payment['Id'] ?? 0)); ?>">
+                                            <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) $invoice_id); ?>">
+                                            <input type="hidden" name="redirect_page" value="myvh-payments">
+                                            <?php wp_nonce_field('myvh_send_payment_receipt'); ?>
+                                            <button type="submit" class="myvh-action-icon" aria-label="<?php esc_attr_e('Send receipt', 'my-village-hall'); ?>" title="<?php esc_attr_e('Send receipt', 'my-village-hall'); ?>" style="background:none; border:none; padding:0; margin:0; cursor:pointer;">
+                                                <span class="dashicons dashicons-email-alt" aria-hidden="true"></span>
+                                            </button>
+                                        </form>
+                                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block;" onsubmit="return confirm('<?php echo esc_js(__('Delete this payment?', 'my-village-hall')); ?>');">
                                             <input type="hidden" name="action" value="myvh_delete_payment">
                                             <input type="hidden" name="payment_id" value="<?php echo esc_attr((string) \intval($payment['Id'] ?? 0)); ?>">
                                             <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) $invoice_id); ?>">
                                             <input type="hidden" name="redirect_page" value="myvh-payments">
                                             <?php wp_nonce_field('myvh_delete_payment'); ?>
-                                            <button type="submit" class="button button-small"><?php esc_html_e('Delete', 'my-village-hall'); ?></button>
+                                            <button type="submit" class="myvh-action-icon" aria-label="<?php esc_attr_e('Delete payment', 'my-village-hall'); ?>" title="<?php esc_attr_e('Delete payment', 'my-village-hall'); ?>" style="background:none; border:none; padding:0; margin:0; cursor:pointer;">
+                                                <span class="dashicons dashicons-trash" aria-hidden="true"></span>
+                                            </button>
                                         </form>
                                     </td>
                                 </tr>

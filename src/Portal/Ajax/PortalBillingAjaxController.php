@@ -41,6 +41,7 @@ class PortalBillingAjaxController {
         add_action('wp_ajax_myvh_portal_update_invoice_status', [$this, 'update_invoice_status']);
         add_action('wp_ajax_myvh_portal_create_payment', [$this, 'create_payment']);
         add_action('wp_ajax_myvh_portal_delete_payment', [$this, 'delete_payment']);
+        add_action('wp_ajax_myvh_portal_send_payment_receipt', [$this, 'send_payment_receipt']);
         add_action('wp_ajax_myvh_portal_settle_invoice_deposit', [$this, 'settle_invoice_deposit']);
         add_action('wp_ajax_myvh_portal_change_subscription_plan', [$this, 'change_subscription_plan']);
         add_action('wp_ajax_myvh_portal_update_trial_start_date', [$this, 'update_trial_start_date']);
@@ -344,6 +345,24 @@ class PortalBillingAjaxController {
             'amount_paid' => $invoice['AmountPaid'] ?? 0,
             'amount_due' => $invoice['AmountDue'] ?? 0,
         ], __('Payment deleted', 'my-village-hall'));
+    }
+
+    public function send_payment_receipt(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $payment_id = \intval($_POST['payment_id'] ?? 0);
+        $result = $this->payment_service->send_receipt($payment_id);
+
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        $redirect = sanitize_text_field($_POST['redirect_route'] ?? 'payments');
+
+        AjaxResponse::success([
+            'redirect' => $redirect,
+            'message' => __('Receipt emailed.', 'my-village-hall'),
+        ], __('Receipt emailed.', 'my-village-hall'));
     }
 
     public function update_invoice_status(): void {

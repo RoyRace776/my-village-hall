@@ -299,6 +299,7 @@ $invoice_updated_at = $format_invoice_datetime($invoice['Updated'] ?? '');
                             <form class="myvh-account-form myvh-invoice-payment-form" data-portal-action="myvh_portal_create_payment" data-message-target="myvh-portal-payment-create-message">
                                 <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) \intval($invoice['Id'] ?? 0)); ?>">
                                 <input type="hidden" name="redirect_route" value="invoice-view?invoice_id=<?php echo \intval($invoice['Id'] ?? 0); ?>">
+                                <input type="hidden" name="send_receipt" value="0">
                                 <div class="myvh-account-grid myvh-invoice-payment-grid">
                                     <div class="myvh-account-field">
                                         <label for="myvh-portal-payment-date"><strong>Payment Date</strong></label>
@@ -328,7 +329,10 @@ $invoice_updated_at = $format_invoice_datetime($invoice['Updated'] ?? '');
                                         <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="3"></textarea>
                                     </div>
                                 </div>
-                                <button type="submit" class="button button-primary myvh-portal-add-button">Save Payment</button>
+                                <div class="myvh-account-actions">
+                                    <button type="submit" class="button button-primary myvh-portal-add-button" data-send-receipt="0">Save Payment</button>
+                                    <button type="submit" class="button button-primary myvh-portal-add-button" data-send-receipt="1">Save and Send Receipt</button>
+                                </div>
                                 <p class="myvh-muted" id="myvh-portal-payment-create-message"></p>
                             </form>
                         <?php endif; ?>

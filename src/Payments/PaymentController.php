@@ -72,6 +72,35 @@ class PaymentController {
         exit;
     }
 
+    public function send_receipt(): void {
+        if (!current_user_can('manage_myvh')) {
+            wp_die(__('Permission denied', 'my-village-hall'));
+        }
+
+        check_admin_referer('myvh_send_payment_receipt');
+
+        $payment_id = \intval($_REQUEST['payment_id'] ?? $_REQUEST['id'] ?? 0);
+        $result = $this->service->send_receipt($payment_id);
+
+        if (is_wp_error($result)) {
+            $this->redirect_with_message(
+                $this->get_admin_page_slug('myvh-payments'),
+                'receipt_error',
+                $result->get_error_message(),
+                $this->get_admin_redirect_args()
+            );
+            exit;
+        }
+
+        $this->redirect_with_message(
+            $this->get_admin_page_slug('myvh-payments'),
+            'receipt_sent',
+            '1',
+            $this->get_admin_redirect_args()
+        );
+        exit;
+    }
+
     private function get_admin_redirect_args(): array {
         $args = [];
 

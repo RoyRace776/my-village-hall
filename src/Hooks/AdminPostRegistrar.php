@@ -55,6 +55,7 @@ class AdminPostRegistrar {
         'myvh_save_recurring_booking_auto_invoice_rules' => [ 'class' => RecurringBookingAutoInvoiceRuleController::class, 'method' => 'save' ],
         'myvh_record_payment' => [ 'class' => PaymentController::class, 'method' => 'create' ],
         'myvh_delete_payment' => [ 'class' => PaymentController::class, 'method' => 'delete' ],
+        'myvh_send_payment_receipt' => [ 'class' => PaymentController::class, 'method' => 'send_receipt' ],
     ];
 
     public function __construct(
