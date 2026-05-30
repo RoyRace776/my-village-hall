@@ -38,7 +38,14 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
         <div class="notice notice-error is-dismissible"><p><?php echo esc_html(wp_unslash($_GET['error'])); ?></p></div>
     <?php endif; ?>
     <?php if (isset($_GET['updated'])): ?>
-        <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Payment saved.', 'my-village-hall'); ?></p></div>
+        <?php if (isset($_GET['receipt_sent'])): ?>
+            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Payment saved and receipt emailed.', 'my-village-hall'); ?></p></div>
+        <?php else: ?>
+            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Payment saved.', 'my-village-hall'); ?></p></div>
+        <?php endif; ?>
+    <?php endif; ?>
+    <?php if (isset($_GET['receipt_error'])): ?>
+        <div class="notice notice-warning is-dismissible"><p><?php echo esc_html(wp_unslash($_GET['receipt_error'])); ?></p></div>
     <?php endif; ?>
     <?php if (isset($_GET['deleted'])): ?>
         <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Payment deleted.', 'my-village-hall'); ?></p></div>
@@ -147,7 +154,8 @@ $selected_invoice = $selected_invoice_id > 0 ? $invoice_service->get_detail($sel
                     </p>
 
                     <p>
-                        <button type="submit" class="button button-primary"><?php esc_html_e('Save Payment', 'my-village-hall'); ?></button>
+                        <button type="submit" class="button button-primary" name="send_receipt" value="0"><?php esc_html_e('Save Payment', 'my-village-hall'); ?></button>
+                        <button type="submit" class="button" name="send_receipt" value="1"><?php esc_html_e('Save and Send Receipt', 'my-village-hall'); ?></button>
                     </p>
                 </form>
             </div>

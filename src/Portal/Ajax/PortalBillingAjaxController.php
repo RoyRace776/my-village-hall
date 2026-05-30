@@ -289,10 +289,24 @@ class PortalBillingAjaxController {
         PortalAuth::require_client_admin($this->client_admin_service);
 
         $payload = wp_unslash($_POST);
+        $send_receipt = $this->should_send_receipt($payload);
         $result = $this->payment_service->create($payload);
 
         if (is_wp_error($result)) {
             AjaxResponse::error($result->get_error_message());
+        }
+
+        $receipt_sent = false;
+        $response_message = __('Payment saved', 'my-village-hall');
+
+        if ($send_receipt) {
+            $receipt_result = $this->payment_service->send_receipt((int) $result);
+            if (is_wp_error($receipt_result)) {
+                $response_message = __('Payment saved, but the receipt email could not be sent.', 'my-village-hall');
+            } else {
+                $receipt_sent = true;
+                $response_message = __('Payment saved and receipt emailed.', 'my-village-hall');
+            }
         }
 
         $invoice_id = \intval($payload['invoice_id'] ?? 0);
@@ -304,7 +318,9 @@ class PortalBillingAjaxController {
             'status_label' => $this->invoice_service->get_status_label((string) ($invoice['Status'] ?? ''), $invoice),
             'amount_paid' => $invoice['AmountPaid'] ?? 0,
             'amount_due' => $invoice['AmountDue'] ?? 0,
-        ], __('Payment saved', 'my-village-hall'));
+            'receipt_sent' => $receipt_sent,
+            'message' => $response_message,
+        ], $response_message);
     }
 
     public function delete_payment(): void {
@@ -506,5 +522,12 @@ class PortalBillingAjaxController {
         }
 
         return sprintf(__('Includes %d booking(s).', 'my-village-hall'), $booking_count);
+    }
+
+    private function should_send_receipt(array $payload): bool {
+        $raw = $payload['send_receipt'] ?? '';
+        $value = is_scalar($raw) ? strtolower(trim((string) $raw)) : '';
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }

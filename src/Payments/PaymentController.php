@@ -19,14 +19,37 @@ class PaymentController {
 
         check_admin_referer('myvh_record_payment');
 
-        $result = $this->service->create(wp_unslash($_POST));
+        $payload = wp_unslash($_POST);
+        $send_receipt = $this->should_send_receipt($payload);
+        $result = $this->service->create($payload);
 
         if (is_wp_error($result)) {
             $this->redirect_with_message($this->get_admin_page_slug('myvh-payments'), 'error', $result->get_error_message(), $this->get_admin_redirect_args());
             exit;
         }
 
-        $this->redirect_with_message($this->get_admin_page_slug('myvh-payments'), 'updated', '1', $this->get_admin_redirect_args());
+        if (!$send_receipt) {
+            $this->redirect_with_message($this->get_admin_page_slug('myvh-payments'), 'updated', '1', $this->get_admin_redirect_args());
+            exit;
+        }
+
+        $receipt_result = $this->service->send_receipt((int) $result);
+        if (is_wp_error($receipt_result)) {
+            $this->redirect_with_message(
+                $this->get_admin_page_slug('myvh-payments'),
+                'updated',
+                '1',
+                array_merge($this->get_admin_redirect_args(), ['receipt_error' => $receipt_result->get_error_message()])
+            );
+            exit;
+        }
+
+        $this->redirect_with_message(
+            $this->get_admin_page_slug('myvh-payments'),
+            'updated',
+            '1',
+            array_merge($this->get_admin_redirect_args(), ['receipt_sent' => '1'])
+        );
         exit;
     }
 
@@ -75,5 +98,12 @@ class PaymentController {
     private function redirect_with_message(string $page, string $key, string $value, array $extra_args = []): void {
         $args = array_merge(['page' => $page, $key => $value], $extra_args);
         wp_safe_redirect(add_query_arg($args, admin_url('admin.php')));
+    }
+
+    private function should_send_receipt(array $payload): bool {
+        $raw = $payload['send_receipt'] ?? '';
+        $value = is_scalar($raw) ? strtolower(trim((string) $raw)) : '';
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }

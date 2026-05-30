@@ -3,6 +3,7 @@
 namespace MYVH\Tests\Unit\Portal;
 
 use Brain\Monkey\Functions;
+use Mockery;
 use MYVH\Bookings\BookingService;
 use MYVH\Customers\CustomerService;
 use MYVH\Invoices\InvoiceGeneratorService;
@@ -44,7 +45,7 @@ class PortalBillingAjaxControllerTest extends UnitTestCase {
             'is_user_logged_in' => true,
             'check_ajax_referer' => true,
             'wp_unslash' => static fn($value) => $value,
-            'is_wp_error' => false,
+            'is_wp_error' => static fn($value) => $value instanceof \WP_Error,
             'sanitize_email' => static fn($email) => $email,
             'is_email' => static fn($email) => !empty($email) && strpos($email, '@') !== false,
             'get_current_user_id' => 1,
@@ -135,6 +136,52 @@ class PortalBillingAjaxControllerTest extends UnitTestCase {
 
         $this->assertFalse($response->success);
         $this->assertSame(400, $response->statusCode);
+    }
+
+    /** @test */
+    public function create_payment_can_send_receipt_when_requested(): void {
+        $_POST = [
+            'invoice_id' => 42,
+            'payment_amount' => '10.00',
+            'payment_method' => 'card',
+            'send_receipt' => '1',
+            'redirect_route' => 'payments?invoice_id=42',
+        ];
+
+        $this->payment_service->shouldReceive('create')
+            ->once()
+            ->with($_POST)
+            ->andReturn(55);
+
+        $this->payment_service->shouldReceive('send_receipt')
+            ->once()
+            ->with(55)
+            ->andReturn(true);
+
+        $invoice = [
+            'Status' => 'part-paid',
+            'AmountPaid' => 10.0,
+            'AmountDue' => 40.0,
+        ];
+
+        $this->invoice_service->shouldReceive('get_detail')
+            ->once()
+            ->with(42)
+            ->andReturnUsing(static fn() => $invoice);
+
+        $this->invoice_service->shouldReceive('get_status_label')
+            ->once()
+            ->with('part-paid', Mockery::type('array'))
+            ->andReturn('Part Paid');
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->create_payment();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame(200, $response->statusCode);
+        $this->assertIsArray($response->data);
+        $this->assertTrue((bool) ($response->data['receipt_sent'] ?? false));
     }
 
     private function capture_json_response(callable $callback): PortalBillingJsonResponseException {

@@ -1049,8 +1049,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const paymentCreateForm = paymentsPage.querySelector('[data-portal-action="myvh_portal_create_payment"]');
+        const sendReceiptField = paymentCreateForm ? paymentCreateForm.querySelector('input[name="send_receipt"]') : null;
         const invoiceSelect = paymentsPage.querySelector('#myvh-portal-payment-invoice');
         const amountLabel = paymentsPage.querySelector('#myvh-portal-payment-amount-label');
+
+        if (paymentCreateForm && sendReceiptField && paymentCreateForm.dataset.receiptButtonsBound !== '1') {
+            const receiptButtons = Array.from(paymentCreateForm.querySelectorAll('button[data-send-receipt]'));
+
+            receiptButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    sendReceiptField.value = button.getAttribute('data-send-receipt') === '1' ? '1' : '0';
+                });
+            });
+
+            paymentCreateForm.dataset.receiptButtonsBound = '1';
+        }
 
         if (!amountLabel || amountLabel.dataset.amountLabelBound === '1') {
             return;

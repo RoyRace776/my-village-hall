@@ -61,6 +61,7 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                     <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) $selected_invoice_id); ?>">
                 <?php endif; ?>
                 <input type="hidden" name="redirect_route" value="<?php echo esc_attr($redirect_route); ?>">
+                <input type="hidden" name="send_receipt" value="0">
 
                 <?php if ($selected_invoice_id <= 0): ?>
                     <div class="myvh-account-field">
@@ -113,10 +114,11 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                     <textarea id="myvh-portal-payment-comment" name="payment_comment" rows="4"></textarea>
                 </div>
 
-                <button type="submit" class="myvh-portal-add-btn">
+                <button type="submit" class="myvh-portal-add-btn" data-send-receipt="0">
                     <span class="myvh-portal-add-btn__icon" aria-hidden="true">✓</span>
                     <span>Save Payment</span>
                 </button>
+                <button type="submit" class="myvh-button" data-send-receipt="1">Save and Send Receipt</button>
                 <p class="myvh-muted" id="myvh-payment-create-message"></p>
             </form>
         </div>
@@ -174,7 +176,7 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
             <?php if (empty($payments)): ?>
                 <p>No payments found for the selected date range.</p>
             <?php else: ?>
-                <div class="myvh-invoices-table-wrap">
+                <div class="myvh-invoices-table-wrap myvh-recent-payments-table-wrap" data-myvh-scroll-after="10">
                     <table class="myvh-customer-list-table myvh-invoices-table">
                         <thead>
                             <tr>
@@ -217,6 +219,47 @@ $redirect_route = 'payments?' . http_build_query($redirect_route_params);
                         </tbody>
                     </table>
                 </div>
+                <script>
+                (function () {
+                    var wrapper = document.querySelector('.myvh-payments-page .myvh-recent-payments-table-wrap[data-myvh-scroll-after]');
+                    if (!wrapper) {
+                        return;
+                    }
+
+                    var table = wrapper.querySelector('table');
+                    if (!table) {
+                        return;
+                    }
+
+                    function applyScrollLimit() {
+                        var rows = table.querySelectorAll('tbody tr');
+                        var scrollAfter = parseInt(wrapper.getAttribute('data-myvh-scroll-after'), 10);
+
+                        wrapper.style.maxHeight = '';
+                        wrapper.style.overflowY = '';
+
+                        if (!scrollAfter || rows.length <= scrollAfter) {
+                            return;
+                        }
+
+                        var maxHeight = 0;
+                        var header = table.querySelector('thead');
+                        if (header) {
+                            maxHeight += header.getBoundingClientRect().height;
+                        }
+
+                        for (var i = 0; i < scrollAfter; i++) {
+                            maxHeight += rows[i].getBoundingClientRect().height;
+                        }
+
+                        wrapper.style.maxHeight = Math.ceil(maxHeight + 2) + 'px';
+                        wrapper.style.overflowY = 'auto';
+                    }
+
+                    applyScrollLimit();
+                    window.addEventListener('resize', applyScrollLimit);
+                })();
+                </script>
             <?php endif; ?>
         </div>
     </div>

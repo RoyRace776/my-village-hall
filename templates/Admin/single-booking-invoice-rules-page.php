@@ -67,7 +67,12 @@ $rules = $rule_repository->get_all_rules();
                         </td>
                         <td><input type="number" name="rules[0][due_date_offset_days]" value="30" min="0" class="small-text"></td>
                         <td><input type="checkbox" name="rules[0][is_active]" value="1" checked></td>
-                        <td><button type="button" class="button button-link-delete myvh-remove-rule-row"><?php esc_html_e('Remove', 'my-village-hall'); ?></button></td>
+                        <td>
+                            <button type="button" class="button button-small myvh-remove-rule-row myvh-invoice-rule-remove-btn" aria-label="<?php esc_attr_e('Remove rule', 'my-village-hall'); ?>" title="<?php esc_attr_e('Remove rule', 'my-village-hall'); ?>">
+                                <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                                <span class="screen-reader-text"><?php esc_html_e('Remove rule', 'my-village-hall'); ?></span>
+                            </button>
+                        </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($rules as $index => $rule): ?>
@@ -95,7 +100,12 @@ $rules = $rule_repository->get_all_rules();
                             </td>
                             <td><input type="number" name="rules[<?php echo \intval($index); ?>][due_date_offset_days]" value="<?php echo \intval($rule['DueDateOffsetDays'] ?? 30); ?>" min="0" class="small-text"></td>
                             <td><input type="checkbox" name="rules[<?php echo \intval($index); ?>][is_active]" value="1" <?php checked(!empty($rule['IsActive'])); ?>></td>
-                            <td><button type="button" class="button button-link-delete myvh-remove-rule-row"><?php esc_html_e('Remove', 'my-village-hall'); ?></button></td>
+                            <td>
+                                <button type="button" class="button button-small myvh-remove-rule-row myvh-invoice-rule-remove-btn" aria-label="<?php esc_attr_e('Remove rule', 'my-village-hall'); ?>" title="<?php esc_attr_e('Remove rule', 'my-village-hall'); ?>">
+                                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                                    <span class="screen-reader-text"><?php esc_html_e('Remove rule', 'my-village-hall'); ?></span>
+                                </button>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -103,7 +113,10 @@ $rules = $rule_repository->get_all_rules();
         </table>
 
         <p>
-            <button type="button" class="button" id="myvh-add-rule-row"><?php esc_html_e('Add Rule', 'my-village-hall'); ?></button>
+            <button type="button" class="button myvh-invoice-rule-add-btn" id="myvh-add-rule-row">
+                <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+                <span><?php esc_html_e('Add Rule', 'my-village-hall'); ?></span>
+            </button>
         </p>
 
         <?php submit_button(__('Save Rules', 'my-village-hall')); ?>
@@ -145,7 +158,7 @@ $rules = $rule_repository->get_all_rules();
             '</select></td>' +
             '<td><input type="number" name="rules[' + index + '][due_date_offset_days]" value="30" min="0" class="small-text"></td>' +
             '<td><input type="checkbox" name="rules[' + index + '][is_active]" value="1" checked></td>' +
-            '<td><button type="button" class="button button-link-delete myvh-remove-rule-row">Remove</button></td>';
+            '<td><button type="button" class="button button-small myvh-remove-rule-row myvh-invoice-rule-remove-btn" aria-label="Remove rule" title="Remove rule"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span><span class="screen-reader-text">Remove rule</span></button></td>';
         return row;
     }
 
@@ -154,11 +167,12 @@ $rules = $rule_repository->get_all_rules();
     });
 
     tbody.addEventListener('click', function (event) {
-        if (!event.target.classList.contains('myvh-remove-rule-row')) {
+        var removeButton = event.target.closest('button.myvh-remove-rule-row');
+        if (!removeButton) {
             return;
         }
 
-        var row = event.target.closest('tr.myvh-rule-row');
+        var row = removeButton.closest('tr.myvh-rule-row');
         if (row) {
             row.remove();
         }

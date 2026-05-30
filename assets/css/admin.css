@@ -498,13 +498,80 @@
     text-align: right;
 }
 
-#myvh-single-booking-rules-table .myvh-remove-rule-row {
-    color: #b32d2e;
+#myvh-single-booking-rules-table .myvh-invoice-rule-remove-btn,
+#myvh-recurring-booking-rules-table .myvh-invoice-rule-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-height: 32px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid #d8c3c3;
+    background: #fff;
+    color: #8a2424;
+    box-shadow: 0 1px 4px rgba(17, 24, 39, 0.08);
+    transition: border-color .14s ease, box-shadow .14s ease, background-color .14s ease, transform .14s ease;
 }
 
-#myvh-single-booking-rules-table .myvh-remove-rule-row:hover,
-#myvh-single-booking-rules-table .myvh-remove-rule-row:focus-visible {
-    color: #8a2424;
+#myvh-single-booking-rules-table .myvh-invoice-rule-remove-btn .dashicons,
+#myvh-recurring-booking-rules-table .myvh-invoice-rule-remove-btn .dashicons {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+#myvh-single-booking-rules-table .myvh-invoice-rule-remove-btn:hover,
+#myvh-single-booking-rules-table .myvh-invoice-rule-remove-btn:focus-visible,
+#myvh-recurring-booking-rules-table .myvh-invoice-rule-remove-btn:hover,
+#myvh-recurring-booking-rules-table .myvh-invoice-rule-remove-btn:focus-visible {
+    border-color: #bf8f8f;
+    background: #fff5f5;
+    color: #781f1f;
+    box-shadow: 0 4px 9px rgba(120, 31, 31, 0.14);
+    transform: translateY(-1px);
+}
+
+#myvh-single-booking-rules-table .myvh-invoice-rule-remove-btn:active,
+#myvh-recurring-booking-rules-table .myvh-invoice-rule-remove-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(120, 31, 31, 0.1);
+}
+
+.myvh-invoice-rule-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid #ccd0d4;
+    background: linear-gradient(180deg, #ffffff 0%, #f6f7f7 100%);
+    color: #2c3338;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(17, 24, 39, 0.08);
+    transition: border-color .14s ease, box-shadow .14s ease, transform .14s ease;
+}
+
+.myvh-invoice-rule-add-btn .dashicons {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.myvh-invoice-rule-add-btn:hover,
+.myvh-invoice-rule-add-btn:focus-visible {
+    border-color: #8c8f94;
+    color: #1d2327;
+    box-shadow: 0 4px 10px rgba(17, 24, 39, 0.12);
+    transform: translateY(-1px);
+}
+
+.myvh-invoice-rule-add-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(17, 24, 39, 0.1);
 }
 
 @media screen and (max-width: 1100px) {

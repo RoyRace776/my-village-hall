@@ -24,6 +24,7 @@ class EmailTemplateRegistryTest extends UnitTestCase
         $this->assertTrue(EmailTemplateRegistry::has('booking-confirmed'));
         $this->assertTrue(EmailTemplateRegistry::has('booking-cancelled'));
         $this->assertTrue(EmailTemplateRegistry::has('invoice'));
+        $this->assertTrue(EmailTemplateRegistry::has('payment-receipt'));
         $this->assertTrue(EmailTemplateRegistry::has('organisation-created'));
     }
 
