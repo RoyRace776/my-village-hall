@@ -566,12 +566,13 @@ body .scheduler_default_event_inner {
 .myvh-timetable {
     --myvh-tt-date-col: 92px;
     --myvh-tt-time-col: 56px;
+    --myvh-tt-room-col-width: 140px;
     width: max-content;
     min-width: 100%;
     border-collapse: collapse;
     font-size: 13px;
     background: #fff;
-    table-layout: auto;
+    table-layout: fixed;
 }
 
 .myvh-timetable-scroll {
@@ -656,8 +657,9 @@ body .scheduler_default_event_inner {
     font-weight: 600;
     text-align: center;
     padding: 6px 6px;
-    min-width: 110px;
-    max-width: 160px;
+    width: var(--myvh-tt-room-col-width);
+    min-width: var(--myvh-tt-room-col-width);
+    max-width: var(--myvh-tt-room-col-width);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -684,6 +686,8 @@ body .scheduler_default_event_inner {
 .myvh-tt-empty-cell {
     height: 40px;
     background: #fff;
+    width: var(--myvh-tt-room-col-width);
+    min-width: var(--myvh-tt-room-col-width);
 }
 
 .myvh-timetable--day .myvh-tt-empty-cell {
@@ -718,6 +722,8 @@ body .scheduler_default_event_inner {
     overflow: hidden;
     cursor: default;
     transition: box-shadow 0.12s ease, transform 0.12s ease;
+    width: var(--myvh-tt-room-col-width);
+    min-width: var(--myvh-tt-room-col-width);
 }
 
 .myvh-tt-event-cell:hover {

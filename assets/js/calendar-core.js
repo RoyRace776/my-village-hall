@@ -703,8 +703,13 @@ window.CalendarCore = (function () {
             });
 
             const timetableClass = detail === "Day" ? "myvh-timetable myvh-timetable--day" : "myvh-timetable";
+            const containerWidth = Math.round((container && container.clientWidth) || 0);
+            const pinnedColumnsWidth = 148;
+            const roomColumnWidth = Math.max(110, Math.min(220, roomCount > 0 && containerWidth > 0
+                ? Math.floor((containerWidth - pinnedColumnsWidth) / roomCount)
+                : 140));
             let html = '<div class="myvh-timetable-scroll">';
-            html += `<table class="${timetableClass}" role="grid">`;
+            html += `<table class="${timetableClass}" role="grid" style="--myvh-tt-room-col-width:${roomColumnWidth}px;">`;
             html += '<thead><tr>';
             html += '<th class="myvh-tt-corner">Date</th>';
             html += '<th class="myvh-tt-corner-sub">Time</th>';
