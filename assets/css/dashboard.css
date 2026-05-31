@@ -4579,6 +4579,16 @@ body .site-main:has(#myvh-portal) {
   margin-top: 2px;
 }
 
+#myvh-booking-modal-create .myvh-booking-modal-shell > .myvh-modal-actions {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 0 15px !important;
+  padding: 8px 0 10px;
+  background: #edf1f6;
+  border-bottom: 1px solid #d7dee8;
+}
+
 #myvh-booking-modal-create .button.button-primary {
   border: 0;
   border-radius: 10px;
@@ -4795,6 +4805,16 @@ body .site-main:has(#myvh-portal) {
 
 #myvh-booking-modal-view .myvh-modal-actions {
   margin-top: 2px;
+}
+
+#myvh-booking-modal-view .myvh-booking-modal-shell > .myvh-modal-actions {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 0 15px !important;
+  padding: 8px 0 10px;
+  background: #edf1f6;
+  border-bottom: 1px solid #d7dee8;
 }
 
 #myvh-booking-modal-view .button.button-primary {
