@@ -29,6 +29,11 @@ class PortalOrganisationAjaxController {
         add_action('wp_ajax_myvh_portal_org_add_member', [$this, 'organisation_add_member']);
         add_action('wp_ajax_myvh_portal_org_remove_member', [$this, 'organisation_remove_member']);
         add_action('wp_ajax_myvh_portal_org_set_admin', [$this, 'organisation_set_member_admin']);
+        add_action('wp_ajax_myvh_portal_admin_add_organisation', [$this, 'admin_add_organisation']);
+        add_action('wp_ajax_myvh_portal_admin_save_organisation', [$this, 'admin_save_organisation']);
+        add_action('wp_ajax_myvh_portal_admin_org_add_member', [$this, 'admin_organisation_add_member']);
+        add_action('wp_ajax_myvh_portal_admin_org_remove_member', [$this, 'admin_organisation_remove_member']);
+        add_action('wp_ajax_myvh_portal_admin_org_set_admin', [$this, 'admin_organisation_set_member_admin']);
     }
 
     public function request_organisation_membership(): void {
@@ -428,6 +433,126 @@ class PortalOrganisationAjaxController {
         }
 
         AjaxResponse::success([], __('Member status updated', 'my-village-hall'));
+    }
+
+    public function admin_add_organisation(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $payload = SaveOrganisationRequest::from_post(wp_unslash($_POST), true);
+        $payload['is_active'] = array_key_exists('is_active', $_POST) ? (!empty($_POST['is_active']) ? 1 : 0) : 1;
+
+        $saved = $this->organisation_service->save($payload, true);
+        if (is_wp_error($saved)) {
+            AjaxResponse::error($saved->get_error_message());
+        }
+
+        $organisation_id = (int) $saved;
+        if ($organisation_id <= 0) {
+            AjaxResponse::error(__('Organisation save failed', 'my-village-hall'));
+        }
+
+        AjaxResponse::success([
+            'organisation_id' => $organisation_id,
+            'redirect' => 'manage-organisations?org_id=' . $organisation_id,
+        ], __('Organisation created', 'my-village-hall'));
+    }
+
+    public function admin_save_organisation(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $organisation_id = (int) ($_POST['organisation_id'] ?? 0);
+        if ($organisation_id <= 0) {
+            AjaxResponse::error(__('Organisation is required', 'my-village-hall'));
+        }
+
+        $payload = SaveOrganisationRequest::from_post(wp_unslash($_POST), true);
+        $payload['organisation_id'] = $organisation_id;
+
+        $saved = $this->organisation_service->save($payload, true);
+        if (is_wp_error($saved)) {
+            AjaxResponse::error($saved->get_error_message());
+        }
+
+        if (!$saved) {
+            AjaxResponse::error(__('Organisation update failed', 'my-village-hall'));
+        }
+
+        AjaxResponse::success([
+            'organisation_id' => $organisation_id,
+            'redirect' => 'manage-organisations?org_id=' . $organisation_id,
+        ], __('Organisation updated', 'my-village-hall'));
+    }
+
+    public function admin_organisation_add_member(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $org_id =
+intval($_POST['organisation_id'] ?? 0);
+        $email = sanitize_email($_POST['email'] ?? '');
+        $is_admin = !empty($_POST['is_admin']);
+
+        if ($org_id <= 0) {
+            AjaxResponse::error(__('Organisation is required', 'my-village-hall'));
+        }
+
+        if ($email === '' || !is_email($email)) {
+            AjaxResponse::error(__('Valid member email is required', 'my-village-hall'));
+        }
+
+        $target_customer = $this->customer_service->get_by_email($email);
+        if (empty($target_customer['Id'])) {
+            AjaxResponse::error(__('No customer exists with that email address', 'my-village-hall'));
+        }
+
+        $result = $this->organisation_service->add_member($org_id, (int) $target_customer['Id'], $is_admin);
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        AjaxResponse::success([
+            'redirect' => 'manage-organisations?org_id=' . $org_id,
+        ], __('Member added', 'my-village-hall'));
+    }
+
+    public function admin_organisation_remove_member(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $member_id = \intval($_POST['member_id'] ?? 0);
+        $organisation_id = \intval($_POST['organisation_id'] ?? 0);
+
+        if ($member_id <= 0) {
+            AjaxResponse::error(__('Member ID is required', 'my-village-hall'));
+        }
+
+        $result = $this->organisation_service->remove_member($member_id);
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        AjaxResponse::success([
+            'redirect' => 'manage-organisations?org_id=' . $organisation_id,
+        ], __('Member removed', 'my-village-hall'));
+    }
+
+    public function admin_organisation_set_member_admin(): void {
+        PortalAuth::require_client_admin($this->client_admin_service);
+
+        $member_id = \intval($_POST['member_id'] ?? 0);
+        $organisation_id = \intval($_POST['organisation_id'] ?? 0);
+        $is_admin = !empty($_POST['is_admin']);
+
+        if ($member_id <= 0) {
+            AjaxResponse::error(__('Member ID is required', 'my-village-hall'));
+        }
+
+        $result = $this->organisation_service->update_member_admin_status($member_id, $is_admin);
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+        }
+
+        AjaxResponse::success([
+            'redirect' => 'manage-organisations?org_id=' . $organisation_id,
+        ], __('Member status updated', 'my-village-hall'));
     }
 
     private function get_authenticated_customer(): array {

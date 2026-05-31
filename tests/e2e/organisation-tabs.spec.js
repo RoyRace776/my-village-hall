@@ -53,4 +53,26 @@ test.describe('Portal organisation tabs', () => {
     });
     await expect(page.locator(`.myvh-org-card[data-org-id="${orgId}"] [data-org-panel="contact"]`)).toBeVisible();
   });
+
+  test('opens manage organisations and selects organisation for editing', async ({ page }) => {
+    test.skip(!hasAdminCreds(), 'Set PW_ADMIN_USERNAME and PW_ADMIN_PASSWORD to run this test.');
+
+    await loginAsPortalAdmin(page);
+    await openPortalRoute(page, '#manage-organisations');
+
+    await expect(page.getByRole('heading', { name: /manage organisations/i })).toBeVisible({ timeout: 15000 });
+
+    const orgRows = page.locator('.myvh-manage-org-list tbody tr');
+    const rowCount = await orgRows.count();
+    if (rowCount === 0) {
+      test.skip(true, 'No organisations are available in the manage organisations list.');
+    }
+
+    const targetRow = orgRows.nth(rowCount > 1 ? 1 : 0);
+    await targetRow.getByRole('link', { name: /edit|selected/i }).click();
+
+    await expect(page).toHaveURL(/#manage-organisations\?org_id=\d+/);
+    await expect(page.locator('form[data-portal-action="myvh_portal_admin_save_organisation"] input[name="name"]')).toBeVisible();
+    await expect(page.getByRole('link', { name: /add organisation/i })).toBeVisible();
+  });
 });

@@ -78,6 +78,106 @@ class PortalOrganisationPageRenderer {
         include MYVH_PLUGIN_DIR . 'templates/Portal/organisations.php';
     }
 
+    public function render_manage_organisations(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
+        $all_organisations = array_values(array_filter(
+            $this->organisation_service->get_all_with_type(false),
+            static function(array $organisation): bool {
+                return empty($organisation['IsSystem']);
+            }
+        ));
+
+        foreach ($all_organisations as &$organisation) {
+            $org_id = (int) ($organisation['Id'] ?? 0);
+            $organisation['HasLinkedBookings'] = $org_id > 0 && $this->organisation_service->has_linked_bookings($org_id) ? 1 : 0;
+            $organisation['MemberCount'] = $org_id > 0 ? count($this->organisation_service->get_members($org_id)) : 0;
+        }
+        unset($organisation);
+
+            $selected_org_id = filter_input(INPUT_GET, 'org_id', FILTER_VALIDATE_INT);
+        $selected_org_id = $selected_org_id !== false ? (int) $selected_org_id : 0;
+        if ($selected_org_id <= 0 && !empty($all_organisations)) {
+            $selected_org_id = (int) ($all_organisations[0]['Id'] ?? 0);
+        }
+
+        $selected_organisation = null;
+        foreach ($all_organisations as $organisation) {
+            if ((int) ($organisation['Id'] ?? 0) === $selected_org_id) {
+                $selected_organisation = $organisation;
+                break;
+            }
+        }
+
+        if ($selected_organisation === null && !empty($all_organisations)) {
+            $selected_organisation = $all_organisations[0];
+            $selected_org_id = (int) ($selected_organisation['Id'] ?? 0);
+        }
+
+        $selected_organisation_members = $selected_org_id > 0
+            ? $this->organisation_service->get_members($selected_org_id)
+            : [];
+
+        $organisation_types = $this->organisation_type_service->get_all();
+        $single_booking_rule_options = $this->rule_repository->get_rule_options();
+        $recurring_booking_rule_options = $this->recurring_booking_rule_repository->get_rule_options();
+
+        include MYVH_PLUGIN_DIR . 'templates/Portal/manage-organisations.php';
+    }
+
+    public function render_manage_organisation_add(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
+        $organisation_types = $this->organisation_type_service->get_all();
+        $default_organisation_type_id = $this->get_default_organisation_type_id($organisation_types);
+        $single_booking_rule_options = $this->rule_repository->get_rule_options();
+        $recurring_booking_rule_options = $this->recurring_booking_rule_repository->get_rule_options();
+
+        include MYVH_PLUGIN_DIR . 'templates/Portal/manage-organisation-add.php';
+    }
+
+    public function render_manage_organisation_members(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
+        $all_organisations = array_values(array_filter(
+            $this->organisation_service->get_all_with_type(false),
+            static function(array $organisation): bool {
+                return empty($organisation['IsSystem']);
+            }
+        ));
+
+        $selected_org_id = filter_input(INPUT_GET, 'org_id', FILTER_VALIDATE_INT);
+        $selected_org_id = $selected_org_id !== false ? (int) $selected_org_id : 0;
+        if ($selected_org_id <= 0 && !empty($all_organisations)) {
+            $selected_org_id = (int) ($all_organisations[0]['Id'] ?? 0);
+        }
+
+        $selected_organisation = null;
+        foreach ($all_organisations as $organisation) {
+            if ((int) ($organisation['Id'] ?? 0) === $selected_org_id) {
+                $selected_organisation = $organisation;
+                break;
+            }
+        }
+
+        if ($selected_organisation === null && !empty($all_organisations)) {
+            $selected_organisation = $all_organisations[0];
+            $selected_org_id = (int) ($selected_organisation['Id'] ?? 0);
+        }
+
+        $selected_organisation_members = $selected_org_id > 0
+            ? $this->organisation_service->get_members($selected_org_id)
+            : [];
+
+        include MYVH_PLUGIN_DIR . 'templates/Portal/manage-organisation-members.php';
+    }
+
     public function render_organisation_types(bool $is_client_admin): void {
         if (!$is_client_admin) {
             wp_send_json_error('Permission denied', 403);

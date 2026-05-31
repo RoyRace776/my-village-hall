@@ -85,6 +85,7 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                     <div id="myvh-portal-admin-menu" class="myvh-portal-nav-submenu">
                         <a href="#client-admins"><span class="myvh-portal-menu-icon dashicons dashicons-admin-users" aria-hidden="true"></span><span>Client Admins</span></a>
                         <a href="#customers"><span class="myvh-portal-menu-icon dashicons dashicons-groups" aria-hidden="true"></span><span>Customers</span></a>
+                        <a href="#manage-organisations"><span class="myvh-portal-menu-icon dashicons dashicons-building" aria-hidden="true"></span><span>Manage Organisations</span></a>
                         <a href="#organisation-types"><span class="myvh-portal-menu-icon dashicons dashicons-category" aria-hidden="true"></span><span>Organisation Types</span></a>
                         <a href="#venues"><span class="myvh-portal-menu-icon dashicons dashicons-location-alt" aria-hidden="true"></span><span>Venues</span></a>
                         <a href="#rooms"><span class="myvh-portal-menu-icon dashicons dashicons-admin-home" aria-hidden="true"></span><span>Rooms</span></a>

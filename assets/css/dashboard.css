@@ -4303,6 +4303,94 @@ body .site-main:has(#myvh-portal) {
   display: inline-flex;
 }
 
+.myvh-manage-orgs-page .myvh-manage-orgs-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(420px, 1.2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.myvh-manage-orgs-page .myvh-manage-orgs-list-card,
+.myvh-manage-orgs-page .myvh-manage-orgs-edit-card,
+.myvh-manage-org-add-page .myvh-manage-org-add-card {
+  max-width: none;
+}
+
+.myvh-manage-orgs-page .myvh-manage-orgs-edit-card .myvh-account-form,
+.myvh-manage-org-add-page .myvh-manage-org-add-card .myvh-account-form {
+  max-width: none;
+}
+
+.myvh-manage-orgs-page .myvh-manage-org-list .is-selected td {
+  background: #f8efe6;
+}
+
+.myvh-manage-orgs-page .myvh-manage-org-list strong {
+  display: block;
+}
+
+.myvh-manage-orgs-page .myvh-manage-orgs-list-card .booking-actions {
+  align-items: center;
+}
+
+.myvh-manage-org-members-page .myvh-manage-orgs-members-card {
+  margin-top: 16px;
+  max-width: none;
+}
+
+.myvh-manage-org-members-page .myvh-manage-orgs-members-grid > div {
+  min-width: 0;
+}
+
+.myvh-manage-org-members-page .myvh-manage-orgs-members-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.myvh-manage-org-members-page .myvh-manage-orgs-members-card table {
+  width: 100%;
+}
+
+.myvh-manage-orgs-page .myvh-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d8ccbc;
+  border-radius: 8px;
+  background: #fff;
+  color: #444;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.myvh-manage-orgs-page button.myvh-action-icon {
+  padding: 0;
+}
+
+.myvh-manage-orgs-page .myvh-action-icon:hover,
+.myvh-manage-orgs-page .myvh-action-icon:focus-visible,
+.myvh-manage-orgs-page .myvh-action-icon.is-selected {
+  color: var(--accent);
+  border-color: var(--accent-l);
+  background: #fcf4ee;
+}
+
+.myvh-manage-orgs-page .myvh-action-icon--danger:hover,
+.myvh-manage-orgs-page .myvh-action-icon--danger:focus-visible {
+  color: #b32d2e;
+  border-color: #e7b9bb;
+  background: #fff2f2;
+}
+
+.myvh-manage-orgs-page .myvh-action-icon--disabled,
+.myvh-manage-orgs-page .myvh-action-icon:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
 /* Standalone toggle (checkbox + label text) — used for invoicing flag etc. */
 .myvh-toggle-row {
   display: flex;
@@ -4976,6 +5064,7 @@ body .site-main:has(#myvh-portal) {
   .myvh-account-header  { flex-direction: column; }
   .myvh-account-chip    { align-self: flex-start; }
   .myvh-org-admin-grid  { grid-template-columns: 1fr; }
+  .myvh-manage-orgs-page .myvh-manage-orgs-layout { grid-template-columns: 1fr; }
   .myvh-booking-status  { justify-self: start; text-align: left; }
   .myvh-group-header    { flex-direction: column; align-items: flex-start; }
   .myvh-group-room      { margin-left: 0; margin-top: 2px; min-width: 0; text-align: left; }

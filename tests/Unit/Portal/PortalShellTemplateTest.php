@@ -35,6 +35,8 @@ class PortalShellTemplateTest extends UnitTestCase {
             },
             'esc_url' => static fn($value) => (string) $value,
             'wp_logout_url' => static fn($redirect = '') => '/logout',
+            'wp_kses' => static fn($content, $allowed_html = [], $allowed_protocols = []) => (string) $content,
+            'wp_strip_all_tags' => static fn($text, $remove_breaks = false) => strip_tags((string) $text),
         ]);
     }
 
@@ -68,6 +70,25 @@ class PortalShellTemplateTest extends UnitTestCase {
         $this->assertStringContainsString('myvh-portal-account-menu', $html);
         $this->assertStringContainsString('Alpha Hall', $html);
         $this->assertStringContainsString('Beta Hall', $html);
+        $this->assertStringNotContainsString('#manage-organisations', $html);
         $this->assertStringNotContainsString('myvh-portal-site-link', $html);
+    }
+
+    /** @test */
+    public function admin_menu_includes_manage_organisations_for_client_admins(): void {
+        $accessible_sites = [];
+        $is_client_admin = true;
+        $has_customer = true;
+        $portal_logout_url = '/logout';
+        $portal_branding = [
+            'site_title' => 'My Village Hall',
+            'logo_url' => '',
+        ];
+
+        ob_start();
+        include MYVH_PLUGIN_DIR . 'templates/Portal/portal-shell.php';
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('#manage-organisations', $html);
     }
 }

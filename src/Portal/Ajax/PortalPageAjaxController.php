@@ -213,6 +213,18 @@ class PortalPageAjaxController {
                 $this->organisation_page_renderer->render_organisations($customer, $is_client_admin);
                 break;
 
+            case 'manage-organisations':
+                $this->organisation_page_renderer->render_manage_organisations($is_client_admin);
+                break;
+
+            case 'manage-organisations-add':
+                $this->organisation_page_renderer->render_manage_organisation_add($is_client_admin);
+                break;
+
+            case 'manage-organisations-members':
+                $this->organisation_page_renderer->render_manage_organisation_members($is_client_admin);
+                break;
+
             default:
                 $groups = $this->get_portal_booking_groups($customer, $is_client_admin);
                 $can_delete_booking = function(array $booking): bool {
