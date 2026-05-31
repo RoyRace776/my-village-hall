@@ -328,18 +328,30 @@ class PortalAdminConfigPageRenderer {
     }
 
     public function render_reports(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
         $view_model = $this->report_view_model_factory->build_for_mode(get_current_user_id(), 'portal');
         $view_model['screen'] = 'reports';
         include MYVH_PLUGIN_DIR . 'templates/Portal/reports.php';
     }
 
     public function render_reports_builder(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
         $view_model = $this->report_view_model_factory->build_for_mode(get_current_user_id(), 'portal');
         $view_model['screen'] = 'builder';
         include MYVH_PLUGIN_DIR . 'templates/Portal/reports-builder.php';
     }
 
     public function render_reports_view(bool $is_client_admin): void {
+        if (!$is_client_admin) {
+            wp_send_json_error('Permission denied', 403);
+        }
+
         $view_model = $this->report_view_model_factory->build_for_mode(get_current_user_id(), 'portal');
         $view_model['screen'] = 'view';
         $view_model['bootstrap']['initialReportId'] = \intval($_GET['report_id'] ?? 0);

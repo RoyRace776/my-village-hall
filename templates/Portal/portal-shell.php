@@ -47,7 +47,6 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
             <a href="#bookings"><span class="myvh-portal-menu-icon dashicons dashicons-list-view" aria-hidden="true"></span><span><?php echo $is_client_admin ? 'Bookings' : 'My Bookings'; ?></span></a>
             <a href="#calendar"><span class="myvh-portal-menu-icon dashicons dashicons-calendar-alt" aria-hidden="true"></span><span>Calendar</span></a>
             <a href="#invoices"><span class="myvh-portal-menu-icon dashicons dashicons-media-spreadsheet" aria-hidden="true"></span><span>View Invoices</span></a>
-            <a href="#reports"><span class="myvh-portal-menu-icon dashicons dashicons-chart-bar" aria-hidden="true"></span><span>Reports</span></a>
             <?php if ($has_customer||$is_client_admin): ?>
                 <a href="#organisations"><span class="myvh-portal-menu-icon dashicons dashicons-admin-multisite" aria-hidden="true"></span><span>Organisations</span></a>
             <?php endif; ?>
@@ -91,6 +90,7 @@ $portal_branding = (isset($portal_branding) && is_array($portal_branding)) ? $po
                         <a href="#rooms"><span class="myvh-portal-menu-icon dashicons dashicons-admin-home" aria-hidden="true"></span><span>Rooms</span></a>
                         <a href="#room-rates"><span class="myvh-portal-menu-icon dashicons dashicons-money-alt" aria-hidden="true"></span><span>Room Rates</span></a>
                         <a href="#room-rate-tester"><span class="myvh-portal-menu-icon dashicons dashicons-calculator" aria-hidden="true"></span><span>Rate Tester</span></a>
+                        <a href="#reports"><span class="myvh-portal-menu-icon dashicons dashicons-chart-bar" aria-hidden="true"></span><span>Reports</span></a>
                         <a href="#reports-builder"><span class="myvh-portal-menu-icon dashicons dashicons-edit-page" aria-hidden="true"></span><span>Report Builder</span></a>
                         <a href="#reports-view"><span class="myvh-portal-menu-icon dashicons dashicons-visibility" aria-hidden="true"></span><span>Report Viewer</span></a>
                         <a href="#addons"><span class="myvh-portal-menu-icon dashicons dashicons-admin-plugins" aria-hidden="true"></span><span>Add-ons</span></a>
