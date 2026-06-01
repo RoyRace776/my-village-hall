@@ -243,7 +243,11 @@ class CalendarService {
             return $id;
         }
 
-        $response = ['id' => $id];
+        $saved_booking = $this->booking_service->get_by_id($id);
+        $response = [
+            'id' => $id,
+            'status' => $saved_booking ? $saved_booking->status()->value : (string) ($data['status'] ?? BookingStatus::PENDING->value),
+        ];
         $deferred_creation = $this->booking_service->get_last_deferred_creation();
         if ($deferred_creation !== null) {
             $response['deferred_creation'] = $deferred_creation;
@@ -443,7 +447,12 @@ class CalendarService {
             return $id;
         }
 
-        return ['id' => $id];
+        $saved_booking = $this->booking_service->get_by_id($id);
+
+        return [
+            'id' => $id,
+            'status' => $saved_booking ? $saved_booking->status()->value : (string) ($data['status'] ?? $current_status),
+        ];
     }
 
     private function can_manage_no_invoice_required(string $context, int $viewer_user_id): bool {

@@ -131,4 +131,52 @@ class BookingUpdateEventDispatcherTest extends UnitTestCase {
 
         $this->addToAssertionCount(1);
     }
+
+    /** @test */
+    public function dispatch_does_not_emit_cancelled_when_transition_to_cancelled_suppresses_email(): void {
+        Functions\expect('do_action')
+            ->once()
+            ->with('myvh_event_booking.updated', \Mockery::on(static function (array $payload): bool {
+                return ($payload['booking_id'] ?? 0) === 17 && ($payload['room_id'] ?? 0) === 7;
+            }));
+
+        $this->dispatcher->dispatch([
+            'booking_id' => 17,
+            'room_id' => 7,
+            'start_time' => '2026-06-05 09:00:00',
+            'end_time' => '2026-06-05 10:00:00',
+            'status' => BookingStatus::CANCELLED->value,
+            'send_confirmation_email' => 0,
+        ], BookingStatus::CONFIRMED->value);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /** @test */
+    public function dispatch_emits_cancelled_for_already_cancelled_booking_when_explicitly_requested(): void {
+        Functions\expect('do_action')
+            ->once()
+            ->with('myvh_event_booking.cancelled', \Mockery::on(static function (array $payload): bool {
+                return ($payload['booking_id'] ?? 0) === 18
+                    && ($payload['room_id'] ?? 0) === 2
+                    && ($payload['send_confirmation_email'] ?? null) === 1;
+            }));
+
+        Functions\expect('do_action')
+            ->once()
+            ->with('myvh_event_booking.updated', \Mockery::on(static function (array $payload): bool {
+                return ($payload['booking_id'] ?? 0) === 18 && ($payload['room_id'] ?? 0) === 2;
+            }));
+
+        $this->dispatcher->dispatch([
+            'booking_id' => 18,
+            'room_id' => 2,
+            'start_time' => '2026-06-06 09:00:00',
+            'end_time' => '2026-06-06 10:00:00',
+            'status' => BookingStatus::CANCELLED->value,
+            'send_confirmation_email' => 1,
+        ], BookingStatus::CANCELLED->value);
+
+        $this->addToAssertionCount(1);
+    }
 }

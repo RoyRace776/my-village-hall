@@ -7,7 +7,6 @@ window.BookingModalCreate = (function() {
     const organisationsCache = {};
     let quoteTimer = null;
     let quoteRequestId = 0;
-    let lastSubmitSendChoice = null;
 
     function portalAlert(message) {
         if (window.MyvhPortalDialog && typeof window.MyvhPortalDialog.alert === 'function') {
@@ -79,7 +78,6 @@ window.BookingModalCreate = (function() {
 
         applyNoInvoiceRequiredVisibility();
         applyTermsAcceptanceVisibility();
-        applySubmitButtonVisibility();
     }
 
     /**
@@ -87,13 +85,6 @@ window.BookingModalCreate = (function() {
      */
     function bindEvents() {
         form.addEventListener("submit", submit);
-
-        modal.querySelectorAll('button[type="submit"][data-send-confirmation-email]').forEach((button) => {
-            button.addEventListener('click', () => {
-                lastSubmitSendChoice = button.dataset.sendConfirmationEmail === '1' ? 1 : 0;
-                form.dataset.sendConfirmationEmailChoice = String(lastSubmitSendChoice);
-            });
-        });
 
         const cancelButtons = modal.querySelectorAll(".myvh-cancel");
         cancelButtons.forEach((button) => {
@@ -269,7 +260,6 @@ window.BookingModalCreate = (function() {
             }
             if (prefill.status) {
                 setValue('status', String(prefill.status).toLowerCase());
-                applySubmitButtonVisibility();
             }
 
             setLoading(true);
@@ -304,7 +294,6 @@ window.BookingModalCreate = (function() {
                     setValue('organisation_id', booking['OrganisationId']);
                     setValue('text', booking['Description'] || '');
                     setValue('status', String(booking['Status'] || 'pending').toLowerCase());
-                    applySubmitButtonVisibility();
                     setValue('start', startDateTime);
                     setValue('end', endDateTime);
                     setDisplayedDateTimes(startDateTime, endDateTime);
@@ -495,7 +484,7 @@ window.BookingModalCreate = (function() {
         const status = form.querySelector('[name=status]');
         if (status) {
             status.addEventListener('change', () => {
-                applySubmitButtonVisibility();
+                scheduleQuoteRefresh();
             });
         }
 
@@ -841,48 +830,108 @@ window.BookingModalCreate = (function() {
         }
     }
 
-    function resolveRequestedStatus() {
-        const statusSelect = form.querySelector('[name=status]');
-        if (statusSelect && !statusSelect.disabled && config.editMode) {
-            return String(statusSelect.value || '').toLowerCase();
-        }
-
-        return String(form.dataset.createDefaultStatus || 'pending').toLowerCase();
-    }
-
     function canChooseConfirmationEmail() {
         return !!config.canChooseConfirmationEmail;
     }
 
-    function shouldShowConfirmationActionButtons() {
-        if (!canChooseConfirmationEmail()) {
-            return false;
-        }
-
-        if (!config.editMode) {
-            return true;
-        }
-
-        return resolveRequestedStatus() === 'confirmed';
+    function normalizeStatus(value) {
+        return String(value || '').trim().toLowerCase();
     }
 
-    function applySubmitButtonVisibility() {
-        const standardButton = modal.querySelector('.myvh-submit-standard');
-        const sendButton = modal.querySelector('.myvh-submit-send-email');
-        const noEmailButton = modal.querySelector('.myvh-submit-no-email');
-        const showDualButtons = shouldShowConfirmationActionButtons();
+    function isStatusEmailPromptEligible(status) {
+        return status === 'confirmed' || status === 'cancelled';
+    }
 
-        if (standardButton) {
-            standardButton.style.display = showDualButtons ? 'none' : '';
+    function resolveSavedStatus(detail, fallbackStatus = '') {
+        const detailStatus = normalizeStatus(detail && detail.status);
+        if (detailStatus !== '') {
+            return detailStatus;
         }
 
-        if (sendButton) {
-            sendButton.style.display = showDualButtons ? '' : 'none';
+        return normalizeStatus(fallbackStatus);
+    }
+
+    function resolveSavedBookingId(detail) {
+        const id = Number(
+            (detail && detail.id)
+            || (detail && detail.booking_id)
+            || (detail && detail.bookingId)
+            || 0
+        );
+
+        return Number.isFinite(id) && id > 0 ? id : 0;
+    }
+
+    function buildStatusEmailPromptOptions(status) {
+        if (status === 'cancelled') {
+            return {
+                title: 'Send cancellation email?',
+                message: 'This booking was cancelled. Send a cancellation email now?',
+                okText: 'Send Email',
+                cancelText: 'Do Not Send'
+            };
         }
 
-        if (noEmailButton) {
-            noEmailButton.style.display = showDualButtons ? '' : 'none';
+        return {
+            title: 'Send confirmation email?',
+            message: 'This booking is confirmed. Send a confirmation email now?',
+            okText: 'Send Email',
+            cancelText: 'Do Not Send'
+        };
+    }
+
+    function triggerStatusEmailSend(bookingId, status) {
+        const action = config.context === 'portal'
+            ? 'myvh_portal_send_booking_status_email'
+            : 'myvh_send_booking_status_email';
+        const formData = new FormData();
+
+        formData.append('action', action);
+        formData.append('nonce', config.nonce);
+        formData.append('booking_id', String(bookingId));
+        formData.append('status', status);
+        formData.append('send_confirmation_email', '1');
+
+        if (config.context && config.context !== 'portal') {
+            formData.append('context', config.context);
         }
+
+        return fetch(config.ajax_url, {
+            method: 'POST',
+            body: formData
+        })
+        .then((response) => response.json())
+        .then((result) => {
+            if (result && result.success) {
+                return;
+            }
+
+            throw new Error(resolveErrorMessage(result && (result.message || result.data), 'Failed to send booking email'));
+        });
+    }
+
+    function maybePromptForStatusEmail(detail, fallbackStatus = '') {
+        const status = resolveSavedStatus(detail, fallbackStatus);
+        const bookingId = resolveSavedBookingId(detail);
+
+        if (!canChooseConfirmationEmail() || !isStatusEmailPromptEligible(status) || bookingId <= 0) {
+            return Promise.resolve();
+        }
+
+        const prompt = buildStatusEmailPromptOptions(status);
+
+        return portalConfirm(prompt.message, {
+            title: prompt.title,
+            okText: prompt.okText,
+            cancelText: prompt.cancelText
+        }).then((shouldSend) => {
+            if (!shouldSend) {
+                return;
+            }
+
+            return triggerStatusEmailSend(bookingId, status)
+                .catch((error) => portalAlert(error instanceof Error ? error.message : 'Failed to send booking email'));
+        });
     }
 
     function toggleField(field, show) {
@@ -1264,8 +1313,6 @@ window.BookingModalCreate = (function() {
         const title = modal.querySelector('h2');
         const hint = modal.querySelector('.myvh-account-hint');
         const standardButton = modal.querySelector('.myvh-submit-standard');
-        const sendButton = modal.querySelector('.myvh-submit-send-email');
-        const noEmailButton = modal.querySelector('.myvh-submit-no-email');
         const statusRow = form.querySelector('#myvh-modal-status-row');
 
         if (title) {
@@ -1282,18 +1329,6 @@ window.BookingModalCreate = (function() {
             standardButton.textContent = isEdit ? 'Update Booking' : 'Create Booking';
         }
 
-        if (sendButton) {
-            sendButton.textContent = isEdit
-                ? 'Update and Send Confirmation Email'
-                : 'Create and Send Confirmation Email';
-        }
-
-        if (noEmailButton) {
-            noEmailButton.textContent = isEdit
-                ? 'Update Booking'
-                : 'Create Booking';
-        }
-
         modal.querySelectorAll('.myvh-delete-booking').forEach((button) => {
             button.style.display = isEdit ? '' : 'none';
             button.disabled = true;
@@ -1304,7 +1339,6 @@ window.BookingModalCreate = (function() {
         }
 
         applyTermsAcceptanceVisibility();
-        applySubmitButtonVisibility();
     }
 
     // ─────────────────────────────
@@ -1612,17 +1646,19 @@ window.BookingModalCreate = (function() {
         }));
     }
 
-    function finalizeSuccessfulSave(detail) {
-        close();
-        config.onSuccess(detail);
-        dispatchBookingChanged(detail);
+    function finalizeSuccessfulSave(detail, fallbackStatus = '') {
+        return maybePromptForStatusEmail(detail, fallbackStatus)
+            .then(() => {
+                close();
+                config.onSuccess(detail);
+                dispatchBookingChanged(detail);
+            });
     }
 
     function handleDeferredCreation(detail) {
         const deferred = detail && detail.deferred_creation ? detail.deferred_creation : null;
         if (!deferred) {
-            finalizeSuccessfulSave(detail);
-            return Promise.resolve();
+            return finalizeSuccessfulSave(detail);
         }
 
         const continueAction = config.context === 'portal'
@@ -1643,8 +1679,13 @@ window.BookingModalCreate = (function() {
                         return portalAlert(resolveErrorMessage(result.message || result.data, 'Failed to finalise booking'));
                     }
 
-                    finalizeSuccessfulSave(result.data || { id: deferred.booking_id });
-                    return undefined;
+                    const savedDetail = result.data || { id: deferred.booking_id, status: deferred.requested_status };
+                    if (!savedDetail.status && deferred.requested_status) {
+                        savedDetail.status = deferred.requested_status;
+                    }
+
+                    return finalizeSuccessfulSave(savedDetail, deferred.requested_status)
+                        .then(() => undefined);
                 });
             }
 
@@ -1676,21 +1717,9 @@ window.BookingModalCreate = (function() {
             return;
         }
 
-        const submitter = e && e.submitter ? e.submitter : null;
-        const submitterSendChoice = submitter && submitter.dataset && submitter.dataset.sendConfirmationEmail
-            ? (submitter.dataset.sendConfirmationEmail === '1' ? 1 : 0)
-            : null;
-        const datasetChoice = form && form.dataset && form.dataset.sendConfirmationEmailChoice !== undefined
-            ? (form.dataset.sendConfirmationEmailChoice === '1' ? 1 : 0)
-            : null;
-        const formData = buildSubmitFormData(submitterSendChoice ?? lastSubmitSendChoice ?? datasetChoice);
+        const formData = buildSubmitFormData();
         if (!formData) {
             return;
-        }
-
-        lastSubmitSendChoice = null;
-        if (form && form.dataset) {
-            delete form.dataset.sendConfirmationEmailChoice;
         }
 
         setLoading(true);
@@ -1732,7 +1761,7 @@ window.BookingModalCreate = (function() {
         });
     }
 
-    function buildSubmitFormData(sendConfirmationChoice = null) {
+    function buildSubmitFormData() {
 
         syncHiddenDateTimes();
 
@@ -1759,9 +1788,9 @@ window.BookingModalCreate = (function() {
             formData.set("terms_accepted", "1");
         }
 
-        if (shouldShowConfirmationActionButtons()) {
-            const resolvedChoice = sendConfirmationChoice === null ? 1 : (Number(sendConfirmationChoice) === 1 ? 1 : 0);
-            formData.set('send_confirmation_email', String(resolvedChoice));
+        if (canChooseConfirmationEmail()) {
+            // Modal save suppresses immediate status emails. Prompted sending happens explicitly after save.
+            formData.set('send_confirmation_email', '0');
         } else {
             formData.delete('send_confirmation_email');
         }
@@ -1834,7 +1863,6 @@ window.BookingModalCreate = (function() {
 
         applyNoInvoiceRequiredVisibility();
         applyTermsAcceptanceVisibility();
-        applySubmitButtonVisibility();
         scheduleQuoteRefresh();
     }
 

@@ -57,6 +57,7 @@ class CalendarAjaxController {
         add_action('wp_ajax_myvh_finalize_deferred_booking_creation', [$this, 'finalize_deferred_booking_creation']);
         add_action('wp_ajax_myvh_cancel_deferred_booking_creation', [$this, 'cancel_deferred_booking_creation']);
         add_action('wp_ajax_myvh_update_event', [$this, 'update_event']);
+        add_action('wp_ajax_myvh_send_booking_status_email', [$this, 'send_booking_status_email']);
         add_action('wp_ajax_myvh_customers', [$this, 'get_customers']);
         add_action('wp_ajax_myvh_organisations', [$this, 'get_organisations']);
         add_action('wp_ajax_myvh_calendar_get_booking', [$this, 'get_booking']);
@@ -401,6 +402,64 @@ class CalendarAjaxController {
         } catch (Exception $e) {
             AjaxResponse::server_error($e->getMessage());
         }
+    }
+
+    public function send_booking_status_email(): void {
+
+        check_ajax_referer('myvh_calendar', 'nonce');
+
+        $request = $this->get_request_data();
+        $context = sanitize_text_field($request['context'] ?? 'admin');
+        $booking_id = \intval($request['booking_id'] ?? 0);
+        $status = sanitize_text_field((string) ($request['status'] ?? ''));
+
+        if ($booking_id <= 0) {
+            AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
+            return;
+        }
+
+        if ($context === 'portal') {
+            if (!is_user_logged_in()) {
+                AjaxResponse::auth_error(__('Login required', 'my-village-hall'));
+            }
+
+            $user_id = get_current_user_id();
+            $is_client_admin = $this->client_admin_service->can_administer_blog($user_id, get_current_blog_id());
+            if (!$is_client_admin) {
+                AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
+            }
+
+            $customer = $this->customer_service->get_by_user_id($user_id);
+            $booking = BookingAccess::get_accessible_booking(
+                $booking_id,
+                (int) ($customer['Id'] ?? 0),
+                $is_client_admin,
+                $this->booking_service,
+                $this->organisation_member_repo
+            );
+
+            if (!$booking) {
+                AjaxResponse::not_found(__('Booking not found or not accessible', 'my-village-hall'));
+            }
+
+            $edit_rules = $this->booking_service->can_edit($booking);
+            if (empty($edit_rules['can_edit'])) {
+                AjaxResponse::permission_error($edit_rules['reason'] ?? __('Permission denied', 'my-village-hall'));
+            }
+        } elseif (!current_user_can('manage_myvh')) {
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
+        }
+
+        $result = $this->booking_service->trigger_status_email($booking_id, $status, 1);
+        if (is_wp_error($result)) {
+            AjaxResponse::error($result->get_error_message());
+            return;
+        }
+
+        AjaxResponse::success([
+            'id' => $booking_id,
+            'status' => $status,
+        ]);
     }
 
 

@@ -31,8 +31,6 @@ $create_default_status = myvh_setting('booking.require_approval', true)
 
     <p class="myvh-modal-actions" style="margin-bottom: 15px;">
         <button type="submit" class="button button-primary myvh-submit-standard" form="myvh-booking-form-create">Create Booking</button>
-        <button type="submit" class="button button-primary myvh-submit-no-email" data-send-confirmation-email="0" form="myvh-booking-form-create" style="display:none;">Create Booking</button>
-        <button type="submit" class="button button-primary myvh-submit-send-email" data-send-confirmation-email="1" form="myvh-booking-form-create" style="display:none;">Create and Send Confirmation Email</button>
         <button type="button" class="button button-link-delete myvh-delete-booking" style="display:none;" disabled>Delete Booking</button>
         <button type="button" class="button myvh-cancel">Cancel</button>
     </p>

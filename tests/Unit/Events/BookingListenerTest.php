@@ -122,6 +122,19 @@ class BookingListenerTest extends UnitTestCase
         $this->addToAssertionCount(1);
     }
 
+    /** @test */
+    public function handle_booking_cancelled_skips_email_when_send_confirmation_email_is_zero(): void
+    {
+        $this->email_service->shouldReceive('send')->never();
+
+        $this->listener->handle_booking_cancelled([
+            'booking_id' => 6,
+            'send_confirmation_email' => 0,
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
     // ── handle_booking_updated ────────────────────────────────────────────
 
     /** @test */

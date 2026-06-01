@@ -674,15 +674,18 @@ class BookingService {
     }
 
     private function resolve_send_confirmation_email_for_update(array $data, string $new_status, string $old_status): ?int {
-        $status_is_confirmed = $new_status === BookingStatus::CONFIRMED->value;
-        if (!$status_is_confirmed) {
+        $status_supports_email = in_array($new_status, [
+            BookingStatus::CONFIRMED->value,
+            BookingStatus::CANCELLED->value,
+        ], true);
+        if (!$status_supports_email) {
             return null;
         }
 
-        $is_transition_to_confirmed = $old_status !== BookingStatus::CONFIRMED->value;
+        $is_transition_to_status = $old_status !== $new_status;
         $can_control = !empty($data['can_control_confirmation_email']);
 
-        if (!$can_control && !$is_transition_to_confirmed) {
+        if (!$can_control && !$is_transition_to_status) {
             return null;
         }
 
@@ -694,7 +697,10 @@ class BookingService {
     }
 
     private function resolve_send_confirmation_email_for_status(mixed $requested, bool $can_control, string $status): ?int {
-        if ($status !== BookingStatus::CONFIRMED->value) {
+        if (!in_array($status, [
+            BookingStatus::CONFIRMED->value,
+            BookingStatus::CANCELLED->value,
+        ], true)) {
             return null;
         }
 
@@ -707,6 +713,47 @@ class BookingService {
         }
 
         return 1;
+    }
+
+    public function trigger_status_email(int $booking_id, string $status, ?int $send_confirmation_email = 1): bool|WP_Error {
+        $booking_id = (int) $booking_id;
+        $status = sanitize_text_field($status);
+
+        if ($booking_id <= 0) {
+            return new WP_Error('validation', __('Booking ID is required', 'my-village-hall'));
+        }
+
+        if (!in_array($status, [
+            BookingStatus::CONFIRMED->value,
+            BookingStatus::CANCELLED->value,
+        ], true)) {
+            return new WP_Error('validation', __('Only confirmed or cancelled booking emails can be sent', 'my-village-hall'));
+        }
+
+        $booking = $this->booking_repo->get_by_id($booking_id);
+        if (!$booking) {
+            return new WP_Error('not_found', __('Booking not found', 'my-village-hall'));
+        }
+
+        $current_status = sanitize_text_field((string) ($booking['Status'] ?? ''));
+        if ($current_status !== $status) {
+            return new WP_Error('validation', __('Booking status no longer matches the selected email type', 'my-village-hall'));
+        }
+
+        $payload = [
+            'booking_id' => $booking_id,
+            'room_id' => $booking['RoomId'] ?? null,
+            'start' => $booking['StartTime'] ?? null,
+            'end' => $booking['EndTime'] ?? null,
+            'send_confirmation_email' => \intval($send_confirmation_email) === 0 ? 0 : 1,
+        ];
+
+        EventDispatcher::dispatch(
+            $status === BookingStatus::CONFIRMED->value ? BookingEvents::CONFIRMED : BookingEvents::CANCELLED,
+            $payload
+        );
+
+        return true;
     }
 
     public function cancel_deferred_creation(int $booking_id, array $child_booking_ids = []): bool|WP_Error {

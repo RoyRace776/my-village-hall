@@ -68,6 +68,10 @@ class BookingListener {
     }
 
     public function handle_booking_cancelled($payload): void {
+        if (isset($payload['send_confirmation_email']) && \intval($payload['send_confirmation_email']) === 0) {
+            return;
+        }
+
         $booking_id = $payload['booking_id'];
         $email = $this->resolve_email($booking_id);
         $template_vars = $this->get_booking_template_vars($booking_id);

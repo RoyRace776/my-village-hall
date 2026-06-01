@@ -15,8 +15,6 @@ function buildModalFixture() {
       <div class="myvh-account-hint"></div>
       <p class="myvh-modal-actions">
         <button type="submit" class="myvh-submit-standard" form="myvh-booking-form-create">Create Booking</button>
-        <button type="submit" class="myvh-submit-send-email" data-send-confirmation-email="1" form="myvh-booking-form-create" style="display:none;">Create + Send Confirmation Email</button>
-        <button type="submit" class="myvh-submit-no-email" data-send-confirmation-email="0" form="myvh-booking-form-create" style="display:none;">Create Without Sending Email</button>
       </p>
       <form id="myvh-booking-form-create" data-create-default-status="pending">
         <button type="button" class="myvh-cancel">Cancel</button>
@@ -205,12 +203,24 @@ describe('BookingModalCreate', () => {
     expect(changeSpy).toHaveBeenCalledTimes(1);
   });
 
-  test('uses dual confirmation action buttons and submits no-email flag when requested', async () => {
+  test('suppresses send during save and sends status email after save when admin confirms', async () => {
     const onSuccess = jest.fn();
     window.myvhCal = {
       currentCustomerId: 55,
       defaultOrganisationId: 88
     };
+    window.MyvhPortalDialog = {
+      alert: jest.fn(() => Promise.resolve(true)),
+      confirm: jest.fn(() => Promise.resolve(true))
+    };
+
+    window.fetch
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({ success: true, data: { id: 321, status: 'confirmed' } })
+      })
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({ success: true, data: { id: 321, status: 'confirmed' } })
+      });
 
     document.querySelector('[name="room_id"]').innerHTML = '<option value="14">Main Hall</option>';
     document.querySelector('[name="room_id"]').value = '14';
@@ -224,28 +234,25 @@ describe('BookingModalCreate', () => {
     });
 
     const form = document.getElementById('myvh-booking-form-create');
-    form.dataset.createDefaultStatus = 'confirmed';
     window.BookingModalCreate.open({});
-
-    const sendButton = document.querySelector('.myvh-submit-send-email');
-    const noEmailButton = document.querySelector('.myvh-submit-no-email');
-    const standardButton = document.querySelector('.myvh-submit-standard');
-
-    expect(standardButton.style.display).toBe('none');
-    expect(sendButton.style.display).toBe('');
-    expect(noEmailButton.style.display).toBe('');
-
-    form.dataset.sendConfirmationEmailChoice = '0';
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 
     await flushPromises();
     await flushPromises();
+    await flushPromises();
 
-    expect(window.fetch).toHaveBeenCalledTimes(1);
+    expect(window.fetch).toHaveBeenCalledTimes(2);
     const payload = Object.fromEntries(window.fetch.mock.calls[0][1].body.entries());
     expect(payload.send_confirmation_email).toBe('0');
     expect(payload.action).toBe('myvh_portal_create_booking');
-    expect(onSuccess).toHaveBeenCalledWith({ booking_id: 321 });
+
+    const sendPayload = Object.fromEntries(window.fetch.mock.calls[1][1].body.entries());
+    expect(sendPayload.action).toBe('myvh_portal_send_booking_status_email');
+    expect(sendPayload.booking_id).toBe('321');
+    expect(sendPayload.status).toBe('confirmed');
+
+    expect(window.MyvhPortalDialog.confirm).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith({ id: 321, status: 'confirmed' });
   });
 
   test('continues a deferred recurring create only after confirmation', async () => {
@@ -305,7 +312,7 @@ describe('BookingModalCreate', () => {
     expect(secondPayload.booking_id).toBe('321');
     expect(secondPayload.requested_status).toBe('confirmed');
     expect(secondPayload['child_booking_ids[]']).toBe('401');
-    expect(onSuccess).toHaveBeenCalledWith({ id: 321 });
+    expect(onSuccess).toHaveBeenCalledWith({ id: 321, status: 'confirmed' });
   });
 
   test('cancels all deferred recurring bookings when the user declines to continue', async () => {

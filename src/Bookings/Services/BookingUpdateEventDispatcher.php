@@ -18,6 +18,8 @@ class BookingUpdateEventDispatcher
         $send_confirmation_email = !isset($data['send_confirmation_email']) || \intval($data['send_confirmation_email']) === 1;
         $status_is_transition_to_confirmed = $current_status != BookingStatus::CONFIRMED->value;
         $status_is_still_confirmed = $current_status == BookingStatus::CONFIRMED->value;
+        $status_is_transition_to_cancelled = $current_status != BookingStatus::CANCELLED->value;
+        $status_is_still_cancelled = $current_status == BookingStatus::CANCELLED->value;
 
         if (
             $new_status == BookingStatus::CONFIRMED->value
@@ -36,7 +38,11 @@ class BookingUpdateEventDispatcher
             );
         }
 
-        if ($new_status == BookingStatus::CANCELLED->value && $current_status != BookingStatus::CANCELLED->value) {
+        if (
+            $new_status == BookingStatus::CANCELLED->value
+            && $send_confirmation_email
+            && ($status_is_transition_to_cancelled || ($status_is_still_cancelled && $has_send_confirmation_flag))
+        ) {
             EventDispatcher::dispatch(
                 BookingEvents::CANCELLED,
                 [
@@ -44,6 +50,7 @@ class BookingUpdateEventDispatcher
                     'room_id' => $data['room_id'],
                     'start' => $data['start_time'],
                     'end' => $data['end_time'],
+                    'send_confirmation_email' => 1,
                 ]
             );
         }

@@ -36,6 +36,7 @@ class PortalBookingAjaxController {
         add_action('wp_ajax_myvh_portal_finalize_deferred_booking_creation', [$this, 'finalize_deferred_creation']);
         add_action('wp_ajax_myvh_portal_cancel_deferred_booking_creation', [$this, 'cancel_deferred_creation']);
         add_action('wp_ajax_myvh_portal_update_booking_modal', [$this, 'update_for_modal']);
+        add_action('wp_ajax_myvh_portal_send_booking_status_email', [$this, 'send_booking_status_email']);
         add_action('wp_ajax_myvh_portal_next_booking_slot', [$this, 'next_slot']);
     }
 
@@ -259,6 +260,48 @@ class PortalBookingAjaxController {
         }
 
         AjaxResponse::success($result);
+    }
+
+    public function send_booking_status_email(): void {
+        PortalAuth::require_user();
+
+        $request = wp_unslash($_POST);
+        $booking_id = \intval($request['booking_id'] ?? 0);
+        $status = sanitize_text_field((string) ($request['status'] ?? ''));
+        $can_control_confirmation_email = $this->client_admin_service->can_administer_blog(get_current_user_id(), get_current_blog_id());
+
+        if (!$can_control_confirmation_email) {
+            AjaxResponse::permission_error(__('Permission denied', 'my-village-hall'));
+            return;
+        }
+
+        if ($booking_id <= 0) {
+            AjaxResponse::error(__('Booking ID is required', 'my-village-hall'));
+            return;
+        }
+
+        try {
+            $booking = $this->get_action->execute($booking_id);
+            $edit_rules = $this->booking_service->can_edit($booking);
+
+            if (empty($edit_rules['can_edit'])) {
+                throw new Exception($edit_rules['reason'] ?? __('Permission denied', 'my-village-hall'), 403);
+            }
+
+            $result = $this->booking_service->trigger_status_email($booking_id, $status, 1);
+            if (is_wp_error($result)) {
+                throw new Exception($result->get_error_message(), 400);
+            }
+        } catch (Exception $e) {
+            $status_code = $e->getCode();
+            AjaxResponse::error($e->getMessage(), $status_code >= 400 ? $status_code : 400);
+            return;
+        }
+
+        AjaxResponse::success([
+            'id' => $booking_id,
+            'status' => $status,
+        ]);
     }
 
     public function next_slot(): void {

@@ -180,6 +180,46 @@ class PortalBookingAjaxControllerTest extends UnitTestCase {
     }
 
     /** @test */
+    public function send_booking_status_email_dispatches_for_portal_admins(): void {
+        $_POST = [
+            'booking_id' => 123,
+            'status' => 'confirmed',
+            'nonce' => 'example',
+        ];
+
+        Functions\stubs([
+            'get_current_user_id' => 21,
+            'get_current_blog_id' => 7,
+        ]);
+
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->once()
+            ->with(21, 7)
+            ->andReturn(true);
+
+        $this->get_action->shouldReceive('execute')
+            ->once()
+            ->with(123)
+            ->andReturnUsing(static fn(): array => ['Id' => 123, 'Status' => 'confirmed']);
+
+        $this->booking_service->shouldReceive('can_edit')
+            ->once()
+            ->andReturnUsing(static fn(): array => ['can_edit' => true, 'reason' => '']);
+
+        $this->booking_service->shouldReceive('trigger_status_email')
+            ->once()
+            ->with(123, 'confirmed', 1)
+            ->andReturnTrue();
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->send_booking_status_email();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame(['id' => 123, 'status' => 'confirmed'], $response->data);
+    }
+
+    /** @test */
     public function next_slot_returns_slot_data_from_availability_service(): void {
         $_POST = [
             'room_id' => '14',

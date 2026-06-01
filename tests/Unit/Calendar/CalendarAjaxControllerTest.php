@@ -386,6 +386,30 @@ class CalendarAjaxControllerTest extends UnitTestCase {
         $this->assertSame(['id' => 56], $response->data);
     }
 
+    /** @test */
+    public function send_booking_status_email_dispatches_for_admin_context(): void {
+        $_POST = [
+            'context' => 'admin',
+            'booking_id' => 57,
+            'status' => 'cancelled',
+            'nonce' => 'example',
+        ];
+
+        Functions\when('current_user_can')->alias(static fn(string $capability): bool => $capability === 'manage_myvh');
+
+        $this->booking_service->shouldReceive('trigger_status_email')
+            ->once()
+            ->with(57, 'cancelled', 1)
+            ->andReturnTrue();
+
+        $response = $this->capture_json_response(function (): void {
+            $this->controller->send_booking_status_email();
+        });
+
+        $this->assertTrue($response->success);
+        $this->assertSame(['id' => 57, 'status' => 'cancelled'], $response->data);
+    }
+
     private function capture_json_response(callable $callback): CalendarJsonResponseException {
         try {
             $callback();
