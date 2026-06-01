@@ -138,6 +138,59 @@ window.CalendarCore = (function () {
         }
     }
 
+    function formatSchedulerTime(value) {
+        if (!value) {
+            return "";
+        }
+
+        if (typeof value.toString === "function") {
+            try {
+                const dayPilotFormatted = value.toString("HH:mm");
+                if (/^\d{2}:\d{2}$/.test(dayPilotFormatted)) {
+                    return dayPilotFormatted;
+                }
+            } catch (e) {
+                // Fall through to generic date parsing.
+            }
+        }
+
+        return formatTimeFromISO(value);
+    }
+
+    function getEventTimeRange(event) {
+        if (!event) {
+            return "";
+        }
+
+        const tags = event.tags || {};
+        const displayStart = tags.actualStart || event.start;
+        const displayEnd = tags.actualEnd || event.end;
+        const startTime = formatSchedulerTime(displayStart);
+        const endTime = formatSchedulerTime(displayEnd);
+
+        if (startTime && endTime) {
+            return `${startTime}-${endTime}`;
+        }
+
+        return "";
+    }
+
+    function buildSchedulerEventText(event) {
+        if (!event) {
+            return "";
+        }
+
+        const tags = event.tags || {};
+        const baseText = String(tags.schedulerBaseText || event.text || "").trim();
+        const timeRange = getEventTimeRange(event);
+
+        if (timeRange && baseText) {
+            return `${timeRange} ${baseText}`;
+        }
+
+        return timeRange || baseText;
+    }
+
     /**
      * Determine if a booking is public based on tags.
      */
@@ -468,11 +521,13 @@ window.CalendarCore = (function () {
                 }
 
                 events.forEach(e => {
+                    e.tags = e.tags || {};
                     const resourceValue = (typeof e.resource !== "undefined" && e.resource !== null)
                         ? e.resource
                         : (e?.tags?.roomId ?? "");
                     e.resource = String(resourceValue);
                     e.text = withRecurringSeriesPrefix(e.text, e && e.tags ? e.tags : {}, true);
+                    e.tags.schedulerBaseText = e.text;
                     e.toolTip = buildEventTooltip(e, context);
                 });
                 targetScheduler.events.list = applyEventStatusColors(events, statusColors);
@@ -759,10 +814,11 @@ window.CalendarCore = (function () {
                                 + ` style="background:${escHtml(color)};color:${escHtml(textColor)};"`
                                 + ` data-event-id="${escHtml(String(event.id || ""))}"`
                                 + ` title="${escHtml(tooltip)}">`;
-                            html += `<div class="myvh-tt-event-inner"><span class="myvh-tt-event-title">${escHtml(title)}</span>`;
+                            html += "<div class=\"myvh-tt-event-inner\">";
                             if (timeStr) {
                                 html += `<span class="myvh-tt-event-time">${escHtml(timeStr)}</span>`;
                             }
+                            html += `<span class="myvh-tt-event-title">${escHtml(title)}</span>`;
                             html += "</div></td>";
                         }
                     }
@@ -837,6 +893,13 @@ window.CalendarCore = (function () {
             onEventMoved: args => opts.onEventMoved?.(args),
             onEventResized: args => opts.onEventResized?.(args),
             onTimeRangeSelected: args => opts.onTimeRangeSelected?.(args),
+            onBeforeEventRender: args => {
+                if (!args || !args.data) {
+                    return;
+                }
+
+                args.data.text = buildSchedulerEventText(args.data);
+            },
             onBeforeRowHeaderRender: args => {
                 const tags = (args.row && args.row.tags) ? args.row.tags : {};
 

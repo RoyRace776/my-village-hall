@@ -58,7 +58,10 @@ class QuoteBookingAction {
             return $charge;
         }
 
-        $addons = $this->normalize_addons($request['addons'] ?? []);
+        $addons = $this->normalize_addons(
+            $request['addons'] ?? [],
+            max(0.0, round((float) ($charge['Quantity'] ?? 0.0), 2))
+        );
         $addons_total = $this->calculate_addon_total($addons);
 
         $deposit = null;
@@ -149,7 +152,7 @@ class QuoteBookingAction {
         return [$date, $time];
     }
 
-    private function normalize_addons($raw_addons): array {
+    private function normalize_addons($raw_addons, float $chargeable_hours = 0.0): array {
         if (!is_array($raw_addons)) {
             return [];
         }
@@ -171,7 +174,10 @@ class QuoteBookingAction {
                 continue;
             }
 
-            $quantity = \floatval($addon['quantity'] ?? 1);
+            $charge_type = sanitize_text_field((string) ($addon['charge_type'] ?? ''));
+            $quantity = $charge_type === 'per_hour' && $chargeable_hours > 0
+                ? $chargeable_hours
+                : \floatval($addon['quantity'] ?? 1);
             if ($quantity <= 0) {
                 continue;
             }

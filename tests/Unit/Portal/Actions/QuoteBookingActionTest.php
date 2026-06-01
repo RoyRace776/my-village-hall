@@ -239,4 +239,37 @@ class QuoteBookingActionTest extends UnitTestCase {
         $this->assertSame(8.0, $result['addons_total']);
         $this->assertSame(28.0, $result['booking_total']);
     }
+
+    /** @test */
+    public function execute_uses_charge_quantity_for_hourly_addons(): void {
+        $this->client_admin_service->shouldReceive('can_administer_blog')
+            ->once()
+            ->with(21, 7)
+            ->andReturn(true);
+
+        $this->pricing_service->shouldReceive('get_charge_snapshot_for_data')
+            ->once()
+            ->andReturnUsing(static fn(): array => [
+                'TotalAmount' => 20.00,
+                'Quantity' => 3.5,
+            ]);
+
+        $this->deposit_service->shouldReceive('evaluate')
+            ->once()
+            ->andReturn(null);
+
+        $result = $this->action->execute([
+            'start' => '2026-05-10 09:00:00',
+            'end' => '2026-05-10 12:30:00',
+            'room_id' => 4,
+            'customer_id' => 77,
+            'organisation_id' => 88,
+            'addons' => [
+                ['addon_id' => 1, 'quantity' => 1, 'unit_price' => 2.50, 'charge_type' => 'per_hour', 'enabled' => 'true'],
+            ],
+        ]);
+
+        $this->assertSame(8.75, $result['addons_total']);
+        $this->assertSame(28.75, $result['booking_total']);
+    }
 }

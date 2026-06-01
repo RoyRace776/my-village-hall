@@ -113,6 +113,7 @@ class BookingListener {
         ]);
 
         $branding = $this->email_service->get_branding();
+        $booking_amount = $this->resolve_booking_amount($booking_service, $booking_id, $booking);
 
         return [
             'customer_name' => (string) ($booking['CustomerName'] ?? ''),
@@ -123,11 +124,39 @@ class BookingListener {
             'booking_time' => $booking_time,
             'venue_name' => (string) ($booking['VenueName'] ?? ''),
             'room_name' => (string) ($booking['RoomName'] ?? ''),
-            'booking_amount' => (string) ($booking['Rate'] ?? ''),
+            'booking_amount' => $booking_amount,
             'logo_url' => (string) ($branding['logo_url'] ?? ''),
             'site_name' => (string) ($branding['site_name'] ?? ''),
             'site_url' => (string) ($branding['site_url'] ?? ''),
         ];
+    }
+
+    protected function resolve_booking_amount(BookingService $booking_service, int $booking_id, array $booking): string {
+        $charges = $booking_service->get_charges_for_booking($booking_id);
+        $charge_total = 0.0;
+        $addons = $booking_service->get_addons_for_booking($booking_id);
+        $addon_total = 0.0;
+
+        foreach ($charges as $charge) {
+            $charge_total += (float) ($charge['TotalAmount'] ?? 0);
+        }
+
+        foreach ($addons as $addon) {
+            $addon_total += (float) ($addon['TotalAmount'] ?? 0);
+        }
+
+        $booking_total = $charge_total + $addon_total;
+
+        if ($booking_total > 0.0) {
+            return number_format($booking_total, 2, '.', '');
+        }
+
+        $rate = $booking['Rate'] ?? '';
+        if ($rate === '' || $rate === null) {
+            return '';
+        }
+
+        return number_format((float) $rate, 2, '.', '');
     }
 
     public function handle_booking_updated($payload): void {

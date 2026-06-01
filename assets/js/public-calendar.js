@@ -439,6 +439,59 @@
         }
     }
 
+    function formatSchedulerTime(value) {
+        if (!value) {
+            return '';
+        }
+
+        if (typeof value.toString === 'function') {
+            try {
+                let dayPilotFormatted = value.toString('HH:mm');
+                if (/^\d{2}:\d{2}$/.test(dayPilotFormatted)) {
+                    return dayPilotFormatted;
+                }
+            } catch (e) {
+                // Fall through to generic date parsing.
+            }
+        }
+
+        return formatTimeFromISO(value);
+    }
+
+    function getEventTimeRange(event) {
+        if (!event) {
+            return '';
+        }
+
+        let tags = event.tags || {};
+        let displayStart = tags.actualStart || event.start;
+        let displayEnd = tags.actualEnd || event.end;
+        let startTime = formatSchedulerTime(displayStart);
+        let endTime = formatSchedulerTime(displayEnd);
+
+        if (startTime && endTime) {
+            return startTime + '-' + endTime;
+        }
+
+        return '';
+    }
+
+    function buildSchedulerEventText(event) {
+        if (!event) {
+            return '';
+        }
+
+        let tags = event.tags || {};
+        let baseText = String(tags.schedulerBaseText || event.text || '').trim();
+        let timeRange = getEventTimeRange(event);
+
+        if (timeRange && baseText) {
+            return timeRange + ' ' + baseText;
+        }
+
+        return timeRange || baseText;
+    }
+
     function isPublicBooking(tags) {
         if (!tags || !Object.prototype.hasOwnProperty.call(tags, 'isPublic')) {
             return true;
@@ -811,11 +864,11 @@
                                       + ' style="background:' + escHtml(backgroundColor) + ';color:' + escHtml(textColor) + ';border-left:4px solid ' + escHtml(accentColor) + ';"'
                                   + ' data-event-id="' + escHtml(String(event.id || '')) + '"'
                                   + ' title="' + escHtml(tooltip) + '">';
-                            html += '<div class="myvh-tt-event-inner">'
-                                  + '<span class="myvh-tt-event-title">' + escHtml(title) + '</span>';
+                            html += '<div class="myvh-tt-event-inner">';
                             if (timeStr) {
                                 html += '<span class="myvh-tt-event-time">' + escHtml(timeStr) + '</span>';
                             }
+                            html += '<span class="myvh-tt-event-title">' + escHtml(title) + '</span>';
                             html += '</div></td>';
                         }
                     }
@@ -858,6 +911,13 @@
             eventResizeHandling: 'Disabled',
             // onEventClick removed
             // onEventHover removed
+            onBeforeEventRender: function(args) {
+                if (!args || !args.data) {
+                    return;
+                }
+
+                args.data.text = buildSchedulerEventText(args.data);
+            },
             onBeforeRowHeaderRender: function(args) {
                 let tags = (args.row && args.row.tags) ? args.row.tags : {};
 
@@ -1062,6 +1122,7 @@
                 let normalized = normalizeEventRange(e.start, e.end);
 
                 let tags = e.tags || {};
+                tags.schedulerBaseText = e.text;
                 let status = String(tags.status || '').toLowerCase();
                 let accentColor = STATUS_COLOURS[status] || STATUS_COLOURS.confirmed;
                 let roomColour = normaliseHexColour(tags.roomColour || tags.colour || e.backColor);

@@ -157,7 +157,6 @@ class CalendarService {
         [$start_date, $start_time] = $this->split_datetime($request['start'] ?? '');
         [$end_date, $end_time] = $this->split_datetime($request['end'] ?? '', $start_date);
 
-        $addons = $this->normalize_addons($request['addons'] ?? []);
         $is_recurring = !empty($request['is_recurring']);
         $recurrence_type = sanitize_text_field($request['recurrence_type'] ?? 'weekly');
         $recurrence_interval = \intval($request['recurrence_interval'] ?? 1);
@@ -177,7 +176,7 @@ class CalendarService {
             'room_id' => \intval($request['room_id'] ?? 0),
             'customer_id' => \intval($request['customer_id'] ?? 0),
             'organisation_id' => \intval($request['organisation_id'] ?? 0),
-            'addons' => $addons,
+            'addons' => [],
             'is_recurring' => $is_recurring ? 1 : 0,
             'recurrence_type' => $recurrence_type,
             'recurrence_interval' => max(1, $recurrence_interval),
@@ -233,6 +232,11 @@ class CalendarService {
         if (is_wp_error($validation)) {
             return $validation;
         }
+
+        $data['addons'] = $this->normalize_addons(
+            $request['addons'] ?? [],
+            $this->resolve_addon_chargeable_hours($data)
+        );
 
         $id = $this->booking_service->save($data);
         if (is_wp_error($id)) {
@@ -347,7 +351,10 @@ class CalendarService {
             return $charge;
         }
 
-        $addons = $this->normalize_addons($request['addons'] ?? []);
+        $addons = $this->normalize_addons(
+            $request['addons'] ?? [],
+            max(0.0, round((float) ($charge['Quantity'] ?? 0.0), 2))
+        );
         $addons_total = $this->calculate_addon_total($addons);
 
         $deposit = null;
@@ -386,8 +393,6 @@ class CalendarService {
         $current_status = $existing_booking instanceof Booking
             ? $existing_booking->status()->value
             : BookingStatus::PENDING->value;
-        $addons = $this->normalize_addons($request['addons'] ?? []);
-
         $data = [
             'booking_id' => $booking_id,
             'start_date' => $start_date,
@@ -399,7 +404,7 @@ class CalendarService {
             'room_id' => \intval($request['room_id'] ?? 0),
             'customer_id' => \intval($request['customer_id'] ?? 0),
             'organisation_id' => \intval($request['organisation_id'] ?? 0),
-            'addons' => $addons,
+            'addons' => [],
             'edit_scope' => sanitize_text_field($request['edit_scope'] ?? ''),
         ];
 
@@ -427,6 +432,11 @@ class CalendarService {
         if (is_wp_error($validation)) {
             return $validation;
         }
+
+        $data['addons'] = $this->normalize_addons(
+            $request['addons'] ?? [],
+            $this->resolve_addon_chargeable_hours($data)
+        );
 
         $id = $this->booking_service->save($data);
         if (is_wp_error($id)) {
@@ -995,7 +1005,7 @@ class CalendarService {
         return [$date, $time];
     }
 
-    private function normalize_addons(array $raw_addons): array {
+    private function normalize_addons(array $raw_addons, float $chargeable_hours = 0.0): array {
         if (!is_array($raw_addons)) {
             return [];
         }
@@ -1019,7 +1029,10 @@ class CalendarService {
                 continue;
             }
 
-            $quantity = \floatval($addon['quantity'] ?? 1);
+            $charge_type = sanitize_text_field((string) ($addon['charge_type'] ?? ''));
+            $quantity = $charge_type === 'per_hour' && $chargeable_hours > 0
+                ? $chargeable_hours
+                : \floatval($addon['quantity'] ?? 1);
             if ($quantity <= 0) {
                 continue;
             }
@@ -1033,6 +1046,15 @@ class CalendarService {
         }
 
         return $normalized;
+    }
+
+    private function resolve_addon_chargeable_hours(array $data): float {
+        $charge = $this->pricing_service->get_charge_snapshot_for_data($data);
+        if (is_wp_error($charge)) {
+            return 0.0;
+        }
+
+        return max(0.0, round((float) ($charge['Quantity'] ?? 0.0), 2));
     }
 
     private function calculate_addon_total(array $addons): float {

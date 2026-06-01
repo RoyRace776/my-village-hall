@@ -3,7 +3,10 @@
 namespace MYVH\Tests\Unit\Events;
 
 use Brain\Monkey\Functions;
+use Mockery\MockInterface;
 use Mockery;
+use MYVH\Bookings\BookingService;
+use MYVH\Customers\CustomerService;
 use MYVH\Email\EmailService;
 use MYVH\Events\BookingListener;
 use MYVH\Tests\Unit\UnitTestCase;
@@ -20,6 +23,11 @@ class BookingListenerTest extends UnitTestCase
 
         $this->email_service = Mockery::mock(EmailService::class);
         $this->listener      = new BookingListener($this->email_service);
+
+        Functions\stubs([
+            'date_i18n' => static fn($format, $timestamp) => date($format, (int) $timestamp),
+            'get_option' => static fn($option) => $option === 'date_format' ? 'j M Y' : '',
+        ]);
     }
 
     // ── register ─────────────────────────────────────────────────────────
@@ -121,6 +129,84 @@ class BookingListenerTest extends UnitTestCase
     {
         $this->listener->handle_booking_updated(['booking_id' => 5]);
         $this->assertTrue(true); // no exception = pass
+    }
+
+    /** @test */
+    public function get_booking_template_vars_uses_charge_and_addon_totals_for_booking_amount(): void
+    {
+        $booking_service = Mockery::mock(BookingService::class);
+        $customer_service = Mockery::mock(CustomerService::class);
+
+        $booking_service->shouldReceive('get_by_id_with_details')
+            ->once()
+            ->with(10)
+            ->andReturnUsing(static fn(): array => [
+                'Id' => 10,
+                'CustomerId' => 7,
+                'CustomerName' => 'Alice',
+                'Description' => 'Village hall booking',
+                'StartDate' => '2026-06-01',
+                'StartTime' => '10:00',
+                'EndTime' => '12:00',
+                'VenueName' => 'Main Hall',
+                'RoomName' => 'Room A',
+                'Rate' => '15',
+            ]);
+        $booking_service->shouldReceive('get_charges_for_booking')
+            ->once()
+            ->with(10)
+            ->andReturnUsing(static fn(): array => [
+                ['TotalAmount' => '12.50'],
+                ['TotalAmount' => '7.25'],
+            ]);
+        $booking_service->shouldReceive('get_addons_for_booking')
+            ->once()
+            ->with(10)
+            ->andReturnUsing(static fn(): array => [
+                ['TotalAmount' => '3.50'],
+                ['TotalAmount' => '1.25'],
+            ]);
+
+        $customer_service->shouldReceive('get_by_id')
+            ->once()
+            ->with(7)
+            ->andReturnUsing(static fn(): array => [
+                'AddressLine1' => '1 High Street',
+                'PostCode' => 'AB1 2CD',
+            ]);
+
+        $this->email_service->shouldReceive('get_branding')
+            ->once()
+            ->andReturnUsing(static fn(): array => [
+                'logo_url' => 'https://example.com/logo.png',
+                'site_name' => 'My Village Hall',
+                'site_url' => 'https://example.com',
+            ]);
+
+        $GLOBALS['myvh_container'] = new class($booking_service, $customer_service) {
+            public function __construct(
+                private MockInterface $booking_service,
+                private MockInterface $customer_service
+            ) {
+            }
+
+            public function get(string $class): MockInterface
+            {
+                return match ($class) {
+                    BookingService::class => $this->booking_service,
+                    CustomerService::class => $this->customer_service,
+                    default => throw new \RuntimeException('Unexpected service request: ' . $class),
+                };
+            }
+        };
+
+        $reflection = new \ReflectionMethod(BookingListener::class, 'get_booking_template_vars');
+        $reflection->setAccessible(true);
+
+        /** @var array<string, mixed> $template_vars */
+        $template_vars = $reflection->invoke($this->listener, 10);
+
+        $this->assertSame('24.50', $template_vars['booking_amount']);
     }
 
     protected function tearDown(): void

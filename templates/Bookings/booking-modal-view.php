@@ -132,6 +132,7 @@ $available_addons = $addon_service->get_all(['orderby' => 'DisplayOrder', 'order
                                 <td>
                                     <input type="checkbox" class="myvh-modal-addon-checkbox" value="1" disabled>
                                     <input type="hidden" name="addons[<?php echo $i; ?>][addon_id]" value="<?php echo \intval($addon['Id']); ?>">
+                                    <input type="hidden" name="addons[<?php echo $i; ?>][charge_type]" value="<?php echo esc_attr((string) ($addon['ChargeType'] ?? 'fixed')); ?>">
                                     <input type="hidden" name="addons[<?php echo $i; ?>][enabled]" class="myvh-modal-addon-enabled" value="0">
                                 </td>
                                 <td>

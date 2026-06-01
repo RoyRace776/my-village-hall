@@ -121,6 +121,7 @@ class AddonService {
         foreach ($addons as $addon) {
             $addon_id   = \intval($addon['addon_id'] ?? 0);
             $unit_price = \floatval($addon['unit_price'] ?? 0);
+            $requested_quantity = round(max(0, (float) ($addon['quantity'] ?? 0)), 2);
 
             if ($addon_id <= 0) continue;
 
@@ -128,18 +129,29 @@ class AddonService {
             $quantity = 1.0;
             $addon_record = $addon_repo ? $addon_repo->get_by_id($addon_id) : null;
             if ($addon_record && ($addon_record['ChargeType'] ?? '') === 'per_hour') {
-                if ($booking_hours === null) {
-                    // Fetch booking details if needed (assume booking_repo is globally available)
-                    $booking_repo = $this->booking_repo;
-                    $booking = $booking_repo ? $booking_repo->get_by_id($booking_id) : null;
-                    if ($booking) {
-                        $start = strtotime($booking['StartDate'] . ' ' . $booking['StartTime']);
-                        $end   = strtotime($booking['EndDate']   . ' ' . $booking['EndTime']);
-                        $booking_hours = round(($end - $start) / 3600, 2);
+                if ($requested_quantity > 0) {
+                    $quantity = $requested_quantity;
+                } else {
+                    if ($booking_hours === null) {
+                        $booking_repo = $this->booking_repo;
+                        $booking = $booking_repo ? $booking_repo->get_by_id($booking_id) : null;
+                        if ($booking) {
+                            $stored_hours = $booking['ChargeableHours'] ?? null;
+                            if ($stored_hours !== null && is_numeric($stored_hours)) {
+                                $booking_hours = round((float) $stored_hours, 2);
+                            } else {
+                                $start = strtotime($booking['StartDate'] . ' ' . $booking['StartTime']);
+                                $end   = strtotime($booking['EndDate']   . ' ' . $booking['EndTime']);
+
+                                if ($start !== false && $end !== false) {
+                                    $booking_hours = round(($end - $start) / 3600, 2);
+                                }
+                            }
+                        }
                     }
-                }
-                if ($booking_hours !== null) {
-                    $quantity = max(0, $booking_hours);
+                    if ($booking_hours !== null) {
+                        $quantity = max(0, $booking_hours);
+                    }
                 }
             }
 
