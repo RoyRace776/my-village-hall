@@ -3,7 +3,6 @@
 namespace MYVH\Calendar;
 
 use MYVH\Core\Shortcode\ShortcodeInterface;
-use MYVH\Core\Support\AssetLoader;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -32,7 +31,6 @@ class EventListShortcode implements ShortcodeInterface {
 			self::TAG
 		);
 
-		AssetLoader::enqueue_portal_assets();
 		wp_enqueue_style( 'myvh-event-list' );
 
 		$services = $this->resolve_services();
@@ -85,7 +83,7 @@ class EventListShortcode implements ShortcodeInterface {
 									</td>
 									<td class="col-event">
 										<?php if ( ! empty( $event['id'] ) ) : ?>
-											<a class="myvh-event-title" href="<?php echo esc_url( add_query_arg( 'booking_id', (int) $event['id'], get_permalink() ?: home_url( '/' ) ) ); ?>"><?php echo esc_html( (string) ( $event['text'] ?? __( 'Booking', 'my-village-hall' ) ) ); ?></a>
+											<a class="myvh-event-title" href="<?php echo esc_url( add_query_arg( 'booking_id', (int) $event['id'], $this->resolve_event_detail_page_url() ) ); ?>"><?php echo esc_html( (string) ( $event['text'] ?? __( 'Booking', 'my-village-hall' ) ) ); ?></a>
 										<?php else : ?>
 											<span class="myvh-event-title-plain"><?php echo esc_html( (string) ( $event['text'] ?? __( 'Booking', 'my-village-hall' ) ) ); ?></span>
 										<?php endif; ?>
@@ -120,6 +118,49 @@ class EventListShortcode implements ShortcodeInterface {
 		} catch ( \Throwable $exception ) {
 			return null;
 		}
+	}
+
+	private function resolve_event_detail_page_url(): string {
+		$filtered = apply_filters( 'myvh_event_detail_page_url', '' );
+		if ( is_string( $filtered ) && $filtered !== '' ) {
+			return esc_url_raw( $filtered );
+		}
+
+		$detail_tags = EventDetailShortcode::all_tags();
+
+		$template_pages = get_posts(
+			[
+				'post_type'        => 'page',
+				'post_status'      => 'publish',
+				'posts_per_page'   => 200,
+				'orderby'          => 'menu_order title',
+				'order'            => 'ASC',
+				'suppress_filters' => false,
+			]
+		);
+
+		foreach ( (array) $template_pages as $page ) {
+			if ( empty( $page->ID ) ) {
+				continue;
+			}
+
+			$content = (string) ( $page->post_content ?? '' );
+			foreach ( $detail_tags as $detail_tag ) {
+				if ( has_shortcode( $content, $detail_tag ) ) {
+					$permalink = get_permalink( (int) $page->ID );
+					if ( is_string( $permalink ) && $permalink !== '' ) {
+						return $permalink;
+					}
+				}
+			}
+		}
+
+		$current_permalink = get_permalink();
+		if ( is_string( $current_permalink ) && $current_permalink !== '' ) {
+			return $current_permalink;
+		}
+
+		return home_url( '/' );
 	}
 
 	private function group_events_by_day( array $events ): array {
