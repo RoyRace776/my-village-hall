@@ -69,14 +69,18 @@ class EventListShortcode implements ShortcodeInterface {
 		<div class="myvh-event-diary">
 			<?php foreach ( $this->group_events_by_day( $events ) as $day => $day_events ) : ?>
 				<section class="myvh-event-diary-day">
-					<header class="myvh-event-diary-day-header">
-						<span class="myvh-event-diary-day-name"><?php echo esc_html( wp_date( 'D', strtotime( $day ) ) ); ?></span>
-						<span class="myvh-event-diary-day-date"><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $day ) ) ); ?></span>
-					</header>
 					<table class="myvh-event-diary-table">
 						<tbody>
-							<?php foreach ( $day_events as $event ) : ?>
+							<?php foreach ( $day_events as $index => $event ) : ?>
 								<tr>
+									<?php if ( $index === 0 ) : ?>
+										<td class="col-day" rowspan="<?php echo esc_attr( count( $day_events ) ); ?>">
+											<div class="myvh-event-diary-day-cell">
+												<span class="myvh-event-diary-day-name"><?php echo esc_html( wp_date( 'D', strtotime( $day ) ) ); ?></span>
+												<span class="myvh-event-diary-day-date"><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $day ) ) ); ?></span>
+											</div>
+										</td>
+									<?php endif; ?>
 									<td class="col-time">
 										<span class="myvh-event-time-start"><?php echo esc_html( wp_date( get_option( 'time_format' ), strtotime( (string) ( $event['start'] ?? '' ) ) ) ); ?></span>
 										<span class="myvh-event-time-end"><?php echo esc_html( wp_date( get_option( 'time_format' ), strtotime( (string) ( $event['end'] ?? '' ) ) ) ); ?></span>

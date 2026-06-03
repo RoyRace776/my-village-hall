@@ -54,6 +54,28 @@
     table-layout: fixed;
 }
 
+/* Day column */
+.myvh-event-diary-table .col-day {
+    width: 120px;
+    padding: 0.5em 0.75em 0.5em 0;
+    vertical-align: top;
+}
+
+.myvh-event-diary-day-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+}
+
+.myvh-event-diary-day-cell .myvh-event-diary-day-name {
+    line-height: 1.15;
+}
+
+.myvh-event-diary-day-cell .myvh-event-diary-day-date {
+    font-size: 0.95em;
+    line-height: 1.2;
+}
+
 .myvh-event-diary-table tbody tr {
     transition: background 0.15s;
 }
@@ -65,21 +87,21 @@
 /* Time column */
 .myvh-event-diary-table .col-time {
     width: 130px;
-    padding: 0.5em 1em 0.5em 0;
+    padding: 0.5em 0.4em 0.5em 0;
     vertical-align: top;
     white-space: nowrap;
 }
 
 /* Event column */
 .myvh-event-diary-table .col-event {
-    padding: 0.5em 0.5em;
+    padding: 0.5em 0.25em 0.5em 0.15em;
     vertical-align: top;
 }
 
 /* Location column */
 .myvh-event-diary-table .col-location {
-    width: 180px;
-    padding: 0.5em 0 0.5em 0.5em;
+    width: 140px;
+    padding: 0.5em 0 0.5em 0.15em;
     vertical-align: top;
     text-align: right;
 }
@@ -172,6 +194,11 @@
 @media (max-width: 600px) {
     .myvh-event-diary-table .col-location {
         display: none;
+    }
+
+    .myvh-event-diary-table .col-day {
+        width: 86px;
+        padding-right: 0.5em;
     }
 
     .myvh-event-diary-table .col-time {
