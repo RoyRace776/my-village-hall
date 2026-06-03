@@ -5,6 +5,8 @@ namespace MYVH\Bootstrap;
 use MYVH\Admin\AdminMenu;
 use MYVH\Admin\AdminPageRouter;
 use MYVH\Calendar\CalendarShortcode;
+use MYVH\Calendar\EventDetailShortcode;
+use MYVH\Calendar\EventListShortcode;
 use MYVH\Core\Support\AssetLoader;
 use MYVH\Hooks\AdminPostRegistrar;
 use MYVH\Hooks\EventListeners;
@@ -67,6 +69,8 @@ class PluginBootstrap {
         require_once MYVH_PLUGIN_DIR . 'src/Bootstrap/myvh-bootstrap.php';
 
         ( new CalendarShortcode() )->init();
+        ( new EventListShortcode() )->init();
+        ( new EventDetailShortcode() )->init();
         ( new PasswordResetLoader() )->init();
 
         if ( is_multisite() ) {

@@ -107,6 +107,13 @@ class AssetLoader {
             [ 'myvh-calendar-theme' ],
             MYVH_VERSION
         );
+
+        wp_register_style(
+            'myvh-event-list',
+            MYVH_PLUGIN_URL . 'assets/css/event-list.css',
+            [],
+            self::asset_version( 'assets/css/event-list.css' )
+        );
     }
 
     // ── Admin ─────────────────────────────────────────────────────────────────

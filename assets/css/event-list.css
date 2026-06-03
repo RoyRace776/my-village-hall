@@ -1,0 +1,153 @@
+/* ==========================================================================
+   My Village Hall – Event List / Diary shortcode
+   ========================================================================== */
+
+.myvh-event-diary {
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, sans-serif;
+    color: #1b1b1b;
+    margin: 1.5em 0;
+    width: 100%;
+}
+
+/* Empty state */
+.myvh-event-diary-empty {
+    color: #6b7280;
+    font-style: italic;
+    margin: 1.5em 0;
+}
+
+/* ── Day group ─────────────────────────────────────────────────────────────── */
+
+.myvh-event-diary-day {
+    margin-bottom: 1.5em;
+}
+
+.myvh-event-diary-day-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    border-bottom: 2px solid #2c5f8a;
+    padding-bottom: 0.35em;
+    margin-bottom: 0;
+}
+
+.myvh-event-diary-day-name {
+    font-size: 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #2c5f8a;
+}
+
+.myvh-event-diary-day-date {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: #1b1b1b;
+}
+
+/* ── Events table ───────────────────────────────────────────────────────────── */
+
+.myvh-event-diary-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.myvh-event-diary-table tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: background 0.15s;
+}
+
+.myvh-event-diary-table tbody tr:hover {
+    background: #f0f6ff;
+}
+
+/* Time column */
+.myvh-event-diary-table .col-time {
+    width: 130px;
+    padding: 0.75em 1em 0.75em 0;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+/* Event column */
+.myvh-event-diary-table .col-event {
+    padding: 0.75em 0.5em;
+    vertical-align: top;
+}
+
+/* Location column */
+.myvh-event-diary-table .col-location {
+    width: 180px;
+    padding: 0.75em 0 0.75em 0.5em;
+    vertical-align: top;
+    text-align: right;
+}
+
+/* ── Time cell ─────────────────────────────────────────────────────────────── */
+
+.myvh-event-time-start {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95em;
+    color: #1b1b1b;
+}
+
+.myvh-event-time-end {
+    display: block;
+    font-size: 0.8em;
+    color: #6b7280;
+}
+
+/* ── Event cell ────────────────────────────────────────────────────────────── */
+
+.myvh-event-title {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: #2c5f8a;
+    text-decoration: none;
+}
+
+.myvh-event-title:hover {
+    text-decoration: underline;
+    color: #1a3f5f;
+}
+
+.myvh-event-title-plain {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: #1b1b1b;
+}
+
+/* ── Location cell ─────────────────────────────────────────────────────────── */
+
+.myvh-event-venue {
+    display: block;
+    font-size: 0.82em;
+    color: #374151;
+    font-weight: 500;
+}
+
+.myvh-event-room {
+    display: block;
+    font-size: 0.78em;
+    color: #6b7280;
+}
+
+/* ── Responsive – collapse location column on small screens ─────────────────── */
+
+@media (max-width: 600px) {
+    .myvh-event-diary-table .col-location {
+        display: none;
+    }
+
+    .myvh-event-diary-table .col-time {
+        width: 100px;
+    }
+
+    .myvh-event-venue,
+    .myvh-event-room {
+        display: inline;
+    }
+}
