@@ -20,15 +20,15 @@
 /* ── Day group ─────────────────────────────────────────────────────────────── */
 
 .myvh-event-diary-day {
-    margin: 0 0 1.5em;
+    margin: 0 0 0.6em;
 }
 
 .myvh-event-diary-day-header {
     display: flex;
     align-items: baseline;
-    gap: 0.5em;
+    gap: 0.35em;
     border-bottom: 0;
-    padding-bottom: 0.35em;
+    padding-bottom: 0.2em;
     margin-bottom: 0;
 }
 
@@ -65,21 +65,21 @@
 /* Time column */
 .myvh-event-diary-table .col-time {
     width: 130px;
-    padding: 0.75em 1em 0.75em 0;
+    padding: 0.5em 1em 0.5em 0;
     vertical-align: top;
     white-space: nowrap;
 }
 
 /* Event column */
 .myvh-event-diary-table .col-event {
-    padding: 0.75em 0.5em;
+    padding: 0.5em 0.5em;
     vertical-align: top;
 }
 
 /* Location column */
 .myvh-event-diary-table .col-location {
     width: 180px;
-    padding: 0.75em 0 0.75em 0.5em;
+    padding: 0.5em 0 0.5em 0.5em;
     vertical-align: top;
     text-align: right;
 }
@@ -97,6 +97,7 @@
     display: block;
     font-size: 0.8em;
     color: #6b7280;
+    line-height: 1.2;
 }
 
 /* ── Event cell ────────────────────────────────────────────────────────────── */
@@ -132,6 +133,38 @@
     display: block;
     font-size: 0.78em;
     color: #6b7280;
+    line-height: 1.2;
+}
+
+/* ── Event detail compact spacing ─────────────────────────────────────────── */
+
+.myvh-event-detail-diary .myvh-event-detail-section {
+    margin-bottom: 0.9em;
+}
+
+.myvh-event-detail-diary .myvh-event-detail-header {
+    padding-bottom: 0.2em;
+    margin-bottom: 0.1em;
+}
+
+.myvh-event-detail-diary .myvh-event-diary-day-name,
+.myvh-event-detail-diary .myvh-event-diary-day-date {
+    line-height: 1.15;
+}
+
+.myvh-event-detail-diary .myvh-event-diary-table .col-time,
+.myvh-event-detail-diary .myvh-event-diary-table .col-event,
+.myvh-event-detail-diary .myvh-event-diary-table .col-location {
+    padding-top: 0.42em;
+    padding-bottom: 0.42em;
+}
+
+.myvh-event-detail-diary .myvh-event-time-start,
+.myvh-event-detail-diary .myvh-event-time-end,
+.myvh-event-detail-diary .myvh-event-title-plain,
+.myvh-event-detail-diary .myvh-event-venue,
+.myvh-event-detail-diary .myvh-event-room {
+    line-height: 1.2;
 }
 
 /* ── Responsive – collapse location column on small screens ─────────────────── */
