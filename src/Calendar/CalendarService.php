@@ -499,9 +499,10 @@ class CalendarService {
      * Private rooms are only visible to admins and client admins.
      */
     private function is_room_visible( mixed $room_id, mixed $context, mixed $viewer_scope, array $room_meta): bool {
-        // Rooms not found in metadata are treated as public (safe default)
+        // Rooms not found in metadata are hidden from public viewers, but remain
+        // visible in admin/client-admin contexts so staff can still manage them.
         if (!isset($room_meta[$room_id])) {
-            return true;
+            return $context === 'admin' || ($context === 'portal' && !empty($viewer_scope['is_client_admin']));
         }
 
         if ($room_meta[$room_id]['is_public']) {

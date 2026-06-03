@@ -4,9 +4,10 @@ namespace MYVH\Calendar;
 
 use MYVH\Bookings\BookingService;
 use MYVH\Core\Shortcode\ShortcodeInterface;
-use MYVH\Core\Support\AssetLoader;
 use MYVH\Customers\CustomerService;
+use MYVH\Organisations\OrganisationService;
 use MYVH\Organisations\OrganisationMemberRepository;
+use MYVH\Organisations\OrganisationTypeService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Portal\Support\BookingAccess;
 
@@ -53,13 +54,14 @@ class EventDetailShortcode implements ShortcodeInterface {
 			return $this->render_notice( __( 'Booking details are temporarily unavailable.', 'my-village-hall' ) );
 		}
 
-		AssetLoader::enqueue_portal_assets();
 		wp_enqueue_style( 'myvh-event-list' );
 
 		$booking = $this->resolve_booking(
 			$booking_id,
 			$services['booking_service'],
 			$services['customer_service'],
+			$services['organisation_service'],
+			$services['organisation_type_service'],
 			$services['client_admin_service'],
 			$services['organisation_member_repo']
 		);
@@ -68,72 +70,67 @@ class EventDetailShortcode implements ShortcodeInterface {
 			return $this->render_notice( __( 'Booking not found or you do not have permission to view it.', 'my-village-hall' ) );
 		}
 
-		$is_client_admin = $services['client_admin_service']->can_administer_blog( get_current_user_id(), get_current_blog_id() );
-		$delete_rules = [ 'can_delete' => false, 'reason' => '' ];
-		$can_delete = false;
-
-		if ( is_user_logged_in() ) {
-			$delete_rules = $services['booking_service']->can_delete( $booking );
-			$can_delete = ! empty( $delete_rules['can_delete'] );
-		}
+		$list_page_url = $this->resolve_event_list_page_url();
+		$organisation_meta = $this->resolve_organisation_meta(
+			$booking,
+			$services['organisation_service'],
+			$services['organisation_type_service']
+		);
 
 		ob_start();
 		?>
-		<div class="myvh-dashboard-section myvh-event-detail-page">
-			<div class="myvh-account-header">
-				<div>
-					<h2><?php echo esc_html( $booking['RoomName'] ?? __( 'Event details', 'my-village-hall' ) ); ?></h2>
-					<p><?php echo esc_html( $booking['Description'] ?? __( 'Review booking details.', 'my-village-hall' ) ); ?></p>
-				</div>
-				<a href="#bookings" class="myvh-button"><?php echo esc_html__( 'Back to bookings', 'my-village-hall' ); ?></a>
-			</div>
+		<div class="myvh-event-diary myvh-event-detail-diary">
+			<section class="myvh-event-diary-day myvh-event-detail-section">
+				<header class="myvh-event-diary-day-header myvh-event-detail-header">
+					<span class="myvh-event-diary-day-name"><?php echo esc_html( wp_date( 'D', strtotime( (string) ( $booking['StartDate'] ?? '' ) ) ) ); ?></span>
+					<span class="myvh-event-diary-day-date"><?php echo esc_html( sprintf( __( 'Booking #%d', 'my-village-hall' ), (int) ( $booking['Id'] ?? $booking_id ) ) ); ?></span>
+				</header>
 
-			<div class="myvh-surface-panel myvh-bookings-panel">
-				<div class="myvh-card myvh-account-card">
-					<div class="myvh-account-card-head">
-						<h3><?php echo esc_html( $booking['RoomName'] ?? __( 'Booking', 'my-village-hall' ) ); ?></h3>
-						<span><?php echo esc_html( sprintf( __( 'Booking reference #%d', 'my-village-hall' ), (int) ( $booking['Id'] ?? $booking_id ) ) ); ?></span>
-					</div>
-
-					<div class="myvh-account-grid">
-						<div class="myvh-account-card">
-							<div class="myvh-account-card-head">
-								<h3><?php echo esc_html__( 'Date & Time', 'my-village-hall' ); ?></h3>
-							</div>
-							<p><strong><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( (string) ( $booking['StartDate'] ?? '' ) ) ) ); ?></strong></p>
-							<p>
-								<?php echo esc_html( substr( (string) ( $booking['StartTime'] ?? '' ), 0, 5 ) ); ?>
-								-
-								<?php echo esc_html( substr( (string) ( $booking['EndTime'] ?? '' ), 0, 5 ) ); ?>
-							</p>
-						</div>
-
-						<div class="myvh-account-card">
-							<div class="myvh-account-card-head">
-								<h3><?php echo esc_html__( 'Details', 'my-village-hall' ); ?></h3>
-							</div>
-							<p><strong><?php echo esc_html__( 'Status:', 'my-village-hall' ); ?></strong> <?php echo esc_html( ucfirst( (string) ( $booking['Status'] ?? '' ) ) ); ?></p>
-							<p><strong><?php echo esc_html__( 'Venue:', 'my-village-hall' ); ?></strong> <?php echo esc_html( $booking['VenueName'] ?? '-' ); ?></p>
-							<p><strong><?php echo esc_html__( 'Organisation:', 'my-village-hall' ); ?></strong> <?php echo esc_html( $booking['OrganisationName'] ?? '-' ); ?></p>
-							<p><strong><?php echo esc_html__( 'Description:', 'my-village-hall' ); ?></strong> <?php echo esc_html( $booking['Description'] ?? '-' ); ?></p>
-						</div>
-					</div>
-
-					<?php if ( is_user_logged_in() ) : ?>
-						<div class="myvh-account-actions" style="margin-top:12px;">
-							<?php if ( $is_client_admin ) : ?>
-								<a href="#booking-edit?booking_id=<?php echo (int) $booking['Id']; ?>" class="myvh-button myvh-button-primary"><?php echo esc_html__( 'Edit Booking', 'my-village-hall' ); ?></a>
-							<?php endif; ?>
-
-							<?php if ( $can_delete ) : ?>
-								<a href="#booking-delete?booking_id=<?php echo (int) $booking['Id']; ?>" class="myvh-button"><?php echo esc_html__( 'Delete Booking', 'my-village-hall' ); ?></a>
-							<?php elseif ( ! empty( $delete_rules['reason'] ) ) : ?>
-								<span class="myvh-muted"><?php echo esc_html( (string) $delete_rules['reason'] ); ?></span>
-							<?php endif; ?>
-						</div>
-					<?php endif; ?>
-				</div>
-			</div>
+				<table class="myvh-event-diary-table myvh-event-detail-table">
+					<tbody>
+						<tr>
+							<td class="col-time"><?php echo esc_html__( 'When', 'my-village-hall' ); ?></td>
+							<td class="col-event">
+								<strong><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( (string) ( $booking['StartDate'] ?? '' ) ) ) ); ?></strong>
+								<span class="myvh-event-time-end"><?php echo esc_html( substr( (string) ( $booking['StartTime'] ?? '' ), 0, 5 ) . ' - ' . substr( (string) ( $booking['EndTime'] ?? '' ), 0, 5 ) ); ?></span>
+							</td>
+							<td class="col-location"><a class="myvh-event-detail-return" href="<?php echo esc_url( $list_page_url ); ?>"><?php echo esc_html__( 'Back to event list', 'my-village-hall' ); ?></a></td>
+						</tr>
+						<tr>
+							<td class="col-time"><?php echo esc_html__( 'Customer', 'my-village-hall' ); ?></td>
+							<td class="col-event" colspan="2"><span class="myvh-event-title-plain"><?php echo esc_html( $booking['CustomerName'] ?? '-' ); ?></span></td>
+						</tr>
+						<tr>
+							<td class="col-time"><?php echo esc_html__( 'Venue', 'my-village-hall' ); ?></td>
+							<td class="col-event" colspan="2"><span class="myvh-event-title-plain"><?php echo esc_html( $booking['VenueName'] ?? '-' ); ?></span></td>
+						</tr>
+						<tr>
+							<td class="col-time"><?php echo esc_html__( 'Room', 'my-village-hall' ); ?></td>
+							<td class="col-event" colspan="2"><span class="myvh-event-title-plain"><?php echo esc_html( $booking['RoomName'] ?? '-' ); ?></span></td>
+						</tr>
+						<tr>
+							<td class="col-time"><?php echo esc_html__( 'Organisation', 'my-village-hall' ); ?></td>
+							<td class="col-event" colspan="2"><span class="myvh-event-title-plain"><?php echo esc_html( $booking['OrganisationName'] ?? '-' ); ?></span></td>
+						</tr>
+						<?php if ( ! empty( $organisation_meta['website_url'] ) ) : ?>
+							<tr>
+								<td class="col-time"><?php echo esc_html__( 'Website', 'my-village-hall' ); ?></td>
+								<td class="col-event" colspan="2">
+									<a class="myvh-event-title" href="<?php echo esc_url( $organisation_meta['website_url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $organisation_meta['website_url'] ); ?></a>
+								</td>
+							</tr>
+						<?php endif; ?>
+						<tr>
+							<td class="col-time"><?php echo esc_html__( 'Status', 'my-village-hall' ); ?></td>
+							<td class="col-event" colspan="2"><span class="myvh-event-title-plain"><?php echo esc_html( ucfirst( (string) ( $booking['Status'] ?? '' ) ) ); ?></span></td>
+						</tr>
+						<tr>
+							<td class="col-time"><?php echo esc_html__( 'Description', 'my-village-hall' ); ?></td>
+							<td class="col-event" colspan="2"><span class="myvh-event-title-plain"><?php echo esc_html( $booking['Description'] ?? '-' ); ?></span></td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
 		</div>
 		<?php
 
@@ -170,6 +167,8 @@ class EventDetailShortcode implements ShortcodeInterface {
 			return [
 				'booking_service' => $myvh_container->get( BookingService::class ),
 				'customer_service' => $myvh_container->get( CustomerService::class ),
+				'organisation_service' => $myvh_container->get( OrganisationService::class ),
+				'organisation_type_service' => $myvh_container->get( OrganisationTypeService::class ),
 				'client_admin_service' => $myvh_container->get( ClientAdminService::class ),
 				'organisation_member_repo' => $myvh_container->get( OrganisationMemberRepository::class ),
 			];
@@ -178,7 +177,45 @@ class EventDetailShortcode implements ShortcodeInterface {
 		}
 	}
 
-	private function resolve_booking( int $booking_id, BookingService $booking_service, CustomerService $customer_service, ClientAdminService $client_admin_service, OrganisationMemberRepository $organisation_member_repo ): ?array {
+	private function resolve_event_list_page_url(): string {
+		$filtered = apply_filters( 'myvh_event_list_page_url', '' );
+		if ( is_string( $filtered ) && $filtered !== '' ) {
+			return esc_url_raw( $filtered );
+		}
+
+		$template_pages = get_posts(
+			[
+				'post_type'        => 'page',
+				'post_status'      => 'publish',
+				'posts_per_page'   => 200,
+				'orderby'          => 'menu_order title',
+				'order'            => 'ASC',
+				'suppress_filters' => false,
+			]
+		);
+
+		foreach ( (array) $template_pages as $page ) {
+			if ( empty( $page->ID ) ) {
+				continue;
+			}
+
+			if ( has_shortcode( (string) ( $page->post_content ?? '' ), 'myvh_event_list' ) ) {
+				$permalink = get_permalink( (int) $page->ID );
+				if ( is_string( $permalink ) && $permalink !== '' ) {
+					return $permalink;
+				}
+			}
+		}
+
+		$current_permalink = get_permalink();
+		if ( is_string( $current_permalink ) && $current_permalink !== '' ) {
+			return $current_permalink;
+		}
+
+		return home_url( '/' );
+	}
+
+	private function resolve_booking( int $booking_id, BookingService $booking_service, CustomerService $customer_service, OrganisationService $organisation_service, OrganisationTypeService $organisation_type_service, ClientAdminService $client_admin_service, OrganisationMemberRepository $organisation_member_repo ): ?array {
 		if ( ! is_user_logged_in() ) {
 			$booking = $booking_service->get_by_id_with_details( $booking_id );
 			if ( empty( $booking ) ) {
@@ -202,6 +239,30 @@ class EventDetailShortcode implements ShortcodeInterface {
 			$booking_service,
 			$organisation_member_repo
 		);
+	}
+
+	private function resolve_organisation_meta( array $booking, OrganisationService $organisation_service, OrganisationTypeService $organisation_type_service ): array {
+		$organisation_id = (int) ( $booking['OrganisationId'] ?? 0 );
+		if ( $organisation_id <= 0 ) {
+			return [
+				'label' => '',
+				'website_url' => '',
+			];
+		}
+
+		$organisation = $organisation_service->get_by_id( $organisation_id );
+		$organisation_type = ! empty( $organisation['OrganisationTypeId'] )
+			? $organisation_type_service->get( (int) $organisation['OrganisationTypeId'] )
+			: null;
+		$is_system = ! empty( $organisation_type['IsSystem'] );
+		$website_url = ! $is_system && ! empty( $organisation['WebsiteUrl'] )
+			? esc_url_raw( (string) $organisation['WebsiteUrl'] )
+			: '';
+
+		return [
+			'label' => $is_system ? __( 'Personal booking', 'my-village-hall' ) : ( $website_url !== '' ? __( 'Organisation website', 'my-village-hall' ) : '' ),
+			'website_url' => $website_url,
+		];
 	}
 
 	private function render_notice( string $message ): string {
