@@ -17,9 +17,11 @@ use MYVH\Events\BookingListener;
 use MYVH\Events\CustomerListener;
 use MYVH\Events\OrganisationListener;
 use MYVH\Events\SettingsListener;
+use MYVH\Infrastructure\WordPress\Blocks\BlockRegistry;
 use MYVH\Core\Scheduling\OvernightBatchRunner;
 use MYVH\Core\Shortcode\ShortcodeRegistry;
 use MYVH\Hooks\LoginShortcodeTitleHider;
+use MYVH\Pages\Support\PageGuard;
 use MYVH\Subscriptions\Services\BillingService;
 use MYVH\Subscriptions\Services\SubscriptionLifecycleScheduler;
 
@@ -37,6 +39,9 @@ if ( $myvh_container instanceof Container ) {
 
     $registry = new ShortcodeRegistry();
     add_action( 'init', [ $registry, 'register' ] );
+
+    $block_registry = new BlockRegistry( $myvh_container );
+    add_action( 'init', [ $block_registry, 'register' ] );
 
     $registry->add( $myvh_container->get( MYVH\Login\LoginShortcode::class ) );
     $registry->add( $myvh_container->get( MYVH\Portal\PortalShortcode::class ) );
@@ -109,6 +114,9 @@ if ( $myvh_container instanceof Container ) {
 
     $schema_report_endpoint = $myvh_container->get( MYVH\Reports\Http\SchemaReportEndpoint::class );
     $schema_report_endpoint->register();
+
+    $page_guard = new PageGuard();
+    $page_guard->register();
 
     // Admin password reset AJAX handler
     $admin_password_reset = new MYVH\Admin\AdminPasswordResetHandler(

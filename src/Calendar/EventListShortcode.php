@@ -2,6 +2,7 @@
 
 namespace MYVH\Calendar;
 
+use MYVH\Application\Services\EventListRenderer;
 use MYVH\Core\Shortcode\ShortcodeInterface;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,6 +11,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class EventListShortcode implements ShortcodeInterface {
 	private const TAG = 'myvh_event_list';
+
+	private ?EventListRenderer $renderer = null;
+
+	private function renderer(): EventListRenderer {
+		if ( $this->renderer instanceof EventListRenderer ) {
+			return $this->renderer;
+		}
+
+		global $myvh_container;
+		if ( isset( $myvh_container ) && is_object( $myvh_container ) && method_exists( $myvh_container, 'get' ) ) {
+			$this->renderer = $myvh_container->get( EventListRenderer::class );
+		}
+
+		if ( ! $this->renderer instanceof EventListRenderer ) {
+			$this->renderer = new EventListRenderer( $myvh_container->get( CalendarService::class ) );
+		}
+
+		return $this->renderer;
+	}
 
 	public function tag(): string {
 		return self::TAG;
@@ -20,173 +40,6 @@ class EventListShortcode implements ShortcodeInterface {
 	}
 
 	public function render( mixed $atts = [], mixed $content = null ): string {
-		$atts = shortcode_atts(
-			[
-				'start' => gmdate( 'Y-m-01' ),
-				'end' => gmdate( 'Y-m-t' ),
-				'venue_id' => 0,
-				'room_id' => 0,
-			],
-			(array) $atts,
-			self::TAG
-		);
-
-		wp_enqueue_style( 'myvh-event-list' );
-
-		$services = $this->resolve_services();
-		if ( $services === null ) {
-			return $this->render_notice( __( 'Event list is temporarily unavailable.', 'my-village-hall' ) );
-		}
-
-		try {
-			$events = $services['calendar_service']->get_public_feed_events(
-				(string) $atts['start'],
-				(string) $atts['end'],
-				is_user_logged_in() ? get_current_user_id() : 0,
-				[
-					'venue_id' => (int) $atts['venue_id'],
-					'room_id' => (int) $atts['room_id'],
-				],
-				__( 'Private booking', 'my-village-hall' )
-			);
-		} catch ( \Throwable $exception ) {
-			$events = [];
-		}
-
-		if ( empty( $events ) ) {
-			return '<div class="myvh-event-diary"><p class="myvh-event-diary-empty">' . esc_html__( 'No events found for this period.', 'my-village-hall' ) . '</p></div>';
-		}
-
-		usort(
-			$events,
-			static function ( array $left, array $right ): int {
-				return strcmp( (string) ( $left['start'] ?? '' ), (string) ( $right['start'] ?? '' ) );
-			}
-		);
-
-		ob_start();
-		?>
-		<div class="myvh-event-diary">
-			<?php foreach ( $this->group_events_by_day( $events ) as $day => $day_events ) : ?>
-				<section class="myvh-event-diary-day">
-					<table class="myvh-event-diary-table">
-						<tbody>
-							<?php foreach ( $day_events as $index => $event ) : ?>
-								<tr>
-									<?php if ( $index === 0 ) : ?>
-										<td class="col-day" rowspan="<?php echo esc_attr( count( $day_events ) ); ?>">
-											<div class="myvh-event-diary-day-cell">
-												<span class="myvh-event-diary-day-name"><?php echo esc_html( wp_date( 'D', strtotime( $day ) ) ); ?></span>
-												<span class="myvh-event-diary-day-date"><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $day ) ) ); ?></span>
-											</div>
-										</td>
-									<?php endif; ?>
-									<td class="col-time">
-										<span class="myvh-event-time-start"><?php echo esc_html( wp_date( get_option( 'time_format' ), strtotime( (string) ( $event['start'] ?? '' ) ) ) ); ?></span>
-										<span class="myvh-event-time-end"><?php echo esc_html( wp_date( get_option( 'time_format' ), strtotime( (string) ( $event['end'] ?? '' ) ) ) ); ?></span>
-									</td>
-									<td class="col-event">
-										<?php if ( ! empty( $event['id'] ) ) : ?>
-											<a class="myvh-event-title" href="<?php echo esc_url( add_query_arg( 'booking_id', (int) $event['id'], $this->resolve_event_detail_page_url() ) ); ?>"><?php echo esc_html( (string) ( $event['text'] ?? __( 'Booking', 'my-village-hall' ) ) ); ?></a>
-										<?php else : ?>
-											<span class="myvh-event-title-plain"><?php echo esc_html( (string) ( $event['text'] ?? __( 'Booking', 'my-village-hall' ) ) ); ?></span>
-										<?php endif; ?>
-									</td>
-									<td class="col-location">
-										<span class="myvh-event-venue"><?php echo esc_html( (string) ( $event['tags']['venue'] ?? '' ) ); ?></span>
-										<span class="myvh-event-room"><?php echo esc_html( (string) ( $event['tags']['room'] ?? '' ) ); ?></span>
-									</td>
-								</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
-				</section>
-			<?php endforeach; ?>
-		</div>
-		<?php
-
-		return (string) ob_get_clean();
-	}
-
-	private function resolve_services(): ?array {
-		global $myvh_container;
-
-		if ( ! isset( $myvh_container ) ) {
-			return null;
-		}
-
-		try {
-			return [
-				'calendar_service' => $myvh_container->get( CalendarService::class ),
-			];
-		} catch ( \Throwable $exception ) {
-			return null;
-		}
-	}
-
-	private function resolve_event_detail_page_url(): string {
-		$filtered = apply_filters( 'myvh_event_detail_page_url', '' );
-		if ( is_string( $filtered ) && $filtered !== '' ) {
-			return esc_url_raw( $filtered );
-		}
-
-		$detail_tags = EventDetailShortcode::all_tags();
-
-		$template_pages = get_posts(
-			[
-				'post_type'        => 'page',
-				'post_status'      => 'publish',
-				'posts_per_page'   => 200,
-				'orderby'          => 'menu_order title',
-				'order'            => 'ASC',
-				'suppress_filters' => false,
-			]
-		);
-
-		foreach ( (array) $template_pages as $page ) {
-			if ( empty( $page->ID ) ) {
-				continue;
-			}
-
-			$content = (string) ( $page->post_content ?? '' );
-			foreach ( $detail_tags as $detail_tag ) {
-				if ( has_shortcode( $content, $detail_tag ) ) {
-					$permalink = get_permalink( (int) $page->ID );
-					if ( is_string( $permalink ) && $permalink !== '' ) {
-						return $permalink;
-					}
-				}
-			}
-		}
-
-		$current_permalink = get_permalink();
-		if ( is_string( $current_permalink ) && $current_permalink !== '' ) {
-			return $current_permalink;
-		}
-
-		return home_url( '/' );
-	}
-
-	private function group_events_by_day( array $events ): array {
-		$grouped = [];
-
-		foreach ( $events as $event ) {
-			$day = substr( (string) ( $event['start'] ?? '' ), 0, 10 );
-			if ( $day === '' ) {
-				continue;
-			}
-
-			if ( ! isset( $grouped[ $day ] ) ) {
-				$grouped[ $day ] = [];
-			}
-
-			$grouped[ $day ][] = $event;
-		}
-
-		return $grouped;
-	}
-
-	private function render_notice( string $message ): string {
-		return '<div class="myvh-event-diary"><p class="myvh-event-diary-empty">' . esc_html( $message ) . '</p></div>';
+		return $this->renderer()->render( (array) $atts );
 	}
 }

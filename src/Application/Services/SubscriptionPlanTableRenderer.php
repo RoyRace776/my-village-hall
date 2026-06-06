@@ -1,0 +1,209 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MYVH\Application\Services;
+
+use MYVH\Portal\ClientAdminService;
+use MYVH\Subscriptions\Entities\Plan;
+use MYVH\Subscriptions\Entities\Subscription;
+use MYVH\Subscriptions\Repositories\AccountRepository;
+use MYVH\Subscriptions\Repositories\SubscriptionRepository;
+use MYVH\Subscriptions\Services\AccountService;
+use MYVH\Subscriptions\Services\PlanChangePolicyService;
+use MYVH\Subscriptions\Services\SettingsService;
+use MYVH\Subscriptions\Services\TrialService;
+
+final class SubscriptionPlanTableRenderer {
+    public function __construct(
+        private ClientAdminService $client_admin_service,
+        private ?AccountRepository $account_repository = null,
+        private ?SubscriptionRepository $subscription_repository = null,
+        private ?PlanChangePolicyService $plan_change_policy_service = null,
+        private ?AccountService $account_service = null,
+        private ?TrialService $trial_service = null,
+        private ?SettingsService $settings_service = null,
+        private LoginRenderer $login_renderer = new LoginRenderer()
+    ) {
+    }
+
+    public function render( array $attributes = [] ): string {
+        if ( ! is_user_logged_in() ) {
+            return $this->login_renderer->render( [] );
+        }
+
+        if ( ! $this->client_admin_service->can_administer_blog( get_current_user_id(), get_current_blog_id() ) ) {
+            return '<p class="myvh-error">' . esc_html__( 'Permission denied.', 'my-village-hall' ) . '</p>';
+        }
+
+        if (
+            ! $this->account_repository instanceof AccountRepository
+            || ! $this->subscription_repository instanceof SubscriptionRepository
+            || ! $this->plan_change_policy_service instanceof PlanChangePolicyService
+        ) {
+            return '<p class="myvh-error">' . esc_html__( 'Subscription services are unavailable right now.', 'my-village-hall' ) . '</p>';
+        }
+
+        $dashboard_css_path = MYVH_PLUGIN_DIR . 'assets/css/dashboard.css';
+        $dashboard_css_version = file_exists( $dashboard_css_path ) ? (string) filemtime( $dashboard_css_path ) : MYVH_VERSION;
+        wp_enqueue_style( 'myvh-dashboard', MYVH_PLUGIN_URL . 'assets/css/dashboard.css', [], $dashboard_css_version );
+
+        $blog_id = function_exists( 'get_current_blog_id' ) ? (int) get_current_blog_id() : 0;
+        $account = $blog_id > 0 ? $this->account_repository->get_by_blog_id( $blog_id ) : null;
+
+        if ( ! is_array( $account ) && $blog_id > 0 && $this->account_service instanceof AccountService ) {
+            $account = $this->account_service->resolveAccountFromBlogId( $blog_id );
+        }
+
+        if ( ! is_array( $account ) && $this->account_service instanceof AccountService ) {
+            $site_name = sanitize_text_field( (string) get_bloginfo( 'name' ) );
+            $admin_email = sanitize_email( (string) get_option( 'admin_email', '' ) );
+            if ( $site_name !== '' && $admin_email !== '' ) {
+                $account = $this->account_service->createAccount( $site_name, $admin_email );
+            }
+        }
+
+        $account_id = is_array( $account ) ? (int) ( $account['id'] ?? 0 ) : 0;
+        if ( $account_id <= 0 ) {
+            return '<p class="myvh-error">' . esc_html__( 'No billing account is linked to this site yet.', 'my-village-hall' ) . '</p>';
+        }
+
+        $subscription = $this->subscription_repository->get_active_by_account_id( $account_id );
+        if ( ! $subscription instanceof Subscription && $this->trial_service instanceof TrialService ) {
+            $subscription = $this->trial_service->createTrialSubscription( $account_id );
+        }
+
+        if ( ! $subscription instanceof Subscription ) {
+            return '<p class="myvh-error">' . esc_html__( 'No active subscription found for this site.', 'my-village-hall' ) . '</p>';
+        }
+
+        $plan_options = $this->plan_change_policy_service->getPlanOptionsForAccount( $account_id );
+        $trial_days = $this->settings_service instanceof SettingsService ? $this->settings_service->getTrialDays() : 0;
+
+        $plan_comparison_rows = [];
+        foreach ( $plan_options as $option ) {
+            $plan = $option['plan'] ?? null;
+            if ( ! $plan instanceof Plan ) {
+                continue;
+            }
+
+            $features = $plan->getFeatures();
+            $raw_booking_limit = $features['booking_limit'] ?? $features['bookings'] ?? null;
+            $booking_limit = $plan->getBookingLimit();
+            $booking_allowance = $booking_limit === null ? __( 'Unlimited', 'my-village-hall' ) : sprintf( __( '%d per month', 'my-village-hall' ), $booking_limit );
+
+            if ( ( $raw_booking_limit === null || $raw_booking_limit === '' ) && $booking_limit === null ) {
+                $booking_allowance = __( 'Not specified', 'my-village-hall' );
+            }
+
+            $price = $plan->getPrice();
+            $price_label = $price <= 0 ? __( 'Free', 'my-village-hall' ) : sprintf( __( '£%s', 'my-village-hall' ), number_format_i18n( $price, 2 ) );
+
+            $billing_interval = trim( (string) $plan->getBillingInterval() );
+            $billing_label = $billing_interval === '' ? __( 'Monthly', 'my-village-hall' ) : ucwords( str_replace( '_', ' ', $billing_interval ) );
+
+            $offerings = [];
+            foreach ( $features as $feature_key => $feature_value ) {
+                if ( ! is_string( $feature_key ) || in_array( $feature_key, [ 'booking_limit', 'bookings' ], true ) ) {
+                    continue;
+                }
+
+                $label_key = sanitize_key( $feature_key );
+                if ( $label_key === '' ) {
+                    continue;
+                }
+
+                $feature_label = ucwords( str_replace( '_', ' ', $label_key ) );
+
+                if ( is_bool( $feature_value ) ) {
+                    if ( $feature_value ) {
+                        $offerings[] = $feature_label;
+                    }
+                    continue;
+                }
+
+                if ( is_numeric( $feature_value ) && (float) $feature_value > 0 ) {
+                    $offerings[] = sprintf( __( '%1$s: %2$s', 'my-village-hall' ), $feature_label, number_format_i18n( (float) $feature_value, 0 ) );
+                    continue;
+                }
+
+                if ( is_string( $feature_value ) ) {
+                    $normalized = strtolower( trim( $feature_value ) );
+                    if ( $normalized === '' || $normalized === 'false' || $normalized === 'no' || $normalized === '0' ) {
+                        continue;
+                    }
+
+                    if ( $normalized === 'true' || $normalized === 'yes' ) {
+                        $offerings[] = $feature_label;
+                        continue;
+                    }
+
+                    $offerings[] = sprintf( __( '%1$s: %2$s', 'my-village-hall' ), $feature_label, $feature_value );
+                }
+            }
+
+            if ( $offerings === [] ) {
+                $offerings[] = __( 'Standard plan access', 'my-village-hall' );
+            }
+
+            $trial_length = $trial_days > 0 ? sprintf( _n( '%d day', '%d days', $trial_days, 'my-village-hall' ), $trial_days ) : __( 'No trial', 'my-village-hall' );
+
+            $plan_comparison_rows[] = [
+                'name' => $plan->getName(),
+                'price' => $price_label,
+                'billing' => $billing_label,
+                'trial_length' => $trial_length,
+                'booking_allowance' => $booking_allowance,
+                'offerings' => $offerings,
+            ];
+        }
+
+        if ( $plan_comparison_rows === [] ) {
+            return '<p class="myvh-account-hint">' . esc_html__( 'No plans are currently available.', 'my-village-hall' ) . '</p>';
+        }
+
+        ob_start();
+        ?>
+        <div class="myvh-plan-comparison">
+            <h3><?php esc_html_e( 'Available Plans', 'my-village-hall' ); ?></h3>
+            <p class="myvh-account-hint"><?php esc_html_e( 'Compare what each plan offers before changing your subscription.', 'my-village-hall' ); ?></p>
+
+            <div class="myvh-plan-comparison-wrap">
+                <table class="myvh-plan-comparison-table">
+                    <caption class="screen-reader-text"><?php esc_html_e( 'Subscription plan comparison', 'my-village-hall' ); ?></caption>
+                    <thead>
+                        <tr>
+                            <th scope="col"><?php esc_html_e( 'Plan', 'my-village-hall' ); ?></th>
+                            <th scope="col"><?php esc_html_e( 'Price', 'my-village-hall' ); ?></th>
+                            <th scope="col"><?php esc_html_e( 'Billing', 'my-village-hall' ); ?></th>
+                            <th scope="col"><?php esc_html_e( 'Trial', 'my-village-hall' ); ?></th>
+                            <th scope="col"><?php esc_html_e( 'Booking allowance', 'my-village-hall' ); ?></th>
+                            <th scope="col"><?php esc_html_e( 'Features', 'my-village-hall' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ( $plan_comparison_rows as $row ) : ?>
+                            <tr>
+                                <th scope="row"><?php echo esc_html( $row['name'] ); ?></th>
+                                <td><?php echo esc_html( $row['price'] ); ?></td>
+                                <td><?php echo esc_html( $row['billing'] ); ?></td>
+                                <td><?php echo esc_html( $row['trial_length'] ); ?></td>
+                                <td><?php echo esc_html( $row['booking_allowance'] ); ?></td>
+                                <td>
+                                    <ul class="myvh-plan-feature-list">
+                                        <?php foreach ( $row['offerings'] as $feature ) : ?>
+                                            <li><?php echo esc_html( $feature ); ?></li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php
+
+        return (string) ob_get_clean();
+    }
+}

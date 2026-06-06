@@ -24,6 +24,11 @@ namespace MYVH\Bootstrap;
 
 use wpdb;
 use MYVH\Customers\CustomerService;
+use MYVH\Pages\Content\BlockPageContentBuilder;
+use MYVH\Pages\DefaultPageDefinitionProvider;
+use MYVH\Pages\Infrastructure\WordPressPageRepository;
+use MYVH\Pages\Installer\PageInstaller;
+use MYVH\Pages\Services\PageSyncService;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -47,9 +52,20 @@ class Installer {
         self::create_tables( $wpdb, $collate );
         self::backfill_opening_hours_by_day( $wpdb );
         self::set_default_data( $wpdb );
+        self::sync_system_pages();
 
         // Keep migration state in sync when a full install has run.
         update_option('myvh_db_version', self::DB_VERSION);
+    }
+
+    private static function sync_system_pages(): void {
+        $provider = new DefaultPageDefinitionProvider();
+        $repository = new WordPressPageRepository();
+        $content_builder = new BlockPageContentBuilder();
+        $sync_service = new PageSyncService( $provider, $repository, $content_builder );
+        $installer = new PageInstaller( $sync_service );
+
+        $installer->run();
     }
 
     public static function maybe_upgrade(): void {

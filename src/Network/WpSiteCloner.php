@@ -88,11 +88,12 @@ class WpSiteCloner {
         }
 
         // -------------------------------------------------
-        // 3. Clone data
+        // 3. Clone data (but not pages)
         // -------------------------------------------------
         $this->copy_options($source_id, $blog_id);
         $post_map = $this->copy_posts($source_id, $blog_id);
-        $this->fix_front_page($source_id, $blog_id, $post_map);
+        // not needed now that we generate pages dynamically
+        // $this->fix_front_page($source_id, $blog_id, $post_map);
 
         // -------------------------------------------------
         // 4. Assign admin
@@ -146,7 +147,7 @@ class WpSiteCloner {
         switch_to_blog($source_id);
 
         $posts = get_posts([
-            'post_type'   => ['page', 'post'],
+            'post_type'   => ['post'],
             'numberposts' => -1,
         ]);
 

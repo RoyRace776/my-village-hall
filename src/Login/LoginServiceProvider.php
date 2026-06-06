@@ -1,6 +1,8 @@
 <?php
 namespace MYVH\Login;
 
+use MYVH\Application\Services\LoginRenderer;
+use MYVH\Application\Services\PasswordResetRenderer;
 use MYVH\Container\Container;
 
 if (!defined('ABSPATH')) {
@@ -9,6 +11,8 @@ if (!defined('ABSPATH')) {
 
 class LoginServiceProvider {
     public function register(Container $container): void {
+        $container->singleton(LoginRenderer::class);
+        $container->singleton(PasswordResetRenderer::class);
         $container->singleton(PasswordValidator::class);
         $container->singleton(CustomerEmailVerificationService::class);
         $container->singleton(LoginHandler::class);

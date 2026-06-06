@@ -6,6 +6,7 @@ use Throwable;
 use MYVH\Customers\CustomerService;
 use MYVH\Events\CustomerEvents;
 use MYVH\Events\EventDispatcher;
+use MYVH\Pages\Support\PageContentMatcher;
 
 class LoginHandler {
     public function __construct(
@@ -71,7 +72,7 @@ class LoginHandler {
                 continue;
             }
 
-            if (has_shortcode((string) $page->post_content, 'myvh_login')) {
+            if (PageContentMatcher::containsFeature((string) $page->post_content, 'myvh_login', 'myvh/login')) {
                 return (string) get_permalink((int) $page->ID);
             }
         }
@@ -121,7 +122,7 @@ class LoginHandler {
                 continue;
             }
 
-            if (has_shortcode((string) $page->post_content, 'myvh_portal')) {
+            if (PageContentMatcher::containsFeature((string) $page->post_content, 'myvh_portal', 'myvh/portal')) {
                 return (string) get_permalink((int) $page->ID);
             }
         }

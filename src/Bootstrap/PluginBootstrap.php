@@ -7,6 +7,8 @@ use MYVH\Admin\AdminPageRouter;
 use MYVH\Calendar\CalendarShortcode;
 use MYVH\Calendar\EventDetailShortcode;
 use MYVH\Calendar\EventListShortcode;
+use MYVH\Calendar\PortalCalendarShortcode;
+use MYVH\Container\Container;
 use MYVH\Core\Support\AssetLoader;
 use MYVH\Hooks\AdminPostRegistrar;
 use MYVH\Hooks\EventListeners;
@@ -71,13 +73,24 @@ class PluginBootstrap {
         ( new CalendarShortcode() )->init();
         ( new EventListShortcode() )->init();
         ( new EventDetailShortcode() )->init();
+        ( new PortalCalendarShortcode() )->register();
         ( new PasswordResetLoader() )->init();
 
         if ( is_multisite() ) {
             ( new IntegrityRunManager() )->register();
             // Register dashboard hooks on every multisite admin request so
             // admin-post actions remain available when posting from network pages.
-            ( new NetworkDashboard() )->init();
+            global $myvh_container;
+            if ( $myvh_container instanceof Container ) {
+                $dashboard = $myvh_container->get( NetworkDashboard::class );
+                if ( $dashboard instanceof NetworkDashboard ) {
+                    $dashboard->init();
+                } else {
+                    ( new NetworkDashboard() )->init();
+                }
+            } else {
+                ( new NetworkDashboard() )->init();
+            }
         }
     }
 

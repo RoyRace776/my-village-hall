@@ -2,6 +2,8 @@
 
 namespace MYVH\Hooks;
 
+use MYVH\Pages\Support\PageContentMatcher;
+
 class LoginShortcodeTitleHider {
     private int $page_id = 0;
 
@@ -11,7 +13,7 @@ class LoginShortcodeTitleHider {
         }
 
         $post = get_post();
-        if ( ! $post || ! has_shortcode( $post->post_content, 'myvh_login' ) ) {
+        if ( ! $post || ! PageContentMatcher::containsFeature( (string) $post->post_content, 'myvh_login', 'myvh/login' ) ) {
             return;
         }
 

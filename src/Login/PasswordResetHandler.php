@@ -2,6 +2,7 @@
 namespace MYVH\Login;
 
 use MYVH\Email\EmailService;
+use MYVH\Pages\Support\PageContentMatcher;
 /**
  * PasswordResetHandler: Handles custom password reset requests and confirmations
  */
@@ -149,7 +150,7 @@ class PasswordResetHandler {
                 continue;
             }
 
-            if (has_shortcode((string) $page->post_content, 'myvh_password_reset')) {
+            if (PageContentMatcher::containsFeature((string) $page->post_content, 'myvh_password_reset', 'myvh/password-reset')) {
                 return (string) get_permalink((int) $page->ID);
             }
         }

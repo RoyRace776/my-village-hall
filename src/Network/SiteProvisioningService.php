@@ -111,6 +111,90 @@ class SiteProvisioningService {
         return $this->provision($row['id'], $row);
     }
 
+    /**
+     * Run provisioning directly from network maintenance for pending requests.
+     */
+    public function run_pending_request(int $provision_id): array {
+        if ($provision_id <= 0) {
+            $this->logger->warning('Provisioning run rejected: invalid provisioning id.', [
+                'provision_id' => $provision_id,
+            ]);
+            return [
+                'ok' => false,
+                'message' => __('Invalid provisioning record.', 'my-village-hall'),
+                'details' => [],
+            ];
+        }
+
+        $row = $this->repo->get_by_id($provision_id);
+
+        if (!$row) {
+            $this->logger->warning('Provisioning run rejected: record not found.', [
+                'provision_id' => $provision_id,
+            ]);
+            return [
+                'ok' => false,
+                'message' => __('Provisioning record not found.', 'my-village-hall'),
+                'details' => [],
+            ];
+        }
+
+        $status = strtolower(trim((string) ($row['status'] ?? '')));
+        if ($status !== 'pending') {
+            $this->logger->warning('Provisioning run rejected: record is not pending.', [
+                'provision_id' => $provision_id,
+                'status' => $status,
+            ]);
+            return [
+                'ok' => false,
+                'message' => __('Only pending provisioning requests can be run from maintenance.', 'my-village-hall'),
+                'details' => $this->build_details($row),
+            ];
+        }
+
+        $this->logger->info('Provisioning run started for pending request.', [
+            'provision_id' => (int) $row['id'],
+        ]);
+
+        $this->repo->update_status((int) $row['id'], 'verified');
+
+        try {
+            $result = $this->provision((int) $row['id'], $row);
+
+            if (!empty($result['ok'])) {
+                $this->logger->info('Provisioning run completed successfully.', [
+                    'provision_id' => (int) $row['id'],
+                    'site_url' => (string) ($result['site_url'] ?? ''),
+                ]);
+            } else {
+                $this->logger->error('Provisioning run completed with failure result.', [
+                    'provision_id' => (int) $row['id'],
+                    'message' => (string) ($result['message'] ?? ''),
+                ]);
+            }
+
+            return $result;
+        } catch (\Throwable $exception) {
+            $error_message = $exception->getMessage();
+
+            $this->logger->error('Provisioning run threw an exception.', [
+                'provision_id' => (int) $row['id'],
+                'exception' => get_class($exception),
+                'message' => $error_message,
+            ]);
+
+            $this->repo->update_status((int) $row['id'], 'failed', [
+                'error' => $error_message,
+            ]);
+
+            return [
+                'ok' => false,
+                'message' => __('Site creation failed.', 'my-village-hall'),
+                'details' => $this->build_details($row),
+            ];
+        }
+    }
+
     public function cancel_request(string $token): array {
         if (!get_transient(self::VERIFY_PREFIX . $token)) {
             return [

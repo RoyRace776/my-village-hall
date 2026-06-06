@@ -1,6 +1,7 @@
 <?php
 namespace MYVH\Network;
 
+use MYVH\Container\Container;
 use WP_Site;
 use WP_User;
 use MYVH\Portal\ClientAdminService;
@@ -9,6 +10,8 @@ use MYVH\Subscriptions\Entities\Subscription;
 use MYVH\Subscriptions\Repositories\AccountRepository;
 use MYVH\Subscriptions\Repositories\PlanRepository;
 use MYVH\Subscriptions\Repositories\SubscriptionRepository;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 if (!defined('ABSPATH')) exit;
 
@@ -21,6 +24,8 @@ class NetworkDashboard {
     private const INTEGRITY_PAGE = 'myvh-network-integrity';
     private const RUN_NETWORK_INTEGRITY_ACTION = 'myvh_network_run_integrity';
     private const RUN_SINGLE_SITE_INTEGRITY_ACTION = 'myvh_network_run_site_integrity';
+    private const RUN_PENDING_PROVISIONING_CRON_HOOK = 'myvh_network_run_pending_provisioning';
+    private LoggerInterface $logger;
 
     public function __construct(
         private ?SiteProvisioningRepository $provisioning_repo = null,
@@ -28,9 +33,12 @@ class NetworkDashboard {
         private ?SubscriptionRepository $subscription_repository = null,
         private ?PlanRepository $plan_repository = null,
         private ?IntegrityRepository $integrity_repository = null,
-        private ?IntegrityRunManager $integrity_run_manager = null
+        private ?IntegrityRunManager $integrity_run_manager = null,
+        private ?SiteProvisioningService $site_provisioning_service = null,
+        ?LoggerInterface $logger = null
     ) {
         global $wpdb;
+        $this->logger = $logger ?? new NullLogger();
 
         if ($this->provisioning_repo === null) {
             $this->provisioning_repo = new SiteProvisioningRepository();
@@ -61,6 +69,7 @@ class NetworkDashboard {
         add_action('network_admin_menu', [$this, 'add_menu']);
         add_action('admin_post_' . self::RUN_NETWORK_INTEGRITY_ACTION, [$this, 'handle_run_network_integrity']);
         add_action('admin_post_' . self::RUN_SINGLE_SITE_INTEGRITY_ACTION, [$this, 'handle_run_single_site_integrity']);
+        add_action(self::RUN_PENDING_PROVISIONING_CRON_HOOK, [$this, 'handle_run_pending_provisioning_event'], 10, 1);
         add_action('wp_dashboard_setup', [$this, 'register_integrity_dashboard_widget']);
         add_action('wp_network_dashboard_setup', [$this, 'register_integrity_dashboard_widget']);
     }
@@ -570,18 +579,101 @@ class NetworkDashboard {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
-        // Handle delete action
+        // Handle maintenance actions.
         if (
             $_SERVER['REQUEST_METHOD'] === 'POST' &&
-            !empty($_POST['myvh_action']) &&
-            $_POST['myvh_action'] === 'delete' &&
-            !empty($_POST['myvh_delete_id'])
+            !empty($_POST['myvh_action'])
         ) {
             check_admin_referer('myvh_provisioning_maintenance');
-            $delete_id = (int) $_POST['myvh_delete_id'];
-            $this->provisioning_repo->delete($delete_id);
-            wp_redirect(add_query_arg(['page' => self::PROVISIONING_MAINTENANCE_PAGE], network_admin_url('admin.php')));
-            exit;
+
+            $action = sanitize_key((string) $_POST['myvh_action']);
+
+            if ($action === 'delete' && !empty($_POST['myvh_delete_id'])) {
+                $delete_id = (int) $_POST['myvh_delete_id'];
+                $this->provisioning_repo->delete($delete_id);
+                $redirect_url = add_query_arg([
+                    'page' => self::PROVISIONING_MAINTENANCE_PAGE,
+                    'myvh_notice' => 'deleted',
+                ], network_admin_url('admin.php'));
+
+                if (!headers_sent() && wp_safe_redirect($redirect_url)) {
+                    exit;
+                }
+
+                $_GET['myvh_notice'] = 'deleted';
+            }
+
+            if ($action === 'run_pending_provisioning' && !empty($_POST['myvh_run_id'])) {
+                $run_id = (int) $_POST['myvh_run_id'];
+                $notice = 'run_failed';
+
+                $this->logger->info('Network provisioning maintenance run requested.', [
+                    'provision_id' => $run_id,
+                    'action' => $action,
+                ]);
+
+                try {
+                    $service = $this->resolve_site_provisioning_service();
+
+                    if (!$service instanceof SiteProvisioningService) {
+                        $this->logger->error('Network provisioning service unavailable when queueing maintenance run.', [
+                            'provision_id' => $run_id,
+                        ]);
+                        $notice = 'run_unavailable';
+                    } else {
+                        $record = $this->provisioning_repo->get_by_id($run_id);
+                        if (!is_array($record) || !$this->is_pending_provisioning_status((string) ($record['status'] ?? ''))) {
+                            $this->logger->warning('Network provisioning maintenance run rejected because record is not pending.', [
+                                'provision_id' => $run_id,
+                                'record_found' => is_array($record),
+                                'status' => is_array($record) ? (string) ($record['status'] ?? '') : null,
+                            ]);
+                            $notice = 'run_failed';
+                        } else {
+                            $is_already_queued = wp_next_scheduled(self::RUN_PENDING_PROVISIONING_CRON_HOOK, [$run_id]) !== false;
+                            if (!$is_already_queued) {
+                                wp_schedule_single_event(time() + 5, self::RUN_PENDING_PROVISIONING_CRON_HOOK, [$run_id]);
+                            }
+
+                            if (\defined('DISABLE_WP_CRON') && (bool) \constant('DISABLE_WP_CRON')) {
+                                $this->logger->warning('Network provisioning maintenance run queued, but WP-Cron is disabled.', [
+                                    'provision_id' => $run_id,
+                                    'already_queued' => $is_already_queued,
+                                ]);
+                                $notice = 'run_queued_cron_disabled';
+                            } else {
+                                if (function_exists('spawn_cron')) {
+                                    spawn_cron(time());
+                                }
+
+                                $this->logger->info('Network provisioning maintenance run queued successfully.', [
+                                    'provision_id' => $run_id,
+                                    'already_queued' => $is_already_queued,
+                                ]);
+                                $notice = 'run_queued';
+                            }
+                        }
+                    }
+                } catch (\Throwable $exception) {
+                    $this->logger->error('Network provisioning maintenance queue request threw an exception.', [
+                        'provision_id' => $run_id,
+                        'exception' => get_class($exception),
+                        'message' => $exception->getMessage(),
+                    ]);
+                    $notice = 'run_failed';
+                }
+
+                $redirect_url = add_query_arg([
+                    'page' => self::PROVISIONING_MAINTENANCE_PAGE,
+                    'myvh_notice' => $notice,
+                ], network_admin_url('admin.php'));
+
+                if (!headers_sent() && wp_safe_redirect($redirect_url)) {
+                    exit;
+                }
+
+                $_GET['myvh_notice'] = $notice;
+            }
         }
 
         $current_page = (int) ($_GET['paged'] ?? 1);
@@ -595,10 +687,25 @@ class NetworkDashboard {
         $total_pages = ceil($total_records / $per_page);
 
         $records = $this->provisioning_repo->get_all($offset, $per_page);
+        $notice = sanitize_key($_GET['myvh_notice'] ?? '');
+
+        $notices = [
+            'deleted' => ['success', 'Provisioning record deleted.'],
+            'run_queued' => ['success', 'Provisioning run queued and will start shortly. Refresh this page to see status updates.'],
+            'run_queued_cron_disabled' => ['warning', 'Provisioning run queued, but WP-Cron is disabled. Trigger WP-Cron manually to process the job.'],
+            'run_failed' => ['error', 'Provisioning run failed. Review the row status and details for more information.'],
+            'run_unavailable' => ['error', 'Provisioning service is unavailable in this context.'],
+        ];
 
         echo '<div class="wrap">';
         echo '<h1>Site Provisioning Maintenance</h1>';
         echo '<p>View and manage all site provisioning requests.</p>';
+
+        if (isset($notices[$notice])) {
+            $notice_type = $notices[$notice][0];
+            $notice_text = $notices[$notice][1];
+            echo '<div class="notice notice-' . esc_attr($notice_type) . ' is-dismissible"><p>' . esc_html($notice_text) . '</p></div>';
+        }
 
         if (empty($records)) {
             echo '<p>No provisioning records found.</p>';
@@ -651,6 +758,15 @@ class NetworkDashboard {
 
             // View details button
             echo '<a href="#" onclick="event.preventDefault(); showProvisioningDetails(' . (int) $record['id'] . ');" class="button button-small">Details</a> ';
+
+            if ($this->is_pending_provisioning_status((string) ($record['status'] ?? ''))) {
+                echo '<form method="post" style="display:inline; margin-right:4px;" onsubmit="return confirm(\'Run provisioning now for this pending request?\');">';
+                wp_nonce_field('myvh_provisioning_maintenance');
+                echo '<input type="hidden" name="myvh_action" value="run_pending_provisioning">';
+                echo '<input type="hidden" name="myvh_run_id" value="' . esc_attr((int) $record['id']) . '">';
+                submit_button('Run Provisioning', 'small', '', false);
+                echo '</form>';
+            }
 
             // Delete button
             echo '<form method="post" style="display:inline;" onsubmit="return confirm(\'Delete this provisioning record? This action cannot be undone.\');">';
@@ -802,6 +918,48 @@ class NetworkDashboard {
             'run_id' => is_wp_error($result) ? 0 : (int) $result,
         ], network_admin_url('admin.php')));
         exit;
+    }
+
+    public function handle_run_pending_provisioning_event(int $run_id): void {
+        $run_id = max(0, $run_id);
+        if ($run_id <= 0) {
+            return;
+        }
+
+        $this->logger->info('Network provisioning cron worker started.', [
+            'provision_id' => $run_id,
+        ]);
+
+        $service = $this->resolve_site_provisioning_service();
+        if (!$service instanceof SiteProvisioningService) {
+            $this->logger->error('Network provisioning cron worker could not resolve service.', [
+                'provision_id' => $run_id,
+            ]);
+            return;
+        }
+
+        try {
+            $result = $service->run_pending_request($run_id);
+
+            if (!empty($result['ok'])) {
+                $this->logger->info('Network provisioning cron worker completed successfully.', [
+                    'provision_id' => $run_id,
+                ]);
+            } else {
+                $this->logger->error('Network provisioning cron worker completed with failure.', [
+                    'provision_id' => $run_id,
+                    'message' => (string) ($result['message'] ?? ''),
+                ]);
+            }
+        } catch (\Throwable $exception) {
+            $this->logger->error('Network provisioning cron worker threw an exception.', [
+                'provision_id' => $run_id,
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
+            ]);
+            // Prevent cron callbacks from fatalling and blocking subsequent events.
+            return;
+        }
     }
 
     public function render_integrity_page(): void {
@@ -1104,6 +1262,54 @@ class NetworkDashboard {
         }
 
         return current_user_can('manage_network_options');
+    }
+
+    private function resolve_site_provisioning_service(): ?SiteProvisioningService {
+        if ($this->site_provisioning_service instanceof SiteProvisioningService) {
+            return $this->site_provisioning_service;
+        }
+
+        global $myvh_container;
+        if ($myvh_container instanceof Container) {
+            try {
+                $service = $myvh_container->get(SiteProvisioningService::class);
+                if ($service instanceof SiteProvisioningService) {
+                    $this->site_provisioning_service = $service;
+                    return $this->site_provisioning_service;
+                }
+            } catch (\Throwable $exception) {
+                $this->logger->error('Failed to resolve SiteProvisioningService from global container.', [
+                    'exception' => get_class($exception),
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        if (!function_exists('app')) {
+            $this->logger->error('SiteProvisioningService resolution failed: global container unavailable and app() helper missing.');
+            return null;
+        }
+
+        try {
+            $service = app(SiteProvisioningService::class);
+        } catch (\Throwable $exception) {
+            $this->logger->error('Failed to resolve SiteProvisioningService from container.', [
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
+            ]);
+            return null;
+        }
+
+        if ($service instanceof SiteProvisioningService) {
+            $this->site_provisioning_service = $service;
+            return $this->site_provisioning_service;
+        }
+
+        return null;
+    }
+
+    private function is_pending_provisioning_status(string $status): bool {
+        return strtolower(trim($status)) === 'pending';
     }
 
     private function get_status_class(string $status): string {

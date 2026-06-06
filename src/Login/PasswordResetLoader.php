@@ -4,6 +4,7 @@
  */
 namespace MYVH\Login;
 
+use MYVH\Application\Services\PasswordResetRenderer;
 use MYVH\Container\Container;
 
 class PasswordResetLoader {
@@ -21,7 +22,6 @@ class PasswordResetLoader {
         $handler->hook_invalidate_on_change();
     }
     public function render_shortcode( mixed $atts = [], mixed $content = null) {
-        $shortcode = new PasswordResetShortcode();
-        return $shortcode->render($atts, $content);
+        return ( new \MYVH\Application\Services\PasswordResetRenderer() )->render( (array) $atts );
     }
 }

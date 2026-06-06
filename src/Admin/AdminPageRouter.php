@@ -8,6 +8,7 @@ use MYVH\Audit\AuditTrail;
 use MYVH\Availability\AvailabilityService;
 use MYVH\Calendar\CalendarStatusColours;
 use MYVH\Container\Container;
+use MYVH\Pages\Support\PageContentMatcher;
 use MYVH\Portal\ClientAdminService;
 use WP_Post;
 
@@ -36,14 +37,15 @@ class AdminPageRouter {
         }
 
         $titleless_shortcodes = [
-            'myvh_portal',
-            'myvh_public_calendar',
-            'myvh_create_site',
+            [ 'myvh_portal', 'myvh/portal' ],
+            [ 'myvh_public_calendar', 'myvh/public-calendar' ],
+            [ 'myvh_create_site', 'myvh/create-site' ],
         ];
 
         $has_titleless_shortcode = false;
-        foreach ( $titleless_shortcodes as $shortcode_tag ) {
-            if ( has_shortcode( $content, $shortcode_tag ) ) {
+        foreach ( $titleless_shortcodes as $feature ) {
+            [ $shortcode_tag, $block_name ] = $feature;
+            if ( PageContentMatcher::containsFeature( $content, $shortcode_tag, $block_name ) ) {
                 $has_titleless_shortcode = true;
                 break;
             }
