@@ -8,7 +8,7 @@ use Brain\Monkey\Functions;
 use Mockery\MockInterface;
 use MYVH\Email\Mailer\ApiTransport;
 use MYVH\Email\Mailer\MailTransport;
-use MYVH\Subscriptions\Repositories\SettingsRepository;
+use MYVH\Settings\EmailServiceSettings;
 use MYVH\Tests\Unit\UnitTestCase;
 use Psr\Log\LoggerInterface;
 
@@ -29,10 +29,10 @@ class ApiTransportTest extends UnitTestCase {
 
     /** @test */
     public function it_retries_once_then_falls_back_when_api_transport_fails(): void {
-        $settings_repository = $this->settingsRepositoryFor('mailgun', [
-            'api.key' => 'api-key',
-            'api.domain' => 'mg.example.test',
-            'api.fallback_to_wp_mail' => '1',
+        $settings = $this->settingsFor('mailgun', [
+            'api_key' => 'api-key',
+            'api_domain' => 'mg.example.test',
+            'api_fallback_to_wp_mail' => '1',
         ]);
 
         /** @var MailTransport&MockInterface $fallback_transport */
@@ -56,7 +56,7 @@ class ApiTransportTest extends UnitTestCase {
             ];
         });
 
-        $transport = new ApiTransport($settings_repository, $logger, $fallback_transport);
+        $transport = new ApiTransport($settings, $logger, $fallback_transport);
 
         $sent = $transport->send(
             'to@example.test',
@@ -74,10 +74,10 @@ class ApiTransportTest extends UnitTestCase {
 
     /** @test */
     public function it_maps_reply_to_for_mailgun_and_generates_text_fallback_from_html(): void {
-        $settings_repository = $this->settingsRepositoryFor('mailgun', [
-            'api.key' => 'api-key',
-            'api.domain' => 'mg.example.test',
-            'api.fallback_to_wp_mail' => '0',
+        $settings = $this->settingsFor('mailgun', [
+            'api_key' => 'api-key',
+            'api_domain' => 'mg.example.test',
+            'api_fallback_to_wp_mail' => '0',
         ]);
 
         $captured_url = '';
@@ -94,7 +94,7 @@ class ApiTransportTest extends UnitTestCase {
             ];
         });
 
-        $transport = new ApiTransport($settings_repository);
+        $transport = new ApiTransport($settings);
 
         $sent = $transport->send(
             'to@example.test',
@@ -117,9 +117,9 @@ class ApiTransportTest extends UnitTestCase {
 
     /** @test */
     public function it_maps_reply_to_for_sendgrid_payload(): void {
-        $settings_repository = $this->settingsRepositoryFor('sendgrid', [
-            'api.key' => 'sendgrid-key',
-            'api.fallback_to_wp_mail' => '0',
+        $settings = $this->settingsFor('sendgrid', [
+            'api_key' => 'sendgrid-key',
+            'api_fallback_to_wp_mail' => '0',
         ]);
 
         $captured_payload = [];
@@ -136,7 +136,7 @@ class ApiTransportTest extends UnitTestCase {
             ];
         });
 
-        $transport = new ApiTransport($settings_repository);
+        $transport = new ApiTransport($settings);
 
         $sent = $transport->send(
             'to@example.test',
@@ -154,25 +154,25 @@ class ApiTransportTest extends UnitTestCase {
         $this->assertSame('sender@example.test', $captured_payload['from']['email'] ?? null);
     }
 
-    private function settingsRepositoryFor(string $provider, array $overrides = []): SettingsRepository {
+    private function settingsFor(string $provider, array $overrides = []): EmailServiceSettings {
         $defaults = [
-            'api.provider' => $provider,
-            'api.key' => '',
-            'api.domain' => '',
-            'api.endpoint' => '',
-            'api.fallback_to_wp_mail' => '1',
+            'api_provider' => $provider,
+            'api_key' => '',
+            'api_domain' => '',
+            'api_endpoint' => '',
+            'api_fallback_to_wp_mail' => '1',
         ];
 
         $values = array_merge($defaults, $overrides);
 
-        /** @var SettingsRepository&MockInterface $settings_repository */
-        $settings_repository = $this->mock(SettingsRepository::class);
-        $settings_repository->shouldReceive('get_setting_value')->andReturnUsing(
+        /** @var EmailServiceSettings&MockInterface $settings */
+        $settings = $this->mock(EmailServiceSettings::class);
+        $settings->shouldReceive('get')->andReturnUsing(
             static function (string $key, mixed $default = null) use ($values): mixed {
                 return $values[$key] ?? $default;
             }
         );
 
-        return $settings_repository;
+        return $settings;
     }
 }

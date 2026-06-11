@@ -73,7 +73,23 @@ class SiteProvisioningService {
             'token' => rawurlencode($token),
         ], $request_page_url);
 
-        $this->sendVerificationEmail($data, $verify_url, $cancel_url);
+        $verification_email_sent = $this->sendVerificationEmail($data, $verify_url, $cancel_url);
+
+        if (!$verification_email_sent) {
+            $this->logger->warning('Provisioning request email failed to send.', [
+                'provision_id' => $provision_id,
+                'admin_email' => (string) ($data['admin_email'] ?? ''),
+                'subdomain' => (string) ($data['subdomain'] ?? ''),
+            ]);
+
+            delete_transient(self::VERIFY_PREFIX . $token);
+            $this->repo->delete($provision_id);
+
+            return [
+                'ok' => false,
+                'message' => __('We could not send the confirmation email. Please check your email settings and try again.', 'my-village-hall'),
+            ];
+        }
 
         return [
             'ok' => true,
@@ -332,10 +348,10 @@ class SiteProvisioningService {
         ];
     }
 
-    private function sendVerificationEmail(array $data, string $verify_url, string $cancel_url): void {
+    private function sendVerificationEmail(array $data, string $verify_url, string $cancel_url): bool {
         $to = sanitize_email((string) ($data['admin_email'] ?? ''));
         if ($to === '') {
-            return;
+            return false;
         }
 
         $site_name = wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES);
@@ -388,7 +404,7 @@ class SiteProvisioningService {
             esc_url_raw($cancel_url)
         );
 
-        $this->sendEmailWithFallback(
+        return $this->sendEmailWithFallback(
             $to,
             $subject,
             $text_message,
@@ -466,7 +482,7 @@ class SiteProvisioningService {
         $this->sendEmailWithFallback($to, $subject, implode("\n", $lines), $html_message);
     }
 
-    private function sendEmailWithFallback(string $to, string $subject, string $text_message, string $html_message): void {
+    private function sendEmailWithFallback(string $to, string $subject, string $text_message, string $html_message): bool {
         $body = $html_message !== '' ? $html_message : $text_message;
         $headers = [];
 
@@ -474,7 +490,7 @@ class SiteProvisioningService {
             $headers[] = 'Content-Type: text/html; charset=UTF-8';
         }
 
-        $this->mailer_service->send($to, $subject, $body, $headers);
+        return $this->mailer_service->send($to, $subject, $body, $headers);
     }
 
     private function buildEmailHtml(

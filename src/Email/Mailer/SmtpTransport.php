@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MYVH\Email\Mailer;
 
-use MYVH\Subscriptions\Repositories\SettingsRepository;
+use MYVH\Settings\EmailServiceSettings;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 class SmtpTransport implements MailTransport {
     private static bool $configured = false;
 
-    public function __construct(private SettingsRepository $settings_repository) {
+    public function __construct(private EmailServiceSettings $settings) {
     }
 
     public function send(string $to, string $subject, string $message, array $headers = []): bool {
@@ -25,17 +25,17 @@ class SmtpTransport implements MailTransport {
 
     public function configureMailer($phpmailer): void {
         $phpmailer->isSMTP();
-        $phpmailer->Host = (string) $this->settings_repository->get_setting_value('smtp.host', '');
-        $phpmailer->Port = max(1, (int) $this->settings_repository->get_setting_value('smtp.port', 587));
+        $phpmailer->Host = (string) $this->settings->get('smtp_host');
+        $phpmailer->Port = max(1, (int) $this->settings->get('smtp_port'));
 
-        $username = (string) $this->settings_repository->get_setting_value('smtp.username', '');
-        $password = (string) $this->settings_repository->get_setting_value('smtp.password', '');
+        $username = (string) $this->settings->get('smtp_username');
+        $password = (string) $this->settings->get('smtp_password');
 
         $phpmailer->SMTPAuth = ($username !== '' || $password !== '');
         $phpmailer->Username = $username;
         $phpmailer->Password = $password;
 
-        $encryption = strtolower((string) $this->settings_repository->get_setting_value('smtp.encryption', 'tls'));
+        $encryption = strtolower((string) $this->settings->get('smtp_encryption'));
         if (in_array($encryption, ['tls', 'ssl'], true)) {
             $phpmailer->SMTPSecure = $encryption;
         }

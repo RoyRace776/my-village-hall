@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MYVH\Email\Mailer;
 
-use MYVH\Subscriptions\Repositories\SettingsRepository;
+use MYVH\Settings\EmailServiceSettings;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -16,7 +16,7 @@ class MailerService {
     private LoggerInterface $logger;
 
     public function __construct(
-        private SettingsRepository $settings_repository,
+        private EmailServiceSettings $settings,
         private MailTransport $transport,
         ?LoggerInterface $logger = null
     ) {
@@ -34,7 +34,7 @@ class MailerService {
         }
 
         if (!MailPayload::hasHeader($normalized_headers, 'Reply-To')) {
-            $reply_to = sanitize_email((string) $this->settings_repository->get_setting_value('email.reply_to', ''));
+            $reply_to = sanitize_email((string) $this->settings->get('email_reply_to'));
             if ($reply_to !== '' && is_email($reply_to)) {
                 $normalized_headers[] = sprintf('Reply-To: %s', $reply_to);
             }
@@ -59,7 +59,7 @@ class MailerService {
                 : $transport_class;
 
             $provider = $transport_name === 'ApiTransport'
-                ? (string) $this->settings_repository->get_setting_value('api.provider', 'mailgun')
+                ? (string) $this->settings->get('api_provider')
                 : strtolower(str_replace('Transport', '', $transport_name));
 
             $this->logger->warning('Email send failed', [
@@ -106,12 +106,12 @@ class MailerService {
     }
 
     private function buildFromHeader(): ?string {
-        $from_address = sanitize_email((string) $this->settings_repository->get_setting_value('email.from_address', ''));
+        $from_address = sanitize_email((string) $this->settings->get('email_from_address'));
         if ($from_address === '' || !is_email($from_address)) {
             return null;
         }
 
-        $from_name = sanitize_text_field((string) $this->settings_repository->get_setting_value('email.from_name', ''));
+        $from_name = sanitize_text_field((string) $this->settings->get('email_from_name'));
         if ($from_name === '') {
             $from_name = wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES);
         }

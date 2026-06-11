@@ -6,7 +6,7 @@ namespace MYVH\Tests\Unit\Email\Mailer;
 
 use Brain\Monkey\Functions;
 use MYVH\Email\Mailer\SmtpTransport;
-use MYVH\Subscriptions\Repositories\SettingsRepository;
+use MYVH\Settings\EmailServiceSettings;
 use MYVH\Tests\Unit\UnitTestCase;
 
 class SmtpTransportTest extends UnitTestCase {
@@ -35,9 +35,9 @@ class SmtpTransportTest extends UnitTestCase {
 
     /** @test */
     public function it_registers_phpmailer_hook_only_once_across_multiple_sends(): void {
-        $settings_repository = $this->mock(SettingsRepository::class);
+        $settings = $this->mock(EmailServiceSettings::class);
 
-        $transport = new SmtpTransport($settings_repository);
+        $transport = new SmtpTransport($settings);
 
         $sent_first = $transport->send('first@example.test', 'Subject A', 'Body A');
         $sent_second = $transport->send('second@example.test', 'Subject B', 'Body B');
@@ -50,21 +50,21 @@ class SmtpTransportTest extends UnitTestCase {
 
     /** @test */
     public function configure_mailer_applies_smtp_settings(): void {
-        $settings_repository = $this->mock(SettingsRepository::class);
-        $settings_repository->shouldReceive('get_setting_value')->andReturnUsing(
+        $settings = $this->mock(EmailServiceSettings::class);
+        $settings->shouldReceive('get')->andReturnUsing(
             static function (string $key, mixed $default = null): mixed {
                 return match ($key) {
-                    'smtp.host' => 'smtp.example.test',
-                    'smtp.port' => '2525',
-                    'smtp.username' => 'mailer-user',
-                    'smtp.password' => 'mailer-pass',
-                    'smtp.encryption' => 'ssl',
+                    'smtp_host' => 'smtp.example.test',
+                    'smtp_port' => '2525',
+                    'smtp_username' => 'mailer-user',
+                    'smtp_password' => 'mailer-pass',
+                    'smtp_encryption' => 'ssl',
                     default => $default,
                 };
             }
         );
 
-        $transport = new SmtpTransport($settings_repository);
+        $transport = new SmtpTransport($settings);
         $mailer = new class {
             public bool $smtp_called = false;
             public string $Host = '';

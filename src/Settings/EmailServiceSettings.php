@@ -2,8 +2,6 @@
 
 namespace MYVH\Settings;
 
-use MYVH\Subscriptions\Repositories\SettingsRepository;
-
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -159,73 +157,5 @@ class EmailServiceSettings extends SettingsBase {
             'key' => 'email-service',
             'label' => 'Email Service',
         ];
-    }
-
-    public function all(): array {
-        $settings = [];
-        $repository = $this->get_settings_repository();
-
-        foreach (self::FIELD_TO_SETTING_KEY as $field_key => $setting_key) {
-            $settings[$field_key] = $repository instanceof SettingsRepository
-                ? $repository->get_setting_value($setting_key, null)
-                : null;
-        }
-
-        return $this->apply_defaults($settings);
-    }
-
-    public function get($key) {
-        $all = $this->all();
-
-        return $all[$key] ?? null;
-    }
-
-    public function save(array $input): void {
-        $clean = [];
-
-        foreach ($this->schema as $section) {
-            if (!isset($section['fields']) || !is_array($section['fields'])) {
-                continue;
-            }
-
-            foreach ($section['fields'] as $field_key => $rule) {
-                $field_type = (string) ($rule['type'] ?? 'text');
-
-                if (!isset($input[$field_key])) {
-                    if ($field_type === 'boolean') {
-                        $clean[$field_key] = false;
-                    }
-                    continue;
-                }
-
-                $value = $input[$field_key];
-                if (isset($rule['sanitize']) && is_callable($rule['sanitize'])) {
-                    $value = call_user_func($rule['sanitize'], $value);
-                }
-
-                $clean[$field_key] = $value;
-            }
-        }
-
-        $clean = $this->apply_defaults($clean);
-        $repository = $this->get_settings_repository();
-
-        if (!$repository instanceof SettingsRepository) {
-            return;
-        }
-
-        foreach (self::FIELD_TO_SETTING_KEY as $field_key => $setting_key) {
-            $repository->set_setting_value($setting_key, $clean[$field_key] ?? null, 1);
-        }
-    }
-
-    private function get_settings_repository(): ?SettingsRepository {
-        global $wpdb;
-
-        if (!$wpdb instanceof \wpdb) {
-            return null;
-        }
-
-        return new SettingsRepository($wpdb);
     }
 }

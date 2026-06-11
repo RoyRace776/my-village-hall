@@ -32,7 +32,6 @@ class SiteProvisioningServiceTest extends UnitTestCase {
         $this->cloner = $this->mock(WpSiteCloner::class);
         $this->repo = $this->mock(SiteProvisioningRepository::class);
         $this->mailer = $this->mock(MailerService::class);
-        $this->mailer->shouldReceive('send')->andReturn(true);
 
         $this->service = new SiteProvisioningService(
             $this->validator,
@@ -105,6 +104,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
     /** @test */
     public function submit_stores_request_and_returns_success(): void {
         $this->validator->shouldReceive('validate')->once()->andReturn(true);
+        $this->mailer->shouldReceive('send')->once()->andReturn(true);
 
         $this->repo->shouldReceive('create')
             ->once()
@@ -112,7 +112,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
                 return str_starts_with((string) ($record['token'] ?? ''), '')
                     && ($record['subdomain'] ?? '') === 'hall-one'
                     && ($record['site_name'] ?? '') === 'Hall One'
-                    && ($record['admin_email'] ?? '') === ''
+                    && ($record['admin_email'] ?? '') === 'admin@example.test'
                     && ($record['setup_payload']['venue']['name'] ?? '') === 'Village Hall'
                     && ($record['admin_password'] ?? '') === 'Password1!';
             }))
@@ -121,7 +121,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
         $result = $this->service->submit([
             'site_name' => 'Hall One',
             'subdomain' => 'hall-one',
-            'admin_email' => '',
+            'admin_email' => 'admin@example.test',
             'admin_first_name' => 'A',
             'admin_last_name' => 'B',
             'admin_password' => 'Password1!',
@@ -136,6 +136,37 @@ class SiteProvisioningServiceTest extends UnitTestCase {
         $this->assertTrue($result['ok']);
         $this->assertSame('Check your email to continue.', $result['message']);
         $this->assertCount(1, $this->transients);
+    }
+
+    /** @test */
+    public function submit_returns_error_and_cleans_up_when_verification_email_fails_to_send(): void {
+        $this->validator->shouldReceive('validate')->once()->andReturn(true);
+
+        $this->mailer->shouldReceive('send')->once()->andReturn(false);
+
+        $this->repo->shouldReceive('create')
+            ->once()
+            ->with(\Mockery::on(static function (array $record): bool {
+                return ($record['subdomain'] ?? '') === 'hall-two'
+                    && ($record['admin_email'] ?? '') === 'admin@example.test';
+            }))
+            ->andReturn(24);
+
+        $this->repo->shouldReceive('delete')->once()->with(24);
+
+        $result = $this->service->submit([
+            'site_name' => 'Hall Two',
+            'subdomain' => 'hall-two',
+            'admin_email' => 'admin@example.test',
+            'admin_first_name' => 'A',
+            'admin_last_name' => 'B',
+            'admin_password' => 'Password1!',
+            'myvh_request_page_url' => '/request-site',
+        ]);
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('We could not send the confirmation email. Please check your email settings and try again.', $result['message']);
+        $this->assertCount(0, $this->transients);
     }
 
     /** @test */
@@ -191,6 +222,7 @@ class SiteProvisioningServiceTest extends UnitTestCase {
     /** @test */
     public function verify_and_provision_clones_site_when_verified_row_is_valid(): void {
         Functions\when('get_site_option')->alias(static fn($key, $default = []) => ['template_site_id' => 5]);
+        $this->mailer->shouldReceive('send')->once()->andReturn(true);
 
         $token = 'ok-token';
         $this->transients['myvh_site_request_' . $token] = true;

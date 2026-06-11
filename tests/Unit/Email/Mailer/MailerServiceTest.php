@@ -8,7 +8,7 @@ use Brain\Monkey\Functions;
 use Mockery\MockInterface;
 use MYVH\Email\Mailer\MailTransport;
 use MYVH\Email\Mailer\MailerService;
-use MYVH\Subscriptions\Repositories\SettingsRepository;
+use MYVH\Settings\EmailServiceSettings;
 use MYVH\Tests\Unit\UnitTestCase;
 
 class MailerServiceTest extends UnitTestCase {
@@ -27,14 +27,15 @@ class MailerServiceTest extends UnitTestCase {
 
     /** @test */
     public function it_adds_from_reply_to_and_generates_text_body_for_html_messages(): void {
-        /** @var SettingsRepository&MockInterface $settings_repository */
-        $settings_repository = $this->mock(SettingsRepository::class);
-        $settings_repository->shouldReceive('get_setting_value')->andReturnUsing(
+        /** @var EmailServiceSettings&MockInterface $settings */
+        $settings = $this->mock(EmailServiceSettings::class);
+        $settings->shouldReceive('get')->andReturnUsing(
             static function (string $key, mixed $default = null): mixed {
                 return match ($key) {
-                    'email.from_address' => 'bot@example.test',
-                    'email.from_name' => 'Site Bot',
-                    'email.reply_to' => 'reply@example.test',
+                    'email_from_address' => 'bot@example.test',
+                    'email_from_name' => 'Site Bot',
+                    'email_reply_to' => 'reply@example.test',
+                    'api_provider' => 'mailgun',
                     default => $default,
                 };
             }
@@ -65,7 +66,7 @@ class MailerServiceTest extends UnitTestCase {
             })
             ->andReturn(true);
 
-        $service = new MailerService($settings_repository, $transport);
+        $service = new MailerService($settings, $transport);
 
         $sent = $service->send(
             'recipient@example.test',

@@ -4,7 +4,7 @@ namespace MYVH\Email;
 use MYVH\Email\Mailer\MailerService;
 use MYVH\Email\Mailer\WpMailTransport;
 use MYVH\Settings\EmailTemplateSettings;
-use MYVH\Subscriptions\Repositories\SettingsRepository;
+use MYVH\Settings\EmailServiceSettings;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -167,11 +167,8 @@ class EmailService {
             return $this->mailer_service;
         }
 
-        global $wpdb;
-
-        $settings_repository = new SettingsRepository($wpdb);
         $this->mailer_service = new MailerService(
-            $settings_repository,
+            new EmailServiceSettings(),
             new WpMailTransport(),
             $this->logger
         );

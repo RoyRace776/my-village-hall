@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MYVH\Email\Mailer;
 
-use MYVH\Subscriptions\Repositories\SettingsRepository;
+use MYVH\Settings\EmailServiceSettings;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 
 class MailTransportFactory {
     public function __construct(
-        private SettingsRepository $settings_repository,
+        private EmailServiceSettings $settings,
         private WpMailTransport $wp_mail_transport,
         private SmtpTransport $smtp_transport,
         private ApiTransport $api_transport
@@ -20,7 +20,7 @@ class MailTransportFactory {
     }
 
     public function create(): MailTransport {
-        $transport = strtolower((string) $this->settings_repository->get_setting_value('mail.transport', 'wp_mail'));
+        $transport = strtolower((string) $this->settings->get('mail_transport'));
 
         return match ($transport) {
             'smtp' => $this->smtp_transport,

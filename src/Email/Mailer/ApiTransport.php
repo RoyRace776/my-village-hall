@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MYVH\Email\Mailer;
 
-use MYVH\Subscriptions\Repositories\SettingsRepository;
+use MYVH\Settings\EmailServiceSettings;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -16,7 +16,7 @@ class ApiTransport implements MailTransport {
     private LoggerInterface $logger;
 
     public function __construct(
-        private SettingsRepository $settings_repository,
+        private EmailServiceSettings $settings,
         ?LoggerInterface $logger = null,
         private ?MailTransport $fallback_transport = null
     ) {
@@ -24,7 +24,7 @@ class ApiTransport implements MailTransport {
     }
 
     public function send(string $to, string $subject, string $message, array $headers = []): bool {
-        $provider = strtolower((string) $this->settings_repository->get_setting_value('api.provider', 'mailgun'));
+        $provider = strtolower((string) $this->settings->get('api_provider'));
         $transport_type = 'api';
 
         [$url, $args] = $this->buildRequest($provider, $to, $subject, $message, $headers);
@@ -76,7 +76,7 @@ class ApiTransport implements MailTransport {
     }
 
     private function buildRequest(string $provider, string $to, string $subject, string $message, array $headers): array {
-        $api_key = (string) $this->settings_repository->get_setting_value('api.key', '');
+        $api_key = (string) $this->settings->get('api_key');
         if ($api_key === '') {
             return ['', []];
         }
@@ -102,7 +102,7 @@ class ApiTransport implements MailTransport {
         }
 
         if ($provider === 'mailgun') {
-            $domain = (string) $this->settings_repository->get_setting_value('api.domain', '');
+            $domain = (string) $this->settings->get('api_domain');
             if ($domain === '') {
                 return ['', []];
             }
@@ -173,7 +173,7 @@ class ApiTransport implements MailTransport {
 
         // NOTE: custom_api is a generic JSON webhook transport, not native AWS SES signing/API support.
         if ($provider === 'custom_api' || $provider === 'ses') {
-            $endpoint = (string) $this->settings_repository->get_setting_value('api.endpoint', '');
+            $endpoint = (string) $this->settings->get('api_endpoint');
             if ($endpoint === '') {
                 return ['', []];
             }
@@ -230,7 +230,7 @@ class ApiTransport implements MailTransport {
     }
 
     private function shouldFallback(): bool {
-        $fallback = $this->settings_repository->get_setting_value('api.fallback_to_wp_mail', '1');
+        $fallback = $this->settings->get('api_fallback_to_wp_mail');
         return in_array($fallback, [true, 1, '1', 'true', 'yes', 'on'], true);
     }
 

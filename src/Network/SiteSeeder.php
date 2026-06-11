@@ -4,6 +4,10 @@ namespace MYVH\Network;
 
 use MYVH\Addons\AddonRepository;
 use MYVH\Bootstrap\Installer;
+use MYVH\Pages\Content\BlockPageContentBuilder;
+use MYVH\Pages\DefaultPageDefinitionProvider;
+use MYVH\Pages\Infrastructure\WordPressPageRepository;
+use MYVH\Pages\Services\PageSyncService;
 use MYVH\Rooms\RoomService;
 use MYVH\Rooms\RoomColour;
 use MYVH\Rooms\RoomRepository;
@@ -140,6 +144,8 @@ class SiteSeeder {
             ]);
         }
 
+        $this->make_page_sync_service()->syncAll();
+
         restore_current_blog();
     }
 
@@ -219,6 +225,14 @@ class SiteSeeder {
 
     protected function make_general_settings(): GeneralSettings {
         return new GeneralSettings();
+    }
+
+    protected function make_page_sync_service(): PageSyncService {
+        return new PageSyncService(
+            new DefaultPageDefinitionProvider(),
+            new WordPressPageRepository(),
+            new BlockPageContentBuilder()
+        );
     }
 
     protected function make_notice_settings(): NoticeSettings {

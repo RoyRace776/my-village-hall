@@ -6,6 +6,7 @@ use Brain\Monkey\Functions;
 use MYVH\Addons\AddonRepository;
 use MYVH\Customers\CustomerService;
 use MYVH\Network\SiteSeeder;
+use MYVH\Pages\Services\PageSyncService;
 use MYVH\Portal\ClientAdminService;
 use MYVH\Pricing\RoomRateService;
 use MYVH\Rooms\RoomColour;
@@ -83,6 +84,8 @@ class SiteSeederTest extends UnitTestCase {
                 && is_string($notice['end_date'])
                 && $notice['end_date'] !== '';
         }));
+        $page_sync_service = \Mockery::mock(PageSyncService::class);
+        $page_sync_service->shouldReceive('syncAll')->once();
 
         $seeder = new TestableSiteSeeder(
             $customer_service,
@@ -92,7 +95,8 @@ class SiteSeederTest extends UnitTestCase {
             \Mockery::mock(AddonRepository::class),
             $client_admin_service,
             $general_settings,
-            $notice_settings
+            $notice_settings,
+            $page_sync_service
         );
 
         Functions\expect('switch_to_blog')->once()->with(123);
@@ -142,6 +146,8 @@ class SiteSeederTest extends UnitTestCase {
             ['message' => 'Existing notice'],
         ]);
         $notice_settings->shouldReceive('save')->never();
+        $page_sync_service = \Mockery::mock(PageSyncService::class);
+        $page_sync_service->shouldReceive('syncAll')->once();
 
         $seeder = new TestableSiteSeeder(
             $customer_service,
@@ -151,7 +157,8 @@ class SiteSeederTest extends UnitTestCase {
             \Mockery::mock(AddonRepository::class),
             $client_admin_service,
             $general_settings,
-            $notice_settings
+            $notice_settings,
+            $page_sync_service
         );
 
         Functions\expect('switch_to_blog')->once()->with(9);
@@ -189,6 +196,8 @@ class SiteSeederTest extends UnitTestCase {
         $notice_settings = \Mockery::mock(NoticeSettings::class);
         $notice_settings->shouldReceive('get')->once()->with('notices')->andReturn([]);
         $notice_settings->shouldReceive('save')->once();
+        $page_sync_service = \Mockery::mock(PageSyncService::class);
+        $page_sync_service->shouldReceive('syncAll')->once();
 
         $seeder = new TestableSiteSeeder(
             $customer_service,
@@ -198,7 +207,8 @@ class SiteSeederTest extends UnitTestCase {
             \Mockery::mock(AddonRepository::class),
             $client_admin_service,
             $general_settings,
-            $notice_settings
+            $notice_settings,
+            $page_sync_service
         );
 
         Functions\expect('switch_to_blog')->once()->with(22);
@@ -272,6 +282,8 @@ class SiteSeederTest extends UnitTestCase {
         $notice_settings = \Mockery::mock(NoticeSettings::class);
         $notice_settings->shouldReceive('get')->once()->with('notices')->andReturn([]);
         $notice_settings->shouldReceive('save')->once();
+        $page_sync_service = \Mockery::mock(PageSyncService::class);
+        $page_sync_service->shouldReceive('syncAll')->once();
 
         $seeder = new TestableSiteSeeder(
             $customer_service,
@@ -281,7 +293,8 @@ class SiteSeederTest extends UnitTestCase {
             $addon_repository,
             $client_admin_service,
             $general_settings,
-            $notice_settings
+            $notice_settings,
+            $page_sync_service
         );
 
         Functions\expect('switch_to_blog')->once()->with(44);
@@ -338,22 +351,7 @@ class SiteSeederTest extends UnitTestCase {
 
     /** @test */
     public function seed_updates_existing_admin_customer_and_marks_email_verified_when_initial_save_hits_duplicate(): void {
-        $customer_service = \Mockery::mock(CustomerService::class);
-        $customer_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
-            return (int) ($data['user_id'] ?? 0) === 77
-                && ($data['email'] ?? '') === 'admin@example.com'
-                && !empty($data['email_verified'])
-                && empty($data['customer_id']);
-        }))->andReturn(new WP_Error('validation', 'A customer with this email already exists'));
-
-        $customer_service->shouldReceive('get_by_email')->once()->with('admin@example.com')->andReturn(['Id' => 333]);
-
-        $customer_service->shouldReceive('save')->once()->with(\Mockery::on(static function (array $data): bool {
-            return (int) ($data['customer_id'] ?? 0) === 333
-                && (int) ($data['user_id'] ?? 0) === 77
-                && ($data['email'] ?? '') === 'admin@example.com'
-                && !empty($data['email_verified']);
-        }))->andReturn(333);
+        $customer_service = new DuplicateExistingCustomerService();
 
         $venue_service = \Mockery::mock(VenueService::class);
         $venue_service->shouldReceive('save')->once()->andReturn(31);
@@ -373,6 +371,8 @@ class SiteSeederTest extends UnitTestCase {
         $notice_settings = \Mockery::mock(NoticeSettings::class);
         $notice_settings->shouldReceive('get')->once()->with('notices')->andReturn([]);
         $notice_settings->shouldReceive('save')->once();
+        $page_sync_service = \Mockery::mock(PageSyncService::class);
+        $page_sync_service->shouldReceive('syncAll')->once();
 
         $seeder = new TestableSiteSeeder(
             $customer_service,
@@ -382,7 +382,8 @@ class SiteSeederTest extends UnitTestCase {
             \Mockery::mock(AddonRepository::class),
             $client_admin_service,
             $general_settings,
-            $notice_settings
+            $notice_settings,
+            $page_sync_service
         );
 
         Functions\expect('switch_to_blog')->once()->with(123);
@@ -396,7 +397,40 @@ class SiteSeederTest extends UnitTestCase {
 
         $seeder->seed(123);
 
+        $this->assertCount(2, $customer_service->save_payloads);
+        $this->assertSame(77, (int) $customer_service->save_payloads[0]['user_id']);
+        $this->assertSame('admin@example.com', $customer_service->save_payloads[0]['email']);
+        $this->assertArrayNotHasKey('customer_id', $customer_service->save_payloads[0]);
+        $this->assertSame(333, (int) $customer_service->save_payloads[1]['customer_id']);
+        $this->assertSame(77, (int) $customer_service->save_payloads[1]['user_id']);
+        $this->assertSame('admin@example.com', $customer_service->save_payloads[1]['email']);
         $this->addToAssertionCount(1);
+    }
+}
+
+class DuplicateExistingCustomerService extends CustomerService {
+    /** @var array<int, array<string, mixed>> */
+    public array $save_payloads = [];
+
+    public function __construct() {
+    }
+
+    public function save($data): int|WP_Error {
+        $this->save_payloads[] = $data;
+
+        if (count($this->save_payloads) === 1) {
+            return new WP_Error('validation', 'A customer with this email already exists');
+        }
+
+        return 333;
+    }
+
+    public function get_by_email($email): ?array {
+        if ($email !== 'admin@example.com') {
+            return null;
+        }
+
+        return ['Id' => 333];
     }
 }
 
@@ -414,7 +448,8 @@ class TestableSiteSeeder extends SiteSeeder {
         private AddonRepository $addonRepository,
         private ClientAdminService $clientAdminService,
         private GeneralSettings $generalSettings,
-        private NoticeSettings $noticeSettings
+        private NoticeSettings $noticeSettings,
+        private PageSyncService $pageSyncService
     ) {
     }
 
@@ -466,5 +501,9 @@ class TestableSiteSeeder extends SiteSeeder {
 
     protected function make_notice_settings(): NoticeSettings {
         return $this->noticeSettings;
+    }
+
+    protected function make_page_sync_service(): PageSyncService {
+        return $this->pageSyncService;
     }
 }
